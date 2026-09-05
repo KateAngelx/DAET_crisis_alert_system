@@ -5,6 +5,8 @@ import Link from "next/link";
 import { FileText, ArrowRight, AlertTriangle } from "lucide-react";
 import { Card } from "@/app/components/ui/Card";
 import { DashboardPageHeader } from "@/app/components/dashboard/DashboardPageHeader";
+import { RoleContextBanner } from "@/app/components/dashboard/RoleContextBanner";
+import { ROLE_INTERFACE } from "@/lib/roleInterfaceCopy";
 import { DashboardStatCard } from "@/app/components/dashboard/DashboardStatCard";
 import { StatCardSkeletonGrid } from "@/app/components/ui/Skeletons";
 import { AsyncState, EmptyState } from "@/app/components/ui/AsyncState";
@@ -31,9 +33,10 @@ export default function GuideReportsPage() {
   return (
     <div className="space-y-6 text-left">
       <DashboardPageHeader
-        title="Group Reports"
-        description="Incident reports from tourists in your tour groups and cases assigned to you."
+        title={ROLE_INTERFACE.guide.reports.title}
+        description={ROLE_INTERFACE.guide.reports.description}
       />
+      <RoleContextBanner helper={ROLE_INTERFACE.guide.reports.helper} tone="info" />
 
       {loading ? (
         <StatCardSkeletonGrid count={3} className={statGrid.dashboardThree} />

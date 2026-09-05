@@ -1,29 +1,26 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
+import Link from "next/link";
 import { 
   Shield, Info, MapPin, 
-  Clock, Bell, X, Mail, MessageSquare, Radio
+  Clock, Bell, X, Mail, MessageSquare, Radio, ArrowRight
 } from "lucide-react";
 import { Card } from "@/app/components/ui/Card";
-import { useCrisisStore } from "@/app/store/crisisStore";
+import { useCrisisStore, useAuthStore } from "@/app/store/crisisStore";
 import { InfoPageHero, PublicPageShell, PublicPageContent, publicLayout } from "@/app/components/InfoPageHero";
 import { AsyncState, ErrorState } from "@/app/components/ui/AsyncState";
 import { PublicStatCardSkeleton, AlertCardSkeletonList, MapSkeleton } from "@/app/components/ui/Skeletons";
 import { PublicStatCard } from "@/app/components/dashboard/PublicStatCard";
-import { typography, iconSize } from "@/lib/designSystem";
-
-// --- Map Integration Imports ---
-import dynamic from 'next/dynamic';
-import "leaflet/dist/leaflet.css";
-
-const MapContainer = dynamic(() => import('react-leaflet').then(mod => mod.MapContainer), { ssr: false });
-const TileLayer = dynamic(() => import('react-leaflet').then(mod => mod.TileLayer), { ssr: false });
-const Marker = dynamic(() => import('react-leaflet').then(mod => mod.Marker), { ssr: false });
-const Popup = dynamic(() => import('react-leaflet').then(mod => mod.Popup), { ssr: false });
+import { OutlinedCard } from "@/app/components/ui/OutlinedCard";
+import { typography, iconSize, statGrid, getSeverityOutline, outlinedCard } from "@/lib/designSystem";
+import { CrisisHubMap } from "@/app/components/maps/CrisisHubMap";
+import { ROLE_INTERFACE } from "@/lib/roleInterfaceCopy";
+import { RoleContextBanner } from "@/app/components/dashboard/RoleContextBanner";
 
 export default function CrisisPublicPage() {
   const { alerts, fetchAlerts, loading, error } = useCrisisStore();
+  const { isAuthenticated } = useAuthStore();
   const [selectedAlert, setSelectedAlert] = useState(null);
   const [viewedAlerts, setViewedAlerts] = useState(new Set());
   const [mounted, setMounted] = useState(false);
@@ -33,27 +30,15 @@ export default function CrisisPublicPage() {
   useEffect(() => {
     setMounted(true);
     
-    // Ang fetchAlerts ay nagbabalik ng cleanup function para sa realtime channel
     const initRealtime = async () => {
       const cleanup = await fetchAlerts();
       return cleanup;
     };
     
     const cleanupPromise = initRealtime();
-    
-    if (typeof window !== 'undefined') {
-        const L = require('leaflet');
-        delete L.Icon.Default.prototype._getIconUrl;
-        L.Icon.Default.mergeOptions({
-            iconRetinaUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon-2x.png',
-            iconUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon.png',
-            shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png',
-        });
-    }
 
     return () => {
       setMounted(false);
-      // Linisin ang realtime connection pag-alis sa page
       cleanupPromise.then(cleanup => {
         if (cleanup && typeof cleanup === 'function') cleanup();
       });
@@ -72,48 +57,39 @@ export default function CrisisPublicPage() {
 
   const selectedAlertData = alerts.find((a) => a.id === selectedAlert);
 
-  const getPublicSeverityStyles = (severity) => {
-    switch (severity) {
-      case "Critical": 
-        return { 
-          border: "border-l-red-600", 
-          badge: "bg-red-100 text-red-700" 
-        };
-      case "High": 
-        return { 
-          border: "border-l-orange-500", 
-          badge: "bg-orange-100 text-orange-700" 
-        };
-      case "Medium": 
-        return { 
-          border: "border-l-yellow-500", 
-          badge: "bg-yellow-100 text-yellow-700" 
-        };
-      case "Low": 
-      default: 
-        return { 
-          border: "border-l-blue-600", 
-          badge: "bg-blue-100 text-blue-700" 
-        };
-    }
-  };
+  const getPublicSeverityStyles = (severity) => getSeverityOutline(severity);
 
   return (
     <PublicPageShell>
       <InfoPageHero
-        title="Crisis Hub"
-        description="Active alerts issued by Daet LGU. Each entry shows the crisis type, severity, affected location, time reported, and official instructions. Check the map for affected areas."
+        title={ROLE_INTERFACE.public.crisisHub.title}
+        description={ROLE_INTERFACE.public.crisisHub.description}
       />
 
       <PublicPageContent>
         <section className={publicLayout.section}>
+          <RoleContextBanner helper={ROLE_INTERFACE.public.crisisHub.helper} tone="info" />
+        </section>
+        {!loading && criticalAlerts.length > 0 && (
+          <section className={`${publicLayout.section} p-4 bg-red-600 rounded-2xl flex items-center justify-between shadow-xl shadow-red-600/20`}>
+            <div className="flex items-center gap-3">
+              <Shield className="text-white animate-pulse" size={22} />
+              <p className="text-white font-black uppercase text-xs tracking-widest">
+                {criticalAlerts.length} critical alert{criticalAlerts.length > 1 ? "s" : ""} active — follow instructions below
+              </p>
+            </div>
+            <span className="text-[10px] font-bold text-white/80 uppercase hidden sm:inline">Daet, Camarines Norte</span>
+          </section>
+        )}
+
+        <section className={publicLayout.section}>
           {loading ? (
-            <PublicStatCardSkeleton count={3} />
+            <PublicStatCardSkeleton count={3} className={statGrid.crisisHub} compact />
           ) : (
-          <div className={publicLayout.cardGridWide}>
-            <PublicStatCard value={activeAlerts.length} label="Active Alerts" accent="zinc" />
-            <PublicStatCard value={criticalAlerts.length} label="Require Immediate Action" accent="red" />
-            <PublicStatCard value={viewedAlerts.size} label="Alerts Acknowledged" accent="green" />
+          <div className={statGrid.crisisHub}>
+            <PublicStatCard compact value={activeAlerts.length} label="Active Alerts" accent="blue" />
+            <PublicStatCard compact value={criticalAlerts.length} label="Require Immediate Action" accent="red" />
+            <PublicStatCard compact value={viewedAlerts.size} label="Alerts Acknowledged" accent="green" />
           </div>
           )}
         </section>
@@ -146,10 +122,13 @@ export default function CrisisPublicPage() {
                   {activeAlerts.map((alert) => {
                     const styles = getPublicSeverityStyles(alert.severity);
                     return (
-                      <Card
+                      <OutlinedCard
                         key={alert.id}
+                        variant="severity"
+                        severity={alert.severity}
+                        padding={outlinedCard.alertPadding}
                         onClick={() => handleViewAlert(alert.id)}
-                        className={`group cursor-pointer hover:scale-[1.01] transition-all p-6 border-l-[12px] rounded-3xl ${styles.border} text-left`}
+                        className="group cursor-pointer hover:scale-[1.01] text-left"
                       >
                         <div className={publicLayout.stackTight}>
                           <div className="flex gap-2 flex-wrap">
@@ -163,42 +142,33 @@ export default function CrisisPublicPage() {
                             <span className="flex items-center gap-1.5 uppercase"><Clock size={iconSize.inlineSm} /> {new Date(alert.created_at).toLocaleTimeString()}</span>
                           </div>
                         </div>
-                      </Card>
+                      </OutlinedCard>
                     );
                   })}
                 </AsyncState>
               </div>
             </div>
 
-            <div className="text-left">
-              <h2 className={`${publicLayout.sectionTitle} flex items-center gap-2`}>
-                <Radio className="text-red-500 animate-pulse" size={iconSize.section} /> Affected Areas Map
-              </h2>
-              <div className="bg-zinc-50 rounded-3xl border border-zinc-200 h-[480px] overflow-hidden">
-                {loading ? (
-                  <MapSkeleton height="h-full" />
-                ) : mounted && (
-                  <MapContainer
-                    key={`public-alert-map-${activeAlerts.length}`}
-                    center={DAET_CENTER}
-                    zoom={13}
-                    style={{ height: "100%", width: "100%" }}
-                  >
-                    <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" attribution='&copy; OpenStreetMap' />
-                    {activeAlerts.map((alert, idx) => (
-                      <Marker key={alert.id} position={[DAET_CENTER[0] + (idx * 0.008), DAET_CENTER[1] + (idx * 0.008)]}>
-                        <Popup>
-                          <div className="p-2 text-left text-black">
-                            <p className="text-[10px] font-black uppercase text-red-600 leading-none mb-1">{alert.severity} Alert</p>
-                            <p className="font-bold text-sm leading-tight">{alert.title}</p>
-                            <p className="text-[10px] text-zinc-500 mt-2 font-medium italic">{alert.location}</p>
-                          </div>
-                        </Popup>
-                      </Marker>
-                    ))}
-                  </MapContainer>
-                )}
+            <div className={`text-left ${selectedAlert ? "pointer-events-none opacity-40" : ""}`}>
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
+                <h2 className={`${publicLayout.sectionTitle} flex items-center gap-2 mb-0`}>
+                  <Radio className="text-red-500 animate-pulse" size={iconSize.section} /> Affected Areas Map
+                </h2>
+                <Link href="/routes" className="inline-flex items-center gap-1.5 text-[10px] font-black uppercase text-blue-600 hover:underline">
+                  Roads & Travel <ArrowRight size={12} />
+                </Link>
               </div>
+              {loading ? (
+                <MapSkeleton height="h-[480px]" />
+              ) : mounted && (
+                <CrisisHubMap
+                  alerts={activeAlerts}
+                  warnings={[]}
+                  showWarnings={false}
+                  center={DAET_CENTER}
+                  heightClass="h-[min(480px,70vh)] sm:h-[480px]"
+                />
+              )}
             </div>
           </div>
         </section>
@@ -211,11 +181,32 @@ export default function CrisisPublicPage() {
             <NotificationCard icon={<Shield />} label="App Notifications" status="When issued" />
           </div>
         </section>
+
+        <section className={`${publicLayout.section} p-8 bg-zinc-900 rounded-3xl text-white`}>
+          <h3 className="text-xl font-black uppercase mb-4 flex items-center gap-2 text-left">
+            <Info size={20} className="text-blue-400" /> Safety Instructions for Tourists
+          </h3>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 text-sm font-medium opacity-90 text-left">
+            <p>1. During typhoon season (June–December), check this page before visiting beaches or remote areas.</p>
+            <p>2. Save emergency numbers: <strong>911</strong> (national), <strong>117</strong> (PNP), municipal hotline <strong>(054) 440-1234</strong>.</p>
+            <p>3. When a Critical alert is posted, follow the listed instructions and avoid named affected areas.</p>
+            {!isAuthenticated ? (
+              <p>4. Register your account to receive email, SMS, and app notifications when LGU issues a new alert.</p>
+            ) : (
+              <p>4. Check your Notifications inbox when LGU issues a new alert for your registered contact details.</p>
+            )}
+          </div>
+        </section>
       </PublicPageContent>
 
       {selectedAlertData && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm" onClick={() => setSelectedAlert(null)}>
-           <Card className="max-w-2xl w-full p-0 overflow-hidden border-none shadow-2xl animate-in zoom-in-95 duration-200" onClick={e => e.stopPropagation()}>
+        <div
+          className="fixed inset-0 z-[2000] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm"
+          onClick={() => setSelectedAlert(null)}
+          role="dialog"
+          aria-modal="true"
+        >
+           <Card className="relative z-[2001] max-w-2xl w-full p-0 overflow-hidden border-none shadow-2xl animate-in zoom-in-95 duration-200" onClick={e => e.stopPropagation()}>
               <div className="bg-blue-600 p-8 text-white text-left">
                 <div className="flex justify-between items-start mb-6">
                   <div className="p-3 bg-white/20 rounded-2xl"><Shield size={iconSize.empty} /></div>
@@ -259,12 +250,12 @@ export default function CrisisPublicPage() {
 
 function NotificationCard({ icon, label, status }) {
   return (
-    <div className="p-6 bg-zinc-50 border border-zinc-200 rounded-3xl flex items-center justify-between text-left">
+    <OutlinedCard accent="blue" padding={outlinedCard.alertPadding} className="flex items-center justify-between text-left">
       <div className="flex items-center gap-3">
-        <div className="text-blue-600">{icon}</div>
+        <div className="p-2.5 rounded-2xl bg-blue-600 text-white">{icon}</div>
         <span className="text-xs font-black uppercase tracking-widest">{label}</span>
       </div>
       <span className="text-[10px] font-bold text-green-600 uppercase">{status}</span>
-    </div>
+    </OutlinedCard>
   );
 }

@@ -12,7 +12,7 @@ import { typography, iconSize } from "@/lib/designSystem";
 const BASE_NAV = [
   { name: "Home", href: "/" },
   { name: "Crisis Hub", href: "/crisis" },
-  { name: "Advisories", href: "/crisis/alerts" },
+  { name: "Roads & Travel", href: "/routes" },
   { name: "About", href: "/about" },
   { name: "FAQ", href: "/faq" },
 ];

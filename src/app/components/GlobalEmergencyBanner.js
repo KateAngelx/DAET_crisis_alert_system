@@ -68,19 +68,12 @@ export function GlobalEmergencyBanner() {
           </p>
 
           <div className="flex gap-2">
-            <Link 
-              href="/crisis/alerts" 
-              onClick={() => setIsVisible(false)}
-              className="flex-1 bg-zinc-800 text-white py-2 rounded-lg text-[10px] font-black uppercase tracking-widest text-center hover:bg-zinc-700 transition-all"
-            >
-              Full Details
-            </Link>
-            <Link 
-              href="/crisis" 
+            <Link
+              href="/crisis"
               onClick={() => setIsVisible(false)}
               className="flex-1 bg-red-600 text-white py-2 rounded-lg text-[10px] font-black uppercase tracking-widest text-center hover:bg-red-700 transition-all"
             >
-              View on Map
+              Open Crisis Hub
             </Link>
           </div>
         </div>

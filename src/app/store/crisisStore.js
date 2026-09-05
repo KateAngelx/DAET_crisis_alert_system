@@ -3,6 +3,7 @@ import { persist } from 'zustand/middleware';
 import { supabase } from '@/lib/supabaseClient';
 import { useNotificationStore } from '@/app/store/notificationStore';
 import { channelsToDb, normalizeAlert } from '@/lib/alertChannels';
+import { getActiveSession } from '@/lib/authSession';
 
 export const useCrisisStore = create((set, get) => ({
   alerts: [], 
@@ -93,7 +94,7 @@ export const useCrisisStore = create((set, get) => ({
   fetchAllUsers: async () => {
     set({ loading: true });
     try {
-      const { data: { session } } = await supabase.auth.getSession();
+      const session = await getActiveSession();
 
       if (session) {
         const res = await fetch('/api/admin/users', {
@@ -125,7 +126,7 @@ export const useCrisisStore = create((set, get) => ({
 
   updateUserRole: async (userId, user_type) => {
     try {
-      const { data: { session } } = await supabase.auth.getSession();
+      const session = await getActiveSession();
       if (!session) {
         return { success: false, error: 'Not authenticated' };
       }
@@ -169,10 +170,23 @@ export const useCrisisStore = create((set, get) => ({
         channels: channelsToDb(alertData.channels || { email: true, sms: true, app: true })
       };
 
-      const { data, error } = await supabase
+      if (alertData.latitude != null && alertData.longitude != null) {
+        insertPayload.latitude = Number(alertData.latitude);
+        insertPayload.longitude = Number(alertData.longitude);
+      }
+
+      let { data, error } = await supabase
         .from('crisis_alerts')
         .insert([insertPayload])
         .select();
+
+      if (error && insertPayload.latitude != null) {
+        const { latitude, longitude, ...fallbackPayload } = insertPayload;
+        ({ data, error } = await supabase
+          .from('crisis_alerts')
+          .insert([fallbackPayload])
+          .select());
+      }
 
       if (error) throw error;
       return { success: true, alert: normalizeAlert(data?.[0]) };
@@ -184,18 +198,33 @@ export const useCrisisStore = create((set, get) => ({
 
   updateAlert: async (id, updatedData) => {
     try {
-      const { error } = await supabase
+      const updatePayload = {
+        title: updatedData.title,
+        message: updatedData.message,
+        type: updatedData.type,
+        severity: updatedData.severity,
+        location: updatedData.location,
+        channels: channelsToDb(updatedData.channels),
+        is_public: true
+      };
+
+      if (updatedData.latitude != null && updatedData.longitude != null) {
+        updatePayload.latitude = Number(updatedData.latitude);
+        updatePayload.longitude = Number(updatedData.longitude);
+      }
+
+      let { error } = await supabase
         .from('crisis_alerts')
-        .update({
-          title: updatedData.title,
-          message: updatedData.message,
-          type: updatedData.type,
-          severity: updatedData.severity,
-          location: updatedData.location,
-          channels: channelsToDb(updatedData.channels),
-          is_public: true
-        })
+        .update(updatePayload)
         .eq('id', id);
+
+      if (error && updatePayload.latitude != null) {
+        const { latitude, longitude, ...fallbackPayload } = updatePayload;
+        ({ error } = await supabase
+          .from('crisis_alerts')
+          .update(fallbackPayload)
+          .eq('id', id));
+      }
 
       if (error) throw error;
       return { success: true };
@@ -256,9 +285,9 @@ export const useAuthStore = create(
       fetchProfile: async () => {
         set({ loading: true });
         try {
-          const { data: { session } } = await supabase.auth.getSession();
+          const session = await getActiveSession();
           if (!session) {
-            set({ loading: false });
+            set({ user: null, isAuthenticated: false, loading: false });
             return { success: false, error: "Not authenticated" };
           }
 
@@ -287,7 +316,7 @@ export const useAuthStore = create(
       updateProfile: async ({ full_name, phone, nationality }) => {
         set({ loading: true });
         try {
-          const { data: { session } } = await supabase.auth.getSession();
+          const session = await getActiveSession();
           if (!session) throw new Error("Not authenticated");
 
           const { data, error } = await supabase
@@ -318,7 +347,7 @@ export const useAuthStore = create(
           const { data, error } = await supabase.auth.signInWithPassword({ email, password });
           if (error) throw error;
 
-          const { data: { session } } = await supabase.auth.getSession();
+          const session = await getActiveSession();
           if (!session) throw new Error('No active session after login. Check if email confirmation is required in Supabase.');
 
           const profile = await syncProfileFromServer(session);
@@ -349,7 +378,7 @@ export const useAuthStore = create(
           });
           if (error) throw error;
 
-          const { data: { session } } = await supabase.auth.getSession();
+          const session = await getActiveSession();
           if (session) {
             await syncProfileFromServer(session);
           }

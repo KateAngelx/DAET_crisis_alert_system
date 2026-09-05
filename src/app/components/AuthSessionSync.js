@@ -4,6 +4,7 @@ import { useEffect } from "react";
 import { supabase } from "@/lib/supabaseClient";
 import { useAuthStore } from "@/app/store/crisisStore";
 import { useNotificationStore } from "@/app/store/notificationStore";
+import { clearInvalidAuthSession, getActiveSession, isInvalidRefreshError } from "@/lib/authSession";
 
 async function fetchAppProfile(session) {
   const res = await fetch("/api/auth/ensure-profile", {
@@ -21,11 +22,28 @@ export function AuthSessionSync() {
   useEffect(() => {
     let mounted = true;
 
-    async function syncSession() {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!mounted || !session?.user) return;
+    function handleUnhandledRejection(event) {
+      if (isInvalidRefreshError(event.reason)) {
+        event.preventDefault();
+        clearInvalidAuthSession("unhandled-rejection");
+        if (mounted) {
+          setAuth({ user: null, isAuthenticated: false });
+        }
+      }
+    }
 
+    window.addEventListener("unhandledrejection", handleUnhandledRejection);
+
+    async function syncSession() {
       try {
+        const session = await getActiveSession();
+        if (!mounted) return;
+
+        if (!session?.user) {
+          setAuth({ user: null, isAuthenticated: false });
+          return;
+        }
+
         const profile = await fetchAppProfile(session);
         if (!mounted) return;
 
@@ -45,8 +63,13 @@ export function AuthSessionSync() {
         if (profile?.user_type === "tourist") {
           useNotificationStore.getState().fetchNotifications(session.user.id);
         }
-      } catch {
-        // Session exists but profile sync failed — keep persisted state
+      } catch (err) {
+        if (isInvalidRefreshError(err)) {
+          await clearInvalidAuthSession("AuthSessionSync-syncSession");
+        }
+        if (mounted) {
+          setAuth({ user: null, isAuthenticated: false });
+        }
       }
     }
 
@@ -58,6 +81,11 @@ export function AuthSessionSync() {
       if (event === "SIGNED_OUT") {
         useNotificationStore.getState().clearNotifications();
         setAuth({ user: null, isAuthenticated: false });
+        return;
+      }
+
+      if (event === "TOKEN_REFRESHED" && !session) {
+        await clearInvalidAuthSession("token-refreshed-without-session");
         return;
       }
 
@@ -82,13 +110,16 @@ export function AuthSessionSync() {
             useNotificationStore.getState().fetchNotifications(session.user.id);
           }
         } catch {
-          // ignore
+          /* ignore profile sync errors */
         }
+      } else if (event === "INITIAL_SESSION" && !session) {
+        setAuth({ user: null, isAuthenticated: false });
       }
     });
 
     return () => {
       mounted = false;
+      window.removeEventListener("unhandledrejection", handleUnhandledRejection);
       subscription.unsubscribe();
     };
   }, [setAuth]);

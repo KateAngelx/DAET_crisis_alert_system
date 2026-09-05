@@ -41,7 +41,7 @@ export async function broadcastCrisisAlertToTourists(admin, alertId) {
   const { data: tourists, error: touristError } = await admin
     .from('profiles')
     .select('id, email, phone')
-    .eq('user_type', 'tourist')
+    .in('user_type', ['tourist', 'guide', 'admin'])
     .eq('is_active', true);
 
   if (touristError) {
@@ -136,6 +136,10 @@ export async function broadcastCrisisAlertToTourists(admin, alertId) {
 
   results.emailQueued = (deliveries || []).filter((delivery) => delivery.channel === 'email').length;
   results.smsQueued = (deliveries || []).filter((delivery) => delivery.channel === 'sms').length;
+
+  // #region agent log
+  fetch('http://127.0.0.1:7540/ingest/3142bff0-53ba-4c2c-9606-b4d021977f0c',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'ee1adc'},body:JSON.stringify({sessionId:'ee1adc',location:'crisisAlertBroadcast.server.js:queue',message:'deliveries queued',data:{emailQueued:results.emailQueued,smsQueued:results.smsQueued,smsChannelEnabled:channelFlags.sms,recipientCount:toNotify.length,withPhone:toNotify.filter((t)=>t.phone).length},timestamp:Date.now(),hypothesisId:'B'})}).catch(()=>{});
+  // #endregion
 
   await processNotificationDeliveries({ deliveryIds: (deliveries || []).map((delivery) => delivery.id) });
 

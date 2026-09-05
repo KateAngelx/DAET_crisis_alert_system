@@ -1,16 +1,8 @@
 import React from "react";
 import Link from "next/link";
 import { ArrowRight } from "lucide-react";
-import { Card } from "@/app/components/ui/Card";
-import { typography, iconSize, statCard } from "@/lib/designSystem";
-
-const ACCENT_STYLES = {
-  blue: { icon: "bg-blue-100 text-blue-600", value: "text-zinc-900" },
-  red: { icon: "bg-red-100 text-red-600", value: "text-red-600", card: "bg-red-50/50 border-red-100" },
-  orange: { icon: "bg-orange-100 text-orange-600", value: "text-orange-600" },
-  purple: { icon: "bg-purple-100 text-purple-600", value: "text-purple-600" },
-  green: { icon: "bg-green-100 text-green-600", value: "text-green-600" },
-};
+import { OutlinedCard } from "@/app/components/ui/OutlinedCard";
+import { typography, iconSize, statCard, getStatCardAccent } from "@/lib/designSystem";
 
 export function DashboardStatCard({
   label,
@@ -20,31 +12,63 @@ export function DashboardStatCard({
   href,
   hrefLabel = "View",
   badge,
+  footerLink = false,
 }) {
-  const styles = ACCENT_STYLES[accent] || ACCENT_STYLES.blue;
+  const styles = getStatCardAccent(accent);
+
+  const cardBody = (
+    <>
+      {(icon || badge || (href && !footerLink)) && (
+        <div className="flex items-start justify-between gap-2 mb-3 sm:mb-4">
+          {icon ? (
+            <div className={`${statCard.iconWrap} ${styles.icon}`}>
+              {icon}
+            </div>
+          ) : (
+            <span className="shrink-0" />
+          )}
+          <div className="flex flex-col items-end gap-1 min-w-0">
+            {badge && (
+              <span className={`${typography.statLabel} text-green-600 truncate max-w-full`}>{badge}</span>
+            )}
+            {href && !footerLink && (
+              <Link
+                href={href}
+                className={`${typography.statLabel} text-blue-600 flex items-center gap-1 hover:underline shrink-0`}
+              >
+                {hrefLabel} <ArrowRight size={iconSize.inlineSm} />
+              </Link>
+            )}
+          </div>
+        </div>
+      )}
+      <p className={`${typography.statLabel} ${styles.label} mb-1 truncate`}>{label}</p>
+      <p className={`${typography.statValue} ${styles.value} break-words`}>{value}</p>
+      {href && footerLink && (
+        <div className="flex items-center justify-between mt-3 pt-1">
+          <span className={`${typography.badge} tracking-widest ${styles.footer}`}>{hrefLabel}</span>
+          <div className={`size-2 rounded-full ${styles.dot}`} />
+        </div>
+      )}
+    </>
+  );
+
+  if (href && footerLink) {
+    return (
+      <Link
+        href={href}
+        className="block no-underline min-w-0 group transition-all hover:-translate-y-0.5"
+      >
+        <OutlinedCard accent={accent} className="group-hover:shadow-2xl">
+          {cardBody}
+        </OutlinedCard>
+      </Link>
+    );
+  }
 
   return (
-    <Card className={`${statCard.dashboard} ${styles.card || ""}`}>
-      <div className="flex items-start justify-between gap-2 mb-3 sm:mb-4">
-        <div className={`${statCard.iconWrap} ${styles.icon}`}>
-          {icon}
-        </div>
-        <div className="flex flex-col items-end gap-1 min-w-0">
-          {badge && (
-            <span className={`${typography.statLabel} text-green-600 truncate max-w-full`}>{badge}</span>
-          )}
-          {href && (
-            <Link
-              href={href}
-              className={`${typography.statLabel} text-blue-600 flex items-center gap-1 hover:underline shrink-0`}
-            >
-              {hrefLabel} <ArrowRight size={iconSize.inlineSm} />
-            </Link>
-          )}
-        </div>
-      </div>
-      <p className={`${typography.statLabel} text-zinc-400 mb-1 truncate`}>{label}</p>
-      <p className={`${typography.statValue} ${styles.value} break-words`}>{value}</p>
-    </Card>
+    <OutlinedCard accent={accent}>
+      {cardBody}
+    </OutlinedCard>
   );
 }

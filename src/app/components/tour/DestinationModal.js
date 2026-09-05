@@ -5,7 +5,20 @@ import {
   X, MapPin, Calendar, Clock, Users, Phone, Mail, AlertTriangle, ShieldCheck, Loader2, Pencil, Navigation,
 } from "lucide-react";
 import { Card } from "@/app/components/ui/Card";
-import { formatTourRoute, formatTourDate, getRelevantAlertsForGroup } from "@/lib/tourGroupRoute";
+import {
+  formatTourRoute,
+  formatTourDate,
+  getRelevantAlertsForGroup,
+  getRelevantRouteAdvisoriesForGroup,
+} from "@/lib/tourGroupRoute";
+import {
+  buildRouteCatalog,
+  getRouteItemFromAdvisory,
+  getRouteStatusStyles,
+  resolveRouteItemView,
+} from "@/lib/routesUtils";
+import { getRouteAdvisoryStatusStyles } from "@/lib/routeAdvisoryUtils";
+import { RouteDetailModal } from "@/app/components/routes/RouteDetailModal";
 
 function InfoRow({ label, value, icon: Icon }) {
   if (!value) return null;
@@ -27,6 +40,7 @@ export function DestinationModal({
   guide,
   members = [],
   alerts = [],
+  routeAdvisories = [],
   editable = false,
   onSave,
 }) {
@@ -34,6 +48,9 @@ export function DestinationModal({
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState(null);
   const [form, setForm] = useState({});
+  const [selectedRoute, setSelectedRoute] = useState(null);
+
+  const catalog = useMemo(() => buildRouteCatalog(routeAdvisories), [routeAdvisories]);
 
   useEffect(() => {
     if (open && group) {
@@ -49,7 +66,7 @@ export function DestinationModal({
       });
       setEditing(false);
       setError(null);
-
+      setSelectedRoute(null);
     }
   }, [open, group, members.length]);
 
@@ -57,6 +74,13 @@ export function DestinationModal({
     () => getRelevantAlertsForGroup(alerts, group),
     [alerts, group]
   );
+
+  const relevantRouteAdvisories = useMemo(() => {
+    if (routeAdvisories.length > 0) {
+      return getRelevantRouteAdvisoriesForGroup(catalog.published, group);
+    }
+    return [];
+  }, [routeAdvisories, catalog.published, group]);
 
   if (!open || !group) return null;
 
@@ -231,6 +255,54 @@ export function DestinationModal({
                 )}
               </Card>
 
+              <Card className={`p-5 border-zinc-100 ${relevantRouteAdvisories.length > 0 ? "bg-orange-50/30 border-orange-100" : ""}`}>
+                <p className="text-[10px] font-black uppercase tracking-widest text-zinc-400 mb-3 flex items-center gap-2">
+                  <Navigation size={14} className={relevantRouteAdvisories.length > 0 ? "text-orange-600" : "text-green-600"} />
+                  Route Status & Safety
+                </p>
+                {relevantRouteAdvisories.length === 0 ? (
+                  <p className="text-sm text-zinc-500">No active route advisories match this group&apos;s path or destination.</p>
+                ) : (
+                  <div className="space-y-3">
+                    {relevantRouteAdvisories.map((advisory) => {
+                      const view = resolveRouteItemView(advisory);
+                      const status =
+                        advisory.route_status === "Safe"
+                          ? "safe"
+                          : advisory.route_status === "Caution"
+                            ? "caution"
+                            : "unsafe";
+                      const styles = getRouteStatusStyles(status);
+                      const advisoryStyles = getRouteAdvisoryStatusStyles(advisory.route_status);
+                      const routeItem = getRouteItemFromAdvisory(advisory, view);
+                      return (
+                        <button
+                          key={advisory.id}
+                          type="button"
+                          onClick={() => setSelectedRoute(routeItem)}
+                          className="block w-full text-left"
+                        >
+                          <div className="p-3 bg-white rounded-xl border border-orange-100 hover:border-orange-300 transition-colors">
+                            <span className={`text-[9px] font-black uppercase px-2 py-0.5 rounded ${advisoryStyles.badge || styles.badge}`}>
+                              {advisoryStyles.label || styles.label}
+                            </span>
+                            <p className="font-bold text-zinc-900 text-sm mt-2">
+                              {advisory.title || `${advisory.from_location || "Start"} → ${advisory.to_location}`}
+                            </p>
+                            {advisory.hazard_type && (
+                              <p className="text-xs text-zinc-600 mt-1">{advisory.hazard_type}</p>
+                            )}
+                            {advisory.via_location && advisory.route_type === "alternative" && (
+                              <p className="text-xs text-blue-700 font-medium mt-2">Via: {advisory.via_location}</p>
+                            )}
+                          </div>
+                        </button>
+                      );
+                    })}
+                  </div>
+                )}
+              </Card>
+
               <Card className={`p-5 border-zinc-100 ${relevantAlerts.length > 0 ? "bg-red-50/30 border-red-100" : ""}`}>
                 <p className="text-[10px] font-black uppercase tracking-widest text-zinc-400 mb-3 flex items-center gap-2">
                   {relevantAlerts.length > 0 ? (
@@ -258,6 +330,14 @@ export function DestinationModal({
           )}
         </div>
       </div>
+
+      <RouteDetailModal
+        open={!!selectedRoute}
+        route={selectedRoute}
+        catalog={catalog}
+        onClose={() => setSelectedRoute(null)}
+        onSelectRoute={setSelectedRoute}
+      />
     </div>
   );
 }

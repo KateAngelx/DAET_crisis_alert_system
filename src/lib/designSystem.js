@@ -62,6 +62,146 @@ export const statGrid = {
   dashboard: "grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4",
   dashboardThree: "grid grid-cols-2 sm:grid-cols-3 gap-3 sm:gap-4",
   public: "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6",
+  /** Crisis Hub — three stats stay in one row on mobile */
+  crisisHub: "grid grid-cols-3 gap-2 sm:gap-3 lg:gap-4 min-w-0",
+};
+
+/** Shared outlined card shell — matches ServiceCard reference styling */
+export const outlinedCard = {
+  base: "bg-white shadow-xl border transition-all min-w-0",
+  radius: "rounded-[40px]",
+  radiusCompact: "rounded-3xl",
+  statPadding: "p-4 sm:p-5",
+  statPaddingCompact: "p-3 sm:p-4",
+  alertPadding: "p-6",
+  notificationPadding: "p-5 sm:p-6",
+};
+
+/** Semantic outline + content colors for stat cards */
+export const statCardAccent = {
+  blue: {
+    border: "border-blue-600",
+    icon: "bg-blue-600 text-white",
+    value: "text-blue-600",
+    label: "text-zinc-400",
+    footer: "text-blue-600",
+    dot: "bg-blue-600",
+  },
+  red: {
+    border: "border-red-600",
+    icon: "bg-red-600 text-white",
+    value: "text-red-600",
+    label: "text-zinc-400",
+    footer: "text-red-600",
+    dot: "bg-red-600",
+  },
+  orange: {
+    border: "border-orange-500",
+    icon: "bg-orange-500 text-white",
+    value: "text-orange-600",
+    label: "text-zinc-400",
+    footer: "text-orange-600",
+    dot: "bg-orange-500",
+  },
+  green: {
+    border: "border-green-600",
+    icon: "bg-green-600 text-white",
+    value: "text-green-600",
+    label: "text-zinc-400",
+    footer: "text-green-600",
+    dot: "bg-green-600",
+  },
+  purple: {
+    border: "border-purple-600",
+    icon: "bg-purple-600 text-white",
+    value: "text-purple-600",
+    label: "text-zinc-400",
+    footer: "text-purple-600",
+    dot: "bg-purple-600",
+  },
+  zinc: {
+    border: "border-zinc-400",
+    icon: "bg-zinc-600 text-white",
+    value: "text-zinc-900",
+    label: "text-zinc-400",
+    footer: "text-zinc-600",
+    dot: "bg-zinc-600",
+  },
+  yellow: {
+    border: "border-yellow-500",
+    icon: "bg-yellow-500 text-white",
+    value: "text-yellow-700",
+    label: "text-zinc-400",
+    footer: "text-yellow-700",
+    dot: "bg-yellow-500",
+  },
+};
+
+export const severityOutline = {
+  Critical: {
+    border: "border-red-600",
+    badge: "bg-red-100 text-red-700",
+    icon: "bg-red-600 text-white",
+  },
+  High: {
+    border: "border-orange-500",
+    badge: "bg-orange-100 text-orange-700",
+    icon: "bg-orange-500 text-white",
+  },
+  Medium: {
+    border: "border-yellow-500",
+    badge: "bg-yellow-100 text-yellow-700",
+    icon: "bg-yellow-500 text-white",
+  },
+  Low: {
+    border: "border-blue-600",
+    badge: "bg-blue-100 text-blue-700",
+    icon: "bg-blue-600 text-white",
+  },
+};
+
+export const priorityOutline = {
+  CRITICAL: {
+    border: "border-red-600",
+    icon: "bg-red-600 text-white",
+    unreadBg: "bg-red-50/40",
+  },
+  HIGH: {
+    border: "border-orange-500",
+    icon: "bg-orange-500 text-white",
+    unreadBg: "bg-orange-50/40",
+  },
+  NORMAL: {
+    border: "border-blue-600",
+    icon: "bg-blue-600 text-white",
+    unreadBg: "bg-blue-50/40",
+  },
+  LOW: {
+    border: "border-zinc-400",
+    icon: "bg-zinc-500 text-white",
+    unreadBg: "bg-zinc-50",
+  },
+};
+
+export function getStatCardAccent(accent = "blue") {
+  return statCardAccent[accent] || statCardAccent.blue;
+}
+
+export function getSeverityOutline(severity) {
+  return severityOutline[severity] || severityOutline.Low;
+}
+
+export function getPriorityOutline(priority) {
+  return priorityOutline[priority] || priorityOutline.NORMAL;
+}
+
+/** Stat card shell classes */
+export const statCard = {
+  shell: "p-4 sm:p-5 text-left min-w-0",
+  compact: "p-3 sm:p-5 text-left min-w-0",
+  dashboard: "p-4 sm:p-5 text-left min-w-0",
+  public: "p-4 sm:p-5 text-left min-w-0",
+  iconWrap: "p-2.5 sm:p-3 rounded-2xl shrink-0",
 };
 
 /** Auth login / register — fixed viewport card, no page scroll */
@@ -79,9 +219,3 @@ export const authForm = {
   footer: "mt-4 pt-4 border-t border-zinc-50 text-center",
 };
 
-/** Stat card shell classes */
-export const statCard = {
-  dashboard: "p-4 sm:p-5 text-left border-zinc-100 min-w-0",
-  public: "p-5 sm:p-6 lg:p-8 text-left min-w-0",
-  iconWrap: "p-2 sm:p-2.5 rounded-xl shrink-0",
-};

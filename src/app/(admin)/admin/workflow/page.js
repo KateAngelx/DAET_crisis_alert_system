@@ -6,6 +6,8 @@ import {
 } from "lucide-react";
 import { Card } from "@/app/components/ui/Card";
 import { DashboardPageHeader } from "@/app/components/dashboard/DashboardPageHeader";
+import { RoleContextBanner } from "@/app/components/dashboard/RoleContextBanner";
+import { ROLE_INTERFACE } from "@/lib/roleInterfaceCopy";
 import { useCrisisStore } from "@/app/store/crisisStore";
 
 export default function AdminWorkflowPage() {
@@ -21,8 +23,8 @@ export default function AdminWorkflowPage() {
   return (
     <div className="space-y-6 text-left pb-8">
       <DashboardPageHeader
-        title="Alert Pipeline"
-        description="Track how alerts are issued, delivered, and resolved across the Daet crisis system."
+        title={ROLE_INTERFACE.admin.workflow.title}
+        description={ROLE_INTERFACE.admin.workflow.description}
         action={
           <div className="flex items-center gap-2 bg-green-50 text-green-700 px-4 py-2 rounded-2xl border border-green-100">
             <ShieldCheck size={18} />
@@ -30,6 +32,7 @@ export default function AdminWorkflowPage() {
           </div>
         }
       />
+      <RoleContextBanner helper={ROLE_INTERFACE.admin.workflow.helper} tone="info" />
 
       <Card className="p-8 bg-zinc-900 text-white border-none shadow-xl overflow-hidden relative">
         <div className="absolute top-0 right-0 p-8 opacity-10">

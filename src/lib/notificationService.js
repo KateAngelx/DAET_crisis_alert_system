@@ -66,6 +66,37 @@ export async function notifyTouristsOfCrisisAlert(alertId) {
       success: true,
       notified: data.notified || 0,
       skipped: data.skipped || 0,
+      emailQueued: data.emailQueued || 0,
+      smsQueued: data.smsQueued || 0,
+      warnings: data.warnings || [],
+    };
+  } catch (err) {
+    return { success: false, error: err.message || 'Failed to notify tourists' };
+  }
+}
+
+export async function notifyTouristsOfDangerousLocation(warningId) {
+  const headers = await getDispatchHeaders();
+  if (!headers) {
+    return { success: false, error: 'Not authenticated' };
+  }
+
+  try {
+    const res = await fetch('/api/crisis/dangerous-locations/notify-tourists', {
+      method: 'POST',
+      headers,
+      body: JSON.stringify({ warningId }),
+    });
+    const data = await res.json();
+
+    if (!res.ok) {
+      return { success: false, error: data.error || 'Failed to notify tourists' };
+    }
+
+    return {
+      success: true,
+      notified: data.notified || 0,
+      skipped: data.skipped || 0,
       warnings: data.warnings || [],
     };
   } catch (err) {

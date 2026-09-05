@@ -8,9 +8,10 @@ import { DashboardStatCard } from "@/app/components/dashboard/DashboardStatCard"
 import { DestinationButton, DestinationModal } from "@/app/components/tour/DestinationModal";
 import { useGuideStore } from "@/app/store/guideStore";
 import { useCrisisStore } from "@/app/store/crisisStore";
+import { useRouteAdvisoryStore } from "@/app/store/routeAdvisoryStore";
 import { StatCardSkeletonGrid } from "@/app/components/ui/Skeletons";
 import { EmptyState } from "@/app/components/ui/AsyncState";
-import { formatTourRoute } from "@/lib/tourGroupRoute";
+import { formatTourRoute, getRelevantRouteAdvisoriesForGroup } from "@/lib/tourGroupRoute";
 import { ASSIGNMENT_STATUS_LABELS } from "@/lib/assignmentStatus";
 import { iconSize, statGrid } from "@/lib/designSystem";
 
@@ -30,13 +31,15 @@ const ASSIGNMENT_BADGE = {
 export default function AdminGuideMonitoringPage() {
   const { tourGroups, assignments, fetchAllTourGroupsAdmin, fetchAllAssignmentsAdmin, loading } = useGuideStore();
   const { alerts, fetchAlerts } = useCrisisStore();
+  const { advisories, fetchAdvisories } = useRouteAdvisoryStore();
   const [modalGroup, setModalGroup] = useState(null);
 
   useEffect(() => {
     fetchAllTourGroupsAdmin();
     fetchAllAssignmentsAdmin();
     fetchAlerts();
-  }, [fetchAllTourGroupsAdmin, fetchAllAssignmentsAdmin, fetchAlerts]);
+    fetchAdvisories();
+  }, [fetchAllTourGroupsAdmin, fetchAllAssignmentsAdmin, fetchAlerts, fetchAdvisories]);
 
   const stats = useMemo(() => {
     const guides = new Map();
@@ -115,6 +118,7 @@ export default function AdminGuideMonitoringPage() {
                     <th className="p-4">Guide</th>
                     <th className="p-4">Tour Group</th>
                     <th className="p-4">Route</th>
+                    <th className="p-4">Route Status</th>
                     <th className="p-4">Status</th>
                     <th className="p-4 text-right">Action</th>
                   </tr>
@@ -122,7 +126,7 @@ export default function AdminGuideMonitoringPage() {
                 <tbody>
                   {assignments.length === 0 ? (
                     <tr>
-                      <td colSpan={6} className="p-8 text-center text-zinc-400">No assignment records yet.</td>
+                      <td colSpan={7} className="p-8 text-center text-zinc-400">No assignment records yet.</td>
                     </tr>
                   ) : (
                     assignments.slice(0, 50).map((a) => (
@@ -131,6 +135,19 @@ export default function AdminGuideMonitoringPage() {
                         <td className="p-4 text-zinc-700">{a.guide?.full_name || "—"}</td>
                         <td className="p-4 text-zinc-700">{a.tour_group?.name || "—"}</td>
                         <td className="p-4 text-blue-600 text-xs font-medium">{formatTourRoute(a.tour_group)}</td>
+                        <td className="p-4">
+                          {(() => {
+                            const ra = getRelevantRouteAdvisoriesForGroup(advisories, a.tour_group);
+                            if (ra.length === 0) {
+                              return <span className="text-[9px] font-black uppercase text-green-600">Clear</span>;
+                            }
+                            return (
+                              <span className="text-[9px] font-black uppercase text-orange-700">
+                                {ra.length} advis{ra.length > 1 ? "ories" : "ory"}
+                              </span>
+                            );
+                          })()}
+                        </td>
                         <td className="p-4">
                           <span className={`text-[9px] font-black uppercase px-2 py-0.5 rounded-full ${ASSIGNMENT_BADGE[a.status] || "bg-zinc-100 text-zinc-600"}`}>
                             {ASSIGNMENT_STATUS_LABELS[a.status] || a.status}
@@ -161,6 +178,7 @@ export default function AdminGuideMonitoringPage() {
                     <th className="p-4">Guide</th>
                     <th className="p-4">From</th>
                     <th className="p-4">Destination</th>
+                    <th className="p-4">Route Status</th>
                     <th className="p-4 text-center">Tourists</th>
                     <th className="p-4">Status</th>
                     <th className="p-4 text-right">Actions</th>
@@ -173,6 +191,19 @@ export default function AdminGuideMonitoringPage() {
                       <td className="p-4 text-zinc-700">{group.guide?.full_name || "—"}</td>
                       <td className="p-4 text-zinc-600">{group.starting_location || "—"}</td>
                       <td className="p-4 text-zinc-600">{group.destination}</td>
+                      <td className="p-4">
+                        {(() => {
+                          const ra = getRelevantRouteAdvisoriesForGroup(advisories, group);
+                          if (ra.length === 0) {
+                            return <span className="text-[9px] font-black uppercase text-green-600">Clear</span>;
+                          }
+                          return (
+                            <span className="text-[9px] font-black uppercase text-orange-700">
+                              {ra.length} advis{ra.length > 1 ? "ories" : "ory"}
+                            </span>
+                          );
+                        })()}
+                      </td>
                       <td className="p-4 text-center font-black text-blue-600">{group.activeMembers.length}</td>
                       <td className="p-4">
                         <span className={`text-[9px] font-black uppercase px-2 py-0.5 rounded-full ${STATUS_STYLES[group.status]}`}>
@@ -232,6 +263,7 @@ export default function AdminGuideMonitoringPage() {
           .filter((a) => a.status === "active")
           .map((a) => ({ id: a.id, tourist: a.tourist }))}
         alerts={alerts}
+        routeAdvisories={advisories}
         editable={false}
       />
     </div>

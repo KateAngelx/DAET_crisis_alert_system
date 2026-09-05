@@ -1,19 +1,27 @@
 "use client";
 
-import React, { useEffect, useMemo } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import {
-  AlertTriangle, Bell, MapPin, Clock, ShieldCheck, Users, Compass, ArrowRight,
+  AlertTriangle, Bell, MapPin, Clock, ShieldCheck, Users, Compass, ArrowRight, Navigation, Route,
 } from "lucide-react";
+import { OutlinedCard } from "@/app/components/ui/OutlinedCard";
 import { Card } from "@/app/components/ui/Card";
+import { outlinedCard } from "@/lib/designSystem";
 import { DashboardPageHeader } from "@/app/components/dashboard/DashboardPageHeader";
 import { DashboardStatCard } from "@/app/components/dashboard/DashboardStatCard";
 import { StatCardSkeletonGrid } from "@/app/components/ui/Skeletons";
 import { AsyncState, EmptyState } from "@/app/components/ui/AsyncState";
 import { useAuthStore, useCrisisStore } from "@/app/store/crisisStore";
 import { useGuideStore } from "@/app/store/guideStore";
-import { formatTourRoute } from "@/lib/tourGroupRoute";
+import { useRouteAdvisoryStore } from "@/app/store/routeAdvisoryStore";
+import { RouteListCard } from "@/app/components/routes/RouteListCard";
+import { RouteDetailModal } from "@/app/components/routes/RouteDetailModal";
+import { buildRouteCatalog } from "@/lib/routesUtils";
+import { formatTourRoute, getRelevantRouteAdvisoriesForGroup } from "@/lib/tourGroupRoute";
 import { iconSize, statGrid, typography } from "@/lib/designSystem";
+import { ROLE_INTERFACE } from "@/lib/roleInterfaceCopy";
+import { RoleContextBanner } from "@/app/components/dashboard/RoleContextBanner";
 
 export default function GuideCrisisHubPage() {
   const { user } = useAuthStore();
@@ -26,6 +34,8 @@ export default function GuideCrisisHubPage() {
     resetGuideScope,
     loading: guideLoading,
   } = useGuideStore();
+  const { advisories, fetchAdvisories } = useRouteAdvisoryStore();
+  const [selectedRoute, setSelectedRoute] = useState(null);
 
   useEffect(() => {
     if (!user?.id) return;
@@ -33,7 +43,8 @@ export default function GuideCrisisHubPage() {
     fetchTourGroups(user.id);
     fetchGuideIncidents(user.id);
     fetchAlerts();
-  }, [user?.id, resetGuideScope, fetchTourGroups, fetchGuideIncidents, fetchAlerts]);
+    fetchAdvisories();
+  }, [user?.id, resetGuideScope, fetchTourGroups, fetchGuideIncidents, fetchAlerts, fetchAdvisories]);
 
   const activeAlerts = alerts.filter((a) => a.status === "Active" && a.is_public);
   const criticalAlerts = activeAlerts.filter((a) => a.severity === "Critical");
@@ -56,28 +67,40 @@ export default function GuideCrisisHubPage() {
     });
   }, [activeAlerts, guideDestinations]);
 
+  const catalog = useMemo(() => buildRouteCatalog(advisories), [advisories]);
+
+  const relevantRouteAdvisories = useMemo(() => {
+    const ids = new Set();
+    activeGroups.forEach((group) => {
+      getRelevantRouteAdvisoriesForGroup(catalog.published, group).forEach((a) => ids.add(a.id));
+    });
+    return [...catalog.active, ...catalog.affected, ...catalog.alternative].filter((r) => ids.has(r.advisoryId));
+  }, [activeGroups, catalog.published, catalog.active, catalog.affected, catalog.alternative]);
+
   const statsLoading = alertsLoading || guideLoading;
 
   return (
     <div className="space-y-6 text-left">
       <DashboardPageHeader
-        title="Crisis Hub"
-        description="Operational crisis overview for your tour groups and assigned tourists."
+        title={ROLE_INTERFACE.guide.crisis.title}
+        description={ROLE_INTERFACE.guide.crisis.description}
         action={
           <Link
-            href="/guide/alerts"
-            className="flex items-center gap-2 bg-red-600 text-white px-5 py-2.5 rounded-2xl font-black uppercase text-xs tracking-widest hover:bg-red-700 transition-colors"
+            href="/guide/routes"
+            className="flex items-center gap-2 bg-blue-600 text-white px-5 py-2.5 rounded-2xl font-black uppercase text-xs tracking-widest hover:bg-blue-700 transition-colors"
           >
-            <Bell size={16} /> All Advisories
+            <Route size={16} /> Roads & Travel
           </Link>
         }
       />
+
+      <RoleContextBanner helper={ROLE_INTERFACE.guide.crisis.helper} tone="info" />
 
       {statsLoading ? (
         <StatCardSkeletonGrid count={4} className={statGrid.dashboard} />
       ) : (
         <div className={statGrid.dashboard}>
-          <DashboardStatCard label="Active Alerts" value={activeAlerts.length} icon={<Bell size={iconSize.stat} />} accent="red" href="/guide/alerts" hrefLabel="View" />
+          <DashboardStatCard label="Active Alerts" value={activeAlerts.length} icon={<Bell size={iconSize.stat} />} accent="red" href="/guide/crisis" hrefLabel="View" />
           <DashboardStatCard label="Critical" value={criticalAlerts.length} icon={<AlertTriangle size={iconSize.stat} />} accent="red" />
           <DashboardStatCard label="Your Tourists" value={totalTourists} icon={<Users size={iconSize.stat} />} accent="blue" href="/guide/groups" hrefLabel="Groups" />
           <DashboardStatCard label="Open Reports" value={openIncidents.length} icon={<ShieldCheck size={iconSize.stat} />} accent="orange" href="/guide/reports" hrefLabel="Reports" />
@@ -98,13 +121,37 @@ export default function GuideCrisisHubPage() {
         </Card>
       )}
 
+      {relevantRouteAdvisories.length > 0 && (
+        <Card className="p-5 bg-orange-50 border-orange-200">
+          <div className="flex items-start justify-between gap-4 mb-4">
+            <div className="flex items-start gap-4">
+              <Navigation className="text-orange-600 shrink-0" size={iconSize.section} />
+              <div>
+                <p className="text-xs font-black uppercase text-orange-600 tracking-widest mb-1">Route Advisories for Your Groups</p>
+                <p className="text-sm text-orange-800 font-medium">
+                  {relevantRouteAdvisories.length} route{relevantRouteAdvisories.length > 1 ? "s" : ""} affecting your active tour groups. Review alternatives before travel.
+                </p>
+              </div>
+            </div>
+            <Link href="/guide/routes" className="text-[10px] font-black uppercase text-blue-600 hover:underline shrink-0">
+              View all routes
+            </Link>
+          </div>
+          <div className="space-y-3">
+            {relevantRouteAdvisories.slice(0, 3).map((route) => (
+              <RouteListCard key={route.id} route={route} onSelect={setSelectedRoute} />
+            ))}
+          </div>
+        </Card>
+      )}
+
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <section>
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-sm font-black uppercase tracking-widest text-zinc-400">
               Alerts Affecting Your Destinations
             </h2>
-            <Link href="/guide/alerts" className="text-[10px] font-black uppercase text-blue-600 hover:underline">
+            <Link href="/guide/crisis" className="text-[10px] font-black uppercase text-blue-600 hover:underline">
               View all
             </Link>
           </div>
@@ -123,15 +170,11 @@ export default function GuideCrisisHubPage() {
           >
             <div className="space-y-3">
               {relevantAlerts.slice(0, 5).map((alert) => (
-                <Card
+                <OutlinedCard
                   key={alert.id}
-                  className={`p-5 border-l-4 ${
-                    alert.severity === "Critical"
-                      ? "border-red-600 bg-red-50/30"
-                      : alert.severity === "High"
-                        ? "border-orange-500"
-                        : "border-blue-500"
-                  }`}
+                  variant="severity"
+                  severity={alert.severity}
+                  padding={outlinedCard.statPadding}
                 >
                   <div className="flex items-start justify-between gap-3">
                     <div>
@@ -154,7 +197,7 @@ export default function GuideCrisisHubPage() {
                       </div>
                     </div>
                   </div>
-                </Card>
+                </OutlinedCard>
               ))}
             </div>
           </AsyncState>
@@ -216,6 +259,14 @@ export default function GuideCrisisHubPage() {
           )}
         </section>
       </div>
+
+      <RouteDetailModal
+        open={!!selectedRoute}
+        route={selectedRoute}
+        catalog={catalog}
+        onClose={() => setSelectedRoute(null)}
+        onSelectRoute={setSelectedRoute}
+      />
     </div>
   );
 }

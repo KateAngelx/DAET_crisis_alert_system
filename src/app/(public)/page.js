@@ -3,11 +3,13 @@ import React, { useEffect, useState, useLayoutEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
-  ArrowRight, ShieldCheck, Bell, MapPin, PhoneCall, Radio, FileText, Users
+  ArrowRight, ShieldCheck, Bell, MapPin, PhoneCall, Radio, FileText, Users, Navigation
 } from "lucide-react";
 import { useCrisisStore, useAuthStore } from "@/app/store/crisisStore";
 import { useNotificationStore } from "@/app/store/notificationStore";
 import { HeroStatSkeleton } from "@/app/components/ui/Skeletons";
+import { DashboardStatCard } from "@/app/components/dashboard/DashboardStatCard";
+import { OutlinedCard } from "@/app/components/ui/OutlinedCard";
 import { typography, iconSize, statGrid } from "@/lib/designSystem";
 
 export default function Home() {
@@ -183,21 +185,30 @@ export default function Home() {
           <div className="max-w-7xl mx-auto px-6">
             <h3 className={`${typography.cardTitle} mb-4`}>Your Current Alert Status</h3>
             <div className={statGrid.dashboardThree}>
-              <Link href="/crisis/alerts" className="p-4 sm:p-6 rounded-2xl border border-zinc-100 bg-zinc-50 hover:border-blue-200 hover:shadow-md transition-all no-underline min-w-0">
-                <p className={`${typography.statLabel} text-zinc-400 mb-1`}>Active Alerts</p>
-                <p className={`${typography.statValue} text-red-600 mb-2`}>{activeAlerts.length}</p>
-                <p className={`${typography.bodySm} font-bold text-blue-600 uppercase tracking-widest`}>View Advisories →</p>
-              </Link>
-              <Link href="/crisis/reports" className="p-4 sm:p-6 rounded-2xl border border-zinc-100 bg-zinc-50 hover:border-blue-200 hover:shadow-md transition-all no-underline min-w-0">
-                <p className={`${typography.statLabel} text-zinc-400 mb-1`}>My Reports</p>
-                <p className={`${typography.statValue} text-blue-600 mb-2`}>Track</p>
-                <p className={`${typography.bodySm} font-bold text-blue-600 uppercase tracking-widest`}>View Reports →</p>
-              </Link>
-              <Link href="/notifications" className="p-4 sm:p-6 rounded-2xl border border-zinc-100 bg-zinc-50 hover:border-blue-200 hover:shadow-md transition-all no-underline min-w-0">
-                <p className={`${typography.statLabel} text-zinc-400 mb-1`}>My Notifications</p>
-                <p className={`${typography.statValue} text-purple-600 mb-2`}>{unreadCount > 0 ? unreadCount : '—'}</p>
-                <p className={`${typography.bodySm} font-bold text-blue-600 uppercase tracking-widest`}>Open Inbox →</p>
-              </Link>
+              <DashboardStatCard
+                label="Active Alerts"
+                value={activeAlerts.length}
+                accent="red"
+                href="/crisis"
+                hrefLabel="Open Crisis Hub"
+                footerLink
+              />
+              <DashboardStatCard
+                label="My Reports"
+                value="Track"
+                accent="blue"
+                href="/crisis/reports"
+                hrefLabel="View Reports"
+                footerLink
+              />
+              <DashboardStatCard
+                label="My Notifications"
+                value={unreadCount > 0 ? unreadCount : "—"}
+                accent="purple"
+                href="/notifications"
+                hrefLabel="Open Inbox"
+                footerLink
+              />
             </div>
           </div>
         </section>
@@ -224,18 +235,18 @@ export default function Home() {
             </Link>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-6">
             <ServiceCard
               title="Crisis Hub"
               icon={<ShieldCheck size={28} />}
-              desc="See active alerts with severity, location, time reported, and affected-area map."
+              desc="Active emergency alerts, affected-area map, safety instructions, and official LGU announcements."
               href="/crisis"
             />
             <ServiceCard
-              title="Safety Advisories"
-              icon={<Bell size={28} />}
-              desc="Read official announcements, safety instructions, and restricted or evacuation areas."
-              href="/crisis/alerts"
+              title="Roads & Travel"
+              icon={<Navigation size={28} />}
+              desc="Route status, detours, area hazards, and LGU-recommended paths on one map."
+              href="/routes"
             />
             <ServiceCard
               title="Incident Reporting"
@@ -269,25 +280,27 @@ export default function Home() {
 
 function ServiceCard({ title, desc, icon, href = "#" }) {
   return (
-    <Link 
-      href={href} 
-      className="p-8 rounded-[40px] border border-blue-600 bg-white shadow-xl hover:-translate-y-2 z-10 hover:shadow-blue-600/10 transition-all text-left flex flex-col h-full group"
+    <Link
+      href={href}
+      className="block no-underline min-w-0 group transition-all hover:-translate-y-2"
     >
-      <div className="p-4 rounded-2xl w-fit mb-6 bg-blue-600 text-white transition-colors">
-        {icon}
-      </div>
-      <h4 className="text-xl font-black uppercase mb-2 tracking-tight leading-none group-hover:text-blue-600 transition-colors">
-        {title}
-      </h4>
-      <p className="text-zinc-500 text-xs font-medium leading-relaxed mb-8 flex-1">
-        {desc}
-      </p>
-      <div className="flex items-center justify-between mt-auto">
-        <span className="text-[9px] font-black uppercase tracking-widest text-blue-600">
-          Open
-        </span>
-        <div className="size-2 bg-blue-600 rounded-full animate-pulse" />
-      </div>
+      <OutlinedCard accent="blue" padding="p-8" className="flex flex-col h-full group-hover:shadow-2xl">
+        <div className="p-4 rounded-2xl w-fit mb-6 bg-blue-600 text-white transition-colors">
+          {icon}
+        </div>
+        <h4 className="text-xl font-black uppercase mb-2 tracking-tight leading-none group-hover:text-blue-600 transition-colors">
+          {title}
+        </h4>
+        <p className="text-zinc-500 text-xs font-medium leading-relaxed mb-8 flex-1">
+          {desc}
+        </p>
+        <div className="flex items-center justify-between mt-auto">
+          <span className="text-[9px] font-black uppercase tracking-widest text-blue-600">
+            Open
+          </span>
+          <div className="size-2 bg-blue-600 rounded-full animate-pulse" />
+        </div>
+      </OutlinedCard>
     </Link>
   );
 }

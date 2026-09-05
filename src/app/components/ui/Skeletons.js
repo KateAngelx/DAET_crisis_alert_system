@@ -1,18 +1,19 @@
 import React from "react";
 import { Skeleton } from "@/app/components/ui/Skeleton";
 import { Card } from "@/app/components/ui/Card";
-import { statGrid, statCard } from "@/lib/designSystem";
+import { statGrid, statCard, outlinedCard } from "@/lib/designSystem";
+import { OutlinedCard } from "@/app/components/ui/OutlinedCard";
 
 export function StatCardSkeleton() {
   return (
-    <Card className={`${statCard.dashboard} border-zinc-100`}>
+    <OutlinedCard accent="zinc" className="border-zinc-200">
       <div className="flex items-start justify-between gap-2 mb-3 sm:mb-4">
         <Skeleton className="h-9 w-9 sm:h-10 sm:w-10 rounded-xl shrink-0" />
         <Skeleton className="h-3 w-10" />
       </div>
       <Skeleton className="h-2.5 w-20 sm:w-24 mb-2" />
       <Skeleton className="h-7 sm:h-8 w-12 sm:w-14" />
-    </Card>
+    </OutlinedCard>
   );
 }
 
@@ -52,14 +53,14 @@ export function HeroStatSkeleton() {
   );
 }
 
-export function PublicStatCardSkeleton({ count = 3 }) {
+export function PublicStatCardSkeleton({ count = 3, className = statGrid.public, compact = false }) {
   return (
-    <div className={statGrid.public}>
+    <div className={className}>
       {Array.from({ length: count }).map((_, i) => (
-        <Card key={i} className={`${statCard.public} border-zinc-100 rounded-3xl min-w-0`}>
-          <Skeleton className="h-8 sm:h-9 w-12 sm:w-14 mb-3 sm:mb-4" />
-          <Skeleton className="h-2.5 w-20 sm:w-24" />
-        </Card>
+        <OutlinedCard key={i} accent="zinc" compact={compact} className="border-zinc-200">
+          <Skeleton className={`h-2.5 w-16 sm:w-20 mb-2 ${compact ? "h-2 w-14" : ""}`} />
+          <Skeleton className={`h-7 sm:h-8 w-10 sm:w-12 ${compact ? "h-6 w-8" : ""}`} />
+        </OutlinedCard>
       ))}
     </div>
   );
@@ -67,7 +68,7 @@ export function PublicStatCardSkeleton({ count = 3 }) {
 
 export function AlertCardSkeleton() {
   return (
-    <Card className="p-6 border-l-[12px] border-l-zinc-200 rounded-3xl">
+    <OutlinedCard variant="accent" accent="zinc" padding={outlinedCard.alertPadding} className="border-zinc-200">
       <div className="space-y-3">
         <div className="flex gap-2">
           <Skeleton className="h-5 w-20" />
@@ -81,7 +82,7 @@ export function AlertCardSkeleton() {
           <Skeleton className="h-3 w-24" />
         </div>
       </div>
-    </Card>
+    </OutlinedCard>
   );
 }
 
@@ -92,6 +93,21 @@ export function AlertCardSkeletonList({ count = 3 }) {
         <AlertCardSkeleton key={i} />
       ))}
     </div>
+  );
+}
+
+export function NotificationItemSkeleton() {
+  return (
+    <OutlinedCard accent="zinc" padding={outlinedCard.notificationPadding} className="border-zinc-200">
+      <div className="flex items-start gap-3">
+        <Skeleton className="h-10 w-10 rounded-2xl shrink-0" />
+        <div className="flex-1 space-y-2">
+          <Skeleton className="h-4 w-3/4" />
+          <Skeleton className="h-3 w-full" />
+          <Skeleton className="h-3 w-1/3" />
+        </div>
+      </div>
+    </OutlinedCard>
   );
 }
 
@@ -116,25 +132,6 @@ export function AlertDetailSkeleton() {
         </div>
         <Skeleton className="h-24 rounded-2xl" />
         <Skeleton className="h-12 w-full rounded-2xl" />
-      </div>
-    </Card>
-  );
-}
-
-export function NotificationItemSkeleton() {
-  return (
-    <Card className="p-6 border-zinc-100">
-      <div className="flex items-start gap-3">
-        <Skeleton className="h-9 w-9 rounded-xl shrink-0" />
-        <div className="flex-1 space-y-2">
-          <div className="flex justify-between gap-2">
-            <Skeleton className="h-4 w-2/3" />
-            <Skeleton className="h-3 w-12" />
-          </div>
-          <Skeleton className="h-3 w-full" />
-          <Skeleton className="h-3 w-1/2" />
-          <Skeleton className="h-3 w-32 mt-1" />
-        </div>
       </div>
     </Card>
   );

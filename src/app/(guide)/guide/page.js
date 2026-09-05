@@ -1,23 +1,30 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import {
-  Users, Bell, AlertTriangle, FileText, ArrowRight, MapPin, Plus, Compass, ShieldCheck, Navigation,
+  Users, Bell, AlertTriangle, FileText, ArrowRight, Plus, Compass, ShieldCheck, Navigation, Route,
 } from "lucide-react";
 import { Card } from "@/app/components/ui/Card";
 import { DashboardPageHeader } from "@/app/components/dashboard/DashboardPageHeader";
 import { DashboardStatCard } from "@/app/components/dashboard/DashboardStatCard";
 import { DestinationButton, DestinationModal } from "@/app/components/tour/DestinationModal";
+import { RouteListCard } from "@/app/components/routes/RouteListCard";
+import { RouteDetailModal } from "@/app/components/routes/RouteDetailModal";
 import { StatCardSkeletonGrid } from "@/app/components/ui/Skeletons";
 import { useAuthStore, useCrisisStore } from "@/app/store/crisisStore";
 import { useGuideStore } from "@/app/store/guideStore";
-import { formatTourRoute } from "@/lib/tourGroupRoute";
+import { useRouteAdvisoryStore } from "@/app/store/routeAdvisoryStore";
+import { buildRouteCatalog } from "@/lib/routesUtils";
+import { formatTourRoute, getRelevantRouteAdvisoriesForGroup } from "@/lib/tourGroupRoute";
 import { iconSize, statGrid, typography } from "@/lib/designSystem";
+import { ROLE_INTERFACE } from "@/lib/roleInterfaceCopy";
+import { RoleContextBanner } from "@/app/components/dashboard/RoleContextBanner";
 
 export default function GuideDashboard() {
   const { user } = useAuthStore();
   const { alerts, fetchAlerts, loading: alertsLoading } = useCrisisStore();
+  const { advisories, fetchAdvisories } = useRouteAdvisoryStore();
   const {
     tourGroups,
     guideIncidents,
@@ -31,10 +38,27 @@ export default function GuideDashboard() {
   } = useGuideStore();
 
   const [modalGroup, setModalGroup] = useState(null);
+  const [selectedRoute, setSelectedRoute] = useState(null);
 
   const statsLoading = alertsLoading || guideLoading;
 
   const activeGroups = tourGroups.filter((g) => g.status === "active");
+  const catalog = useMemo(() => buildRouteCatalog(advisories), [advisories]);
+
+  const groupRouteAdvisories = useMemo(() => {
+    const map = new Map();
+    activeGroups.forEach((group) => {
+      const relevant = getRelevantRouteAdvisoriesForGroup(catalog.published, group);
+      if (relevant.length > 0) map.set(group.id, { group, advisories: relevant });
+    });
+    return map;
+  }, [activeGroups, catalog.published]);
+
+  const relevantRouteItems = useMemo(() => {
+    const ids = new Set();
+    groupRouteAdvisories.forEach(({ advisories: items }) => items.forEach((a) => ids.add(a.id)));
+    return [...catalog.affected, ...catalog.active, ...catalog.alternative].filter((r) => ids.has(r.advisoryId));
+  }, [groupRouteAdvisories, catalog.affected, catalog.active, catalog.alternative]);
 
   useEffect(() => {
     if (!user?.id) return;
@@ -42,8 +66,8 @@ export default function GuideDashboard() {
     fetchTourGroups(user.id);
     fetchGuideIncidents(user.id);
     fetchAlerts();
-
-  }, [user?.id, resetGuideScope, fetchTourGroups, fetchGuideIncidents, fetchAlerts]);
+    fetchAdvisories();
+  }, [user?.id, resetGuideScope, fetchTourGroups, fetchGuideIncidents, fetchAlerts, fetchAdvisories]);
 
   const activeAlerts = alerts.filter((a) => a.status === "Active" && a.is_public);
   const criticalAlerts = activeAlerts.filter((a) => a.severity === "Critical");
@@ -61,7 +85,7 @@ export default function GuideDashboard() {
     <div className="space-y-6 text-left">
       <DashboardPageHeader
         title={`Welcome, ${user?.name || "Guide"}`}
-        description="Manage your tour groups, monitor assigned tourists, and stay updated on crisis alerts."
+        description={ROLE_INTERFACE.guide.dashboard.description}
         action={
           <Link
             href="/guide/groups"
@@ -72,13 +96,15 @@ export default function GuideDashboard() {
         }
       />
 
+      <RoleContextBanner helper={ROLE_INTERFACE.guide.dashboard.helper} tone="info" />
+
       {statsLoading ? (
         <StatCardSkeletonGrid count={4} className={statGrid.dashboard} />
       ) : (
         <div className={statGrid.dashboard}>
           <DashboardStatCard label="Active Tour Groups" value={activeGroups.length} icon={<Compass size={iconSize.stat} />} accent="purple" href="/guide/groups" hrefLabel="Manage" />
           <DashboardStatCard label="Tourists in Groups" value={totalTourists} icon={<Users size={iconSize.stat} />} accent="blue" href="/guide/tourists" hrefLabel="Manage" />
-          <DashboardStatCard label="Active Alerts" value={activeAlerts.length} icon={<Bell size={iconSize.stat} />} accent="red" href="/guide/alerts" hrefLabel="View" />
+          <DashboardStatCard label="Active Alerts" value={activeAlerts.length} icon={<Bell size={iconSize.stat} />} accent="red" href="/guide/crisis" hrefLabel="View" />
           <DashboardStatCard label="Open Reports" value={openIncidents.length} icon={<FileText size={iconSize.stat} />} accent="orange" href="/guide/reports" hrefLabel="View" />
         </div>
       )}
@@ -92,10 +118,55 @@ export default function GuideDashboard() {
               <p className="text-sm text-red-800 font-medium">
                 {criticalAlerts.length} critical alert{criticalAlerts.length > 1 ? "s" : ""} active. Check on tourists in your tour groups.
               </p>
-              <Link href="/guide/alerts" className="inline-flex items-center gap-2 mt-3 text-[10px] font-black uppercase text-red-600 tracking-widest hover:underline">
+              <Link href="/guide/crisis" className="inline-flex items-center gap-2 mt-3 text-[10px] font-black uppercase text-red-600 tracking-widest hover:underline">
                 View Advisories <ArrowRight size={14} />
               </Link>
             </div>
+          </div>
+        </Card>
+      )}
+
+      {relevantRouteItems.length > 0 && (
+        <Card className="p-5 bg-orange-50 border-orange-200">
+          <div className="flex items-start justify-between gap-4 mb-4">
+            <div className="flex items-start gap-4">
+              <Route className="text-orange-600 shrink-0" size={iconSize.section} />
+              <div>
+                <p className="text-xs font-black uppercase text-orange-600 tracking-widest mb-1">
+                  Routes Affecting Your Groups
+                </p>
+                <p className="text-sm text-orange-900 font-medium">
+                  {relevantRouteItems.length} published route advisories match your active tour group paths.
+                  Review detours before departure and share updates with tourists.
+                </p>
+              </div>
+            </div>
+            <Link
+              href="/guide/routes"
+              className="text-[10px] font-black uppercase text-blue-600 hover:underline shrink-0"
+            >
+              All routes
+            </Link>
+          </div>
+
+          {activeGroups.length > 0 && (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-2 mb-4">
+              {[...groupRouteAdvisories.values()].map(({ group, advisories: items }) => (
+                <div key={group.id} className="p-3 bg-white/80 rounded-xl border border-orange-100 text-sm">
+                  <p className="font-black text-zinc-900 uppercase text-xs">{group.name}</p>
+                  <p className="text-blue-600 text-xs font-medium mt-0.5">{formatTourRoute(group)}</p>
+                  <p className="text-[10px] font-black uppercase text-orange-700 mt-1">
+                    {items.length} advis{items.length > 1 ? "ories" : "ory"} on this path
+                  </p>
+                </div>
+              ))}
+            </div>
+          )}
+
+          <div className="space-y-3">
+            {relevantRouteItems.slice(0, 3).map((route) => (
+              <RouteListCard key={route.id} route={route} onSelect={setSelectedRoute} />
+            ))}
           </div>
         </Card>
       )}
@@ -214,12 +285,20 @@ export default function GuideDashboard() {
         guide={user ? { full_name: user.name, phone: user.phone, email: user.email } : null}
         members={groupMembers}
         alerts={alerts}
+        routeAdvisories={advisories}
         editable
         onSave={async (updates) => {
           const result = await updateTourGroupRoute(modalGroup.id, user.id, updates);
           if (result.success) setModalGroup(result.group);
           return result;
         }}
+      />
+      <RouteDetailModal
+        open={!!selectedRoute}
+        route={selectedRoute}
+        catalog={catalog}
+        onClose={() => setSelectedRoute(null)}
+        onSelectRoute={setSelectedRoute}
       />
     </div>
   );

@@ -7,6 +7,8 @@ import {
 } from 'lucide-react';
 import { Card } from '@/app/components/ui/Card';
 import { DashboardPageHeader } from '@/app/components/dashboard/DashboardPageHeader';
+import { RoleContextBanner } from '@/app/components/dashboard/RoleContextBanner';
+import { ROLE_INTERFACE } from '@/lib/roleInterfaceCopy';
 import { useIncidentStore } from '@/app/store/incidentStore';
 import { useGuideStore } from '@/app/store/guideStore';
 import { useAuthStore } from '@/app/store/crisisStore';
@@ -68,9 +70,10 @@ export default function AdminIncidentsPage() {
   return (
     <div className="space-y-6 text-left">
       <DashboardPageHeader
-        title="Incident Reports"
-        description="Review tourist-submitted reports. Each report shows category, severity, location, time submitted, and current response status."
+        title={ROLE_INTERFACE.admin.incidents.title}
+        description={ROLE_INTERFACE.admin.incidents.description}
       />
+      <RoleContextBanner helper={ROLE_INTERFACE.admin.incidents.helper} tone="info" />
 
       {loading ? (
         <IncidentStatSkeleton count={7} />

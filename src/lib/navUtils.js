@@ -4,8 +4,8 @@
 export function isPublicNavActive(pathname, href) {
   if (href === "/") return pathname === "/";
   if (href === "/crisis") return pathname === "/crisis";
-  if (href === "/crisis/alerts") {
-    return pathname === "/crisis/alerts" || pathname.startsWith("/crisis/alerts/");
+  if (href === "/routes") {
+    return pathname === "/routes" || pathname.startsWith("/routes/");
   }
   if (href === "/crisis/reports") {
     return pathname === "/crisis/reports" || pathname.startsWith("/crisis/reports/");

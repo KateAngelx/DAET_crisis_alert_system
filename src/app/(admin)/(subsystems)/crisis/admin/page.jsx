@@ -1,6 +1,9 @@
 "use client";
 import React, { useState, useMemo, useEffect } from "react";
+import Link from "next/link";
 import { useCrisisStore } from "@/app/store/crisisStore";
+import { useDangerousLocationStore } from "@/app/store/dangerousLocationStore";
+import { useRouteAdvisoryStore } from "@/app/store/routeAdvisoryStore";
 import { notifyTouristsOfCrisisAlert } from "@/lib/notificationService";
 import { Skeleton } from "@/app/components/ui/Skeleton";
 import { Card } from "@/app/components/ui/Card";
@@ -12,9 +15,15 @@ import {
   AlertTriangle, Cloud, Heart, Shield, Info, MapPin, Search, CheckCircle, 
   Radio, X, BellRing, FileText, ChevronLeft, ChevronRight,
   Trash2, Edit3, Eye,
-  Mail, MessageSquare, Smartphone, Map, Plus 
+  Mail, MessageSquare, Smartphone, Map, Plus, ArrowRight, Route
 } from "lucide-react";
-import { iconSize, statGrid, typography } from "@/lib/designSystem";
+import { iconSize, statGrid, typography, getSeverityOutline, outlinedCard } from "@/lib/designSystem";
+import { ROLE_INTERFACE } from "@/lib/roleInterfaceCopy";
+import { RoleContextBanner } from "@/app/components/dashboard/RoleContextBanner";
+import { geocodeLocation } from "@/lib/geocodeLocation";
+import { createCategoryPinIcon, getAlertPinCategory } from "@/lib/mapPinUtils";
+import { CrisisHubMap } from "@/app/components/maps/CrisisHubMap";
+import { OutlinedCard } from "@/app/components/ui/OutlinedCard";
 import dynamic from 'next/dynamic';
 import "leaflet/dist/leaflet.css";
 
@@ -36,6 +45,8 @@ const ChangeMapView = dynamic(() => Promise.resolve(({ center }) => {
 
 export default function CrisisAdminPage() {
   const { alerts, addAlert, updateAlert, updateAlertStatus, fetchAlerts, deleteAlert, totalUsers, fetchTotalUsers, loading, error } = useCrisisStore();
+  const { warnings, fetchWarnings } = useDangerousLocationStore();
+  const { advisories, fetchAdvisories } = useRouteAdvisoryStore();
   
   const [mounted, setMounted] = useState(false);
   const [showToast, setShowToast] = useState(false);
@@ -59,6 +70,7 @@ export default function CrisisAdminPage() {
 
   const [formData, setFormData] = useState({
     title: "", message: "", type: "General", severity: "Low", location: "",
+    latitude: null, longitude: null,
     channels: { email: true, sms: true, app: true }
   });
 
@@ -70,6 +82,8 @@ export default function CrisisAdminPage() {
     setMounted(true);
     fetchAlerts(); 
     fetchTotalUsers();
+    fetchWarnings();
+    fetchAdvisories();
       
     if (typeof window !== 'undefined') {
         const L = require('leaflet');
@@ -84,16 +98,16 @@ export default function CrisisAdminPage() {
     return () => {
       setMounted(false);
     };
-  }, [fetchAlerts, fetchTotalUsers]);
+  }, [fetchAlerts, fetchTotalUsers, fetchWarnings, fetchAdvisories]);
 
   const findLocationOnMap = async () => {
     if (!formData.location) return;
     setIsSearchingLocation(true);
     try {
-      const response = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(formData.location + ", Daet, Philippines")}`);
-      const data = await response.json();
-      if (data && data.length > 0) {
-        setModalMapCenter([parseFloat(data[0].lat), parseFloat(data[0].lon)]);
+      const coords = await geocodeLocation(formData.location);
+      if (coords) {
+        setModalMapCenter(coords);
+        setFormData((prev) => ({ ...prev, latitude: coords[0], longitude: coords[1] }));
       }
     } catch (error) {
       console.error("Geocoding failed", error);
@@ -108,6 +122,11 @@ export default function CrisisAdminPage() {
       return () => clearTimeout(timer); 
     } 
   }, [showToast]);
+
+  const mapBlocked = showCreateModal || showConfirmModal || showResolveConfirm || isViewModalOpen || isEditModalOpen;
+  const activeAlerts = alerts.filter((a) => a.status === "Active");
+  const activeDangerWarnings = warnings.filter((w) => w.status === "Active");
+  const activeRouteAdvisories = advisories.filter((a) => a.status === "Active");
 
   const handleExportCSV = () => {
     const headers = ["Alert ID", "Timestamp", "Title", "Type", "Severity", "Location", "Status"];
@@ -138,7 +157,16 @@ export default function CrisisAdminPage() {
     setShowConfirmModal(false);
     setIsPublishing(true);
 
-    const result = await addAlert(formData);
+    let broadcastPayload = { ...formData };
+    if (broadcastPayload.latitude == null || broadcastPayload.longitude == null) {
+      const coords = await geocodeLocation(broadcastPayload.location);
+      if (coords) {
+        broadcastPayload = { ...broadcastPayload, latitude: coords[0], longitude: coords[1] };
+        setModalMapCenter(coords);
+      }
+    }
+
+    const result = await addAlert(broadcastPayload);
 
     if (result.success) {
       const notifyResult = result.alert?.id
@@ -146,8 +174,11 @@ export default function CrisisAdminPage() {
         : { success: false, error: "Alert saved but notification dispatch could not start." };
 
       if (notifyResult.success) {
+        const smsPart = notifyResult.smsQueued
+          ? `${notifyResult.smsQueued} SMS queued.`
+          : "No SMS queued (check phone numbers & SMS channel).";
         setToastMessage(
-          `Success: Alert broadcast. ${notifyResult.notified} tourist${notifyResult.notified === 1 ? "" : "s"} notified in real time.`
+          `Success: Alert broadcast. ${notifyResult.notified} user${notifyResult.notified === 1 ? "" : "s"} notified. ${smsPart}`
         );
       } else {
         setToastMessage(`Alert saved, but tourist notifications failed: ${notifyResult.error}`);
@@ -155,7 +186,7 @@ export default function CrisisAdminPage() {
 
       setShowToast(true);
       setShowCreateModal(false);
-      setFormData({ title: "", message: "", type: "General", severity: "Low", location: "", channels: { email: true, sms: true, app: true } });
+      setFormData({ title: "", message: "", type: "General", severity: "Low", location: "", latitude: null, longitude: null, channels: { email: true, sms: true, app: true } });
       setCurrentPage(1);
       await fetchAlerts();
     } else {
@@ -179,6 +210,8 @@ export default function CrisisAdminPage() {
       type: alert.type || "General",
       severity: alert.severity || "Low",
       location: alert.location || "",
+      latitude: alert.latitude ?? null,
+      longitude: alert.longitude ?? null,
       channels: alert.channels || { email: true, sms: true, app: true }
     });
     setIsEditModalOpen(true);
@@ -188,14 +221,23 @@ export default function CrisisAdminPage() {
     e.preventDefault();
     if (!selectedAlert) return;
 
-    const updatedPayload = {
+    let updatedPayload = {
       title: formData.title,
       message: formData.message,
       type: formData.type,
       severity: formData.severity,
       location: formData.location,
+      latitude: formData.latitude,
+      longitude: formData.longitude,
       channels: formData.channels
     };
+
+    if (updatedPayload.latitude == null || updatedPayload.longitude == null) {
+      const coords = await geocodeLocation(updatedPayload.location);
+      if (coords) {
+        updatedPayload = { ...updatedPayload, latitude: coords[0], longitude: coords[1] };
+      }
+    }
 
     const result = await updateAlert(selectedAlert.id, updatedPayload);
     
@@ -247,14 +289,7 @@ export default function CrisisAdminPage() {
     }
   };
 
-  const getSeverityStyles = (severity) => {
-    switch (severity) {
-      case "Critical": return "border-red-600 bg-red-50 dark:bg-red-950/20 text-red-700 dark:text-red-400 ring-red-600/20";
-      case "High": return "border-orange-500 bg-orange-50 dark:bg-orange-950/20 text-orange-700 dark:text-orange-400 ring-orange-600/20";
-      case "Medium": return "border-yellow-500 bg-yellow-50 dark:bg-yellow-950/20 text-yellow-700 dark:text-yellow-400 ring-yellow-600/20";
-      default: return "border-green-500 bg-green-50 dark:bg-green-950/20 text-green-700 dark:text-green-400 ring-green-600/20";
-    }
-  };
+  const getSeverityStyles = (severity) => getSeverityOutline(severity);
 
   const filteredAlerts = useMemo(() => {
     return alerts.filter((alert) => {
@@ -278,8 +313,8 @@ export default function CrisisAdminPage() {
     <>
       {/* 1. VIEW MODAL (DETAILED) */}
       {isViewModalOpen && selectedAlert && (
-        <div className="fixed inset-0 z-[200] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
-          <div className="bg-background rounded-3xl p-8 max-w-lg w-full border border-gray-200 dark:border-white/10 shadow-2xl overflow-y-auto max-h-[90vh] custom-scrollbar animate-in zoom-in-95 duration-200">
+        <div className="fixed inset-0 z-[2000] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+          <div className="relative z-[2001] bg-background rounded-3xl p-8 max-w-lg w-full border border-gray-200 dark:border-white/10 shadow-2xl overflow-y-auto max-h-[90vh] custom-scrollbar animate-in zoom-in-95 duration-200">
             <div className="flex justify-between items-start mb-6">
               <h2 className="text-2xl font-black uppercase tracking-tighter text-zinc-900 dark:text-white leading-none">Alert Summary</h2>
               <button onClick={() => setIsViewModalOpen(false)} className="p-2 hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded-full transition-colors"><X size={20}/></button>
@@ -323,8 +358,8 @@ export default function CrisisAdminPage() {
 
       {/* 2. EDIT MODAL (DETAILED) */}
       {isEditModalOpen && selectedAlert && (
-        <div className="fixed inset-0 z-[200] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
-          <div className="bg-background rounded-[40px] p-10 max-w-xl w-full border border-gray-200 dark:border-white/10 shadow-2xl animate-in zoom-in-95 duration-200">
+        <div className="fixed inset-0 z-[2000] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+          <div className="relative z-[2001] bg-background rounded-[40px] p-10 max-w-xl w-full border border-gray-200 dark:border-white/10 shadow-2xl animate-in zoom-in-95 duration-200">
             <div className="flex justify-between items-center mb-8">
               <h2 className="text-2xl font-black uppercase tracking-tighter">Edit Broadcast Details</h2>
               <button onClick={() => setIsEditModalOpen(false)}><X size={24}/></button>
@@ -356,13 +391,13 @@ export default function CrisisAdminPage() {
 
       {/* CREATE BROADCAST MODAL */}
       {showCreateModal && (
-        <div className="fixed inset-0 z-[150] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-300">
-           <div className="bg-background rounded-[40px] p-10 max-w-xl w-full border border-gray-200 dark:border-white/10 shadow-2xl overflow-y-auto max-h-[90vh] custom-scrollbar animate-in zoom-in-95 duration-300">
+        <div className="fixed inset-0 z-[2000] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-300">
+           <div className="relative z-[2001] bg-background rounded-[40px] p-10 max-w-xl w-full border border-gray-200 dark:border-white/10 shadow-2xl overflow-y-auto max-h-[90vh] custom-scrollbar animate-in zoom-in-95 duration-300">
               <div className="flex justify-between items-center mb-8 leading-none">
                  <h2 className="text-2xl font-black tracking-tight uppercase text-zinc-900 dark:text-white">Emergency Broadcast</h2>
                  <button onClick={() => setShowCreateModal(false)} className="p-2 hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded-full transition-colors"><X size={24}/></button>
               </div>
-              <div className="h-[180px] rounded-2xl overflow-hidden border border-gray-100 dark:border-white/10 shadow-inner relative z-0 mb-4">
+              <div className="leaflet-modal-map-shell h-[180px] rounded-2xl overflow-hidden border border-gray-100 dark:border-white/10 shadow-inner relative z-0 mb-4">
                 {mounted && showCreateModal && (
                    <MapContainer
                      key={`modal-map-${modalMapCenter.toString()}`}
@@ -372,17 +407,20 @@ export default function CrisisAdminPage() {
                      zoomControl={false}
                   >
                     <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" attribution='&copy; OpenStreetMap contributors' />
-                    <Marker position={modalMapCenter}>
+                    <Marker
+                      position={modalMapCenter}
+                      icon={createCategoryPinIcon(getAlertPinCategory({ type: formData.type, severity: formData.severity }))}
+                    >
                        <Popup><span className="text-xs font-black">Broadcast Target</span></Popup>
                     </Marker>
                     <ChangeMapView center={modalMapCenter} />
                   </MapContainer>
                 )}
-                <div className="absolute top-2 right-2 z-[1000] bg-white/90 dark:bg-zinc-900/90 px-2 py-1 rounded text-[8px] font-black uppercase shadow-sm border border-zinc-200 dark:border-white/10 text-zinc-500">Live Daet Map</div>
+                <div className="absolute top-2 right-2 z-[3] bg-white/90 dark:bg-zinc-900/90 px-2 py-1 rounded text-[8px] font-black uppercase shadow-sm border border-zinc-200 dark:border-white/10 text-zinc-500">Preview</div>
               </div>
               <form onSubmit={handleSubmitAttempt} className="space-y-5 font-sans">
                   <div className="flex gap-2">
-                    <input required className="flex-1 p-4 bg-zinc-50 border border-gray-100 rounded-xl font-bold text-sm outline-none focus:ring-2 focus:ring-blue-500 transition-all" placeholder="Affected Area (e.g. Bagasbas)" value={formData.location} onChange={e => setFormData({...formData, location: e.target.value})} />
+                    <input required className="flex-1 p-4 bg-zinc-50 border border-gray-100 rounded-xl font-bold text-sm outline-none focus:ring-2 focus:ring-blue-500 transition-all" placeholder="Affected Area (e.g. Bagasbas)" value={formData.location} onChange={e => setFormData({...formData, location: e.target.value, latitude: null, longitude: null})} />
                     <button type="button" onClick={findLocationOnMap} className="p-4 bg-zinc-900 text-white rounded-xl hover:bg-zinc-800 transition-all flex items-center justify-center">
                         {isSearchingLocation ? <div className="size-4 border-2 border-white/20 border-t-white rounded-full animate-spin" /> : <Search size={20}/>}
                     </button>
@@ -411,23 +449,19 @@ export default function CrisisAdminPage() {
 
       <div className="space-y-6 text-left">
             <DashboardPageHeader
-              title="Crisis Command Center"
-              description="Issue and monitor emergency alerts for Daet. View active alert count, affected areas, incident status, and alert history."
+              title={ROLE_INTERFACE.admin.commandCenter.title}
+              description={ROLE_INTERFACE.admin.commandCenter.description}
               action={
-                <div className="flex flex-wrap items-center gap-3">
-                  <button
-                    onClick={() => setShowCreateModal(true)}
-                    className="flex items-center gap-2 bg-red-600 hover:bg-red-700 text-white px-5 py-2.5 rounded-2xl font-black uppercase text-xs tracking-widest transition-all active:scale-95"
-                  >
-                    <Plus size={18} /> New Broadcast
-                  </button>
-                  <div className="flex items-center gap-2 bg-green-50 text-green-700 px-4 py-2 rounded-2xl border border-green-100">
-                    <div className="size-2 bg-green-500 rounded-full animate-pulse" />
-                    <span className="text-[10px] font-black uppercase tracking-widest">Alerts Active</span>
-                  </div>
-                </div>
+                <button
+                  onClick={() => setShowCreateModal(true)}
+                  className="flex items-center gap-2 bg-red-600 hover:bg-red-700 text-white px-5 py-2.5 rounded-2xl font-black uppercase text-xs tracking-widest transition-all active:scale-95"
+                >
+                  <Plus size={18} /> New Broadcast
+                </button>
               }
             />
+
+            <RoleContextBanner helper={ROLE_INTERFACE.admin.commandCenter.helper} tone="info" />
 
             {error && (
               <ErrorState message={error} onRetry={fetchAlerts} title="Could not load alerts" />
@@ -445,10 +479,32 @@ export default function CrisisAdminPage() {
                   <DashboardStatCard label="Total Users" value={totalUsers.toLocaleString()} icon={<Info size={iconSize.stat} />} accent="blue" badge="Live" />
                   <DashboardStatCard label="Active Alerts" value={alerts.filter(a => a.status === 'Active').length} icon={<Radio size={iconSize.stat} />} accent="red" />
                   <DashboardStatCard label="Resolved Alerts" value={alerts.filter(a => a.status === 'Resolved').length} icon={<CheckCircle size={iconSize.stat} />} accent="green" />
-                  <DashboardStatCard label="Critical Alerts" value={alerts.filter(a => a.severity === 'Critical' && a.status === 'Active').length} icon={<AlertTriangle size={iconSize.stat} />} accent="purple" />
+                  <DashboardStatCard label="Critical Alerts" value={alerts.filter(a => a.severity === 'Critical' && a.status === 'Active').length} icon={<AlertTriangle size={iconSize.stat} />} accent="red" />
                 </>
               )}
             </div>
+
+            <Card className="p-5 border-zinc-100 bg-blue-50/50">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                <div className="flex items-start gap-3">
+                  <Route className="text-blue-600 shrink-0" size={22} />
+                  <div>
+                    <p className="text-xs font-black uppercase text-blue-700 tracking-widest">Roads & Hazards</p>
+                    <p className="text-sm text-blue-900 font-medium mt-1">
+                      {activeRouteAdvisories.length} active route{activeRouteAdvisories.length === 1 ? "" : "s"},{" "}
+                      {activeDangerWarnings.length} area hazard{activeDangerWarnings.length === 1 ? "" : "s"}.
+                      Manage routes and point hazards in one place.
+                    </p>
+                  </div>
+                </div>
+                <Link
+                  href="/crisis/admin/routes"
+                  className="inline-flex items-center gap-2 bg-blue-600 text-white px-5 py-2.5 rounded-2xl font-black uppercase text-xs tracking-widest hover:bg-blue-700 shrink-0"
+                >
+                  Manage <ArrowRight size={14} />
+                </Link>
+              </div>
+            </Card>
 
             <div>
               <h2 className="text-sm font-black uppercase tracking-widest text-zinc-400 mb-4">Live Command Filters</h2>
@@ -487,7 +543,13 @@ export default function CrisisAdminPage() {
                     <AlertCardSkeletonList count={3} />
                   ) : filteredAlerts.length > 0 ? (
                     filteredAlerts.map((alert) => (
-                      <div key={alert.id} className={`p-6 rounded-2xl border-l-[10px] shadow-sm bg-background border border-gray-200 dark:border-white/10 ${getSeverityStyles(alert.severity)}`}>
+                      <OutlinedCard
+                        key={alert.id}
+                        variant="severity"
+                        severity={alert.severity}
+                        padding={outlinedCard.alertPadding}
+                        className="bg-background"
+                      >
                         <div className="flex justify-between items-start">
                           <div className="flex items-center gap-4">
                             <div className="p-3 bg-zinc-100 dark:bg-zinc-800 rounded-xl text-zinc-600 dark:text-zinc-400 leading-none">{getAlertIcon(alert.type)}</div>
@@ -503,7 +565,7 @@ export default function CrisisAdminPage() {
                           <div className="flex items-center gap-2 text-xs font-bold text-zinc-500 uppercase leading-none"><MapPin size={14} className="text-blue-500" /> {alert.location}</div>
                           <button onClick={() => handleResolveClick(alert)} className="px-4 py-2 bg-foreground text-background rounded-xl text-[10px] font-black uppercase hover:opacity-90 active:scale-95 transition-all leading-none shadow-sm font-sans">Resolve Incident</button>
                         </div>
-                      </div>
+                      </OutlinedCard>
                     ))
                   ) : (
                     <div className="py-20 text-center border-2 border-dashed border-zinc-200 rounded-3xl">
@@ -514,26 +576,19 @@ export default function CrisisAdminPage() {
                 </div>
               </div>
 
-              <div>
-                <h2 className="text-sm font-black uppercase tracking-widest text-zinc-400 mb-4">Situational Map</h2>
-                <Card className="overflow-hidden h-[500px] !p-0 border-zinc-100 relative z-0">
+              <div className={mapBlocked ? "pointer-events-none opacity-40" : ""}>
+                <h2 className="text-sm font-black uppercase tracking-widest text-zinc-400 mb-4">Alert Map</h2>
+                <Card className="overflow-hidden !p-0 border-zinc-100 relative z-0">
                   {loading ? (
-                    <MapSkeleton height="h-full" />
-                  ) : mounted && (
-                    <MapContainer
-                      key="modal-map-static"
-                      center={modalMapCenter}
-                      zoom={15}
-                      style={{ height: '100%', width: '100%' }}
-                      zoomControl={false}
-                    >
-                      <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" attribution='&copy; OpenStreetMap contributors' />
-                      {alerts.filter(a => a.status === "Active").map((alert, idx) => (
-                        <Marker key={alert.id} position={[DAET_CENTER[0] + (idx * 0.005), DAET_CENTER[1] + (idx * 0.005)]}>
-                          <Popup><div className="p-1 font-bold text-xs leading-tight font-sans text-black">{alert.title}<br/><span className="text-[10px] font-normal italic">{alert.location}</span></div></Popup>
-                        </Marker>
-                      ))}
-                    </MapContainer>
+                    <MapSkeleton height="h-[500px]" />
+                  ) : mounted && !mapBlocked ? (
+                    <CrisisHubMap
+                      alerts={activeAlerts}
+                      warnings={[]}
+                      heightClass="h-[500px]"
+                    />
+                  ) : (
+                    <div className="h-[500px] bg-zinc-50" />
                   )}
                 </Card>
               </div>
@@ -606,7 +661,7 @@ export default function CrisisAdminPage() {
 
       {/* CONFIRMATION MODALS */}
       {showResolveConfirm && selectedAlert && (
-        <div className="fixed inset-0 z-[250] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
+        <div className="fixed inset-0 z-[2000] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
           <div className="bg-background rounded-3xl p-8 max-w-sm w-full border border-gray-200 dark:border-white/10 text-center shadow-2xl">
             <CheckCircle className="text-green-600 mx-auto mb-4" size={32} />
             <h3 className="text-xl font-black mb-2 uppercase">Mark as Resolved?</h3>
@@ -619,7 +674,7 @@ export default function CrisisAdminPage() {
       )}
 
       {showConfirmModal && (
-        <div className="fixed inset-0 z-[250] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm">
+        <div className="fixed inset-0 z-[2000] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm">
           <div className="bg-background rounded-3xl p-8 max-w-sm w-full border border-gray-200 dark:border-white/10 text-center shadow-2xl">
             <AlertTriangle className="text-red-600 mx-auto mb-4" size={32} />
             <h3 className="text-xl font-black mb-8 uppercase tracking-tight">Confirm Broadcast?</h3>

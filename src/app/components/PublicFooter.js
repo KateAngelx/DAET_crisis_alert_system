@@ -25,10 +25,10 @@ export function PublicFooter() {
             <h3 className="font-black text-[10px] uppercase tracking-[0.2em] mb-6 text-zinc-500">Crisis Services</h3>
             <ul className="space-y-4 text-sm font-bold">
               <li><Link href="/crisis" className="text-zinc-400 hover:text-white transition-colors">Crisis Hub</Link></li>
-              <li><Link href="/crisis/alerts" className="text-zinc-400 hover:text-white transition-colors">Safety Advisories</Link></li>
+              <li><Link href="/routes" className="text-zinc-400 hover:text-white transition-colors">Roads & Travel</Link></li>
               <li><Link href="/crisis/reports" className="text-zinc-400 hover:text-white transition-colors">My Reports</Link></li>
               <li>
-                <Link href="/crisis/alerts" className="text-blue-400 hover:text-blue-300 transition-colors flex items-center gap-2">
+                <Link href="/crisis" className="text-blue-400 hover:text-blue-300 transition-colors flex items-center gap-2">
                   <span className="relative flex h-2 w-2">
                     <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-blue-400 opacity-75" />
                     <span className="relative inline-flex rounded-full h-2 w-2 bg-blue-500" />

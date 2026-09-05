@@ -8,10 +8,12 @@ import { DashboardPageHeader } from "@/app/components/dashboard/DashboardPageHea
 import { DestinationButton, DestinationModal } from "@/app/components/tour/DestinationModal";
 import { useAuthStore, useCrisisStore } from "@/app/store/crisisStore";
 import { useGuideStore } from "@/app/store/guideStore";
+import { useRouteAdvisoryStore } from "@/app/store/routeAdvisoryStore";
 import { StatCardSkeletonGrid } from "@/app/components/ui/Skeletons";
+import { DashboardStatCard } from "@/app/components/dashboard/DashboardStatCard";
 import { EmptyState } from "@/app/components/ui/AsyncState";
 import { formatTourRoute, EMPTY_ROUTE_FORM } from "@/lib/tourGroupRoute";
-import { typography, iconSize, statCard } from "@/lib/designSystem";
+import { typography, iconSize, statGrid } from "@/lib/designSystem";
 
 const STATUS_STYLES = {
   active: "bg-green-100 text-green-700",
@@ -22,6 +24,7 @@ const STATUS_STYLES = {
 export default function GuideTourGroupsPage() {
   const { user } = useAuthStore();
   const { alerts, fetchAlerts } = useCrisisStore();
+  const { advisories, fetchAdvisories } = useRouteAdvisoryStore();
   const {
     tourGroups,
     fetchTourGroups,
@@ -41,7 +44,8 @@ export default function GuideTourGroupsPage() {
   useEffect(() => {
     if (user?.id) fetchTourGroups(user.id);
     fetchAlerts();
-  }, [user?.id, fetchTourGroups, fetchAlerts]);
+    fetchAdvisories();
+  }, [user?.id, fetchTourGroups, fetchAlerts, fetchAdvisories]);
 
   const openDestination = async (group) => {
     setModalGroup(group);
@@ -100,14 +104,8 @@ export default function GuideTourGroupsPage() {
         <StatCardSkeletonGrid count={2} className="grid grid-cols-2 gap-3 sm:gap-4" />
       ) : (
         <div className="grid grid-cols-2 gap-3 sm:gap-4">
-          <Card className={`${statCard.dashboard} border-zinc-100 min-w-0`}>
-            <p className={`${typography.statLabel} text-zinc-400 mb-1`}>Active Groups</p>
-            <p className={`${typography.statValue} text-purple-600`}>{activeCount}</p>
-          </Card>
-          <Card className={`${statCard.dashboard} border-zinc-100 min-w-0`}>
-            <p className={`${typography.statLabel} text-zinc-400 mb-1`}>Total Tourists</p>
-            <p className={`${typography.statValue} text-blue-600`}>{totalMembers}</p>
-          </Card>
+          <DashboardStatCard label="Active Groups" value={activeCount} icon={<Compass size={iconSize.stat} />} accent="purple" />
+          <DashboardStatCard label="Total Tourists" value={totalMembers} icon={<Users size={iconSize.stat} />} accent="blue" />
         </div>
       )}
 
@@ -246,6 +244,7 @@ export default function GuideTourGroupsPage() {
         guide={user ? { full_name: user.name, phone: user.phone, email: user.email } : null}
         members={groupMembers}
         alerts={alerts}
+        routeAdvisories={advisories}
         editable
         onSave={async (updates) => {
           const result = await updateTourGroupRoute(modalGroup.id, user.id, updates);

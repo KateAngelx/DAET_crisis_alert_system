@@ -16,7 +16,13 @@ function getClient() {
     throw new Error(supabaseConfigError);
   }
   if (!client) {
-    client = createClient(supabaseUrl, supabaseAnonKey);
+    client = createClient(supabaseUrl, supabaseAnonKey, {
+      auth: {
+        autoRefreshToken: true,
+        persistSession: true,
+        detectSessionInUrl: true,
+      },
+    });
   }
   return client;
 }

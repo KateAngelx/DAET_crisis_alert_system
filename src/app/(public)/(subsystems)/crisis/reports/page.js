@@ -10,6 +10,8 @@ import { useIncidentStore } from "@/app/store/incidentStore";
 import { ReportIncidentModal } from "@/app/components/ReportIncidentModal";
 import { getStatusColor, getSeverityColor } from "@/lib/constants";
 import { InfoPageHero, PublicPageShell, PublicPageContent, publicLayout } from "@/app/components/InfoPageHero";
+import { RoleContextBanner } from "@/app/components/dashboard/RoleContextBanner";
+import { ROLE_INTERFACE } from "@/lib/roleInterfaceCopy";
 import { AsyncState, EmptyState } from "@/app/components/ui/AsyncState";
 import { ReportCardSkeletonList } from "@/app/components/ui/Skeletons";
 
@@ -66,11 +68,12 @@ function MyReportsContent() {
     <>
       <PublicPageShell>
         <InfoPageHero
-          title="My Reports"
-          description="View submitted incidents and track LGU response status."
+          title={ROLE_INTERFACE.public.reports.title}
+          description={ROLE_INTERFACE.public.reports.description}
         />
 
         <PublicPageContent>
+          <RoleContextBanner helper={ROLE_INTERFACE.public.reports.helper} tone="info" />
           <div className={publicLayout.stack}>
           <div className="flex flex-col sm:flex-row sm:items-center justify-end gap-4">
             <button

@@ -1,2 +1,0 @@
-{"sessionId":"ee1adc","location":"verify:convert","message":"channelsToDb output","data":{"uiChannels":{"email":true,"sms":true,"app":true},"dbChannels":["email","sms","web"],"isArray":true},"timestamp":1788593936038,"runId":"post-fix-verify"}
-{"sessionId":"ee1adc","location":"verify:insert","message":"insert with converted channels","data":{"error":"new row violates row-level security policy for table \"crisis_alerts\"","success":false},"timestamp":1788593940368,"runId":"post-fix-verify"}

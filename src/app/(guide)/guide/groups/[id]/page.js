@@ -9,6 +9,7 @@ import { Card } from "@/app/components/ui/Card";
 import { DestinationButton, DestinationModal } from "@/app/components/tour/DestinationModal";
 import { useAuthStore, useCrisisStore } from "@/app/store/crisisStore";
 import { useGuideStore } from "@/app/store/guideStore";
+import { useRouteAdvisoryStore } from "@/app/store/routeAdvisoryStore";
 import { TouristCardSkeleton } from "@/app/components/ui/Skeletons";
 import { EmptyState } from "@/app/components/ui/AsyncState";
 import { formatTourRoute } from "@/lib/tourGroupRoute";
@@ -18,6 +19,7 @@ export default function TourGroupDetailPage({ params }) {
   const { id } = React.use(params);
   const { user } = useAuthStore();
   const { alerts, fetchAlerts } = useCrisisStore();
+  const { advisories, fetchAdvisories } = useRouteAdvisoryStore();
   const {
     activeGroup,
     groupMembers,
@@ -46,7 +48,8 @@ export default function TourGroupDetailPage({ params }) {
   useEffect(() => {
     loadData();
     fetchAlerts();
-  }, [id, user?.id, fetchAlerts]);
+    fetchAdvisories();
+  }, [id, user?.id, fetchAlerts, fetchAdvisories]);
 
   const handleRemove = async (assignmentId) => {
     if (!window.confirm("Remove this tourist from the tour group?")) return;
@@ -223,6 +226,7 @@ export default function TourGroupDetailPage({ params }) {
         guide={activeGroup.guide || (user ? { full_name: user.name, phone: user.phone, email: user.email } : null)}
         members={groupMembers}
         alerts={alerts}
+        routeAdvisories={advisories}
         editable
         onSave={async (updates) => {
           const result = await updateTourGroupRoute(id, user.id, updates);

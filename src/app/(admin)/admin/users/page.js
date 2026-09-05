@@ -6,6 +6,8 @@ import { useCrisisStore, useAuthStore } from "@/app/store/crisisStore";
 import { User, Shield, Phone, Globe, Hash, Loader2, CheckCircle, AlertCircle } from "lucide-react";
 import { Card } from "@/app/components/ui/Card";
 import { DashboardPageHeader } from "@/app/components/dashboard/DashboardPageHeader";
+import { RoleContextBanner } from "@/app/components/dashboard/RoleContextBanner";
+import { ROLE_INTERFACE } from "@/lib/roleInterfaceCopy";
 import { DashboardStatCard } from "@/app/components/dashboard/DashboardStatCard";
 import { StatCardSkeletonGrid, UserCardSkeletonList } from "@/app/components/ui/Skeletons";
 import { AsyncState, EmptyState } from "@/app/components/ui/AsyncState";
@@ -144,14 +146,15 @@ export default function AdminUsersPage() {
   return (
     <div className="space-y-6 text-left">
       <DashboardPageHeader
-        title="User Management"
-        description="View registered users and assign roles. New registrations default to Tourist; promote to Guide or Admin as needed."
+        title={ROLE_INTERFACE.admin.users.title}
+        description={ROLE_INTERFACE.admin.users.description}
         action={
           <div className="bg-blue-600 text-white px-4 py-2 rounded-2xl text-xs font-black uppercase tracking-widest">
             Total: {allUsers.length}
           </div>
         }
       />
+      <RoleContextBanner helper={ROLE_INTERFACE.admin.users.helper} tone="info" />
 
       {loading ? (
         <StatCardSkeletonGrid count={3} className={statGrid.dashboardThree} />

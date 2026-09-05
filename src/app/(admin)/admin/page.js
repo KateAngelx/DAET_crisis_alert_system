@@ -19,6 +19,7 @@ import { Card } from "@/app/components/ui/Card";
 import { DashboardPageHeader } from "@/app/components/dashboard/DashboardPageHeader";
 import { DashboardStatCard } from "@/app/components/dashboard/DashboardStatCard";
 import { useCrisisStore } from "@/app/store/crisisStore";
+import { useDangerousLocationStore } from "@/app/store/dangerousLocationStore";
 import { useIncidentStore } from "@/app/store/incidentStore";
 import {
   AlertCardSkeletonList,
@@ -28,6 +29,8 @@ import {
 import { ErrorState } from "@/app/components/ui/AsyncState";
 import { getSeverityColor, getStatusColor } from "@/lib/constants";
 import { iconSize, statGrid } from "@/lib/designSystem";
+import { ROLE_INTERFACE } from "@/lib/roleInterfaceCopy";
+import { RoleContextBanner } from "@/app/components/dashboard/RoleContextBanner";
 
 const PENDING_STATUSES = ["Submitted", "Received", "Under Review"];
 const ACTION_STATUSES = ["Assigned", "Responding"];
@@ -54,6 +57,7 @@ export default function AdminDashboard() {
     loading: alertsLoading,
     error: alertsError,
   } = useCrisisStore();
+  const { warnings, fetchWarnings } = useDangerousLocationStore();
   const {
     incidents,
     fetchIncidents,
@@ -67,13 +71,13 @@ export default function AdminDashboard() {
   useEffect(() => {
     let cancelled = false;
     (async () => {
-      await Promise.all([fetchAlerts(), fetchIncidents(), fetchTotalUsers(), fetchAllTourGroupsAdmin()]);
+      await Promise.all([fetchAlerts(), fetchIncidents(), fetchTotalUsers(), fetchAllTourGroupsAdmin(), fetchWarnings()]);
       if (!cancelled) setStatsReady(true);
     })();
     return () => {
       cancelled = true;
     };
-  }, [fetchAlerts, fetchIncidents, fetchTotalUsers, fetchAllTourGroupsAdmin]);
+  }, [fetchAlerts, fetchIncidents, fetchTotalUsers, fetchAllTourGroupsAdmin, fetchWarnings]);
 
   const isLoading = !statsReady || alertsLoading || incidentsLoading;
   const hasError = alertsError || incidentsError;
@@ -92,9 +96,14 @@ export default function AdminDashboard() {
       ["Resolved", "Closed"].includes(i.status)
     );
 
+    const activeDangerWarnings = warnings.filter((w) => w.status === "Active");
+
     const areaSet = new Set();
     activeAlerts.forEach((a) => {
       if (a.location?.trim()) areaSet.add(a.location.trim());
+    });
+    activeDangerWarnings.forEach((w) => {
+      if (w.dangerous_location?.trim()) areaSet.add(w.dangerous_location.trim());
     });
     openIncidents.forEach((i) => {
       if (i.location?.trim()) areaSet.add(i.location.trim());
@@ -115,6 +124,7 @@ export default function AdminDashboard() {
       activeAlerts,
       resolvedAlerts,
       urgentAlerts,
+      activeDangerWarnings,
       pendingReports,
       actionRequired,
       resolvedIncidents,
@@ -131,7 +141,7 @@ export default function AdminDashboard() {
         .slice(0, 5),
       incidentStats: getDashboardStats(),
     };
-  }, [alerts, incidents, getDashboardStats]);
+  }, [alerts, incidents, warnings, getDashboardStats]);
 
   const guideMonitoring = useMemo(() => {
     const guideMap = new Map();
@@ -157,7 +167,7 @@ export default function AdminDashboard() {
 
   const handleRetry = () => {
     setStatsReady(false);
-    Promise.all([fetchAlerts(), fetchIncidents(), fetchTotalUsers(), fetchAllTourGroupsAdmin()]).finally(() =>
+    Promise.all([fetchAlerts(), fetchIncidents(), fetchTotalUsers(), fetchAllTourGroupsAdmin(), fetchWarnings()]).finally(() =>
       setStatsReady(true)
     );
   };
@@ -165,8 +175,8 @@ export default function AdminDashboard() {
   return (
     <div className="space-y-6 text-left">
       <DashboardPageHeader
-        title="Crisis Operations Dashboard"
-        description="Live overview of active alerts, affected areas, and tourist incident reports for Daet."
+        title={ROLE_INTERFACE.admin.dashboard.title}
+        description={ROLE_INTERFACE.admin.dashboard.description}
         action={
           !isLoading && metrics.latestActivity ? (
             <div className="flex items-center gap-2 bg-zinc-50 text-zinc-600 px-4 py-2 rounded-2xl border border-zinc-100">
@@ -183,6 +193,8 @@ export default function AdminDashboard() {
           ) : null
         }
       />
+
+      <RoleContextBanner helper={ROLE_INTERFACE.admin.dashboard.helper} tone="info" />
 
       {hasError && !isLoading && (
         <ErrorState
@@ -236,6 +248,28 @@ export default function AdminDashboard() {
               hrefLabel="Respond"
             />
           </div>
+
+          {metrics.activeDangerWarnings.length > 0 && (
+            <Card className="p-5 bg-red-50 border-2 border-red-200">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                <div className="flex items-start gap-3">
+                  <AlertTriangle className="text-red-600 shrink-0" size={22} />
+                  <div>
+                    <p className="text-xs font-black uppercase text-red-700 tracking-widest">Active Area Hazards</p>
+                    <p className="text-sm text-red-800 font-medium mt-1">
+                      {metrics.activeDangerWarnings.length} unsafe area{metrics.activeDangerWarnings.length > 1 ? "s" : ""} with alternative routes published for tourists.
+                    </p>
+                  </div>
+                </div>
+                <Link
+                  href="/crisis/admin/routes?tab=areas"
+                  className="inline-flex items-center gap-2 bg-red-600 text-white px-5 py-2.5 rounded-2xl font-black uppercase text-xs tracking-widest hover:bg-red-700 shrink-0"
+                >
+                  Manage <ArrowRight size={14} />
+                </Link>
+              </div>
+            </Card>
+          )}
 
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             <Card className="p-5 border-zinc-100 lg:col-span-1">

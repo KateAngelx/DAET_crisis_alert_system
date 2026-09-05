@@ -90,3 +90,47 @@ body {
 .dashboard-shell {
   font-family: var(--font-geist-sans), Arial, Helvetica, sans-serif;
 }
+
+/* Keep Leaflet layers contained so modals/overlays stay on top */
+.leaflet-map-shell {
+  position: relative;
+  z-index: 0;
+  isolation: isolate;
+}
+
+.leaflet-map-shell .leaflet-container {
+  z-index: 0 !important;
+}
+
+.leaflet-map-shell .leaflet-pane,
+.leaflet-map-shell .leaflet-top,
+.leaflet-map-shell .leaflet-bottom,
+.leaflet-map-shell .leaflet-control {
+  z-index: 1 !important;
+}
+
+.leaflet-map-shell .leaflet-popup-pane {
+  z-index: 2 !important;
+}
+
+.leaflet-modal-map-shell {
+  position: relative;
+  z-index: 0;
+  isolation: isolate;
+  overflow: hidden;
+}
+
+.leaflet-modal-map-shell .leaflet-container {
+  z-index: 0 !important;
+}
+
+.leaflet-modal-map-shell .leaflet-pane,
+.leaflet-modal-map-shell .leaflet-top,
+.leaflet-modal-map-shell .leaflet-bottom,
+.leaflet-modal-map-shell .leaflet-control {
+  z-index: 1 !important;
+}
+
+.leaflet-modal-map-shell .leaflet-popup-pane {
+  z-index: 2 !important;
+}

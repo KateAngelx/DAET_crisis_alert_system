@@ -1,37 +1,20 @@
 import React from "react";
-import { Card } from "@/app/components/ui/Card";
-import { typography, statCard } from "@/lib/designSystem";
+import { OutlinedCard } from "@/app/components/ui/OutlinedCard";
+import { typography, getStatCardAccent } from "@/lib/designSystem";
 
-const ACCENT_VALUE = {
-  zinc: "text-zinc-900",
-  red: "text-red-600",
-  green: "text-green-600",
-  blue: "text-blue-600",
-};
+export function PublicStatCard({ value, label, accent = "blue", compact = false, className = "" }) {
+  const styles = getStatCardAccent(accent);
+  const labelClass = compact
+    ? `${typography.statLabel} text-[9px] sm:text-[10px] leading-tight tracking-wide`
+    : typography.statLabel;
+  const valueClass = compact
+    ? "text-xl sm:text-2xl font-black leading-none"
+    : typography.statValue;
 
-const ACCENT_CARD = {
-  zinc: "bg-zinc-50 border-zinc-200",
-  red: "bg-red-50 border-red-100",
-  green: "bg-green-50 border-green-100",
-  blue: "bg-blue-50 border-blue-100",
-};
-
-const ACCENT_LABEL = {
-  zinc: "text-zinc-400",
-  red: "text-red-600",
-  green: "text-green-600",
-  blue: "text-blue-600",
-};
-
-export function PublicStatCard({ value, label, accent = "zinc", className = "" }) {
   return (
-    <Card className={`${statCard.public} rounded-3xl border min-w-0 ${ACCENT_CARD[accent] || ACCENT_CARD.zinc} ${className}`}>
-      <p className={`${typography.statValueLg} mb-3 sm:mb-4 break-words ${ACCENT_VALUE[accent] || ACCENT_VALUE.zinc}`}>
-        {value}
-      </p>
-      <p className={`${typography.statLabel} tracking-[0.2em] ${ACCENT_LABEL[accent] || ACCENT_LABEL.zinc}`}>
-        {label}
-      </p>
-    </Card>
+    <OutlinedCard accent={accent} compact={compact} className={className}>
+      <p className={`${labelClass} ${styles.label} mb-1 line-clamp-2`}>{label}</p>
+      <p className={`${valueClass} ${styles.value} break-words`}>{value}</p>
+    </OutlinedCard>
   );
 }

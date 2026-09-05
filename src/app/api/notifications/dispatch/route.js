@@ -1,6 +1,8 @@
 import { NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import { dispatchNotificationServer } from '@/lib/notificationDispatch.server';
+import { assertDispatchAuthorized } from '@/lib/notificationDispatchAuth.server';
+import { getSupabaseAdmin } from '@/lib/supabaseAdmin';
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
@@ -20,6 +22,11 @@ export async function POST(request) {
       return NextResponse.json({ error: 'Invalid session' }, { status: 401 });
     }
 
+    const admin = getSupabaseAdmin();
+    if (!admin) {
+      return NextResponse.json({ error: 'Server misconfigured' }, { status: 500 });
+    }
+
     const body = await request.json();
     const {
       userId,
@@ -34,8 +41,22 @@ export async function POST(request) {
       recipientPhone,
     } = body;
 
-    if (!userId || !title || !message) {
-      return NextResponse.json({ error: 'userId, title, and message are required' }, { status: 400 });
+    if (!userId || !title || !message || !notificationType) {
+      return NextResponse.json(
+        { error: 'userId, title, message, and notificationType are required' },
+        { status: 400 }
+      );
+    }
+
+    const authz = await assertDispatchAuthorized(admin, user, {
+      userId,
+      notificationType,
+      relatedType,
+      relatedId,
+    });
+
+    if (!authz.allowed) {
+      return NextResponse.json({ error: authz.reason || 'Forbidden' }, { status: 403 });
     }
 
     const results = await dispatchNotificationServer({

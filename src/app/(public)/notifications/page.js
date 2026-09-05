@@ -1,15 +1,16 @@
 "use client";
 
-import React, { useEffect, useState } from 'react';
-import { Bell, Check, AlertTriangle } from 'lucide-react';
-import { Card } from '@/app/components/ui/Card';
-import { useAuthStore } from '@/app/store/crisisStore';
-import { useNotificationStore } from '@/app/store/notificationStore';
-import Link from 'next/link';
-import { InfoPageHero, PublicPageShell, PublicPageContent, publicLayout } from '@/app/components/InfoPageHero';
-import { AsyncState, EmptyState } from '@/app/components/ui/AsyncState';
-import { NotificationItemSkeleton } from '@/app/components/ui/Skeletons';
-import { getActiveSession } from '@/lib/authSession';
+import React, { useEffect, useState } from "react";
+import Link from "next/link";
+import { Bell } from "lucide-react";
+import { useAuthStore } from "@/app/store/crisisStore";
+import { useNotificationStore } from "@/app/store/notificationStore";
+import { NotificationItemCard } from "@/app/components/NotificationItemCard";
+import { InfoPageHero, PublicPageShell, PublicPageContent, publicLayout } from "@/app/components/InfoPageHero";
+import { AsyncState, EmptyState } from "@/app/components/ui/AsyncState";
+import { NotificationItemSkeleton } from "@/app/components/ui/Skeletons";
+import { getActiveSession } from "@/lib/authSession";
+import { getAreaHazardNotificationLink } from "@/lib/travelLinks";
 
 export default function NotificationsPage() {
   const { user, isAuthenticated } = useAuthStore();
@@ -63,8 +64,8 @@ export default function NotificationsPage() {
             <Link href="/login" className="text-blue-600 font-black uppercase text-xs px-6 py-3 rounded-full bg-blue-50 border border-blue-100">
               Sign In
             </Link>
-            <Link href="/crisis/alerts" className="text-zinc-600 font-black uppercase text-xs px-6 py-3 rounded-full border border-zinc-200">
-              View Public Advisories
+            <Link href="/crisis" className="text-zinc-600 font-black uppercase text-xs px-6 py-3 rounded-full border border-zinc-200">
+              View Crisis Hub
             </Link>
           </div>
         </PublicPageContent>
@@ -73,8 +74,11 @@ export default function NotificationsPage() {
   }
 
   const getRelatedLink = (n) => {
-    if (n.related_type === 'incident' && n.related_id) return `/crisis/reports/${n.related_id}`;
-    if (n.related_type === 'alert') return `/crisis/alerts`;
+    if (n.related_type === "incident" && n.related_id) return `/crisis/reports/${n.related_id}`;
+    if (n.related_type === "alert") return `/crisis`;
+    if (n.related_type === "dangerous_location") {
+      return getAreaHazardNotificationLink(n) || "/routes";
+    }
     return null;
   };
 
@@ -113,38 +117,14 @@ export default function NotificationsPage() {
           }
         >
           <div className={publicLayout.stackTight}>
-            {notifications.map((n) => {
-              const link = getRelatedLink(n);
-              return (
-                <Card key={n.id} className={`p-6 ${!n.is_read ? 'border-l-4 border-l-blue-500 bg-blue-50/30' : ''}`}>
-                  <div className="flex items-start gap-3">
-                    <div className={`p-2 rounded-xl shrink-0 ${n.priority === 'CRITICAL' ? 'bg-red-100 text-red-600' : 'bg-blue-100 text-blue-600'}`}>
-                      {n.priority === 'CRITICAL' ? <AlertTriangle size={16} /> : <Bell size={16} />}
-                    </div>
-                    <div className="flex-1">
-                      <div className="flex items-start justify-between gap-2">
-                        <h3 className="font-bold text-gray-900">{n.title}</h3>
-                        <span className="text-[9px] font-black uppercase text-gray-400 shrink-0">{n.priority}</span>
-                      </div>
-                      <p className="text-sm text-gray-600 mt-1">{n.message}</p>
-                      <p className="text-[10px] text-gray-400 mt-2">{new Date(n.created_at).toLocaleString()}</p>
-                      <div className="flex gap-3 mt-3">
-                        {!n.is_read && (
-                          <button type="button" onClick={() => markAsRead(n.id)} className="text-[10px] font-black text-blue-600 uppercase flex items-center gap-1">
-                            <Check size={12} /> Mark read
-                          </button>
-                        )}
-                        {link && (
-                          <Link href={link} className="text-[10px] font-black text-gray-600 uppercase hover:text-blue-600">
-                            View related record
-                          </Link>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                </Card>
-              );
-            })}
+            {notifications.map((n) => (
+              <NotificationItemCard
+                key={n.id}
+                notification={n}
+                relatedLink={getRelatedLink(n)}
+                onMarkRead={markAsRead}
+              />
+            ))}
           </div>
         </AsyncState>
       </PublicPageContent>
