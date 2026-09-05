@@ -8,6 +8,7 @@ import {
   LayoutDashboard, Bell, ShieldCheck, FileText, Map, Zap, LogOut, Users, Compass,
 } from "lucide-react";
 import { GUIDE_NAV, isNavActive } from "@/lib/dashboardNav";
+import { NotificationPanel } from "@/app/components/NotificationPanel";
 import { typography, iconSize } from "@/lib/designSystem";
 
 const ICONS = {
@@ -155,17 +156,20 @@ export function GuideHeader() {
         </div>
       </div>
 
-      <div className="flex items-center gap-2 px-3 py-2 bg-zinc-50 rounded-2xl border border-zinc-100">
-        <div className="bg-purple-100 p-1.5 rounded-lg">
-          <Users size={16} className="text-purple-600" />
+      <div className="flex items-center gap-3">
+        <NotificationPanel linkPrefix="/guide" />
+        <div className="flex items-center gap-2 px-3 py-2 bg-zinc-50 rounded-2xl border border-zinc-100">
+          <div className="bg-purple-100 p-1.5 rounded-lg">
+            <Users size={16} className="text-purple-600" />
+          </div>
+          <div className="hidden md:block leading-none text-left">
+            <p className="text-sm font-black text-zinc-900 truncate max-w-[120px]">{user?.name || "Guide"}</p>
+            <p className="text-[10px] text-zinc-400 font-bold uppercase tracking-widest">Tourism Guide</p>
+          </div>
+          <button onClick={logout} className="p-2 text-red-500 hover:bg-red-50 rounded-lg transition-colors" title="Logout">
+            <LogOut size={16} />
+          </button>
         </div>
-        <div className="hidden md:block leading-none text-left">
-          <p className="text-sm font-black text-zinc-900 truncate max-w-[120px]">{user?.name || "Guide"}</p>
-          <p className="text-[10px] text-zinc-400 font-bold uppercase tracking-widest">Tourism Guide</p>
-        </div>
-        <button onClick={logout} className="p-2 text-red-500 hover:bg-red-50 rounded-lg transition-colors" title="Logout">
-          <LogOut size={16} />
-        </button>
       </div>
     </header>
   );

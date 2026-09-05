@@ -6,12 +6,14 @@ import {
   ArrowRight, ShieldCheck, Bell, MapPin, PhoneCall, Radio, FileText, Users
 } from "lucide-react";
 import { useCrisisStore, useAuthStore } from "@/app/store/crisisStore";
+import { useNotificationStore } from "@/app/store/notificationStore";
 import { HeroStatSkeleton } from "@/app/components/ui/Skeletons";
 import { typography, iconSize, statGrid } from "@/lib/designSystem";
 
 export default function Home() {
   const { fetchAlerts, alerts, loading, error } = useCrisisStore();
   const { isAuthenticated, user } = useAuthStore();
+  const { unreadCount, fetchNotifications } = useNotificationStore();
   const [mounted, setMounted] = useState(false);
   const router = useRouter();
 
@@ -19,6 +21,11 @@ export default function Home() {
     setMounted(true);
     fetchAlerts();
   }, [fetchAlerts]);
+
+  useEffect(() => {
+    if (!mounted || !isAuthenticated || !user?.id) return;
+    fetchNotifications(user.id);
+  }, [mounted, isAuthenticated, user?.id, fetchNotifications]);
 
   useLayoutEffect(() => {
     if (!mounted || !isAuthenticated) return;
@@ -187,8 +194,8 @@ export default function Home() {
                 <p className={`${typography.bodySm} font-bold text-blue-600 uppercase tracking-widest`}>View Reports →</p>
               </Link>
               <Link href="/notifications" className="p-4 sm:p-6 rounded-2xl border border-zinc-100 bg-zinc-50 hover:border-blue-200 hover:shadow-md transition-all no-underline min-w-0">
-                <p className={`${typography.statLabel} text-zinc-400 mb-1`}>Notifications</p>
-                <p className={`${typography.statValue} text-purple-600 mb-2`}>{criticalCount > 0 ? criticalCount : '—'}</p>
+                <p className={`${typography.statLabel} text-zinc-400 mb-1`}>My Notifications</p>
+                <p className={`${typography.statValue} text-purple-600 mb-2`}>{unreadCount > 0 ? unreadCount : '—'}</p>
                 <p className={`${typography.bodySm} font-bold text-blue-600 uppercase tracking-widest`}>Open Inbox →</p>
               </Link>
             </div>
@@ -239,8 +246,8 @@ export default function Home() {
             <ServiceCard
               title="Alert Notifications"
               icon={<Radio size={28} />}
-              desc="Get notified when a new alert is issued for your registered contact details."
-              href="/notifications"
+              desc="Sign in to receive private in-app updates when LGU responds to your reports or account activity occurs."
+              href={isAuthenticated ? "/notifications" : "/login"}
             />
           </div>
 

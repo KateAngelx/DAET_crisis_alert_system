@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Bell, Check, AlertTriangle } from 'lucide-react';
 import { Card } from '@/app/components/ui/Card';
 import { useAuthStore } from '@/app/store/crisisStore';
@@ -9,20 +9,64 @@ import Link from 'next/link';
 import { InfoPageHero, PublicPageShell, PublicPageContent, publicLayout } from '@/app/components/InfoPageHero';
 import { AsyncState, EmptyState } from '@/app/components/ui/AsyncState';
 import { NotificationItemSkeleton } from '@/app/components/ui/Skeletons';
+import { getActiveSession } from '@/lib/authSession';
 
 export default function NotificationsPage() {
   const { user, isAuthenticated } = useAuthStore();
-  const { notifications, fetchNotifications, markAsRead, markAllAsRead, loading, error } = useNotificationStore();
+  const { notifications, fetchNotifications, markAsRead, markAllAsRead, loading, error, clearNotifications } = useNotificationStore();
+  const [sessionChecked, setSessionChecked] = useState(false);
 
   useEffect(() => {
-    if (user?.id) fetchNotifications(user.id);
-  }, [user?.id, fetchNotifications]);
+    let cancelled = false;
 
-  if (!isAuthenticated) {
+    async function verifyAndLoad() {
+      const session = await getActiveSession();
+      if (cancelled) return;
+
+      if (!session?.user?.id) {
+        clearNotifications();
+        setSessionChecked(true);
+        return;
+      }
+
+      await fetchNotifications(session.user.id);
+      setSessionChecked(true);
+    }
+
+    verifyAndLoad();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [fetchNotifications, clearNotifications]);
+
+  if (!sessionChecked) {
     return (
       <PublicPageShell>
-        <PublicPageContent className="text-center">
-          <Link href="/login" className="text-blue-600 font-bold uppercase text-xs">Sign In Required</Link>
+        <PublicPageContent className="py-16 text-center text-xs font-bold uppercase text-zinc-400">
+          Verifying session...
+        </PublicPageContent>
+      </PublicPageShell>
+    );
+  }
+
+  if (!isAuthenticated || !user?.id) {
+    return (
+      <PublicPageShell>
+        <PublicPageContent className="text-center py-16">
+          <Bell size={40} className="mx-auto mb-4 text-zinc-300" />
+          <h1 className="text-xl font-black uppercase text-zinc-900 mb-2">Sign In Required</h1>
+          <p className="text-sm text-zinc-500 mb-6 max-w-md mx-auto">
+            Private in-app notifications are only available to registered, signed-in users. Public crisis alerts remain available on the Crisis Hub.
+          </p>
+          <div className="flex flex-col sm:flex-row gap-3 justify-center">
+            <Link href="/login" className="text-blue-600 font-black uppercase text-xs px-6 py-3 rounded-full bg-blue-50 border border-blue-100">
+              Sign In
+            </Link>
+            <Link href="/crisis/alerts" className="text-zinc-600 font-black uppercase text-xs px-6 py-3 rounded-full border border-zinc-200">
+              View Public Advisories
+            </Link>
+          </div>
         </PublicPageContent>
       </PublicPageShell>
     );
@@ -30,6 +74,7 @@ export default function NotificationsPage() {
 
   const getRelatedLink = (n) => {
     if (n.related_type === 'incident' && n.related_id) return `/crisis/reports/${n.related_id}`;
+    if (n.related_type === 'alert') return `/crisis/alerts`;
     return null;
   };
 
@@ -37,12 +82,13 @@ export default function NotificationsPage() {
     <PublicPageShell>
       <InfoPageHero
         title="Notifications"
-        description="Updates when LGU issues alerts or responds to your incident reports."
+        description="Your private updates on crisis alerts, incident reports, and account activity. Public crisis advisories are also available on the Crisis Hub."
       />
 
       <PublicPageContent>
         <div className="flex items-center justify-end mb-6">
           <button
+            type="button"
             onClick={() => markAllAsRead(user.id)}
             className="text-[10px] font-black text-blue-600 uppercase hover:underline"
           >
@@ -63,7 +109,7 @@ export default function NotificationsPage() {
             </div>
           }
           emptyFallback={
-            <EmptyState icon={Bell} title="No notifications" description="You'll see updates here when LGU issues alerts or responds to your reports." />
+            <EmptyState icon={Bell} title="No notifications" description="You'll see private updates here when LGU issues crisis alerts or responds to your reports." />
           }
         >
           <div className={publicLayout.stackTight}>
@@ -84,7 +130,7 @@ export default function NotificationsPage() {
                       <p className="text-[10px] text-gray-400 mt-2">{new Date(n.created_at).toLocaleString()}</p>
                       <div className="flex gap-3 mt-3">
                         {!n.is_read && (
-                          <button onClick={() => markAsRead(n.id)} className="text-[10px] font-black text-blue-600 uppercase flex items-center gap-1">
+                          <button type="button" onClick={() => markAsRead(n.id)} className="text-[10px] font-black text-blue-600 uppercase flex items-center gap-1">
                             <Check size={12} /> Mark read
                           </button>
                         )}

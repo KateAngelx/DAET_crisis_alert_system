@@ -1,22 +1,12 @@
 import { NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import { getSupabaseAdmin } from '@/lib/supabaseAdmin';
-import fs from 'fs';
-import path from 'path';
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
 const VALID_ROLES = ['tourist', 'guide', 'admin'];
 
-function debugLog(message, data) {
-  try {
-    fs.appendFileSync(
-      path.join(process.cwd(), 'debug-082309.log'),
-      JSON.stringify({ sessionId: '082309', location: 'ensure-profile', message, data, timestamp: Date.now() }) + '\n'
-    );
-  } catch { /* ignore */ }
-}
 export async function POST(request) {
   try {
     const authHeader = request.headers.get('authorization');
@@ -65,8 +55,6 @@ export async function POST(request) {
         return NextResponse.json({ error: updateError.message }, { status: 500 });
       }
 
-      debugLog('Profile synced', { userId: user.id, user_type: updated.user_type, source: 'existing' });
-
       if (updated.user_type === 'tourist') {
         await admin.from('tourist_registrations').upsert({
           user_id: user.id,
@@ -98,8 +86,6 @@ export async function POST(request) {
     if (!VALID_ROLES.includes(created.user_type)) {
       return NextResponse.json({ error: 'Invalid role assigned' }, { status: 500 });
     }
-
-    debugLog('Profile synced', { userId: user.id, user_type: created.user_type, source: 'created' });
 
     if (created.user_type === 'tourist') {
       await admin.from('tourist_registrations').upsert({

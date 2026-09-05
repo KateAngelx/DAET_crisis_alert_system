@@ -1,104 +1,76 @@
-import { supabase } from '@/lib/supabaseClient';
-import { severityToPriority, NOTIFICATION_CHANNELS } from '@/lib/constants';
+import { getActiveSession } from '@/lib/authSession';
+import { severityToPriority } from '@/lib/constants';
 
-function generateIdempotencyKey(userId, type, relatedId, channel) {
-  return `${userId}-${type}-${relatedId || 'none'}-${channel}-${Date.now()}`;
+async function getDispatchHeaders() {
+  const session = await getActiveSession();
+  if (!session?.access_token) return null;
+  return {
+    Authorization: `Bearer ${session.access_token}`,
+    'Content-Type': 'application/json',
+  };
 }
 
-export async function dispatchNotification({
-  userId,
-  title,
-  message,
-  notificationType = 'general',
-  priority = 'NORMAL',
-  relatedType = null,
-  relatedId = null,
-  channels = ['web', 'email'],
-  recipientEmail = null,
-  recipientPhone = null,
-}) {
+export async function dispatchNotification(payload) {
   const results = { web: null, email: null, sms: null, errors: [] };
 
-  try {
-    const { data: notification, error: notifError } = await supabase
-      .from('notifications')
-      .insert({
-        user_id: userId,
-        title,
-        message,
-        notification_type: notificationType,
-        priority,
-        related_type: relatedType,
-        related_id: relatedId,
-      })
-      .select()
-      .single();
-
-    if (notifError) {
-      results.errors.push(`Web notification failed: ${notifError.message}`);
-    } else {
-      results.web = notification;
-    }
-
-    const deliveryRecords = [];
-
-    if (channels.includes('email') && recipientEmail) {
-      deliveryRecords.push({
-        notification_id: notification?.id,
-        user_id: userId,
-        channel: NOTIFICATION_CHANNELS.EMAIL,
-        status: 'pending',
-        recipient: recipientEmail,
-        subject: title,
-        body: message,
-        priority,
-        idempotency_key: generateIdempotencyKey(userId, notificationType, relatedId, 'email'),
-      });
-    }
-
-    if (channels.includes('sms') && recipientPhone) {
-      deliveryRecords.push({
-        notification_id: notification?.id,
-        user_id: userId,
-        channel: NOTIFICATION_CHANNELS.SMS,
-        status: 'pending',
-        recipient: recipientPhone,
-        subject: title,
-        body: message,
-        priority,
-        idempotency_key: generateIdempotencyKey(userId, notificationType, relatedId, 'sms'),
-      });
-    }
-
-    if (deliveryRecords.length > 0) {
-      const { data: deliveries, error: deliveryError } = await supabase
-        .from('notification_deliveries')
-        .insert(deliveryRecords)
-        .select();
-
-      if (deliveryError) {
-        results.errors.push(`Delivery queue failed: ${deliveryError.message}`);
-      } else {
-        for (const d of deliveries || []) {
-          results[d.channel] = d;
-        }
-
-        try {
-          await fetch('/api/notifications/process-queue', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ deliveryIds: (deliveries || []).map((d) => d.id) }),
-          });
-        } catch {
-          // Queue will be retried later; main transaction continues
-        }
-      }
-    }
-  } catch (err) {
-    results.errors.push(err.message || 'Unknown notification error');
+  if (!payload?.userId) {
+    results.errors.push('Missing recipient user ID');
+    return results;
   }
 
-  return results;
+  const headers = await getDispatchHeaders();
+  if (!headers) {
+    results.errors.push('Not authenticated — private notification not created');
+    return results;
+  }
+
+  try {
+    const res = await fetch('/api/notifications/dispatch', {
+      method: 'POST',
+      headers,
+      body: JSON.stringify(payload),
+    });
+    const data = await res.json();
+
+    if (!res.ok) {
+      results.errors.push(data.error || 'Notification dispatch failed');
+      return results;
+    }
+
+    return data.results || results;
+  } catch (err) {
+    results.errors.push(err.message || 'Unknown notification error');
+    return results;
+  }
+}
+
+export async function notifyTouristsOfCrisisAlert(alertId) {
+  const headers = await getDispatchHeaders();
+  if (!headers) {
+    return { success: false, error: 'Not authenticated' };
+  }
+
+  try {
+    const res = await fetch('/api/crisis/alerts/notify-tourists', {
+      method: 'POST',
+      headers,
+      body: JSON.stringify({ alertId }),
+    });
+    const data = await res.json();
+
+    if (!res.ok) {
+      return { success: false, error: data.error || 'Failed to notify tourists' };
+    }
+
+    return {
+      success: true,
+      notified: data.notified || 0,
+      skipped: data.skipped || 0,
+      warnings: data.warnings || [],
+    };
+  } catch (err) {
+    return { success: false, error: err.message || 'Failed to notify tourists' };
+  }
 }
 
 export async function notifyAdminsOfIncident(incident, adminUsers) {

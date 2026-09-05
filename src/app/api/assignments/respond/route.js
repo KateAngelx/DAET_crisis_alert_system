@@ -1,6 +1,4 @@
 import { NextResponse } from 'next/server';
-import fs from 'fs';
-import path from 'path';
 import { requireTourist } from '@/lib/touristAuth';
 
 const ASSIGNMENT_SELECT = `
@@ -9,15 +7,6 @@ const ASSIGNMENT_SELECT = `
   tourist:profiles!guide_assignments_tourist_id_fkey(*),
   tour_group:tour_groups(*)
 `;
-
-function debugLog(message, data) {
-  try {
-    fs.appendFileSync(
-      path.join(process.cwd(), 'debug-d2282c.log'),
-      JSON.stringify({ sessionId: 'd2282c', location: 'assignments/respond', message, data, timestamp: Date.now() }) + '\n'
-    );
-  } catch { /* ignore */ }
-}
 
 export async function POST(request) {
   try {
@@ -41,7 +30,6 @@ export async function POST(request) {
       .single();
 
     if (fetchError || !assignment) {
-      debugLog('Assignment not found', { assignmentId, touristId: user.id, fetchError: fetchError?.message });
       return NextResponse.json({ error: 'Assignment request not found or already handled.' }, { status: 404 });
     }
 
@@ -65,11 +53,9 @@ export async function POST(request) {
         .single();
 
       if (error) {
-        debugLog('Accept update failed', { assignmentId, error: error.message, code: error.code });
         return NextResponse.json({ error: error.message }, { status: 500 });
       }
 
-      debugLog('Assignment accepted', { assignmentId, touristId: user.id, runId: 'api-fix' });
       return NextResponse.json({ success: true, assignment: data });
     }
 
@@ -84,14 +70,11 @@ export async function POST(request) {
       .eq('status', 'pending');
 
     if (error) {
-      debugLog('Decline update failed', { assignmentId, error: error.message, code: error.code });
       return NextResponse.json({ error: error.message }, { status: 500 });
     }
 
-    debugLog('Assignment declined', { assignmentId, touristId: user.id, runId: 'api-fix' });
     return NextResponse.json({ success: true, assignment });
   } catch (err) {
-    debugLog('Respond catch', { error: err.message });
     return NextResponse.json({ error: err.message }, { status: 500 });
   }
 }

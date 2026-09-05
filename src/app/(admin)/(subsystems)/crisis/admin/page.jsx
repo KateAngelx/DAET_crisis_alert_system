@@ -1,6 +1,7 @@
 "use client";
 import React, { useState, useMemo, useEffect } from "react";
 import { useCrisisStore } from "@/app/store/crisisStore";
+import { notifyTouristsOfCrisisAlert } from "@/lib/notificationService";
 import { Skeleton } from "@/app/components/ui/Skeleton";
 import { Card } from "@/app/components/ui/Card";
 import { StatCardSkeleton, AlertCardSkeletonList, MapSkeleton, TableSkeleton } from "@/app/components/ui/Skeletons";
@@ -136,13 +137,24 @@ export default function CrisisAdminPage() {
   const confirmAndBroadcast = async () => {
     setShowConfirmModal(false);
     setIsPublishing(true);
-    
+
     const result = await addAlert(formData);
-    
+
     if (result.success) {
-      setToastMessage(`Success: Broadcasted and saved to Database.`);
+      const notifyResult = result.alert?.id
+        ? await notifyTouristsOfCrisisAlert(result.alert.id)
+        : { success: false, error: "Alert saved but notification dispatch could not start." };
+
+      if (notifyResult.success) {
+        setToastMessage(
+          `Success: Alert broadcast. ${notifyResult.notified} tourist${notifyResult.notified === 1 ? "" : "s"} notified in real time.`
+        );
+      } else {
+        setToastMessage(`Alert saved, but tourist notifications failed: ${notifyResult.error}`);
+      }
+
       setShowToast(true);
-      setShowCreateModal(false); 
+      setShowCreateModal(false);
       setFormData({ title: "", message: "", type: "General", severity: "Low", location: "", channels: { email: true, sms: true, app: true } });
       setCurrentPage(1);
       await fetchAlerts();
@@ -150,7 +162,7 @@ export default function CrisisAdminPage() {
       setToastMessage(`Error: ${result.error}`);
       setShowToast(true);
     }
-    
+
     setIsPublishing(false);
   };
 

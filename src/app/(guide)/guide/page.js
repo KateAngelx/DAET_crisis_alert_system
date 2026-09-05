@@ -43,9 +43,6 @@ export default function GuideDashboard() {
     fetchGuideIncidents(user.id);
     fetchAlerts();
 
-    // #region agent log
-    fetch('http://127.0.0.1:7540/ingest/3142bff0-53ba-4c2c-9606-b4d021977f0c',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'d2282c'},body:JSON.stringify({sessionId:'d2282c',location:'guide/page.js:useEffect',message:'Guide dashboard load',data:{guideId:user.id},timestamp:Date.now(),hypothesisId:'H5'})}).catch(()=>{});
-    // #endregion
   }, [user?.id, resetGuideScope, fetchTourGroups, fetchGuideIncidents, fetchAlerts]);
 
   const activeAlerts = alerts.filter((a) => a.status === "Active" && a.is_public);

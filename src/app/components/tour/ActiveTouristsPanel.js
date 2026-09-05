@@ -38,9 +38,6 @@ export function ActiveTouristsPanel({ guideId, tourGroupId, tourGroupName, compa
     const pending = await fetchGroupPendingMembers(tourGroupId, guideId);
     setPendingCount(pending.length);
 
-    // #region agent log
-    fetch('http://127.0.0.1:7540/ingest/3142bff0-53ba-4c2c-9606-b4d021977f0c',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'d2282c'},body:JSON.stringify({sessionId:'d2282c',location:'ActiveTouristsPanel.js:loadData',message:'Active tourists loaded',data:{guideId,tourGroupId,touristCount:result.tourists?.length||0,assignmentCount:result.assignments?.length||0,pendingCount:pending.length},timestamp:Date.now(),hypothesisId:'AT1'})}).catch(()=>{});
-    // #endregion
   };
 
   useEffect(() => {

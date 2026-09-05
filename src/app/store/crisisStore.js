@@ -1,6 +1,8 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { supabase } from '@/lib/supabaseClient';
+import { useNotificationStore } from '@/app/store/notificationStore';
+import { channelsToDb, normalizeAlert } from '@/lib/alertChannels';
 
 export const useCrisisStore = create((set, get) => ({
   alerts: [], 
@@ -20,7 +22,8 @@ export const useCrisisStore = create((set, get) => ({
         .order('created_at', { ascending: false });
 
       if (!error) {
-        set({ alerts: data, loading: false, error: null });
+        const normalizedAlerts = (data || []).map(normalizeAlert);
+        set({ alerts: normalizedAlerts, loading: false, error: null });
       } else {
         console.error("Fetch Error:", error.message);
         set({ loading: false, error: error.message });
@@ -59,11 +62,11 @@ export const useCrisisStore = create((set, get) => ({
               const alreadyExists = state.alerts.some((a) => a.id === payload.new.id);
               if (alreadyExists) return state; // Do nothing if it's already there
               
-              return { alerts: [payload.new, ...state.alerts] };
+              return { alerts: [normalizeAlert(payload.new), ...state.alerts] };
             });
           } else if (payload.eventType === 'UPDATE') {
             set((state) => ({
-              alerts: state.alerts.map((a) => (a.id === payload.new.id ? payload.new : a)),
+              alerts: state.alerts.map((a) => (a.id === payload.new.id ? normalizeAlert(payload.new) : a)),
             }));
           } else if (payload.eventType === 'DELETE') {
             set((state) => ({
@@ -155,24 +158,24 @@ export const useCrisisStore = create((set, get) => ({
 
   addAlert: async (alertData) => {
     try {
+      const insertPayload = {
+        title: alertData.title,
+        message: alertData.message,
+        type: alertData.type || 'General',
+        severity: alertData.severity || 'Low',
+        location: alertData.location,
+        status: 'Active',
+        is_public: true,
+        channels: channelsToDb(alertData.channels || { email: true, sms: true, app: true })
+      };
+
       const { data, error } = await supabase
         .from('crisis_alerts')
-        .insert([
-          {
-            title: alertData.title,
-            message: alertData.message,
-            type: alertData.type || 'General',
-            severity: alertData.severity || 'Low',
-            location: alertData.location,
-            status: 'Active',
-            is_public: true,
-            channels: alertData.channels || { email: true, sms: true, app: true }
-          }
-        ])
+        .insert([insertPayload])
         .select();
 
       if (error) throw error;
-      return { success: true };
+      return { success: true, alert: normalizeAlert(data?.[0]) };
     } catch (error) {
       console.error("Supabase Add Error:", error.message);
       return { success: false, error: error.message };
@@ -189,7 +192,7 @@ export const useCrisisStore = create((set, get) => ({
           type: updatedData.type,
           severity: updatedData.severity,
           location: updatedData.location,
-          channels: updatedData.channels,
+          channels: channelsToDb(updatedData.channels),
           is_public: true
         })
         .eq('id', id);
@@ -366,6 +369,7 @@ export const useAuthStore = create(
       },
 
       logout: async () => {
+        useNotificationStore.getState().clearNotifications();
         await supabase.auth.signOut();
         set({ user: null, isAuthenticated: false });
         window.location.href = '/';

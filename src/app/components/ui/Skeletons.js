@@ -275,11 +275,11 @@ export function TableRowSkeleton({ columns = 5 }) {
 
 export function TableSkeleton({ rows = 5, columns = 5 }) {
   return (
-    <tbody className="divide-y divide-gray-200">
+    <>
       {Array.from({ length: rows }).map((_, i) => (
         <TableRowSkeleton key={i} columns={columns} />
       ))}
-    </tbody>
+    </>
   );
 }
 

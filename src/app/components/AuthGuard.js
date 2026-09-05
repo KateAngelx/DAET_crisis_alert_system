@@ -17,9 +17,6 @@ export function AuthGuard({ children, requiredRole = null, fallbackUrl = '/login
       const session = await getActiveSession();
       if (cancelled) return;
 
-      // #region agent log
-      fetch('http://127.0.0.1:7540/ingest/3142bff0-53ba-4c2c-9606-b4d021977f0c',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'d2282c'},body:JSON.stringify({sessionId:'d2282c',location:'AuthGuard.js:session',message:'Session check after hydration',data:{hasSession:!!session,userId:session?.user?.id,requiredRole,persistedAuth:useAuthStore.getState().isAuthenticated},timestamp:Date.now(),hypothesisId:'A'})}).catch(()=>{});
-      // #endregion
 
       if (!session) {
         router.replace(fallbackUrl);
@@ -38,9 +35,6 @@ export function AuthGuard({ children, requiredRole = null, fallbackUrl = '/login
         }
       }
 
-      // #region agent log
-      fetch('http://127.0.0.1:7540/ingest/3142bff0-53ba-4c2c-9606-b4d021977f0c',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'d2282c'},body:JSON.stringify({sessionId:'d2282c',location:'AuthGuard.js:role',message:'Role resolved for guard',data:{role,fetchSuccess:result.success,requiredRole},timestamp:Date.now(),hypothesisId:'B'})}).catch(()=>{});
-      // #endregion
 
       if (!role) {
         router.replace(fallbackUrl);
@@ -57,9 +51,6 @@ export function AuthGuard({ children, requiredRole = null, fallbackUrl = '/login
         return;
       }
 
-      // #region agent log
-      fetch('http://127.0.0.1:7540/ingest/3142bff0-53ba-4c2c-9606-b4d021977f0c',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'d2282c'},body:JSON.stringify({sessionId:'d2282c',location:'AuthGuard.js:granted',message:'Access granted',data:{role,requiredRole},timestamp:Date.now(),hypothesisId:'A'})}).catch(()=>{});
-      // #endregion
       setChecked(true);
     }
 

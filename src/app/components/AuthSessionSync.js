@@ -3,6 +3,7 @@
 import { useEffect } from "react";
 import { supabase } from "@/lib/supabaseClient";
 import { useAuthStore } from "@/app/store/crisisStore";
+import { useNotificationStore } from "@/app/store/notificationStore";
 
 async function fetchAppProfile(session) {
   const res = await fetch("/api/auth/ensure-profile", {
@@ -40,6 +41,10 @@ export function AuthSessionSync() {
           },
           isAuthenticated: true,
         });
+
+        if (profile?.user_type === "tourist") {
+          useNotificationStore.getState().fetchNotifications(session.user.id);
+        }
       } catch {
         // Session exists but profile sync failed — keep persisted state
       }
@@ -51,6 +56,7 @@ export function AuthSessionSync() {
       if (!mounted) return;
 
       if (event === "SIGNED_OUT") {
+        useNotificationStore.getState().clearNotifications();
         setAuth({ user: null, isAuthenticated: false });
         return;
       }
@@ -71,6 +77,10 @@ export function AuthSessionSync() {
             },
             isAuthenticated: true,
           });
+
+          if (profile?.user_type === "tourist") {
+            useNotificationStore.getState().fetchNotifications(session.user.id);
+          }
         } catch {
           // ignore
         }

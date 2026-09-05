@@ -136,7 +136,9 @@ export default function AdminIncidentsPage() {
                   <th className="px-6 py-4 text-right">Actions</th>
                 </tr>
               </thead>
-              <TableSkeleton rows={8} columns={5} />
+              <tbody className="divide-y divide-gray-200">
+                <TableSkeleton rows={8} columns={5} />
+              </tbody>
             </table>
           </Card>
         }

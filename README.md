@@ -51,6 +51,7 @@ Without these variables, the crisis hub shows *Could not load alerts* with a Sup
 Run migrations in order:
 1. `supabase/migrations/001_incident_notification_system.sql`
 2. `supabase/migrations/002_profiles_auth_roles.sql`
+3. …through `009_notification_auth_rls.sql`
 
 ### User Roles
 

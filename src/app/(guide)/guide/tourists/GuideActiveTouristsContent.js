@@ -73,9 +73,6 @@ export default function GuideActiveTouristsPage() {
 
     loadPending();
 
-    // #region agent log
-    fetch('http://127.0.0.1:7540/ingest/3142bff0-53ba-4c2c-9606-b4d021977f0c',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'d2282c'},body:JSON.stringify({sessionId:'d2282c',location:'GuideActiveTouristsContent.js:loadPending',message:'Pending load effect ran',data:{activeGroupCount:activeGroups.length,activeGroupIds},timestamp:Date.now(),runId:'loop-fix',hypothesisId:'L1'})}).catch(()=>{});
-    // #endregion
 
     return () => {
       cancelled = true;

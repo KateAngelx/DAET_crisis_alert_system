@@ -6,24 +6,52 @@ import { Bell, Check, X, AlertTriangle } from 'lucide-react';
 import { useAuthStore } from '@/app/store/crisisStore';
 import { useNotificationStore } from '@/app/store/notificationStore';
 import { NotificationPanelSkeleton } from '@/app/components/ui/Skeletons';
+import { getActiveSession } from '@/lib/authSession';
 import { iconSize } from '@/lib/designSystem';
 
 export function NotificationPanel({ linkPrefix = '' }) {
   const { user, isAuthenticated } = useAuthStore();
-  const { notifications, unreadCount, fetchNotifications, markAsRead, markAllAsRead, loading, error } = useNotificationStore();
+  const { notifications, unreadCount, fetchNotifications, markAsRead, markAllAsRead, loading, error, clearNotifications } = useNotificationStore();
   const [open, setOpen] = useState(false);
+  const [sessionReady, setSessionReady] = useState(false);
 
   useEffect(() => {
-    if (isAuthenticated && user?.id) {
-      fetchNotifications(user.id);
-    }
-  }, [isAuthenticated, user?.id, fetchNotifications]);
+    let cancelled = false;
 
-  if (!isAuthenticated) return null;
+    async function loadForSession() {
+      const session = await getActiveSession();
+      if (cancelled) return;
+
+      if (!session?.user?.id) {
+        clearNotifications();
+        setSessionReady(false);
+        return;
+      }
+
+      setSessionReady(true);
+      await fetchNotifications(session.user.id);
+    }
+
+    if (isAuthenticated && user?.id) {
+      loadForSession();
+    } else {
+      clearNotifications();
+      setSessionReady(false);
+    }
+
+    return () => {
+      cancelled = true;
+    };
+  }, [isAuthenticated, user?.id, fetchNotifications, clearNotifications]);
+
+  if (!isAuthenticated || !sessionReady || !user?.id) return null;
 
   const getRelatedLink = (notification) => {
     if (notification.related_type === 'incident' && notification.related_id) {
       return `${linkPrefix}/crisis/reports/${notification.related_id}`;
+    }
+    if (notification.related_type === 'alert') {
+      return `${linkPrefix}/crisis/alerts`;
     }
     return null;
   };
@@ -31,6 +59,7 @@ export function NotificationPanel({ linkPrefix = '' }) {
   return (
     <div className="relative">
       <button
+        type="button"
         onClick={() => setOpen(!open)}
         className="relative p-2 hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded-full transition-colors"
         aria-label={`${unreadCount} unread notifications`}
@@ -52,13 +81,14 @@ export function NotificationPanel({ linkPrefix = '' }) {
               <div className="flex items-center gap-2">
                 {unreadCount > 0 && (
                   <button
+                    type="button"
                     onClick={() => markAllAsRead(user.id)}
                     className="text-[10px] font-bold text-blue-600 uppercase hover:underline"
                   >
                     Mark all read
                   </button>
                 )}
-                <button onClick={() => setOpen(false)} className="p-1 hover:bg-gray-100 rounded-lg">
+                <button type="button" onClick={() => setOpen(false)} className="p-1 hover:bg-gray-100 rounded-lg">
                   <X size={16} />
                 </button>
               </div>
@@ -105,6 +135,7 @@ export function NotificationPanel({ linkPrefix = '' }) {
                           <div className="flex items-center gap-2 mt-2">
                             {!n.is_read && (
                               <button
+                                type="button"
                                 onClick={() => markAsRead(n.id)}
                                 className="text-[9px] font-black text-blue-600 uppercase flex items-center gap-1"
                               >

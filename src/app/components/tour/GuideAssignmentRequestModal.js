@@ -26,9 +26,7 @@ export function GuideAssignmentRequestModal({
     setLoading("accept");
     const result = await onAccept(assignment.id);
     setLoading(null);
-    // #region agent log
-    fetch('http://127.0.0.1:7540/ingest/3142bff0-53ba-4c2c-9606-b4d021977f0c',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'d2282c'},body:JSON.stringify({sessionId:'d2282c',location:'GuideAssignmentRequestModal.js:handleAccept',message:'Accept result',data:{assignmentId:assignment.id,success:!!result?.success,error:result?.error||null},timestamp:Date.now(),runId:'post-fix',hypothesisId:'B1'})}).catch(()=>{});
-    // #endregion
+
     if (result?.success) {
       setConfirmed(true);
     } else {
@@ -41,9 +39,7 @@ export function GuideAssignmentRequestModal({
     setLoading("decline");
     const result = await onDecline(assignment.id);
     setLoading(null);
-    // #region agent log
-    fetch('http://127.0.0.1:7540/ingest/3142bff0-53ba-4c2c-9606-b4d021977f0c',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'d2282c'},body:JSON.stringify({sessionId:'d2282c',location:'GuideAssignmentRequestModal.js:handleDecline',message:'Decline result',data:{assignmentId:assignment.id,success:!!result?.success,error:result?.error||null},timestamp:Date.now(),runId:'post-fix',hypothesisId:'B2'})}).catch(()=>{});
-    // #endregion
+
     if (result?.success) {
       onClose();
     } else {

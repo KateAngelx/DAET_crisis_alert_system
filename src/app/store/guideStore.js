@@ -141,9 +141,6 @@ export const useGuideStore = create((set, get) => ({
       const { data, error } = await query;
       if (error) throw error;
 
-      // #region agent log
-      fetch('http://127.0.0.1:7540/ingest/3142bff0-53ba-4c2c-9606-b4d021977f0c',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'d2282c'},body:JSON.stringify({sessionId:'d2282c',location:'guideStore.js:fetchGuideIncidents',message:'Guide incidents fetched',data:{guideId,touristCount:touristIds.length,incidentCount:(data||[]).length,assignedToGuide:(data||[]).filter(i=>i.assigned_to===guideId).length},timestamp:Date.now(),hypothesisId:'H3'})}).catch(()=>{});
-      // #endregion
 
       set({ guideIncidents: data || [], loading: false });
       return data || [];
@@ -172,9 +169,6 @@ export const useGuideStore = create((set, get) => ({
       member_count: (g.guide_assignments || []).filter((a) => a.status === 'active').length,
     }));
 
-    // #region agent log
-    fetch('http://127.0.0.1:7540/ingest/3142bff0-53ba-4c2c-9606-b4d021977f0c',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'d2282c'},body:JSON.stringify({sessionId:'d2282c',location:'guideStore.js:fetchTourGroups',message:'Tour groups fetched',data:{guideId,groupCount:groups.length,foreignGuideIds:groups.filter(g=>g.guide_id!==guideId).map(g=>g.guide_id)},timestamp:Date.now(),hypothesisId:'H1'})}).catch(()=>{});
-    // #endregion
 
     set({ tourGroups: groups, loading: false, error: error?.message });
     return groups;
@@ -195,9 +189,6 @@ export const useGuideStore = create((set, get) => ({
 
     set({ activeGroup: data || null, loading: false, error: error?.message });
 
-    // #region agent log
-    fetch('http://127.0.0.1:7540/ingest/3142bff0-53ba-4c2c-9606-b4d021977f0c',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'d2282c'},body:JSON.stringify({sessionId:'d2282c',location:'guideStore.js:fetchTourGroupById',message:'Tour group lookup',data:{groupId,guideId,found:!!data,groupGuideId:data?.guide_id||null,accessDenied:!data},timestamp:Date.now(),hypothesisId:'H2'})}).catch(()=>{});
-    // #endregion
 
     return data;
   },
@@ -235,9 +226,6 @@ export const useGuideStore = create((set, get) => ({
 
       if (error) throw error;
 
-      // #region agent log
-      fetch('http://127.0.0.1:7540/ingest/3142bff0-53ba-4c2c-9606-b4d021977f0c',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'d2282c'},body:JSON.stringify({sessionId:'d2282c',location:'guideStore.js:createTourGroup',message:'Tour group route stored',data:{groupId:data.id,from:data.starting_location,to:data.destination,tourDate:data.start_date},timestamp:Date.now(),hypothesisId:'R2'})}).catch(()=>{});
-      // #endregion
 
       await get().fetchTourGroups(guideId);
       return { success: true, group: data };
@@ -395,9 +383,6 @@ export const useGuideStore = create((set, get) => ({
         current_status: regMap[p.id]?.current_status || 'registered',
       }));
 
-      // #region agent log
-      fetch('http://127.0.0.1:7540/ingest/3142bff0-53ba-4c2c-9606-b4d021977f0c',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'d2282c'},body:JSON.stringify({sessionId:'d2282c',location:'guideStore.js:fetchAvailableTourists',message:'Tourists fetched',data:{guideId,tourGroupId,registrationCount:userIds.length,profileCount:profiles.length,touristCount:tourists.length,regError:regError?.message||null,usedFallback:userIds.length===0&&profiles.length>0},timestamp:Date.now(),hypothesisId:'AT2'})}).catch(()=>{});
-      // #endregion
 
       set({ availableTourists: tourists, loading: false });
       return { tourists, assignments: assignments || [] };
@@ -461,9 +446,6 @@ export const useGuideStore = create((set, get) => ({
         await notifyTouristAssignmentRequest(data.tourist, data.guide, data.tour_group);
       }
 
-      // #region agent log
-      fetch('http://127.0.0.1:7540/ingest/3142bff0-53ba-4c2c-9606-b4d021977f0c',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'d2282c'},body:JSON.stringify({sessionId:'d2282c',location:'guideStore.js:sendAssignmentRequest',message:'Assignment request sent',data:{assignmentId:data.id,touristId,guideId,tourGroupId,status:'pending'},timestamp:Date.now(),hypothesisId:'A1'})}).catch(()=>{});
-      // #endregion
 
       return { success: true, assignment: data };
     } catch (err) {
@@ -512,9 +494,6 @@ export const useGuideStore = create((set, get) => ({
       }
     }
 
-    // #region agent log
-    fetch('http://127.0.0.1:7540/ingest/3142bff0-53ba-4c2c-9606-b4d021977f0c',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'d2282c'},body:JSON.stringify({sessionId:'d2282c',location:'guideStore.js:fetchPendingAssignmentForTourist',message:'Pending assignment loaded',data:{hasAssignment:!!assignment,guideName:assignment?.guide?.full_name||null,groupName:assignment?.tour_group?.name||null,error:error?.message||null},timestamp:Date.now(),hypothesisId:'M1'})}).catch(()=>{});
-    // #endregion
 
     set({ pendingAssignment: assignment || null, error: error?.message });
     return assignment;
@@ -524,9 +503,7 @@ export const useGuideStore = create((set, get) => ({
     try {
       const apiResult = await respondToAssignmentViaApi(assignmentId, 'accept');
       if (!apiResult.success) {
-        // #region agent log
-        fetch('http://127.0.0.1:7540/ingest/3142bff0-53ba-4c2c-9606-b4d021977f0c',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'d2282c'},body:JSON.stringify({sessionId:'d2282c',location:'guideStore.js:acceptAssignmentRequest',message:'Accept API failed',data:{assignmentId,error:apiResult.error||null},timestamp:Date.now(),runId:'api-fix',hypothesisId:'A1'})}).catch(()=>{});
-        // #endregion
+
         return { success: false, error: apiResult.error || 'Assignment request not found or already handled.' };
       }
 
@@ -539,16 +516,11 @@ export const useGuideStore = create((set, get) => ({
 
       set({ pendingAssignment: null, touristActiveGroup: data });
 
-      // #region agent log
-      fetch('http://127.0.0.1:7540/ingest/3142bff0-53ba-4c2c-9606-b4d021977f0c',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'d2282c'},body:JSON.stringify({sessionId:'d2282c',location:'guideStore.js:acceptAssignmentRequest',message:'Assignment accepted',data:{assignmentId,status:'active'},timestamp:Date.now(),runId:'api-fix',hypothesisId:'A2'})}).catch(()=>{});
-      // #endregion
 
       await get().fetchTouristActiveGroup(touristId);
       return { success: true, assignment: data };
     } catch (err) {
-      // #region agent log
-      fetch('http://127.0.0.1:7540/ingest/3142bff0-53ba-4c2c-9606-b4d021977f0c',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'d2282c'},body:JSON.stringify({sessionId:'d2282c',location:'guideStore.js:acceptAssignmentRequest',message:'Accept catch',data:{assignmentId,error:err.message},timestamp:Date.now(),runId:'api-fix',hypothesisId:'A1'})}).catch(()=>{});
-      // #endregion
+
       return { success: false, error: err.message };
     }
   },
@@ -557,9 +529,7 @@ export const useGuideStore = create((set, get) => ({
     try {
       const apiResult = await respondToAssignmentViaApi(assignmentId, 'decline');
       if (!apiResult.success) {
-        // #region agent log
-        fetch('http://127.0.0.1:7540/ingest/3142bff0-53ba-4c2c-9606-b4d021977f0c',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'d2282c'},body:JSON.stringify({sessionId:'d2282c',location:'guideStore.js:declineAssignmentRequest',message:'Decline API failed',data:{assignmentId,error:apiResult.error||null},timestamp:Date.now(),runId:'api-fix',hypothesisId:'A1'})}).catch(()=>{});
-        // #endregion
+
         return { success: false, error: apiResult.error || 'Could not decline request.' };
       }
 
@@ -571,9 +541,7 @@ export const useGuideStore = create((set, get) => ({
       set({ pendingAssignment: null });
       return { success: true };
     } catch (err) {
-      // #region agent log
-      fetch('http://127.0.0.1:7540/ingest/3142bff0-53ba-4c2c-9606-b4d021977f0c',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'d2282c'},body:JSON.stringify({sessionId:'d2282c',location:'guideStore.js:declineAssignmentRequest',message:'Decline catch',data:{assignmentId,error:err.message},timestamp:Date.now(),runId:'api-fix',hypothesisId:'A1'})}).catch(()=>{});
-      // #endregion
+
       return { success: false, error: err.message };
     }
   },

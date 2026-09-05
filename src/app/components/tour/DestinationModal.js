@@ -50,9 +50,6 @@ export function DestinationModal({
       setEditing(false);
       setError(null);
 
-      // #region agent log
-      fetch('http://127.0.0.1:7540/ingest/3142bff0-53ba-4c2c-9606-b4d021977f0c',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'d2282c'},body:JSON.stringify({sessionId:'d2282c',location:'DestinationModal.js:open',message:'Destination modal opened',data:{groupId:group.id,from:group.starting_location||null,to:group.destination||null,memberCount:members.length},timestamp:Date.now(),hypothesisId:'R1'})}).catch(()=>{});
-      // #endregion
     }
   }, [open, group, members.length]);
 

@@ -2,6 +2,7 @@ import { Geist, Geist_Mono } from "next/font/google";
 import { GlobalEmergencyBanner } from "@/app/components/GlobalEmergencyBanner";
 import { AuthSessionSync } from "@/app/components/AuthSessionSync";
 import { AssignmentRequestHandler } from "@/app/components/tour/AssignmentRequestHandler";
+import { NotificationArrivalListener } from "@/app/components/NotificationArrivalListener";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -25,7 +26,8 @@ export default function RootLayout({ children }) {
       <body className="min-h-full flex flex-col relative scrollbar-none">
         <AuthSessionSync />
         <AssignmentRequestHandler />
-        <GlobalEmergencyBanner /> 
+        <GlobalEmergencyBanner />
+        <NotificationArrivalListener />
         {children}
       </body>
     </html>

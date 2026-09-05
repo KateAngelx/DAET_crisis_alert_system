@@ -5,6 +5,7 @@ import { Bell, User, LogOut, Zap } from "lucide-react";
 import { useCrisisStore, useAuthStore } from "../store/crisisStore";
 import Link from "next/link";
 import { MobileAdminMenu } from "./MobileAdminMenu";
+import { NotificationPanel } from "@/app/components/NotificationPanel";
 import { typography, iconSize } from "@/lib/designSystem";
 
 export function AdminHeader() {
@@ -29,6 +30,7 @@ export function AdminHeader() {
       </div>
 
       <div className="flex items-center gap-3">
+        <NotificationPanel />
         <Link
           href="/crisis/admin"
           className="relative p-2 hover:bg-zinc-100 rounded-xl transition-colors"

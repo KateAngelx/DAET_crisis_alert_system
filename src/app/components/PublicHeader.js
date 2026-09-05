@@ -3,8 +3,9 @@
 import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Bell, Menu, X, Zap, User } from "lucide-react";
-import { useCrisisStore, useAuthStore } from "../store/crisisStore";
+import { Menu, X, Zap, User } from "lucide-react";
+import { useAuthStore } from "../store/crisisStore";
+import { NotificationPanel } from "@/app/components/NotificationPanel";
 import { isPublicNavActive } from "@/lib/navUtils";
 import { typography, iconSize } from "@/lib/designSystem";
 
@@ -23,11 +24,6 @@ export function PublicHeader() {
   const { user, isAuthenticated, logout } = useAuthStore();
 
   useEffect(() => setMounted(true), []);
-
-  const alerts = useCrisisStore((state) => state.alerts) || [];
-  const activeCriticalCount = mounted
-    ? alerts.filter((a) => a.severity === "Critical" && a.status === "Active" && a.is_public).length
-    : 0;
 
   const navItems = mounted && isAuthenticated
     ? [...BASE_NAV, { name: "My Reports", href: "/crisis/reports" }]
@@ -64,12 +60,7 @@ export function PublicHeader() {
         </nav>
 
         <div className="flex items-center gap-3">
-          <Link href="/crisis/alerts" className="relative p-2 hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded-full transition-colors">
-            <Bell size={iconSize.nav} className="text-zinc-600 dark:text-zinc-400" />
-            {activeCriticalCount > 0 && (
-              <span className="absolute top-1 right-1 bg-red-600 size-2.5 rounded-full border-2 border-white dark:border-zinc-900 animate-pulse" />
-            )}
-          </Link>
+          {mounted && isAuthenticated && <NotificationPanel />}
 
           <div className="hidden sm:flex items-center gap-2">
             {!mounted ? (
