@@ -1,5 +1,7 @@
 import { Geist, Geist_Mono } from "next/font/google";
 import { GlobalEmergencyBanner } from "@/app/components/GlobalEmergencyBanner";
+import { AuthSessionSync } from "@/app/components/AuthSessionSync";
+import { AssignmentRequestHandler } from "@/app/components/tour/AssignmentRequestHandler";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -13,14 +15,16 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata = {
-  title: "CONNECT-DAET | Smart Tourism & Crisis Management",
-  description: "Official prototype for System 6: Crisis Management Subsystem",
+  title: "CONNECT-DAET | Daet LGU Crisis Alerts",
+  description: "Official crisis alerts, safety advisories, and incident reporting for tourists in Daet, Camarines Norte.",
 };
 
 export default function RootLayout({ children }) {
   return (
-    <html lang="en" className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}>
-      <body className="min-h-full flex flex-col relative">
+    <html lang="en" className={`${geistSans.variable} ${geistMono.variable} h-full antialiased scrollbar-none`}>
+      <body className="min-h-full flex flex-col relative scrollbar-none">
+        <AuthSessionSync />
+        <AssignmentRequestHandler />
         <GlobalEmergencyBanner /> 
         {children}
       </body>

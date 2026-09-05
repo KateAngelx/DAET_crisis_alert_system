@@ -1,8 +1,28 @@
 @import "tailwindcss";
 
+@utility scrollbar-none {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+
+  &::-webkit-scrollbar {
+    display: none;
+    width: 0;
+    height: 0;
+    background: transparent;
+  }
+}
+
 :root {
   --background: #ffffff;
-  --foreground: #171717;
+  --foreground: #09090b;
+  --brand-primary: #2563eb;
+  --brand-primary-hover: #1d4ed8;
+  --surface-muted: #fafafa;
+  --surface-border: #e4e4e7;
+  --text-muted: #71717a;
+  --emergency: #dc2626;
+  --radius-card: 1rem;
+  --radius-button: 9999px;
 }
 
 @theme inline {
@@ -16,35 +36,57 @@
   :root {
     --background: #0a0a0a;
     --foreground: #ededed;
+    --surface-muted: #18181b;
+    --surface-border: #27272a;
+    --text-muted: #a1a1aa;
   }
 }
 
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-geist-sans), Arial, Helvetica, sans-serif;
+  overflow-x: hidden;
 }
 
-/* Custom Thin Scrollbar with Invisible Track */
-.custom-scrollbar::-webkit-scrollbar {
-  width: 5px; /* Ginawang mas manipis */
+@layer base {
+  *,
+  *::before,
+  *::after {
+    -ms-overflow-style: none !important;
+    scrollbar-width: none !important;
+  }
+
+  *::-webkit-scrollbar,
+  *::-webkit-scrollbar-track,
+  *::-webkit-scrollbar-thumb,
+  *::-webkit-scrollbar-corner {
+    display: none !important;
+    width: 0 !important;
+    height: 0 !important;
+    background: transparent !important;
+    appearance: none !important;
+  }
+
+  html {
+    overflow-y: auto;
+    overflow-x: hidden;
+  }
+
+  html,
+  body {
+    -ms-overflow-style: none !important;
+    scrollbar-width: none !important;
+  }
+
+  html::-webkit-scrollbar,
+  body::-webkit-scrollbar {
+    display: none !important;
+    width: 0 !important;
+    height: 0 !important;
+  }
 }
 
-.custom-scrollbar::-webkit-scrollbar-track {
-  background: transparent; /* Invisible track */
-}
-
-.custom-scrollbar::-webkit-scrollbar-thumb {
-  background: #d1d5db; /* gray-300 */
-  border-radius: 20px;
-}
-
-.custom-scrollbar::-webkit-scrollbar-thumb:hover {
-  background: #9ca3af; /* gray-400 */
-}
-
-/* Support para sa Firefox */
-.custom-scrollbar {
-  scrollbar-width: thin;
-  scrollbar-color: #d1d5db transparent;
+.dashboard-shell {
+  font-family: var(--font-geist-sans), Arial, Helvetica, sans-serif;
 }

@@ -4,11 +4,10 @@ import { PublicFooter } from "@/app/components/PublicFooter";
 
 export default function PublicLayout({ children }) {
   return (
-    <div className="min-h-screen flex flex-col bg-background text-foreground">
-      {/* Lalabas ito sa itaas ng bawat page sa loob ng (public) group */}
+    <div className="min-h-screen flex flex-col bg-background text-foreground scrollbar-none">
       <PublicHeader /> 
       
-      <main className="flex-1">
+      <main className="flex-1 scrollbar-none">
         {children} {/* Dito lalabas ang content ng page.js */}
       </main>
 

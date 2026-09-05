@@ -5,11 +5,12 @@ export const useNotificationStore = create((set, get) => ({
   notifications: [],
   unreadCount: 0,
   loading: false,
+  error: null,
   isSubscribed: false,
 
   fetchNotifications: async (userId) => {
     if (!userId) return;
-    set({ loading: true });
+    set({ loading: true, error: null });
     const { data, error } = await supabase
       .from('notifications')
       .select('*')
@@ -19,9 +20,9 @@ export const useNotificationStore = create((set, get) => ({
 
     if (!error) {
       const unread = (data || []).filter((n) => !n.is_read).length;
-      set({ notifications: data || [], unreadCount: unread, loading: false });
+      set({ notifications: data || [], unreadCount: unread, loading: false, error: null });
     } else {
-      set({ loading: false });
+      set({ loading: false, error: error.message });
     }
 
     if (get().isSubscribed) return;

@@ -59,24 +59,27 @@ export function GlobalEmergencyBanner() {
           <h4 className="text-sm font-black uppercase tracking-tight leading-tight mb-1">
             {latestAlert.title}
           </h4>
-          <p className="text-[10px] font-bold text-zinc-400 uppercase tracking-tighter mb-4">
-            Type: {latestAlert.type}
+          <p className="text-[10px] font-bold text-zinc-400 uppercase tracking-tighter mb-1">
+            {latestAlert.type} · {latestAlert.location}
+          </p>
+          <p className="text-[10px] text-zinc-500 mb-4 line-clamp-2 leading-relaxed">
+            {latestAlert.message}
           </p>
 
           <div className="flex gap-2">
             <Link 
-              href="/crisis" 
+              href="/crisis/alerts" 
               onClick={() => setIsVisible(false)}
               className="flex-1 bg-zinc-800 text-white py-2 rounded-lg text-[10px] font-black uppercase tracking-widest text-center hover:bg-zinc-700 transition-all"
             >
-              View
+              Full Details
             </Link>
             <Link 
               href="/crisis" 
               onClick={() => setIsVisible(false)}
               className="flex-1 bg-red-600 text-white py-2 rounded-lg text-[10px] font-black uppercase tracking-widest text-center hover:bg-red-700 transition-all"
             >
-              Take Action
+              View on Map
             </Link>
           </div>
         </div>

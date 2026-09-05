@@ -5,10 +5,12 @@ import Link from 'next/link';
 import { Bell, Check, X, AlertTriangle } from 'lucide-react';
 import { useAuthStore } from '@/app/store/crisisStore';
 import { useNotificationStore } from '@/app/store/notificationStore';
+import { NotificationPanelSkeleton } from '@/app/components/ui/Skeletons';
+import { iconSize } from '@/lib/designSystem';
 
 export function NotificationPanel({ linkPrefix = '' }) {
   const { user, isAuthenticated } = useAuthStore();
-  const { notifications, unreadCount, fetchNotifications, markAsRead, markAllAsRead } = useNotificationStore();
+  const { notifications, unreadCount, fetchNotifications, markAsRead, markAllAsRead, loading, error } = useNotificationStore();
   const [open, setOpen] = useState(false);
 
   useEffect(() => {
@@ -33,7 +35,7 @@ export function NotificationPanel({ linkPrefix = '' }) {
         className="relative p-2 hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded-full transition-colors"
         aria-label={`${unreadCount} unread notifications`}
       >
-        <Bell size={22} className="text-zinc-600" />
+        <Bell size={iconSize.nav} className="text-zinc-600" />
         {unreadCount > 0 && (
           <span className="absolute top-0.5 right-0.5 bg-red-600 text-white text-[9px] font-bold rounded-full min-w-[18px] h-[18px] flex items-center justify-center border-2 border-white">
             {unreadCount > 9 ? '9+' : unreadCount}
@@ -63,7 +65,21 @@ export function NotificationPanel({ linkPrefix = '' }) {
             </div>
 
             <div className="max-h-80 overflow-y-auto">
-              {notifications.length === 0 ? (
+              {loading ? (
+                <NotificationPanelSkeleton count={4} />
+              ) : error ? (
+                <div className="p-6 text-center">
+                  <AlertTriangle size={24} className="mx-auto text-red-400 mb-2" />
+                  <p className="text-xs font-bold text-red-600 uppercase mb-2">Failed to load</p>
+                  <button
+                    type="button"
+                    onClick={() => fetchNotifications(user.id)}
+                    className="text-[10px] font-black text-blue-600 uppercase hover:underline"
+                  >
+                    Try again
+                  </button>
+                </div>
+              ) : notifications.length === 0 ? (
                 <div className="p-8 text-center text-gray-400">
                   <Bell size={32} className="mx-auto mb-2 opacity-30" />
                   <p className="text-xs font-bold uppercase">No notifications yet</p>

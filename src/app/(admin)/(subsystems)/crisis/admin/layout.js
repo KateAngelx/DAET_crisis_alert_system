@@ -1,0 +1,19 @@
+import { AdminSidebar } from "@/app/components/AdminSidebar";
+import { AdminHeader } from "@/app/components/AdminHeader";
+import { AuthGuard } from "@/app/components/AuthGuard";
+
+export default function CrisisAdminLayout({ children }) {
+  return (
+    <AuthGuard requiredRole="admin">
+      <div className="flex h-screen bg-zinc-50 overflow-hidden dashboard-shell scrollbar-none">
+        <AdminSidebar />
+        <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
+          <AdminHeader />
+          <main className="flex-1 overflow-y-auto p-4 md:p-8 scrollbar-none">
+            {children}
+          </main>
+        </div>
+      </div>
+    </AuthGuard>
+  );
+}

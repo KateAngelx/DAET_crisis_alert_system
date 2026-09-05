@@ -23,7 +23,7 @@ export async function sendEmail({ to, subject, body }) {
           <h2 style="color:#2563eb;">CONNECT-DAET</h2>
           <p>${body.replace(/\n/g, '<br>')}</p>
           <hr style="border:none;border-top:1px solid #e5e7eb;margin:20px 0;">
-          <p style="color:#9ca3af;font-size:12px;">This is an automated message from CONNECT-DAET Crisis Management System.</p>
+          <p style="color:#9ca3af;font-size:12px;">This is an automated message from the CONNECT-DAET Tourism Crisis Communication & Emergency Alert System.</p>
         </div>`,
         text: body,
       }),

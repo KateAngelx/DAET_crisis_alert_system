@@ -141,6 +141,51 @@ export async function notifyUserOfStatusChange(incident, userProfile) {
   });
 }
 
+export async function notifyTouristAssignmentRequest(tourist, guide, tourGroup) {
+  const route = [tourGroup?.starting_location, tourGroup?.destination].filter(Boolean).join(' → ');
+  return dispatchNotification({
+    userId: tourist.id,
+    title: 'Guide Assignment Request',
+    message: `${guide.full_name} wants to be your tour guide for ${tourGroup?.name || 'a tour group'}${route ? ` (${route})` : ''}. Open your profile to confirm or decline.`,
+    notificationType: 'guide_assignment_request',
+    priority: 'HIGH',
+    relatedType: 'assignment',
+    relatedId: tourGroup?.id,
+    channels: ['web', 'email'],
+    recipientEmail: tourist.email,
+    recipientPhone: tourist.phone,
+  });
+}
+
+export async function notifyGuideAssignmentAccepted(guide, tourist, tourGroup) {
+  return dispatchNotification({
+    userId: guide.id,
+    title: 'Tourist Accepted Assignment',
+    message: `${tourist.full_name} confirmed your guide assignment for ${tourGroup?.name || 'the tour group'}.`,
+    notificationType: 'guide_assignment_accepted',
+    priority: 'NORMAL',
+    relatedType: 'assignment',
+    relatedId: tourist.id,
+    channels: ['web', 'email'],
+    recipientEmail: guide.email,
+    recipientPhone: guide.phone,
+  });
+}
+
+export async function notifyGuideAssignmentDeclined(guide, tourist, tourGroup) {
+  return dispatchNotification({
+    userId: guide.id,
+    title: 'Assignment Request Declined',
+    message: `${tourist.full_name} declined your guide assignment request for ${tourGroup?.name || 'the tour group'}.`,
+    notificationType: 'guide_assignment_declined',
+    priority: 'NORMAL',
+    relatedType: 'assignment',
+    relatedId: tourist.id,
+    channels: ['web'],
+    recipientEmail: guide.email,
+  });
+}
+
 export async function notifyGuideAssignment(guide, tourist, assignedBy) {
   return dispatchNotification({
     userId: guide.id,

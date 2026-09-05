@@ -1,17 +1,19 @@
 "use client";
 import React, { useState, useMemo, useEffect } from "react";
-import { AdminHeader } from "@/app/components/AdminHeader";
-import { AdminSidebar } from "@/app/components/AdminSidebar";
 import { useCrisisStore } from "@/app/store/crisisStore";
 import { Skeleton } from "@/app/components/ui/Skeleton";
+import { Card } from "@/app/components/ui/Card";
+import { StatCardSkeleton, AlertCardSkeletonList, MapSkeleton, TableSkeleton } from "@/app/components/ui/Skeletons";
+import { ErrorState } from "@/app/components/ui/AsyncState";
+import { DashboardPageHeader } from "@/app/components/dashboard/DashboardPageHeader";
+import { DashboardStatCard } from "@/app/components/dashboard/DashboardStatCard";
 import { 
   AlertTriangle, Cloud, Heart, Shield, Info, MapPin, Search, CheckCircle, 
   Radio, X, BellRing, FileText, ChevronLeft, ChevronRight,
   Trash2, Edit3, Eye,
   Mail, MessageSquare, Smartphone, Map, Plus 
 } from "lucide-react";
-
-// --- Map Integration Imports ---
+import { iconSize, statGrid, typography } from "@/lib/designSystem";
 import dynamic from 'next/dynamic';
 import "leaflet/dist/leaflet.css";
 
@@ -32,9 +34,8 @@ const ChangeMapView = dynamic(() => Promise.resolve(({ center }) => {
 }), { ssr: false });
 
 export default function CrisisAdminPage() {
-  const { alerts, addAlert, updateAlert, updateAlertStatus, fetchAlerts, deleteAlert, totalUsers, fetchTotalUsers } = useCrisisStore();
+  const { alerts, addAlert, updateAlert, updateAlertStatus, fetchAlerts, deleteAlert, totalUsers, fetchTotalUsers, loading, error } = useCrisisStore();
   
-  const [isLoadingPage, setIsLoadingPage] = useState(true);
   const [mounted, setMounted] = useState(false);
   const [showToast, setShowToast] = useState(false);
   const [toastMessage, setToastMessage] = useState("");
@@ -68,7 +69,6 @@ export default function CrisisAdminPage() {
     setMounted(true);
     fetchAlerts(); 
     fetchTotalUsers();
-    const timer = setTimeout(() => setIsLoadingPage(false), 1200);
       
     if (typeof window !== 'undefined') {
         const L = require('leaflet');
@@ -81,7 +81,6 @@ export default function CrisisAdminPage() {
     }
 
     return () => {
-      clearTimeout(timer);
       setMounted(false);
     };
   }, [fetchAlerts, fetchTotalUsers]);
@@ -264,8 +263,7 @@ export default function CrisisAdminPage() {
   }, [logFilteredAlerts, currentPage, itemsPerPage]);
 
   return (
-    <div className="flex h-screen bg-background overflow-hidden relative font-sans text-foreground text-left">
-      
+    <>
       {/* 1. VIEW MODAL (DETAILED) */}
       {isViewModalOpen && selectedAlert && (
         <div className="fixed inset-0 z-[200] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
@@ -399,52 +397,65 @@ export default function CrisisAdminPage() {
         </div>
       )}
 
-      <AdminSidebar />
-      <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
-        <AdminHeader />
-        <main className="flex-1 overflow-y-auto p-4 md:p-8 no-scrollbar">
-          <div className="max-w-7xl mx-auto space-y-6">
-            
-            <div className="bg-gradient-to-r from-blue-700 to-indigo-800 rounded-3xl p-6 text-white shadow-2xl relative overflow-hidden leading-none">
-              <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-8 relative z-10 leading-none">
-                <div>
-                  <h1 className="text-3xl font-black tracking-tighter uppercase leading-none mb-2">Crisis Command Center</h1>
-                  <p className="text-blue-100 text-sm font-medium leading-none italic">Real-time emergency monitoring for CONNECT-DAET ecosystem</p>
+      <div className="space-y-6 text-left">
+            <DashboardPageHeader
+              title="Crisis Command Center"
+              description="Issue and monitor emergency alerts for Daet. View active alert count, affected areas, incident status, and alert history."
+              action={
+                <div className="flex flex-wrap items-center gap-3">
+                  <button
+                    onClick={() => setShowCreateModal(true)}
+                    className="flex items-center gap-2 bg-red-600 hover:bg-red-700 text-white px-5 py-2.5 rounded-2xl font-black uppercase text-xs tracking-widest transition-all active:scale-95"
+                  >
+                    <Plus size={18} /> New Broadcast
+                  </button>
+                  <div className="flex items-center gap-2 bg-green-50 text-green-700 px-4 py-2 rounded-2xl border border-green-100">
+                    <div className="size-2 bg-green-500 rounded-full animate-pulse" />
+                    <span className="text-[10px] font-black uppercase tracking-widest">Alerts Active</span>
+                  </div>
                 </div>
-                <div className="flex items-center gap-3 leading-none">
-                   <button onClick={() => setShowCreateModal(true)} className="flex items-center gap-2 bg-red-600 hover:bg-red-700 text-white px-6 py-3 rounded-2xl font-black uppercase text-xs tracking-widest shadow-xl transition-all active:scale-95 leading-none border-b-4 border-red-800 active:border-b-0">
-                     <Plus size={18} /> New Broadcast
-                   </button>
-                   <div className="flex items-center gap-2 bg-white/10 px-4 py-2 rounded-full border border-white/20 leading-none">
-                     <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse shadow-[0_0_8px_rgba(74,222,128,0.8)]" />
-                     <span className="text-[10px] font-black uppercase tracking-widest text-white leading-none">System Live</span>
-                   </div>
-                </div>
-              </div>
+              }
+            />
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 relative z-10 leading-none">
-                {!isLoadingPage && (
-                  <>
-                    <StatCard label="Total Users" value={totalUsers.toLocaleString()} icon={<Info size={18} />} />
-                    <StatCard label="Active Alerts" value={alerts.filter(a => a.status === 'Active').length} icon={<Radio size={18} />} />
-                    <StatCard label="Daily Reach" value="92%" icon={<CheckCircle size={18} />} />
-                    <StatCard label="Critical Alerts" value={alerts.filter(a => a.severity === 'Critical' && a.status === 'Active').length} icon={<AlertTriangle size={18} />} isUrgent />
-                  </>
-                )}
-              </div>
+            {error && (
+              <ErrorState message={error} onRetry={fetchAlerts} title="Could not load alerts" />
+            )}
+
+            <div className={statGrid.dashboard}>
+              {loading ? (
+                <>
+                  {Array.from({ length: 4 }).map((_, i) => (
+                    <StatCardSkeleton key={i} />
+                  ))}
+                </>
+              ) : (
+                <>
+                  <DashboardStatCard label="Total Users" value={totalUsers.toLocaleString()} icon={<Info size={iconSize.stat} />} accent="blue" badge="Live" />
+                  <DashboardStatCard label="Active Alerts" value={alerts.filter(a => a.status === 'Active').length} icon={<Radio size={iconSize.stat} />} accent="red" />
+                  <DashboardStatCard label="Resolved Alerts" value={alerts.filter(a => a.status === 'Resolved').length} icon={<CheckCircle size={iconSize.stat} />} accent="green" />
+                  <DashboardStatCard label="Critical Alerts" value={alerts.filter(a => a.severity === 'Critical' && a.status === 'Active').length} icon={<AlertTriangle size={iconSize.stat} />} accent="purple" />
+                </>
+              )}
             </div>
 
-            <div className="bg-white dark:bg-zinc-900 rounded-[28px] p-3 shadow-sm border border-gray-100 dark:border-white/5 leading-none flex flex-col md:flex-row items-center gap-6">
-                <div className="flex items-center gap-3 shrink-0">
-                   <div className="bg-blue-50 dark:bg-blue-900/20 p-2 rounded-lg text-blue-600"><Search size={18}/></div>
-                   <h3 className="font-black uppercase text-[11px] tracking-widest text-zinc-500">Live Command Filters</h3>
-                </div>
-                <div className="flex-1 flex flex-col md:flex-row items-center gap-4 w-full">
-                  <div className="relative w-full md:flex-1">
-                    <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-400" size={16} />
-                    <input className="w-full bg-zinc-50 dark:bg-zinc-950 border border-zinc-100 dark:border-white/5 rounded-xl py-3 pl-12 pr-4 text-xs focus:ring-2 focus:ring-blue-500 text-zinc-900 dark:text-white placeholder-zinc-400 font-bold" placeholder="Search by area or alert name..." value={searchTerm} onChange={e => setSearchTerm(e.target.value)} />
+            <div>
+              <h2 className="text-sm font-black uppercase tracking-widest text-zinc-400 mb-4">Live Command Filters</h2>
+              <Card className="p-4 border-zinc-100">
+                <div className="flex flex-col md:flex-row gap-3">
+                  <div className="relative flex-1">
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-400" size={16} />
+                    <input
+                      className="w-full pl-10 pr-4 py-2.5 bg-zinc-50 border border-zinc-100 rounded-xl text-sm font-medium outline-none focus:ring-2 focus:ring-blue-500"
+                      placeholder="Search by area or alert name..."
+                      value={searchTerm}
+                      onChange={e => setSearchTerm(e.target.value)}
+                    />
                   </div>
-                  <select className="w-full md:w-48 bg-zinc-50 dark:bg-zinc-950 border border-zinc-100 dark:border-white/5 rounded-xl py-3 px-4 text-xs focus:ring-2 focus:ring-blue-500 text-zinc-900 dark:text-white font-bold cursor-pointer" value={filterSeverity} onChange={e => setFilterSeverity(e.target.value)}>
+                  <select
+                    className="px-3 py-2.5 bg-zinc-50 border border-zinc-100 rounded-xl text-sm font-bold outline-none focus:ring-2 focus:ring-blue-500"
+                    value={filterSeverity}
+                    onChange={e => setFilterSeverity(e.target.value)}
+                  >
                     <option value="All">All Severity</option>
                     <option>Critical</option>
                     <option>High</option>
@@ -452,17 +463,17 @@ export default function CrisisAdminPage() {
                     <option>Low</option>
                   </select>
                 </div>
+              </Card>
             </div>
 
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 leading-none">
-              <div className="space-y-4">
-                <div className="flex items-center justify-between mb-2">
-                   <h2 className="text-xl font-black uppercase tracking-tight flex items-center gap-2"><Radio className="text-red-500 animate-pulse" size={20} /> Active Incidents</h2>
-                   <span className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest">Real-time Data</span>
-                </div>
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              <div>
+                <h2 className="text-sm font-black uppercase tracking-widest text-zinc-400 mb-4">Active Incidents</h2>
                 
-                <div className="space-y-4 max-h-[500px] overflow-y-auto no-scrollbar pr-2">
-                  {!isLoadingPage && filteredAlerts.length > 0 ? (
+                <div className="space-y-4 max-h-[500px] overflow-y-auto">
+                  {loading ? (
+                    <AlertCardSkeletonList count={3} />
+                  ) : filteredAlerts.length > 0 ? (
                     filteredAlerts.map((alert) => (
                       <div key={alert.id} className={`p-6 rounded-2xl border-l-[10px] shadow-sm bg-background border border-gray-200 dark:border-white/10 ${getSeverityStyles(alert.severity)}`}>
                         <div className="flex justify-between items-start">
@@ -483,20 +494,20 @@ export default function CrisisAdminPage() {
                       </div>
                     ))
                   ) : (
-                    <div className="py-20 text-center bg-zinc-50 dark:bg-zinc-900 rounded-3xl border-2 border-dashed border-zinc-200 dark:border-white/5">
-                       <Shield size={48} className="mx-auto text-zinc-300 mb-4" />
-                       <p className="font-bold text-zinc-400 uppercase tracking-widest text-xs">No Active Alerts</p>
+                    <div className="py-20 text-center border-2 border-dashed border-zinc-200 rounded-3xl">
+                       <Shield size={48} className="mx-auto text-zinc-200 mb-4" />
+                       <p className="text-zinc-400 font-black uppercase tracking-widest text-xs">No Active Alerts</p>
                     </div>
                   )}
                 </div>
               </div>
 
-              <div className="space-y-4">
-                <div className="flex items-center justify-between mb-2">
-                   <h2 className="text-xl font-black uppercase tracking-tight flex items-center gap-2"><Map className="text-blue-600" size={20} /> Situational Map</h2>
-                </div>
-                <div className="bg-white dark:bg-zinc-900 rounded-[32px] border border-gray-200 dark:border-white/10 shadow-sm overflow-hidden h-[500px] relative z-0">
-                  {mounted && !isLoadingPage && (
+              <div>
+                <h2 className="text-sm font-black uppercase tracking-widest text-zinc-400 mb-4">Situational Map</h2>
+                <Card className="overflow-hidden h-[500px] !p-0 border-zinc-100 relative z-0">
+                  {loading ? (
+                    <MapSkeleton height="h-full" />
+                  ) : mounted && (
                     <MapContainer
                       key="modal-map-static"
                       center={modalMapCenter}
@@ -512,27 +523,26 @@ export default function CrisisAdminPage() {
                       ))}
                     </MapContainer>
                   )}
-                </div>
+                </Card>
               </div>
             </div>
 
             {/* AUDIT LOG SECTION */}
-            <div className="bg-background rounded-3xl shadow-sm border border-gray-200 dark:border-white/10 overflow-hidden leading-none">
-              <div className="p-6 border-b border-gray-200 dark:border-white/10 flex flex-col md:flex-row justify-between items-center bg-zinc-50/50 dark:bg-zinc-900/50 gap-4">
-                <div className="flex items-center gap-4">
-                   <h2 className="text-lg font-black uppercase leading-none">Crisis Audit Log</h2>
-                   <div className="relative">
+            <div>
+              <h2 className="text-sm font-black uppercase tracking-widest text-zinc-400 mb-4">Crisis Audit Log</h2>
+              <Card className="overflow-hidden border-zinc-100 !p-0">
+              <div className="p-5 border-b border-zinc-100 flex flex-col md:flex-row justify-between items-center gap-4 bg-zinc-50/50">
+                <div className="relative w-full md:w-auto">
                       <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-400" size={14} />
                       <input
-                         className="bg-white dark:bg-zinc-950 border border-zinc-200 dark:border-white/5 rounded-lg py-1.5 pl-9 pr-3 text-[10px] font-bold outline-none focus:ring-1 focus:ring-blue-500 w-48"
+                         className="w-full md:w-48 bg-white border border-zinc-100 rounded-xl py-2 pl-9 pr-3 text-xs font-bold outline-none focus:ring-2 focus:ring-blue-500"
                          placeholder="Filter log history..."
                          value={logSearchTerm}
                         onChange={(e) => setLogSearchTerm(e.target.value)}
                       />
-                   </div>
                 </div>
-                {!isLoadingPage && (
-                  <button onClick={handleExportCSV} className="text-blue-600 dark:text-blue-400 font-black text-[10px] uppercase flex items-center gap-2"><FileText size={14} /> Export CSV</button>
+                {!loading && (
+                  <button onClick={handleExportCSV} className="text-[10px] font-black uppercase tracking-widest text-blue-600 flex items-center gap-2 hover:underline"><FileText size={14} /> Export CSV</button>
                 )}
               </div>
               <div className="overflow-x-auto">
@@ -547,7 +557,9 @@ export default function CrisisAdminPage() {
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-gray-200 dark:divide-white/10 font-medium">
-                    {!isLoadingPage && paginatedAlerts.length > 0 ? paginatedAlerts.map(alert => (
+                    {loading ? (
+                      <TableSkeleton rows={5} columns={5} />
+                    ) : paginatedAlerts.length > 0 ? paginatedAlerts.map(alert => (
                       <tr key={alert.id} className="hover:bg-zinc-50/80 dark:hover:bg-zinc-900/50 transition-colors text-xs group font-bold leading-none">
                         <td className="px-6 py-4"><span className={`text-[8px] font-black uppercase px-2 py-1 rounded-full ${alert.status === 'Active' ? 'bg-red-100 text-red-700 dark:bg-red-900/30' : 'bg-green-100 text-green-700 dark:bg-green-900/30'}`}>{alert.status}</span></td>
                         <td className="px-6 py-4"><p className="text-xs font-black uppercase text-zinc-900 dark:text-white truncate max-w-[200px] mb-1">{alert.title}</p><p className="text-[9px] text-zinc-400 font-mono italic">{alert.location}</p></td>
@@ -576,10 +588,8 @@ export default function CrisisAdminPage() {
                   </tbody>
                 </table>
               </div>
+              </Card>
             </div>
-
-          </div>
-        </main>
       </div>
 
       {/* CONFIRMATION MODALS */}
@@ -618,18 +628,6 @@ export default function CrisisAdminPage() {
           </div>
         </div>
       )}
-    </div>
-  );
-}
-
-function StatCard({ label, value, icon, isUrgent = false }) {
-  return (
-    <div className={`p-6 rounded-2xl border transition-all hover:scale-[1.05] group cursor-default leading-none ${isUrgent ? 'bg-red-600/30 border-red-400/50 shadow-xl backdrop-blur-md' : 'bg-white/10 border-white/20 hover:bg-white/20 backdrop-blur-md'}`}>
-      <div className="flex items-center gap-3 mb-4 opacity-80 group-hover:opacity-100 transition-opacity text-white leading-none font-sans">
-        <div className="p-2 bg-white/20 rounded-lg text-white shadow-inner font-sans">{icon}</div>
-        <span className="text-[10px] font-black uppercase tracking-[0.1em] text-white font-sans">{label}</span>
-      </div>
-      <p className="text-3xl font-black tracking-tighter text-white leading-none font-sans">{value}</p>
-    </div>
+    </>
   );
 }

@@ -363,3 +363,31 @@ CREATE POLICY "Users delete own attachments" ON storage.objects
 -- ============================================================
 ALTER PUBLICATION supabase_realtime ADD TABLE notifications;
 ALTER PUBLICATION supabase_realtime ADD TABLE incident_reports;
+
+
+
+CREATE TABLE IF NOT EXISTS public.crisis_alerts (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+
+    title TEXT NOT NULL,
+    message TEXT NOT NULL,
+
+    type TEXT NOT NULL DEFAULT 'General',
+
+    severity TEXT NOT NULL DEFAULT 'Medium'
+        CHECK (severity IN ('Low', 'Medium', 'High', 'Critical')),
+
+    location TEXT,
+
+    status TEXT NOT NULL DEFAULT 'active',
+
+    is_public BOOLEAN NOT NULL DEFAULT TRUE,
+
+    channels TEXT[] DEFAULT ARRAY['web']::TEXT[],
+
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+
+ALTER TABLE public.crisis_alerts ENABLE ROW LEVEL SECURITY;
+

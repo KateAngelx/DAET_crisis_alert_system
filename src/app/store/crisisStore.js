@@ -7,21 +7,22 @@ export const useCrisisStore = create((set, get) => ({
   allUsers: [], 
   totalUsers: 0, 
   loading: false,
+  error: null,
   isSubscribed: false, // Flag para i-track ang realtime status
 
   fetchAlerts: async () => {
     // 1. Initial Data Fetch
-    set({ loading: true });
+    set({ loading: true, error: null });
     const { data, error } = await supabase
       .from('crisis_alerts')
       .select('*')
       .order('created_at', { ascending: false });
     
     if (!error) {
-      set({ alerts: data, loading: false });
+      set({ alerts: data, loading: false, error: null });
     } else {
       console.error("Fetch Error:", error.message);
-      set({ loading: false });
+      set({ loading: false, error: error.message });
     }
 
     // 2. REALTIME GUARD: Check and lock state synchronously to prevent race conditions
@@ -81,16 +82,67 @@ export const useCrisisStore = create((set, get) => ({
 
   fetchAllUsers: async () => {
     set({ loading: true });
-    const { data, error } = await supabase
-      .from('profiles')
-      .select('*')
-      .order('full_name', { ascending: true });
-    
-    if (!error) {
-      set({ allUsers: data, loading: false });
-    } else {
-      console.error("Fetch Users Error:", error.message);
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+
+      if (session) {
+        const res = await fetch('/api/admin/users', {
+          headers: { Authorization: `Bearer ${session.access_token}` },
+        });
+        if (res.ok) {
+          const { users } = await res.json();
+          set({ allUsers: users, loading: false });
+          return;
+        }
+      }
+
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('*')
+        .order('full_name', { ascending: true });
+      
+      if (!error) {
+        set({ allUsers: data, loading: false });
+      } else {
+        console.error("Fetch Users Error:", error.message);
+        set({ loading: false });
+      }
+    } catch (err) {
+      console.error("Fetch Users Error:", err.message);
       set({ loading: false });
+    }
+  },
+
+  updateUserRole: async (userId, user_type) => {
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        return { success: false, error: 'Not authenticated' };
+      }
+
+      const res = await fetch(`/api/admin/users/${userId}`, {
+        method: 'PATCH',
+        headers: {
+          Authorization: `Bearer ${session.access_token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ user_type }),
+      });
+
+      const result = await res.json();
+      if (!res.ok) {
+        return { success: false, error: result.error || 'Failed to update role' };
+      }
+
+      set((state) => ({
+        allUsers: state.allUsers.map((u) =>
+          u.id === userId ? { ...u, user_type: result.profile.user_type } : u
+        ),
+      }));
+
+      return { success: true, profile: result.profile };
+    } catch (err) {
+      return { success: false, error: err.message };
     }
   },
 
@@ -160,6 +212,30 @@ export const useCrisisStore = create((set, get) => ({
 }));
 
 // Auth Store Section
+
+function mapProfileToUser(profile) {
+  if (!profile) return null;
+  return {
+    id: profile.id,
+    name: profile.full_name || "User",
+    role: profile.user_type || "tourist",
+    email: profile.email || "",
+    phone: profile.phone || "",
+    nationality: profile.nationality || "Filipino",
+    created_at: profile.created_at || null,
+  };
+}
+
+async function syncProfileFromServer(session) {
+  const res = await fetch('/api/auth/ensure-profile', {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${session.access_token}` },
+  });
+  const result = await res.json();
+  if (!res.ok) throw new Error(result.error || 'Failed to sync profile');
+  return result.profile;
+}
+
 export const useAuthStore = create(
   persist(
     (set) => ({
@@ -167,23 +243,77 @@ export const useAuthStore = create(
       isAuthenticated: false,
       loading: false,
 
+      fetchProfile: async () => {
+        set({ loading: true });
+        try {
+          const { data: { session } } = await supabase.auth.getSession();
+          if (!session) {
+            set({ loading: false });
+            return { success: false, error: "Not authenticated" };
+          }
+
+          let profile;
+          const { data, error } = await supabase
+            .from("profiles")
+            .select("*")
+            .eq("id", session.user.id)
+            .maybeSingle();
+
+          if (error || !data) {
+            profile = await syncProfileFromServer(session);
+          } else {
+            profile = data;
+          }
+
+          const userData = mapProfileToUser(profile);
+          set({ user: userData, isAuthenticated: true, loading: false });
+          return { success: true, profile };
+        } catch (err) {
+          set({ loading: false });
+          return { success: false, error: err.message };
+        }
+      },
+
+      updateProfile: async ({ full_name, phone, nationality }) => {
+        set({ loading: true });
+        try {
+          const { data: { session } } = await supabase.auth.getSession();
+          if (!session) throw new Error("Not authenticated");
+
+          const { data, error } = await supabase
+            .from("profiles")
+            .update({ full_name, phone, nationality })
+            .eq("id", session.user.id)
+            .select()
+            .single();
+
+          if (error) throw error;
+
+          await supabase.auth.updateUser({
+            data: { full_name, phone, nationality },
+          });
+
+          const userData = mapProfileToUser(data);
+          set({ user: userData, isAuthenticated: true, loading: false });
+          return { success: true, profile: data };
+        } catch (err) {
+          set({ loading: false });
+          return { success: false, error: err.message };
+        }
+      },
+
       login: async (email, password) => {
         set({ loading: true });
         try {
           const { data, error } = await supabase.auth.signInWithPassword({ email, password });
           if (error) throw error;
 
-          const { data: profile } = await supabase
-            .from('profiles')
-            .select('*')
-            .eq('id', data.user.id)
-            .single();
+          const { data: { session } } = await supabase.auth.getSession();
+          if (!session) throw new Error('No active session after login. Check if email confirmation is required in Supabase.');
 
-          const userData = { 
-            id: data.user.id, 
-            name: profile?.full_name || 'User', 
-            role: profile?.user_type || 'tourist' 
-          };
+          const profile = await syncProfileFromServer(session);
+
+          const userData = mapProfileToUser(profile);
           
           set({ user: userData, isAuthenticated: true, loading: false });
           return { success: true, role: userData.role };
@@ -208,8 +338,20 @@ export const useAuthStore = create(
             }
           });
           if (error) throw error;
+
+          const { data: { session } } = await supabase.auth.getSession();
+          if (session) {
+            await syncProfileFromServer(session);
+          }
+
           set({ loading: false });
-          return { success: true };
+          return {
+            success: true,
+            needsConfirmation: !session,
+            message: !session
+              ? 'Account created. Please confirm your email, then sign in.'
+              : 'Account created successfully.',
+          };
         } catch (err) {
           set({ loading: false });
           return { success: false, error: err.message };
