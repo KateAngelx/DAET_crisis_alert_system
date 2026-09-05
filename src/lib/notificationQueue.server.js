@@ -1,6 +1,7 @@
 import { getSupabaseAdmin } from '@/lib/supabaseAdmin';
 import { sendEmail } from '@/lib/emailService';
 import { sendSms } from '@/lib/smsService';
+import { agentDebugLog } from '@/lib/agentDebugLog.server';
 
 const MAX_RETRIES = 3;
 
@@ -19,9 +20,18 @@ async function processDelivery(supabase, delivery) {
     });
   } else if (delivery.channel === 'sms') {
     result = await sendSms({ to: delivery.recipient, message: delivery.body });
-    // #region agent log
-    fetch('http://127.0.0.1:7540/ingest/3142bff0-53ba-4c2c-9606-b4d021977f0c',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'ee1adc'},body:JSON.stringify({sessionId:'ee1adc',location:'notificationQueue.server.js:processDelivery',message:'SMS delivery processed',data:{deliveryId:delivery.id,success:result.success,skipped:Boolean(result.skipped),error:result.error||null,messageId:result.messageId||null},timestamp:Date.now(),hypothesisId:'E'})}).catch(()=>{});
-    // #endregion
+    agentDebugLog({
+      location: 'notificationQueue.server.js:processDelivery',
+      message: 'SMS delivery processed',
+      hypothesisId: 'E',
+      data: {
+        deliveryId: delivery.id,
+        success: result.success,
+        skipped: Boolean(result.skipped),
+        error: result.error || null,
+        messageId: result.messageId || null,
+      },
+    });
   } else {
     result = { success: true, skipped: true };
   }
@@ -36,7 +46,11 @@ async function processDelivery(supabase, delivery) {
         updated_at: new Date().toISOString(),
       })
       .eq('id', delivery.id);
-    return { id: delivery.id, status: result.skipped ? 'failed' : 'sent' };
+    return {
+      id: delivery.id,
+      status: result.skipped ? 'failed' : 'sent',
+      error: result.skipped ? (result.error || 'Channel not configured') : null,
+    };
   }
 
   const newRetryCount = (delivery.retry_count || 0) + 1;

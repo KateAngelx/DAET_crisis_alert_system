@@ -177,8 +177,11 @@ export default function CrisisAdminPage() {
         const smsPart = notifyResult.smsQueued
           ? `${notifyResult.smsQueued} SMS queued.`
           : "No SMS queued (check phone numbers & SMS channel).";
+        const warnPart = notifyResult.warnings?.length
+          ? ` Warnings: ${notifyResult.warnings.join("; ")}`
+          : "";
         setToastMessage(
-          `Success: Alert broadcast. ${notifyResult.notified} user${notifyResult.notified === 1 ? "" : "s"} notified. ${smsPart}`
+          `Success: Alert broadcast. ${notifyResult.notified} user${notifyResult.notified === 1 ? "" : "s"} notified. ${smsPart}${warnPart}`
         );
       } else {
         setToastMessage(`Alert saved, but tourist notifications failed: ${notifyResult.error}`);

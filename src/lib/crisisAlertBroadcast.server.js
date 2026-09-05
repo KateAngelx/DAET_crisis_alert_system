@@ -1,6 +1,7 @@
 import { channelsFromDb } from '@/lib/alertChannels';
 import { NOTIFICATION_CHANNELS, severityToPriority } from '@/lib/constants';
 import { processNotificationDeliveries } from '@/lib/notificationQueue.server';
+import { agentDebugLog } from '@/lib/agentDebugLog.server';
 
 export async function broadcastCrisisAlertToTourists(admin, alertId) {
   const results = { notified: 0, skipped: 0, emailQueued: 0, smsQueued: 0, errors: [] };
@@ -137,11 +138,30 @@ export async function broadcastCrisisAlertToTourists(admin, alertId) {
   results.emailQueued = (deliveries || []).filter((delivery) => delivery.channel === 'email').length;
   results.smsQueued = (deliveries || []).filter((delivery) => delivery.channel === 'sms').length;
 
-  // #region agent log
-  fetch('http://127.0.0.1:7540/ingest/3142bff0-53ba-4c2c-9606-b4d021977f0c',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'ee1adc'},body:JSON.stringify({sessionId:'ee1adc',location:'crisisAlertBroadcast.server.js:queue',message:'deliveries queued',data:{emailQueued:results.emailQueued,smsQueued:results.smsQueued,smsChannelEnabled:channelFlags.sms,recipientCount:toNotify.length,withPhone:toNotify.filter((t)=>t.phone).length},timestamp:Date.now(),hypothesisId:'B'})}).catch(()=>{});
-  // #endregion
+  agentDebugLog({
+    location: 'crisisAlertBroadcast.server.js:queue',
+    message: 'deliveries queued',
+    hypothesisId: 'B',
+    data: {
+      emailQueued: results.emailQueued,
+      smsQueued: results.smsQueued,
+      smsChannelEnabled: channelFlags.sms,
+      recipientCount: toNotify.length,
+      withPhone: toNotify.filter((t) => t.phone).length,
+    },
+  });
 
-  await processNotificationDeliveries({ deliveryIds: (deliveries || []).map((delivery) => delivery.id) });
+  const processResult = await processNotificationDeliveries({
+    deliveryIds: (deliveries || []).map((delivery) => delivery.id),
+  });
+  results.deliveryResults = processResult.results || [];
+
+  const smsFailures = (processResult.results || []).filter(
+    (r) => r.status === 'failed' || r.status === 'retrying'
+  );
+  if (smsFailures.length) {
+    results.errors.push(`SMS delivery issues: ${smsFailures.map((r) => r.error || r.status).join('; ')}`);
+  }
 
   return results;
 }

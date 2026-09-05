@@ -26,6 +26,7 @@ export async function POST(request) {
       skipped: results.skipped,
       emailQueued: results.emailQueued,
       smsQueued: results.smsQueued,
+      deliveryResults: results.deliveryResults || [],
       warnings: results.errors,
     });
   } catch (err) {
