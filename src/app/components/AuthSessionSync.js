@@ -56,6 +56,8 @@ export function AuthSessionSync() {
             phone: profile?.phone || "",
             nationality: profile?.nationality || "Filipino",
             created_at: profile?.created_at || null,
+            notification_channels: profile?.notification_channels || { email: true, sms: true, app: true },
+            notification_channels_configured: Boolean(profile?.notification_channels_configured),
           },
           isAuthenticated: true,
         });
@@ -102,6 +104,8 @@ export function AuthSessionSync() {
               phone: profile?.phone || "",
               nationality: profile?.nationality || "Filipino",
               created_at: profile?.created_at || null,
+              notification_channels: profile?.notification_channels || { email: true, sms: true, app: true },
+              notification_channels_configured: Boolean(profile?.notification_channels_configured),
             },
             isAuthenticated: true,
           });

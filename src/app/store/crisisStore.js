@@ -4,6 +4,7 @@ import { supabase } from '@/lib/supabaseClient';
 import { useNotificationStore } from '@/app/store/notificationStore';
 import { channelsToDb, normalizeAlert } from '@/lib/alertChannels';
 import { getActiveSession } from '@/lib/authSession';
+import { DEFAULT_USER_NOTIFICATION_CHANNELS } from '@/lib/userNotificationChannels';
 
 export const useCrisisStore = create((set, get) => ({
   alerts: [], 
@@ -254,6 +255,7 @@ export const useCrisisStore = create((set, get) => ({
 
 function mapProfileToUser(profile) {
   if (!profile) return null;
+  const channels = profile.notification_channels || DEFAULT_USER_NOTIFICATION_CHANNELS;
   return {
     id: profile.id,
     name: profile.full_name || "User",
@@ -262,6 +264,12 @@ function mapProfileToUser(profile) {
     phone: profile.phone || "",
     nationality: profile.nationality || "Filipino",
     created_at: profile.created_at || null,
+    notification_channels: {
+      email: Boolean(channels.email),
+      sms: Boolean(channels.sms),
+      app: Boolean(channels.app ?? channels.web ?? true),
+    },
+    notification_channels_configured: Boolean(profile.notification_channels_configured),
   };
 }
 
@@ -331,6 +339,39 @@ export const useAuthStore = create(
           await supabase.auth.updateUser({
             data: { full_name, phone, nationality },
           });
+
+          const userData = mapProfileToUser(data);
+          set({ user: userData, isAuthenticated: true, loading: false });
+          return { success: true, profile: data };
+        } catch (err) {
+          set({ loading: false });
+          return { success: false, error: err.message };
+        }
+      },
+
+      updateNotificationChannels: async (channels, markConfigured = true) => {
+        set({ loading: true });
+        try {
+          const session = await getActiveSession();
+          if (!session) throw new Error("Not authenticated");
+
+          const payload = {
+            notification_channels: {
+              email: Boolean(channels.email),
+              sms: Boolean(channels.sms),
+              app: Boolean(channels.app),
+            },
+            notification_channels_configured: markConfigured,
+          };
+
+          const { data, error } = await supabase
+            .from("profiles")
+            .update(payload)
+            .eq("id", session.user.id)
+            .select()
+            .single();
+
+          if (error) throw error;
 
           const userData = mapProfileToUser(data);
           set({ user: userData, isAuthenticated: true, loading: false });

@@ -2,6 +2,11 @@ import { channelsFromDb } from '@/lib/alertChannels';
 import { NOTIFICATION_CHANNELS, severityToPriority } from '@/lib/constants';
 import { processNotificationDeliveries } from '@/lib/notificationQueue.server';
 import { agentDebugLog } from '@/lib/agentDebugLog.server';
+import {
+  channelsFromProfile,
+  getEffectiveAlertChannels,
+  isExternalAlertRecipient,
+} from '@/lib/userNotificationChannels';
 
 export async function broadcastCrisisAlertToTourists(admin, alertId) {
   const results = { notified: 0, skipped: 0, emailQueued: 0, smsQueued: 0, errors: [] };
@@ -17,11 +22,7 @@ export async function broadcastCrisisAlertToTourists(admin, alertId) {
     return results;
   }
 
-  const channelFlags = channelsFromDb(alert.channels);
-  const dispatchChannels = ['web'];
-  if (channelFlags.email) dispatchChannels.push('email');
-  if (channelFlags.sms) dispatchChannels.push('sms');
-
+  const alertChannelFlags = channelsFromDb(alert.channels);
   const priority = severityToPriority(alert.severity);
   const title = `${alert.severity} Crisis Alert: ${alert.title}`;
   const message = `${alert.type} alert for ${alert.location}. ${alert.message}`;
@@ -39,84 +40,88 @@ export async function broadcastCrisisAlertToTourists(admin, alertId) {
 
   const alreadyNotified = new Set((existing || []).map((row) => row.user_id));
 
-  const { data: tourists, error: touristError } = await admin
+  const { data: recipients, error: recipientError } = await admin
     .from('profiles')
-    .select('id, email, phone')
-    .in('user_type', ['tourist', 'guide', 'admin'])
+    .select('id, email, phone, user_type, notification_channels')
+    .in('user_type', ['tourist', 'guide'])
     .eq('is_active', true);
 
-  if (touristError) {
-    results.errors.push(touristError.message);
+  if (recipientError) {
+    results.errors.push(recipientError.message);
     return results;
   }
 
-  const toNotify = (tourists || []).filter((tourist) => !alreadyNotified.has(tourist.id));
-  results.skipped = (tourists || []).length - toNotify.length;
+  const toNotify = (recipients || []).filter(
+    (profile) => !alreadyNotified.has(profile.id) && isExternalAlertRecipient(profile)
+  );
+  results.skipped = (recipients || []).length - toNotify.length;
 
   if (toNotify.length === 0) {
     return results;
   }
 
-  const notificationRows = toNotify.map((tourist) => ({
-    user_id: tourist.id,
-    title,
-    message,
-    notification_type: 'crisis_alert',
-    priority,
-    related_type: 'alert',
-    related_id: alertId,
-  }));
-
-  const { data: insertedNotifications, error: insertError } = await admin
-    .from('notifications')
-    .insert(notificationRows)
-    .select('id, user_id');
-
-  if (insertError) {
-    results.errors.push(insertError.message);
-    return results;
-  }
-
-  results.notified = insertedNotifications?.length || 0;
-
-  if (!dispatchChannels.includes('email') && !dispatchChannels.includes('sms')) {
-    return results;
-  }
-
-  const notificationByUser = new Map(
-    (insertedNotifications || []).map((notification) => [notification.user_id, notification.id])
-  );
   const deliveryRecords = [];
 
-  for (const tourist of toNotify) {
-    const notificationId = notificationByUser.get(tourist.id);
-    if (!notificationId) continue;
+  for (const profile of toNotify) {
+    const userChannels = channelsFromProfile(profile);
+    const effective = getEffectiveAlertChannels(alertChannelFlags, userChannels);
 
-    if (dispatchChannels.includes('email') && tourist.email) {
+    if (!effective.email && !effective.sms && !effective.app) {
+      results.skipped += 1;
+      continue;
+    }
+
+    let notificationId = null;
+
+    if (effective.app) {
+      const { data: notification, error: notifError } = await admin
+        .from('notifications')
+        .insert({
+          user_id: profile.id,
+          title,
+          message,
+          notification_type: 'crisis_alert',
+          priority,
+          related_type: 'alert',
+          related_id: alertId,
+        })
+        .select('id')
+        .single();
+
+      if (notifError) {
+        results.errors.push(notifError.message);
+        continue;
+      }
+
+      notificationId = notification.id;
+      results.notified += 1;
+    }
+
+    if (effective.email && profile.email) {
       deliveryRecords.push({
         notification_id: notificationId,
-        user_id: tourist.id,
+        user_id: profile.id,
         channel: NOTIFICATION_CHANNELS.EMAIL,
         status: 'pending',
-        recipient: tourist.email,
+        recipient: profile.email,
         subject: title,
         body: message,
         priority,
-        idempotency_key: `${tourist.id}-crisis_alert-${alertId}-email`,
+        idempotency_key: `${profile.id}-crisis_alert-${alertId}-email`,
       });
     }
 
-    if (dispatchChannels.includes('sms') && tourist.phone) {
+    if (effective.sms && profile.phone) {
       deliveryRecords.push({
         notification_id: notificationId,
-        user_id: tourist.id,
+        user_id: profile.id,
         channel: NOTIFICATION_CHANNELS.SMS,
         status: 'pending',
-        recipient: tourist.phone,
+        recipient: profile.phone,
         subject: title,
         body: message,
         priority,
-        idempotency_key: `${tourist.id}-crisis_alert-${alertId}-sms`,
+        idempotency_key: `${profile.id}-crisis_alert-${alertId}-sms`,
       });
     }
   }
@@ -135,8 +140,8 @@ export async function broadcastCrisisAlertToTourists(admin, alertId) {
     return results;
   }
 
-  results.emailQueued = (deliveries || []).filter((delivery) => delivery.channel === 'email').length;
-  results.smsQueued = (deliveries || []).filter((delivery) => delivery.channel === 'sms').length;
+  results.emailQueued = (deliveries || []).filter((d) => d.channel === 'email').length;
+  results.smsQueued = (deliveries || []).filter((d) => d.channel === 'sms').length;
 
   agentDebugLog({
     location: 'crisisAlertBroadcast.server.js:queue',
@@ -145,14 +150,12 @@ export async function broadcastCrisisAlertToTourists(admin, alertId) {
     data: {
       emailQueued: results.emailQueued,
       smsQueued: results.smsQueued,
-      smsChannelEnabled: channelFlags.sms,
       recipientCount: toNotify.length,
-      withPhone: toNotify.filter((t) => t.phone).length,
     },
   });
 
   const processResult = await processNotificationDeliveries({
-    deliveryIds: (deliveries || []).map((delivery) => delivery.id),
+    deliveryIds: (deliveries || []).map((d) => d.id),
   });
   results.deliveryResults = processResult.results || [];
 

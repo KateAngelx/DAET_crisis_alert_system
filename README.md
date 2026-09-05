@@ -67,6 +67,7 @@ Run migrations in order in the Supabase SQL Editor:
 6. `012_route_advisories.sql`
 7. `013_route_geometry.sql` — road-following route paths (OSRM)
 8. `014_unify_area_advisories.sql` — merges area hazards into `route_advisories`
+9. `015_user_notification_channels.sql` — user email/SMS/app preferences
 
 ### User Roles
 

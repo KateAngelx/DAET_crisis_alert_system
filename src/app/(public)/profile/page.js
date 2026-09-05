@@ -8,6 +8,7 @@ import { DestinationModal } from "@/app/components/tour/DestinationModal";
 import { useAuthStore, useCrisisStore } from "@/app/store/crisisStore";
 import { useGuideStore } from "@/app/store/guideStore";
 import { InfoPageHero, PublicPageShell, PublicPageContent } from "@/app/components/InfoPageHero";
+import { CommunicationChannelForm } from "@/app/components/CommunicationChannelSetup";
 import { ProfileSkeleton } from "@/app/components/ui/Skeletons";
 import { ErrorState } from "@/app/components/ui/AsyncState";
 import { formatTourRoute } from "@/lib/tourGroupRoute";
@@ -19,10 +20,13 @@ const ROLE_LABELS = {
 };
 
 export default function ProfilePage() {
-  const { user, isAuthenticated, loading, fetchProfile, updateProfile } = useAuthStore();
+  const { user, isAuthenticated, loading, fetchProfile, updateProfile, updateNotificationChannels } = useAuthStore();
   const { alerts, fetchAlerts } = useCrisisStore();
   const { touristActiveGroup, fetchTouristActiveGroup } = useGuideStore();
   const [form, setForm] = useState({ full_name: "", phone: "", nationality: "Filipino" });
+  const [channelForm, setChannelForm] = useState({ email: true, sms: true, app: true });
+  const [channelSaving, setChannelSaving] = useState(false);
+  const [channelMessage, setChannelMessage] = useState(null);
   const [message, setMessage] = useState(null);
   const [initialized, setInitialized] = useState(false);
   const [loadError, setLoadError] = useState(null);
@@ -52,6 +56,9 @@ export default function ProfilePage() {
         phone: user.phone || "",
         nationality: user.nationality || "Filipino",
       });
+      if (user.notification_channels) {
+        setChannelForm(user.notification_channels);
+      }
     }
   }, [user, initialized]);
 
@@ -84,6 +91,19 @@ export default function ProfilePage() {
       setMessage({ type: "success", text: "Profile updated successfully." });
     } else {
       setMessage({ type: "error", text: result.error || "Failed to update profile." });
+    }
+  };
+
+  const handleChannelSave = async (channels) => {
+    setChannelMessage(null);
+    setChannelSaving(true);
+    const result = await updateNotificationChannels(channels, true);
+    setChannelSaving(false);
+    if (result.success) {
+      setChannelForm(channels);
+      setChannelMessage({ type: "success", text: "Communication preferences updated." });
+    } else {
+      setChannelMessage({ type: "error", text: result.error || "Failed to update preferences." });
     }
   };
 
@@ -303,6 +323,36 @@ export default function ProfilePage() {
               </form>
             </Card>
           </div>
+
+          {user?.role !== "admin" ? (
+            <Card className="p-6 rounded-3xl mt-6">
+              <h2 className="text-xl font-black uppercase tracking-tight text-zinc-900 mb-2">Communication Preferences</h2>
+              <p className="text-sm text-zinc-500 font-medium mb-4">
+                Control how you receive crisis alerts and updates. Disabled channels will not receive notifications.
+              </p>
+              {channelMessage && (
+                <div className={`mb-4 p-4 rounded-2xl text-sm font-medium ${
+                  channelMessage.type === "success"
+                    ? "bg-green-50 border border-green-100 text-green-800"
+                    : "bg-red-50 border border-red-100 text-red-700"
+                }`}>
+                  {channelMessage.text}
+                </div>
+              )}
+              <CommunicationChannelForm
+                initialChannels={channelForm}
+                onSave={handleChannelSave}
+                saving={channelSaving}
+              />
+            </Card>
+          ) : (
+            <Card className="p-6 rounded-3xl mt-6 bg-zinc-50 border-zinc-200">
+              <h2 className="text-xl font-black uppercase tracking-tight text-zinc-900 mb-2">Communication Preferences</h2>
+              <p className="text-sm text-zinc-600 font-medium">
+                Administrator accounts manage alerts in Command Center and do not receive tourist/guide SMS or email broadcasts.
+              </p>
+            </Card>
+          )}
           </>
         )}
       </PublicPageContent>

@@ -1,6 +1,7 @@
 import { getSupabaseAdmin } from '@/lib/supabaseAdmin';
 import { NOTIFICATION_CHANNELS } from '@/lib/constants';
 import { processNotificationDeliveries } from '@/lib/notificationQueue.server';
+import { getDispatchChannelsForProfile } from '@/lib/userNotificationChannels';
 
 export async function dispatchNotificationServer({
   userId,
@@ -29,7 +30,7 @@ export async function dispatchNotificationServer({
 
   const { data: recipient, error: recipientError } = await admin
     .from('profiles')
-    .select('id')
+    .select('id, user_type, notification_channels, email, phone')
     .eq('id', userId)
     .maybeSingle();
 
@@ -38,36 +39,45 @@ export async function dispatchNotificationServer({
     return results;
   }
 
-  try {
-    const { data: notification, error: notifError } = await admin
-      .from('notifications')
-      .insert({
-        user_id: userId,
-        title,
-        message,
-        notification_type: notificationType,
-        priority,
-        related_type: relatedType,
-        related_id: relatedId,
-      })
-      .select()
-      .single();
+  const effective = getDispatchChannelsForProfile(recipient, channels);
+  const emailTo = recipientEmail || recipient.email;
+  const phoneTo = recipientPhone || recipient.phone;
 
-    if (notifError) {
-      results.errors.push(`Web notification failed: ${notifError.message}`);
-    } else {
-      results.web = notification;
+  try {
+    let notification = null;
+
+    if (effective.app) {
+      const { data: inserted, error: notifError } = await admin
+        .from('notifications')
+        .insert({
+          user_id: userId,
+          title,
+          message,
+          notification_type: notificationType,
+          priority,
+          related_type: relatedType,
+          related_id: relatedId,
+        })
+        .select()
+        .single();
+
+      if (notifError) {
+        results.errors.push(`Web notification failed: ${notifError.message}`);
+      } else {
+        notification = inserted;
+        results.web = inserted;
+      }
     }
 
     const deliveryRecords = [];
 
-    if (channels.includes('email') && recipientEmail) {
+    if (effective.email && emailTo) {
       deliveryRecords.push({
         notification_id: notification?.id,
         user_id: userId,
         channel: NOTIFICATION_CHANNELS.EMAIL,
         status: 'pending',
-        recipient: recipientEmail,
+        recipient: emailTo,
         subject: title,
         body: message,
         priority,
@@ -75,13 +85,13 @@ export async function dispatchNotificationServer({
       });
     }
 
-    if (channels.includes('sms') && recipientPhone) {
+    if (effective.sms && phoneTo) {
       deliveryRecords.push({
         notification_id: notification?.id,
         user_id: userId,
         channel: NOTIFICATION_CHANNELS.SMS,
         status: 'pending',
-        recipient: recipientPhone,
+        recipient: phoneTo,
         subject: title,
         body: message,
         priority,

@@ -2,6 +2,11 @@ import { dangerSeverityToPriority } from "@/lib/dangerousLocationUtils";
 import { areaAdvisoryToWarning } from "@/lib/areaAdvisoryAdapter";
 import { NOTIFICATION_CHANNELS } from "@/lib/constants";
 import { processNotificationDeliveries } from "@/lib/notificationQueue.server";
+import {
+  channelsFromProfile,
+  getEffectiveUserChannels,
+  isExternalAlertRecipient,
+} from "@/lib/userNotificationChannels";
 
 async function loadAreaHazard(admin, warningId) {
   const { data: advisory } = await admin
@@ -55,78 +60,85 @@ export async function broadcastDangerousLocationToTourists(admin, warningId) {
 
   const alreadyNotified = new Set((existing || []).map((row) => row.user_id));
 
-  const { data: tourists, error: touristError } = await admin
+  const { data: recipients, error: recipientError } = await admin
     .from("profiles")
-    .select("id, email, phone")
-    .eq("user_type", "tourist")
+    .select("id, email, phone, user_type, notification_channels")
+    .in("user_type", ["tourist", "guide"])
     .eq("is_active", true);
 
-  if (touristError) {
-    results.errors.push(touristError.message);
+  if (recipientError) {
+    results.errors.push(recipientError.message);
     return results;
   }
 
-  const toNotify = (tourists || []).filter((tourist) => !alreadyNotified.has(tourist.id));
-  results.skipped = (tourists || []).length - toNotify.length;
+  const toNotify = (recipients || []).filter(
+    (profile) => !alreadyNotified.has(profile.id) && isExternalAlertRecipient(profile)
+  );
+  results.skipped = (recipients || []).length - toNotify.length;
 
   if (toNotify.length === 0) return results;
 
-  const notificationRows = toNotify.map((tourist) => ({
-    user_id: tourist.id,
-    title,
-    message,
-    notification_type: "dangerous_location",
-    priority,
-    related_type: "dangerous_location",
-    related_id: warningId,
-  }));
-
-  const { data: insertedNotifications, error: insertError } = await admin
-    .from("notifications")
-    .insert(notificationRows)
-    .select("id, user_id");
-
-  if (insertError) {
-    results.errors.push(insertError.message);
-    return results;
-  }
-
-  results.notified = insertedNotifications?.length || 0;
-
-  const notificationByUser = new Map(
-    (insertedNotifications || []).map((n) => [n.user_id, n.id])
-  );
   const deliveryRecords = [];
 
-  for (const tourist of toNotify) {
-    const notificationId = notificationByUser.get(tourist.id);
-    if (!notificationId) continue;
+  for (const profile of toNotify) {
+    const effective = getEffectiveUserChannels(channelsFromProfile(profile));
 
-    if (tourist.email) {
+    if (!effective.email && !effective.sms && !effective.app) {
+      results.skipped += 1;
+      continue;
+    }
+
+    let notificationId = null;
+
+    if (effective.app) {
+      const { data: notification, error: notifError } = await admin
+        .from("notifications")
+        .insert({
+          user_id: profile.id,
+          title,
+          message,
+          notification_type: "dangerous_location",
+          priority,
+          related_type: "dangerous_location",
+          related_id: warningId,
+        })
+        .select("id")
+        .single();
+
+      if (notifError) {
+        results.errors.push(notifError.message);
+        continue;
+      }
+
+      notificationId = notification.id;
+      results.notified += 1;
+    }
+
+    if (effective.email && profile.email) {
       deliveryRecords.push({
         notification_id: notificationId,
-        user_id: tourist.id,
+        user_id: profile.id,
         channel: NOTIFICATION_CHANNELS.EMAIL,
         status: "pending",
-        recipient: tourist.email,
+        recipient: profile.email,
         subject: title,
         body: message,
         priority,
-        idempotency_key: `${tourist.id}-dangerous_location-${warningId}-email`,
+        idempotency_key: `${profile.id}-dangerous_location-${warningId}-email`,
       });
     }
 
-    if (tourist.phone) {
+    if (effective.sms && profile.phone) {
       deliveryRecords.push({
         notification_id: notificationId,
-        user_id: tourist.id,
+        user_id: profile.id,
         channel: NOTIFICATION_CHANNELS.SMS,
         status: "pending",
-        recipient: tourist.phone,
+        recipient: profile.phone,
         subject: title,
         body: message,
         priority,
-        idempotency_key: `${tourist.id}-dangerous_location-${warningId}-sms`,
+        idempotency_key: `${profile.id}-dangerous_location-${warningId}-sms`,
       });
     }
   }
