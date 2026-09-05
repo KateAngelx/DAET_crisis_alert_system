@@ -275,3 +275,6 @@
 {"sessionId":"082309","location":"ensure-profile","message":"Profile synced","data":{"userId":"3932fc2b-5efc-48e9-bd9f-0a88a9fb1c2e","user_type":"admin","source":"existing"},"timestamp":1788532992482}
 {"sessionId":"082309","location":"ensure-profile","message":"Profile synced","data":{"userId":"907872ec-9c4c-489a-b671-69ca1183e9fc","user_type":"guide","source":"existing"},"timestamp":1788533049194}
 {"sessionId":"082309","location":"ensure-profile","message":"Profile synced","data":{"userId":"907872ec-9c4c-489a-b671-69ca1183e9fc","user_type":"guide","source":"existing"},"timestamp":1788533050707}
+{"sessionId":"082309","location":"ensure-profile","message":"Profile synced","data":{"userId":"907872ec-9c4c-489a-b671-69ca1183e9fc","user_type":"guide","source":"existing"},"timestamp":1788586412009}
+{"sessionId":"082309","location":"ensure-profile","message":"Profile synced","data":{"userId":"907872ec-9c4c-489a-b671-69ca1183e9fc","user_type":"guide","source":"existing"},"timestamp":1788586412432}
+{"sessionId":"082309","location":"ensure-profile","message":"Profile synced","data":{"userId":"907872ec-9c4c-489a-b671-69ca1183e9fc","user_type":"guide","source":"existing"},"timestamp":1788586440209}

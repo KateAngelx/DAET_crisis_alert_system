@@ -34,6 +34,18 @@ NEXT_PUBLIC_SUPABASE_ANON_KEY=your_anon_key
 SUPABASE_SERVICE_ROLE_KEY=your_service_role_key   # Required for profile creation & role management
 ```
 
+### Deploy to Vercel
+
+1. Push the repo to GitHub and import it in [Vercel](https://vercel.com).
+2. In **Project → Settings → Environment Variables**, add the same three variables from `.env.local`:
+   - `NEXT_PUBLIC_SUPABASE_URL`
+   - `NEXT_PUBLIC_SUPABASE_ANON_KEY`
+   - `SUPABASE_SERVICE_ROLE_KEY`
+3. Enable each variable for **Production**, **Preview**, and **Development**.
+4. **Redeploy** after saving env vars (`NEXT_PUBLIC_*` values are embedded at build time).
+
+Without these variables, the crisis hub shows *Could not load alerts* with a Supabase configuration error.
+
 ### Database Setup
 
 Run migrations in order:

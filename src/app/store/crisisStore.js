@@ -13,16 +13,23 @@ export const useCrisisStore = create((set, get) => ({
   fetchAlerts: async () => {
     // 1. Initial Data Fetch
     set({ loading: true, error: null });
-    const { data, error } = await supabase
-      .from('crisis_alerts')
-      .select('*')
-      .order('created_at', { ascending: false });
-    
-    if (!error) {
-      set({ alerts: data, loading: false, error: null });
-    } else {
-      console.error("Fetch Error:", error.message);
-      set({ loading: false, error: error.message });
+    try {
+      const { data, error } = await supabase
+        .from('crisis_alerts')
+        .select('*')
+        .order('created_at', { ascending: false });
+
+      if (!error) {
+        set({ alerts: data, loading: false, error: null });
+      } else {
+        console.error("Fetch Error:", error.message);
+        set({ loading: false, error: error.message });
+      }
+    } catch (err) {
+      const message = err?.message || 'Could not load alerts.';
+      console.error("Fetch Error:", message);
+      set({ loading: false, error: message });
+      return;
     }
 
     // 2. REALTIME GUARD: Check and lock state synchronously to prevent race conditions

@@ -20,19 +20,20 @@ export function GlobalEmergencyBanner() {
    * FIX: Mahigpit na check para sa Admin Pages.
    * Kasama na rito ang /admin at /crisis/admin
    */
-  const isAdminPage = 
-    pathname.startsWith("/admin") || 
-    pathname.includes("/admin") || 
+  const isAdminPage =
+    pathname.startsWith("/admin") ||
+    pathname.includes("/admin") ||
     pathname.includes("admin");
 
+  const isAuthPage = pathname === "/login" || pathname === "/register";
+
   useEffect(() => {
-    // Lalabas lang kung may critical alert AT HINDI admin page
-    if (criticalAlerts.length > 0 && !isAdminPage) {
+    if (criticalAlerts.length > 0 && !isAdminPage && !isAuthPage) {
       setIsVisible(true);
     } else {
       setIsVisible(false);
     }
-  }, [criticalAlerts.length, isAdminPage]);
+  }, [criticalAlerts.length, isAdminPage, isAuthPage]);
 
   if (!isVisible || criticalAlerts.length === 0) return null;
 
