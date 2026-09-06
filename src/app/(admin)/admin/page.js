@@ -52,7 +52,9 @@ export default function AdminDashboard() {
   const {
     alerts,
     totalUsers,
+    userStats,
     fetchTotalUsers,
+    fetchUserStats,
     fetchAlerts,
     loading: alertsLoading,
     error: alertsError,
@@ -71,13 +73,20 @@ export default function AdminDashboard() {
   useEffect(() => {
     let cancelled = false;
     (async () => {
-      await Promise.all([fetchAlerts(), fetchIncidents(), fetchTotalUsers(), fetchAllTourGroupsAdmin(), fetchWarnings()]);
+      await Promise.all([
+        fetchAlerts(),
+        fetchIncidents(),
+        fetchTotalUsers(),
+        fetchUserStats(),
+        fetchAllTourGroupsAdmin(),
+        fetchWarnings(),
+      ]);
       if (!cancelled) setStatsReady(true);
     })();
     return () => {
       cancelled = true;
     };
-  }, [fetchAlerts, fetchIncidents, fetchTotalUsers, fetchAllTourGroupsAdmin, fetchWarnings]);
+  }, [fetchAlerts, fetchIncidents, fetchTotalUsers, fetchUserStats, fetchAllTourGroupsAdmin, fetchWarnings]);
 
   const isLoading = !statsReady || alertsLoading || incidentsLoading;
   const hasError = alertsError || incidentsError;
@@ -167,7 +176,14 @@ export default function AdminDashboard() {
 
   const handleRetry = () => {
     setStatsReady(false);
-    Promise.all([fetchAlerts(), fetchIncidents(), fetchTotalUsers(), fetchAllTourGroupsAdmin(), fetchWarnings()]).finally(() =>
+    Promise.all([
+      fetchAlerts(),
+      fetchIncidents(),
+      fetchTotalUsers(),
+      fetchUserStats(),
+      fetchAllTourGroupsAdmin(),
+      fetchWarnings(),
+    ]).finally(() =>
       setStatsReady(true)
     );
   };
@@ -487,6 +503,61 @@ export default function AdminDashboard() {
             </section>
           )}
         </>
+      )}
+
+      {!isLoading && (
+        <section>
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-sm font-black uppercase tracking-widest text-zinc-400">
+              User & Registration Monitoring
+            </h2>
+            <Link
+              href="/admin/users"
+              className="text-[10px] font-black uppercase tracking-widest text-blue-600 hover:underline flex items-center gap-1"
+            >
+              Manage users <ArrowRight size={12} />
+            </Link>
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
+            <Card className="p-4 border-zinc-100 text-center">
+              <p className="text-[10px] font-black uppercase text-zinc-400 mb-1">Registered Tourists</p>
+              <p className="text-2xl font-black text-blue-600">{userStats?.touristCount ?? totalUsers}</p>
+              <p className="text-[10px] text-zinc-400 mt-1">
+                +{userStats?.newTouristsWeek ?? 0} this week
+              </p>
+            </Card>
+            <Card className="p-4 border-zinc-100 text-center">
+              <p className="text-[10px] font-black uppercase text-zinc-400 mb-1">Online Now</p>
+              <p className="text-2xl font-black text-green-600">{userStats?.onlineCount ?? 0}</p>
+              <p className="text-[10px] text-zinc-400 mt-1">
+                Active in last {userStats?.onlineThresholdMinutes ?? 15} min
+              </p>
+            </Card>
+            <Card className="p-4 border-zinc-100 text-center">
+              <p className="text-[10px] font-black uppercase text-zinc-400 mb-1">Inactive 30+ Days</p>
+              <p className="text-2xl font-black text-amber-600">{userStats?.inactiveOver30Days ?? 0}</p>
+              <p className="text-[10px] text-zinc-400 mt-1">SMS paused when processed</p>
+            </Card>
+            <Card className="p-4 border-zinc-100 text-center">
+              <p className="text-[10px] font-black uppercase text-zinc-400 mb-1">New Today</p>
+              <p className="text-2xl font-black text-purple-600">{userStats?.newTouristsToday ?? 0}</p>
+              <p className="text-[10px] text-zinc-400 mt-1">Tourist registrations</p>
+            </Card>
+          </div>
+          {userStats?.topInactiveUsers?.length > 0 ? (
+            <Card className="p-4 border-amber-100 bg-amber-50/30">
+              <p className="text-[10px] font-black uppercase text-amber-700 mb-3">Longest inactive accounts</p>
+              <div className="space-y-2">
+                {userStats.topInactiveUsers.slice(0, 5).map((u) => (
+                  <div key={u.id} className="flex items-center justify-between text-xs">
+                    <span className="font-bold text-zinc-700 capitalize">{u.user_type}</span>
+                    <span className="text-amber-700 font-black">{u.inactiveDays} days inactive</span>
+                  </div>
+                ))}
+              </div>
+            </Card>
+          ) : null}
+        </section>
       )}
 
       {!isLoading && (

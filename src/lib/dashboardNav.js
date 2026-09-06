@@ -4,6 +4,7 @@ export const ADMIN_NAV = {
     { path: "/admin/users", label: "Users" },
     { path: "/admin/guides", label: "Guide Monitoring" },
     { path: "/admin/workflow", label: "Alert Pipeline" },
+    { path: "/admin/settings", label: "Settings" },
   ],
   crisisOps: [
     { path: "/crisis/admin", label: "Command Center" },

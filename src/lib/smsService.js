@@ -1,4 +1,5 @@
 import { agentDebugLog } from "@/lib/agentDebugLog.server";
+import { truncateForSms, getSmsMaxLength } from "@/lib/smsMessageFormat";
 
 const DEFAULT_IPROG_URL = "https://sms.iprogtech.com/api/v1/sms_messages";
 
@@ -112,7 +113,8 @@ export async function sendSms({ to, message }) {
     return { success: false, error: `Invalid Philippine phone number: ${to}` };
   }
 
-  const smsMessage = String(message).substring(0, 160);
+  const rawLength = String(message ?? "").length;
+  const smsMessage = truncateForSms(message);
   const providersToTry = [provider, 0, 1, 2].filter(
     (value, index, arr) => arr.indexOf(value) === index
   );
@@ -140,6 +142,9 @@ export async function sendSms({ to, message }) {
           apiStatus: result.data?.status,
           ok: result.ok,
           messageId: result.data?.message_id || null,
+          rawLength,
+          sentLength: smsMessage.length,
+          maxLength: getSmsMaxLength(),
           errorMsg: result.ok
             ? null
             : result.data?.message || result.jsonError || result.queryError || null,

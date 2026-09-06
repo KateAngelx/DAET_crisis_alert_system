@@ -2,6 +2,7 @@ import { getSupabaseAdmin } from '@/lib/supabaseAdmin';
 import { NOTIFICATION_CHANNELS } from '@/lib/constants';
 import { processNotificationDeliveries } from '@/lib/notificationQueue.server';
 import { getDispatchChannelsForProfile } from '@/lib/userNotificationChannels';
+import { getSystemSettings } from '@/lib/systemSettings.server';
 
 export async function dispatchNotificationServer({
   userId,
@@ -30,7 +31,7 @@ export async function dispatchNotificationServer({
 
   const { data: recipient, error: recipientError } = await admin
     .from('profiles')
-    .select('id, user_type, notification_channels, email, phone')
+    .select('id, user_type, notification_channels, email, phone, sms_suspended_at')
     .eq('id', userId)
     .maybeSingle();
 
@@ -39,7 +40,12 @@ export async function dispatchNotificationServer({
     return results;
   }
 
-  const effective = getDispatchChannelsForProfile(recipient, channels);
+  const settings = await getSystemSettings(admin);
+  const effective = getDispatchChannelsForProfile(
+    recipient,
+    channels,
+    settings.notification_audience
+  );
   const emailTo = recipientEmail || recipient.email;
   const phoneTo = recipientPhone || recipient.phone;
 

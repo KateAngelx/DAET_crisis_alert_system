@@ -5,8 +5,10 @@ import { agentDebugLog } from '@/lib/agentDebugLog.server';
 import {
   channelsFromProfile,
   getEffectiveAlertChannels,
-  isExternalAlertRecipient,
 } from '@/lib/userNotificationChannels';
+import { audienceToUserTypes, isProfileInAudience } from '@/lib/notificationAudience';
+import { getSystemSettings } from '@/lib/systemSettings.server';
+import { formatCrisisAlertSms } from '@/lib/smsMessageFormat';
 
 export async function broadcastCrisisAlertToTourists(admin, alertId) {
   const results = { notified: 0, skipped: 0, emailQueued: 0, smsQueued: 0, errors: [] };
@@ -26,6 +28,16 @@ export async function broadcastCrisisAlertToTourists(admin, alertId) {
   const priority = severityToPriority(alert.severity);
   const title = `${alert.severity} Crisis Alert: ${alert.title}`;
   const message = `${alert.type} alert for ${alert.location}. ${alert.message}`;
+  const smsBody = formatCrisisAlertSms(alert);
+
+  const settings = await getSystemSettings(admin);
+  const audience = settings.notification_audience;
+  const audienceTypes = audienceToUserTypes(audience);
+
+  if (audienceTypes.length === 0) {
+    results.errors.push('No notification audience enabled in Admin Settings');
+    return results;
+  }
 
   const { data: existing, error: existingError } = await admin
     .from('notifications')
@@ -42,8 +54,8 @@ export async function broadcastCrisisAlertToTourists(admin, alertId) {
 
   const { data: recipients, error: recipientError } = await admin
     .from('profiles')
-    .select('id, email, phone, user_type, notification_channels')
-    .in('user_type', ['tourist', 'guide'])
+    .select('id, email, phone, user_type, notification_channels, sms_suspended_at')
+    .in('user_type', audienceTypes)
     .eq('is_active', true);
 
   if (recipientError) {
@@ -52,7 +64,8 @@ export async function broadcastCrisisAlertToTourists(admin, alertId) {
   }
 
   const toNotify = (recipients || []).filter(
-    (profile) => !alreadyNotified.has(profile.id) && isExternalAlertRecipient(profile)
+    (profile) =>
+      !alreadyNotified.has(profile.id) && isProfileInAudience(profile, audience)
   );
   results.skipped = (recipients || []).length - toNotify.length;
 
@@ -119,7 +132,7 @@ export async function broadcastCrisisAlertToTourists(admin, alertId) {
         status: 'pending',
         recipient: profile.phone,
         subject: title,
-        body: message,
+        body: smsBody,
         priority,
         idempotency_key: `${profile.id}-crisis_alert-${alertId}-sms`,
       });

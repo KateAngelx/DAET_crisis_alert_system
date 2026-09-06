@@ -1,5 +1,11 @@
 /** Per-user notification channel preferences (distinct from crisis alert broadcast channels) */
 
+import {
+  DEFAULT_NOTIFICATION_AUDIENCE,
+  isProfileInAudience,
+} from "@/lib/notificationAudience";
+import { isSmsSuspended } from "@/lib/userActivity";
+
 export const DEFAULT_USER_NOTIFICATION_CHANNELS = {
   email: true,
   sms: true,
@@ -8,24 +14,26 @@ export const DEFAULT_USER_NOTIFICATION_CHANNELS = {
 
 export function channelsFromProfile(profile) {
   const raw = profile?.notification_channels;
+  let channels;
   if (raw && typeof raw === "object" && !Array.isArray(raw)) {
-    return {
+    channels = {
       email: Boolean(raw.email),
       sms: Boolean(raw.sms),
       app: Boolean(raw.app ?? raw.web ?? true),
     };
+  } else {
+    channels = { ...DEFAULT_USER_NOTIFICATION_CHANNELS };
   }
-  return { ...DEFAULT_USER_NOTIFICATION_CHANNELS };
+
+  if (isSmsSuspended(profile)) {
+    channels.sms = false;
+  }
+
+  return channels;
 }
 
 export function isChannelsConfigured(profile) {
   return Boolean(profile?.notification_channels_configured);
-}
-
-/** Tourists and guides receive broadcast SMS/email; admins do not */
-export function isExternalAlertRecipient(profile) {
-  const role = profile?.user_type;
-  return role === "tourist" || role === "guide";
 }
 
 /** Intersect LGU alert channels with user preferences */
@@ -46,33 +54,14 @@ export function getEffectiveUserChannels(userChannels, requested = ["web", "emai
   };
 }
 
-export function shouldQueueEmail(profile, alertHasEmail = true) {
-  if (!isExternalAlertRecipient(profile)) return false;
-  return alertHasEmail && channelsFromProfile(profile).email;
-}
-
-export function shouldQueueSms(profile, alertHasSms = true) {
-  if (!isExternalAlertRecipient(profile)) return false;
-  return alertHasSms && channelsFromProfile(profile).sms;
-}
-
-export function shouldCreateInAppNotification(profile, alertHasApp = true) {
-  if (!isExternalAlertRecipient(profile)) return false;
-  return alertHasApp && channelsFromProfile(profile).app;
-}
-
-/** Single-user dispatch (incidents, assignments) — admins never get SMS/email */
-export function getDispatchChannelsForProfile(profile, requestedChannels = []) {
-  const userChannels = channelsFromProfile(profile);
-  const isAdmin = profile?.user_type === "admin";
-
-  if (isAdmin) {
-    return {
-      email: false,
-      sms: false,
-      app: requestedChannels.includes("web") || requestedChannels.includes("app"),
-    };
+/** Single-user dispatch — respects LGU audience settings + user channel prefs */
+export function getDispatchChannelsForProfile(
+  profile,
+  requestedChannels = [],
+  audience = DEFAULT_NOTIFICATION_AUDIENCE
+) {
+  if (!isProfileInAudience(profile, audience)) {
+    return { email: false, sms: false, app: false };
   }
-
-  return getEffectiveUserChannels(userChannels, requestedChannels);
+  return getEffectiveUserChannels(channelsFromProfile(profile), requestedChannels);
 }

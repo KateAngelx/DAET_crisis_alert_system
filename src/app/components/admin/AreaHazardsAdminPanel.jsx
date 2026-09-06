@@ -19,6 +19,8 @@ import {
 import { createCategoryPinIcon, getDangerPinCategory } from "@/lib/mapPinUtils";
 import { MapLegend } from "@/app/components/maps/MapLegend";
 import { iconSize, statGrid, typography, outlinedCard } from "@/lib/designSystem";
+import { CharCounterTextarea } from "@/app/components/ui/CharCounterTextarea";
+import { formatAreaHazardSms } from "@/lib/smsMessageFormat";
 import dynamic from "next/dynamic";
 import "leaflet/dist/leaflet.css";
 
@@ -428,7 +430,15 @@ export function AreaHazardsAdminPanel({ embedded = false }) {
               <input className="w-full p-3 bg-zinc-50 border border-zinc-100 rounded-xl font-bold text-sm" placeholder="Current location (route start, optional)" value={formData.current_location} onChange={(e) => setFormData({ ...formData, current_location: e.target.value })} />
               <input required className="w-full p-3 bg-blue-50 border border-blue-100 rounded-xl font-bold text-sm text-blue-900" placeholder="Recommended alternative / safer route" value={formData.alternative_route} onChange={(e) => setFormData({ ...formData, alternative_route: e.target.value })} />
               <input required className="w-full p-3 bg-green-50 border border-green-100 rounded-xl font-bold text-sm text-green-900" placeholder="Destination" value={formData.destination} onChange={(e) => setFormData({ ...formData, destination: e.target.value })} />
-              <textarea rows={3} className="w-full p-3 bg-zinc-50 border border-zinc-100 rounded-xl font-bold text-sm" placeholder="Safety instructions for tourists..." value={formData.safety_instructions} onChange={(e) => setFormData({ ...formData, safety_instructions: e.target.value })} />
+              <CharCounterTextarea
+                rows={3}
+                smsGuide
+                smsLength={formatAreaHazardSms(formData).length}
+                className="w-full p-3 bg-zinc-50 border border-zinc-100 rounded-xl font-bold text-sm"
+                placeholder="Safety instructions for tourists..."
+                value={formData.safety_instructions}
+                onChange={(e) => setFormData({ ...formData, safety_instructions: e.target.value })}
+              />
 
               <button type="submit" disabled={isSaving} className="w-full py-4 bg-red-600 text-white rounded-2xl font-black uppercase text-xs tracking-widest hover:bg-red-700 disabled:opacity-60">
                 {isSaving ? "Saving..." : editingId ? "Update Hazard" : "Publish Hazard & Notify Tourists"}

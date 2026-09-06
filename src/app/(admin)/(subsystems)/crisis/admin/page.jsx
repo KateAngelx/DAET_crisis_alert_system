@@ -23,6 +23,8 @@ import { RoleContextBanner } from "@/app/components/dashboard/RoleContextBanner"
 import { geocodeLocation } from "@/lib/geocodeLocation";
 import { createCategoryPinIcon, getAlertPinCategory } from "@/lib/mapPinUtils";
 import { CrisisHubMap } from "@/app/components/maps/CrisisHubMap";
+import { CharCounterTextarea } from "@/app/components/ui/CharCounterTextarea";
+import { formatCrisisAlertSms } from "@/lib/smsMessageFormat";
 import { OutlinedCard } from "@/app/components/ui/OutlinedCard";
 import dynamic from 'next/dynamic';
 import "leaflet/dist/leaflet.css";
@@ -382,7 +384,21 @@ export default function CrisisAdminPage() {
                   </button>
                 ))}
               </div>
-              <textarea required rows={4} className="w-full p-4 bg-zinc-50 dark:bg-zinc-900 border border-zinc-100 dark:border-white/5 rounded-2xl font-bold text-sm outline-none focus:ring-2 focus:ring-blue-500" value={formData.message} onChange={e => setFormData({...formData, message: e.target.value})} placeholder="Instructions" />
+              <CharCounterTextarea
+                required
+                rows={4}
+                smsGuide
+                smsLength={formatCrisisAlertSms({
+                  severity: formData.severity,
+                  title: formData.title,
+                  location: formData.location,
+                  message: formData.message,
+                }).length}
+                className="w-full p-4 bg-zinc-50 dark:bg-zinc-900 border border-zinc-100 dark:border-white/5 rounded-2xl font-bold text-sm outline-none focus:ring-2 focus:ring-blue-500"
+                value={formData.message}
+                onChange={(e) => setFormData({ ...formData, message: e.target.value })}
+                placeholder="Instructions"
+              />
               <div className="flex gap-3 pt-4">
                 <button type="button" onClick={() => setIsEditModalOpen(false)} className="flex-1 py-4 bg-zinc-100 dark:bg-zinc-800 text-zinc-500 rounded-2xl font-black uppercase text-xs">Cancel</button>
                 <button type="submit" className="flex-1 py-4 bg-blue-600 text-white rounded-2xl font-black uppercase text-xs shadow-lg shadow-blue-100">Update Entry</button>
@@ -441,7 +457,21 @@ export default function CrisisAdminPage() {
                     <select className="w-full p-4 bg-zinc-50 border border-gray-100 rounded-xl font-bold text-xs outline-none focus:ring-2 focus:ring-blue-500" value={formData.type} onChange={e => setFormData({...formData, type: e.target.value})}><option>Weather</option><option>Health</option><option>Security</option><option>General</option></select>
                     <select className="w-full p-4 bg-zinc-50 border border-gray-100 rounded-xl font-bold text-xs outline-none focus:ring-2 focus:ring-blue-500" value={formData.severity} onChange={e => setFormData({...formData, severity: e.target.value})}><option>Low</option><option>Medium</option><option>High</option><option>Critical</option></select>
                   </div>
-                  <textarea required rows={4} className="w-full p-4 bg-zinc-50 border border-gray-100 rounded-xl font-bold leading-relaxed text-sm outline-none focus:ring-2 focus:ring-blue-500" placeholder="Instructions..." value={formData.message} onChange={e => setFormData({...formData, message: e.target.value})} />
+                  <CharCounterTextarea
+                    required
+                    rows={4}
+                    smsGuide
+                    smsLength={formatCrisisAlertSms({
+                      severity: formData.severity,
+                      title: formData.title,
+                      location: formData.location,
+                      message: formData.message,
+                    }).length}
+                    className="w-full p-4 bg-zinc-50 border border-gray-100 rounded-xl font-bold leading-relaxed text-sm outline-none focus:ring-2 focus:ring-blue-500"
+                    placeholder="Instructions..."
+                    value={formData.message}
+                    onChange={(e) => setFormData({ ...formData, message: e.target.value })}
+                  />
                   <button type="submit" disabled={isPublishing} className={`w-full py-5 rounded-[24px] font-black transition-all shadow-lg uppercase tracking-widest text-sm flex items-center justify-center gap-3 active:scale-[0.98] ${isPublishing ? "bg-red-400" : "bg-red-600 text-white hover:bg-red-700 shadow-red-100"}`}>
                      {isPublishing ? "Broadcasting..." : (<><AlertTriangle size={20}/> Broadcast Alert Now</>)}
                   </button>

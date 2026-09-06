@@ -66,13 +66,18 @@ export const ROLE_INTERFACE = {
     },
     users: {
       title: "User Management",
-      description: "View registered users and assign roles. New registrations default to Tourist; promote to Guide or Admin as needed.",
-      helper: "Role changes take effect immediately. Guides see assigned tourists; admins access Command Center and Roads & Hazards.",
+      description: "Monitor registrations, online activity, and inactive accounts. Create, edit, deactivate, or delete users.",
+      helper: "Users inactive 30+ days have SMS paused until they sign in again and re-enable it. Email notices for inactive accounts will be added when email delivery is configured.",
     },
     workflow: {
       title: "Alert Pipeline",
       description: "Track how alerts are issued, delivered, and resolved across the Daet crisis system.",
       helper: "Use Command Center to publish alerts. This view shows pipeline health — not individual road advisories.",
+    },
+    settings: {
+      title: "System Settings",
+      description: "Configure notification audience, exports, and LGU-wide delivery rules.",
+      helper: "Exclude administrators from SMS/email by default so broadcasts reach tourists and guides only.",
     },
   },
 };

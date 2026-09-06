@@ -9,7 +9,8 @@ import { DEFAULT_USER_NOTIFICATION_CHANNELS } from '@/lib/userNotificationChanne
 export const useCrisisStore = create((set, get) => ({
   alerts: [], 
   allUsers: [], 
-  totalUsers: 0, 
+  totalUsers: 0,
+  userStats: null,
   loading: false,
   error: null,
   isSubscribed: false, // Flag para i-track ang realtime status
@@ -84,11 +85,31 @@ export const useCrisisStore = create((set, get) => ({
     const { count, error } = await supabase
       .from('profiles')
       .select('*', { count: 'exact', head: true });
-    
+
     if (!error) {
       set({ totalUsers: count || 0 });
     } else {
       console.error("User Count Error:", error.message);
+    }
+  },
+
+  fetchUserStats: async () => {
+    try {
+      const session = await getActiveSession();
+      if (!session) return { success: false, error: 'Not authenticated' };
+
+      const res = await fetch('/api/admin/user-stats', {
+        headers: { Authorization: `Bearer ${session.access_token}` },
+      });
+      const result = await res.json();
+      if (!res.ok) {
+        return { success: false, error: result.error || 'Failed to load user stats' };
+      }
+
+      set({ userStats: result.stats });
+      return { success: true, stats: result.stats };
+    } catch (err) {
+      return { success: false, error: err.message };
     }
   },
 
@@ -126,6 +147,10 @@ export const useCrisisStore = create((set, get) => ({
   },
 
   updateUserRole: async (userId, user_type) => {
+    return get().updateUser(userId, { user_type });
+  },
+
+  updateUser: async (userId, payload) => {
     try {
       const session = await getActiveSession();
       if (!session) {
@@ -138,21 +163,81 @@ export const useCrisisStore = create((set, get) => ({
           Authorization: `Bearer ${session.access_token}`,
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ user_type }),
+        body: JSON.stringify(payload),
       });
 
       const result = await res.json();
       if (!res.ok) {
-        return { success: false, error: result.error || 'Failed to update role' };
+        return { success: false, error: result.error || 'Failed to update user' };
       }
 
       set((state) => ({
         allUsers: state.allUsers.map((u) =>
-          u.id === userId ? { ...u, user_type: result.profile.user_type } : u
+          u.id === userId ? { ...u, ...result.profile } : u
         ),
       }));
 
       return { success: true, profile: result.profile };
+    } catch (err) {
+      return { success: false, error: err.message };
+    }
+  },
+
+  createUser: async (payload) => {
+    try {
+      const session = await getActiveSession();
+      if (!session) {
+        return { success: false, error: 'Not authenticated' };
+      }
+
+      const res = await fetch('/api/admin/users', {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${session.access_token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(payload),
+      });
+
+      const result = await res.json();
+      if (!res.ok) {
+        return { success: false, error: result.error || 'Failed to create user' };
+      }
+
+      set((state) => ({
+        allUsers: [...state.allUsers, result.profile].sort((a, b) =>
+          (a.full_name || '').localeCompare(b.full_name || '')
+        ),
+      }));
+
+      return { success: true, profile: result.profile };
+    } catch (err) {
+      return { success: false, error: err.message };
+    }
+  },
+
+  deleteUser: async (userId) => {
+    try {
+      const session = await getActiveSession();
+      if (!session) {
+        return { success: false, error: 'Not authenticated' };
+      }
+
+      const res = await fetch(`/api/admin/users/${userId}`, {
+        method: 'DELETE',
+        headers: { Authorization: `Bearer ${session.access_token}` },
+      });
+
+      const result = await res.json();
+      if (!res.ok) {
+        return { success: false, error: result.error || 'Failed to delete user' };
+      }
+
+      set((state) => ({
+        allUsers: state.allUsers.filter((u) => u.id !== userId),
+      }));
+
+      return { success: true };
     } catch (err) {
       return { success: false, error: err.message };
     }
@@ -273,10 +358,14 @@ function mapProfileToUser(profile) {
   };
 }
 
-async function syncProfileFromServer(session) {
+async function syncProfileFromServer(session, { loginEvent = false } = {}) {
   const res = await fetch('/api/auth/ensure-profile', {
     method: 'POST',
-    headers: { Authorization: `Bearer ${session.access_token}` },
+    headers: {
+      Authorization: `Bearer ${session.access_token}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({ loginEvent }),
   });
   const result = await res.json();
   if (!res.ok) throw new Error(result.error || 'Failed to sync profile');
@@ -355,27 +444,52 @@ export const useAuthStore = create(
           const session = await getActiveSession();
           if (!session) throw new Error("Not authenticated");
 
-          const payload = {
-            notification_channels: {
-              email: Boolean(channels.email),
-              sms: Boolean(channels.sms),
-              app: Boolean(channels.app),
+          const res = await fetch("/api/auth/notification-channels", {
+            method: "POST",
+            headers: {
+              Authorization: `Bearer ${session.access_token}`,
+              "Content-Type": "application/json",
             },
-            notification_channels_configured: markConfigured,
-          };
+            body: JSON.stringify({ channels, skip: false }),
+          });
+          const result = await res.json();
 
-          const { data, error } = await supabase
-            .from("profiles")
-            .update(payload)
-            .eq("id", session.user.id)
-            .select()
-            .single();
+          if (!res.ok) {
+            throw new Error(result.error || "Failed to save preferences");
+          }
 
-          if (error) throw error;
-
-          const userData = mapProfileToUser(data);
+          const userData = mapProfileToUser(result.profile);
           set({ user: userData, isAuthenticated: true, loading: false });
-          return { success: true, profile: data };
+          return { success: true, profile: result.profile };
+        } catch (err) {
+          set({ loading: false });
+          return { success: false, error: err.message };
+        }
+      },
+
+      skipNotificationChannelSetup: async () => {
+        set({ loading: true });
+        try {
+          const session = await getActiveSession();
+          if (!session) throw new Error("Not authenticated");
+
+          const res = await fetch("/api/auth/notification-channels", {
+            method: "POST",
+            headers: {
+              Authorization: `Bearer ${session.access_token}`,
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({ skip: true }),
+          });
+          const result = await res.json();
+
+          if (!res.ok) {
+            throw new Error(result.error || "Failed to skip setup");
+          }
+
+          const userData = mapProfileToUser(result.profile);
+          set({ user: userData, isAuthenticated: true, loading: false });
+          return { success: true, profile: result.profile };
         } catch (err) {
           set({ loading: false });
           return { success: false, error: err.message };
@@ -391,7 +505,7 @@ export const useAuthStore = create(
           const session = await getActiveSession();
           if (!session) throw new Error('No active session after login. Check if email confirmation is required in Supabase.');
 
-          const profile = await syncProfileFromServer(session);
+          const profile = await syncProfileFromServer(session, { loginEvent: true });
 
           const userData = mapProfileToUser(profile);
           
@@ -443,6 +557,32 @@ export const useAuthStore = create(
         await supabase.auth.signOut();
         set({ user: null, isAuthenticated: false });
         window.location.href = '/';
+      },
+
+      deleteAccount: async () => {
+        set({ loading: true });
+        try {
+          const session = await getActiveSession();
+          if (!session) throw new Error('Not authenticated');
+
+          const res = await fetch('/api/auth/delete-account', {
+            method: 'DELETE',
+            headers: { Authorization: `Bearer ${session.access_token}` },
+          });
+          const result = await res.json();
+          if (!res.ok) {
+            throw new Error(result.error || 'Failed to delete account');
+          }
+
+          useNotificationStore.getState().clearNotifications();
+          await supabase.auth.signOut();
+          set({ user: null, isAuthenticated: false, loading: false });
+          window.location.href = '/';
+          return { success: true };
+        } catch (err) {
+          set({ loading: false });
+          return { success: false, error: err.message };
+        }
       },
     }),
     { name: 'connect-daet-auth' }

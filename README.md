@@ -44,6 +44,7 @@ CRON_SECRET=your_cron_secret
 IPROG_SMS_API_TOKEN=your_iprog_api_token_from_dashboard
 # SMS_API_URL=https://sms.iprogtech.com/api/v1/sms_messages   # default if omitted
 # SMS_PROVIDER=2   # 2 = multi-network provider (recommended)
+# SMS_MAX_LENGTH=480   # Max chars per SMS (480 ≈ 3 segments; iProg bills per segment)
 ```
 
 ### Deploy to Vercel
@@ -68,6 +69,18 @@ Run migrations in order in the Supabase SQL Editor:
 7. `013_route_geometry.sql` — road-following route paths (OSRM)
 8. `014_unify_area_advisories.sql` — merges area hazards into `route_advisories`
 9. `015_user_notification_channels.sql` — user email/SMS/app preferences
+10. `016_fix_profiles_update_rls.sql` — fixes profile update infinite recursion
+11. `017_system_settings.sql` — LGU notification audience settings
+12. `018_user_activity_tracking.sql` — last login/seen, inactive SMS suspension
+
+Schedule inactive-user processing (daily recommended):
+
+```
+POST /api/cron/inactive-users
+Header: x-cron-secret: YOUR_CRON_SECRET
+```
+
+This pauses SMS for accounts inactive 30+ days and sends an in-app notice (email delivery to be wired later).
 
 ### User Roles
 
@@ -120,6 +133,7 @@ Legacy redirects: `/crisis/alerts` → `/crisis`, `/crisis/dangerous-locations` 
 | `/admin/incidents` | Incident management |
 | `/admin/users` | User management |
 | `/admin/workflow` | Alert pipeline overview |
+| `/admin/settings` | Notification audience & data exports |
 
 Legacy redirect: `/crisis/admin/dangerous-locations` → `/crisis/admin/routes?tab=areas`
 

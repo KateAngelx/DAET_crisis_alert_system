@@ -25,6 +25,7 @@ import { iconSize, statGrid, typography, outlinedCard } from "@/lib/designSystem
 import { AreaHazardsAdminPanel } from "@/app/components/admin/AreaHazardsAdminPanel";
 import { ROLE_INTERFACE } from "@/lib/roleInterfaceCopy";
 import { RoleContextBanner } from "@/app/components/dashboard/RoleContextBanner";
+import { CharCounterTextarea } from "@/app/components/ui/CharCounterTextarea";
 import dynamic from "next/dynamic";
 import "leaflet/dist/leaflet.css";
 
@@ -615,14 +616,22 @@ function RouteAdvisoriesAdminPanel({ embedded = false }) {
                       className="w-full p-3 bg-zinc-50 border border-zinc-200 rounded-xl text-sm font-bold"
                     />
                   </div>
-                  <div className="space-y-1">
-                    <label className="text-[10px] font-black uppercase text-zinc-400">Reason</label>
-                    <textarea rows={2} value={formData.reason} onChange={(e) => setFormData({ ...formData, reason: e.target.value })} className="w-full p-3 bg-zinc-50 border border-zinc-200 rounded-xl text-sm font-medium" placeholder="Why is this route safe, caution, or closed?" />
-                  </div>
-                  <div className="space-y-1">
-                    <label className="text-[10px] font-black uppercase text-zinc-400">What tourists should do</label>
-                    <textarea rows={2} value={formData.safety_instructions} onChange={(e) => setFormData({ ...formData, safety_instructions: e.target.value })} className="w-full p-3 bg-zinc-50 border border-zinc-200 rounded-xl text-sm font-medium" placeholder="Follow guide, avoid area until 6 PM, etc." />
-                  </div>
+                  <CharCounterTextarea
+                    label="Reason"
+                    rows={2}
+                    value={formData.reason}
+                    onChange={(e) => setFormData({ ...formData, reason: e.target.value })}
+                    className="w-full p-3 bg-zinc-50 border border-zinc-200 rounded-xl text-sm font-medium"
+                    placeholder="Why is this route safe, caution, or closed?"
+                  />
+                  <CharCounterTextarea
+                    label="What tourists should do"
+                    rows={2}
+                    value={formData.safety_instructions}
+                    onChange={(e) => setFormData({ ...formData, safety_instructions: e.target.value })}
+                    className="w-full p-3 bg-zinc-50 border border-zinc-200 rounded-xl text-sm font-medium"
+                    placeholder="Follow guide, avoid area until 6 PM, etc."
+                  />
                 </div>
               </FormSection>
 

@@ -31,6 +31,9 @@ export async function POST(request) {
     }
 
     const meta = user.user_metadata || {};
+    const body = await request.json().catch(() => ({}));
+    const isLoginEvent = Boolean(body?.loginEvent);
+    const now = new Date().toISOString();
 
     const { data: existing } = await admin
       .from('profiles')
@@ -39,14 +42,23 @@ export async function POST(request) {
       .maybeSingle();
 
     if (existing) {
+      const activityUpdate = {
+        full_name: meta.full_name || existing.full_name,
+        phone: meta.phone ?? existing.phone,
+        email: user.email,
+        nationality: meta.nationality || existing.nationality,
+        last_seen_at: now,
+      };
+
+      if (isLoginEvent) {
+        activityUpdate.last_login_at = now;
+        activityUpdate.sms_suspended_at = null;
+        activityUpdate.inactive_notice_sent_at = null;
+      }
+
       const { data: updated, error: updateError } = await admin
         .from('profiles')
-        .update({
-          full_name: meta.full_name || existing.full_name,
-          phone: meta.phone ?? existing.phone,
-          email: user.email,
-          nationality: meta.nationality || existing.nationality,
-        })
+        .update(activityUpdate)
         .eq('id', user.id)
         .select()
         .single();
@@ -75,6 +87,8 @@ export async function POST(request) {
         email: user.email,
         nationality: meta.nationality || 'Filipino',
         user_type: 'tourist',
+        last_login_at: now,
+        last_seen_at: now,
       })
       .select()
       .single();

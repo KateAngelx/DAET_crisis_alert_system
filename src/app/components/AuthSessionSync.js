@@ -6,14 +6,25 @@ import { useAuthStore } from "@/app/store/crisisStore";
 import { useNotificationStore } from "@/app/store/notificationStore";
 import { clearInvalidAuthSession, getActiveSession, isInvalidRefreshError } from "@/lib/authSession";
 
-async function fetchAppProfile(session) {
+async function fetchAppProfile(session, { loginEvent = false } = {}) {
   const res = await fetch("/api/auth/ensure-profile", {
     method: "POST",
-    headers: { Authorization: `Bearer ${session.access_token}` },
+    headers: {
+      Authorization: `Bearer ${session.access_token}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({ loginEvent }),
   });
   const result = await res.json();
   if (!res.ok) throw new Error(result.error || "Profile sync failed");
   return result.profile;
+}
+
+async function sendHeartbeat(session) {
+  await fetch("/api/auth/heartbeat", {
+    method: "POST",
+    headers: { Authorization: `Bearer ${session.access_token}` },
+  }).catch(() => {});
 }
 
 export function AuthSessionSync() {
@@ -44,7 +55,7 @@ export function AuthSessionSync() {
           return;
         }
 
-        const profile = await fetchAppProfile(session);
+        const profile = await fetchAppProfile(session, { loginEvent: true });
         if (!mounted) return;
 
         setAuth({
@@ -77,6 +88,17 @@ export function AuthSessionSync() {
 
     syncSession();
 
+    const heartbeatInterval = setInterval(async () => {
+      try {
+        const session = await getActiveSession();
+        if (session?.access_token) {
+          await sendHeartbeat(session);
+        }
+      } catch {
+        /* ignore heartbeat errors */
+      }
+    }, 5 * 60 * 1000);
+
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
       if (!mounted) return;
 
@@ -93,7 +115,7 @@ export function AuthSessionSync() {
 
       if (session?.user && (event === "SIGNED_IN" || event === "TOKEN_REFRESHED" || event === "INITIAL_SESSION")) {
         try {
-          const profile = await fetchAppProfile(session);
+          const profile = await fetchAppProfile(session, { loginEvent: event === "SIGNED_IN" });
           if (!mounted) return;
           setAuth({
             user: {
@@ -123,6 +145,7 @@ export function AuthSessionSync() {
 
     return () => {
       mounted = false;
+      clearInterval(heartbeatInterval);
       window.removeEventListener("unhandledrejection", handleUnhandledRejection);
       subscription.unsubscribe();
     };

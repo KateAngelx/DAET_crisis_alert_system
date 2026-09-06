@@ -18,6 +18,7 @@ import {
 } from '@/lib/constants';
 import { IncidentStatSkeleton, TableSkeleton } from '@/app/components/ui/Skeletons';
 import { AsyncState, EmptyState } from '@/app/components/ui/AsyncState';
+import { CharCounterTextarea } from '@/app/components/ui/CharCounterTextarea';
 
 export default function AdminIncidentsPage() {
   const { user } = useAuthStore();
@@ -235,15 +236,21 @@ export default function AdminIncidentsPage() {
               </div>
             </div>
 
-            <div>
-              <label className="text-[10px] font-black uppercase text-gray-400">Internal Notes</label>
-              <textarea value={updateForm.adminNotes} onChange={(e) => setUpdateForm({ ...updateForm, adminNotes: e.target.value })} rows={2} className="w-full mt-1 p-3 bg-gray-50 rounded-xl text-sm" />
-            </div>
+            <CharCounterTextarea
+              label="Internal Notes"
+              value={updateForm.adminNotes}
+              onChange={(e) => setUpdateForm({ ...updateForm, adminNotes: e.target.value })}
+              rows={2}
+              className="w-full p-3 bg-gray-50 rounded-xl text-sm"
+            />
 
-            <div>
-              <label className="text-[10px] font-black uppercase text-gray-400">Response Actions</label>
-              <textarea value={updateForm.responseActions} onChange={(e) => setUpdateForm({ ...updateForm, responseActions: e.target.value })} rows={2} className="w-full mt-1 p-3 bg-gray-50 rounded-xl text-sm" />
-            </div>
+            <CharCounterTextarea
+              label="Response Actions"
+              value={updateForm.responseActions}
+              onChange={(e) => setUpdateForm({ ...updateForm, responseActions: e.target.value })}
+              rows={2}
+              className="w-full p-3 bg-gray-50 rounded-xl text-sm"
+            />
 
             <button onClick={handleUpdate} className="w-full py-3 bg-blue-600 text-white rounded-xl font-black text-xs uppercase tracking-widest">
               Update Report

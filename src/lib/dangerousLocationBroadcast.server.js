@@ -5,8 +5,10 @@ import { processNotificationDeliveries } from "@/lib/notificationQueue.server";
 import {
   channelsFromProfile,
   getEffectiveUserChannels,
-  isExternalAlertRecipient,
 } from "@/lib/userNotificationChannels";
+import { audienceToUserTypes, isProfileInAudience } from "@/lib/notificationAudience";
+import { getSystemSettings } from "@/lib/systemSettings.server";
+import { formatAreaHazardSms } from "@/lib/smsMessageFormat";
 
 async function loadAreaHazard(admin, warningId) {
   const { data: advisory } = await admin
@@ -46,6 +48,16 @@ export async function broadcastDangerousLocationToTourists(admin, warningId) {
   const priority = dangerSeverityToPriority(warning.severity);
   const title = `${warning.severity === "Caution" ? "Route Caution" : "Area Hazard"}: ${warning.dangerous_location}`;
   const message = `${warning.danger_type} reported at ${warning.dangerous_location}. Use alternative route: ${warning.alternative_route} → ${warning.destination}. ${warning.safety_instructions || ""}`.trim();
+  const smsBody = formatAreaHazardSms(warning);
+
+  const settings = await getSystemSettings(admin);
+  const audience = settings.notification_audience;
+  const audienceTypes = audienceToUserTypes(audience);
+
+  if (audienceTypes.length === 0) {
+    results.errors.push("No notification audience enabled in Admin Settings");
+    return results;
+  }
 
   const { data: existing, error: existingError } = await admin
     .from("notifications")
@@ -62,8 +74,8 @@ export async function broadcastDangerousLocationToTourists(admin, warningId) {
 
   const { data: recipients, error: recipientError } = await admin
     .from("profiles")
-    .select("id, email, phone, user_type, notification_channels")
-    .in("user_type", ["tourist", "guide"])
+    .select("id, email, phone, user_type, notification_channels, sms_suspended_at")
+    .in("user_type", audienceTypes)
     .eq("is_active", true);
 
   if (recipientError) {
@@ -72,7 +84,8 @@ export async function broadcastDangerousLocationToTourists(admin, warningId) {
   }
 
   const toNotify = (recipients || []).filter(
-    (profile) => !alreadyNotified.has(profile.id) && isExternalAlertRecipient(profile)
+    (profile) =>
+      !alreadyNotified.has(profile.id) && isProfileInAudience(profile, audience)
   );
   results.skipped = (recipients || []).length - toNotify.length;
 
@@ -136,7 +149,7 @@ export async function broadcastDangerousLocationToTourists(admin, warningId) {
         status: "pending",
         recipient: profile.phone,
         subject: title,
-        body: message,
+        body: smsBody,
         priority,
         idempotency_key: `${profile.id}-dangerous_location-${warningId}-sms`,
       });

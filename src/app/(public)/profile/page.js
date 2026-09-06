@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState } from "react";
 import Link from "next/link";
-import { User, Mail, Phone, Globe, Shield, Loader2, CheckCircle, Compass, MapPin, Navigation } from "lucide-react";
+import { User, Mail, Phone, Globe, Shield, Loader2, CheckCircle, Compass, MapPin, Navigation, Trash2, AlertTriangle } from "lucide-react";
 import { Card } from "@/app/components/ui/Card";
 import { DestinationModal } from "@/app/components/tour/DestinationModal";
 import { useAuthStore, useCrisisStore } from "@/app/store/crisisStore";
@@ -20,7 +20,7 @@ const ROLE_LABELS = {
 };
 
 export default function ProfilePage() {
-  const { user, isAuthenticated, loading, fetchProfile, updateProfile, updateNotificationChannels } = useAuthStore();
+  const { user, isAuthenticated, loading, fetchProfile, updateProfile, updateNotificationChannels, deleteAccount } = useAuthStore();
   const { alerts, fetchAlerts } = useCrisisStore();
   const { touristActiveGroup, fetchTouristActiveGroup } = useGuideStore();
   const [form, setForm] = useState({ full_name: "", phone: "", nationality: "Filipino" });
@@ -31,6 +31,8 @@ export default function ProfilePage() {
   const [initialized, setInitialized] = useState(false);
   const [loadError, setLoadError] = useState(null);
   const [showDestination, setShowDestination] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+  const [deleteError, setDeleteError] = useState(null);
 
   useEffect(() => {
     if (!isAuthenticated) return;
@@ -91,6 +93,24 @@ export default function ProfilePage() {
       setMessage({ type: "success", text: "Profile updated successfully." });
     } else {
       setMessage({ type: "error", text: result.error || "Failed to update profile." });
+    }
+  };
+
+  const handleDeleteAccount = async () => {
+    setDeleteError(null);
+    const confirmed = window.confirm(
+      "Permanently delete your account? You will stop receiving all alerts and cannot undo this action."
+    );
+    if (!confirmed) return;
+
+    const typed = window.prompt('Type DELETE to confirm account removal:');
+    if (typed !== "DELETE") return;
+
+    setDeleting(true);
+    const result = await deleteAccount();
+    setDeleting(false);
+    if (!result.success) {
+      setDeleteError(result.error || "Failed to delete account.");
     }
   };
 
@@ -329,6 +349,11 @@ export default function ProfilePage() {
               <h2 className="text-xl font-black uppercase tracking-tight text-zinc-900 mb-2">Communication Preferences</h2>
               <p className="text-sm text-zinc-500 font-medium mb-4">
                 Control how you receive crisis alerts and updates. Disabled channels will not receive notifications.
+                {user?.notification_channels && !user.notification_channels.sms ? (
+                  <span className="block mt-2 text-amber-700">
+                    SMS is currently off. Sign in regularly and re-enable SMS here to receive text alerts again.
+                  </span>
+                ) : null}
               </p>
               {channelMessage && (
                 <div className={`mb-4 p-4 rounded-2xl text-sm font-medium ${
@@ -353,6 +378,30 @@ export default function ProfilePage() {
               </p>
             </Card>
           )}
+
+          {user?.role !== "admin" ? (
+            <Card className="p-6 rounded-3xl mt-6 border-red-100 bg-red-50/20">
+              <h2 className="text-xl font-black uppercase tracking-tight text-zinc-900 mb-2 flex items-center gap-2">
+                <AlertTriangle size={20} className="text-red-600" /> Delete Account
+              </h2>
+              <p className="text-sm text-zinc-600 font-medium mb-4">
+                If you no longer want alerts from CONNECT-DAET, you can permanently delete your account.
+                Inactive accounts (30+ days without signing in) have SMS paused automatically until you sign in again.
+              </p>
+              {deleteError && (
+                <p className="text-sm text-red-600 font-medium mb-3">{deleteError}</p>
+              )}
+              <button
+                type="button"
+                onClick={handleDeleteAccount}
+                disabled={deleting || loading}
+                className="inline-flex items-center gap-2 px-6 py-3 bg-red-600 text-white rounded-2xl font-black uppercase text-xs tracking-widest hover:bg-red-700 disabled:opacity-50"
+              >
+                {deleting ? <Loader2 size={16} className="animate-spin" /> : <Trash2 size={16} />}
+                {deleting ? "Deleting..." : "Delete My Account"}
+              </button>
+            </Card>
+          ) : null}
           </>
         )}
       </PublicPageContent>
