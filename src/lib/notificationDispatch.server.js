@@ -31,7 +31,7 @@ export async function dispatchNotificationServer({
 
   const { data: recipient, error: recipientError } = await admin
     .from('profiles')
-    .select('id, user_type, notification_channels, email, phone, sms_suspended_at')
+    .select('id, user_type, notification_channels, email, phone')
     .eq('id', userId)
     .maybeSingle();
 

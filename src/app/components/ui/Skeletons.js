@@ -6,13 +6,13 @@ import { OutlinedCard } from "@/app/components/ui/OutlinedCard";
 
 export function StatCardSkeleton() {
   return (
-    <OutlinedCard accent="zinc" className="border-zinc-200">
-      <div className="flex items-start justify-between gap-2 mb-3 sm:mb-4">
-        <Skeleton className="h-9 w-9 sm:h-10 sm:w-10 rounded-xl shrink-0" />
-        <Skeleton className="h-3 w-10" />
+    <OutlinedCard accent="zinc" className="border-zinc-200 h-full">
+      <div className={`${statCard.iconRow}`}>
+        <Skeleton className="h-8 w-8 sm:h-10 sm:w-10 rounded-xl shrink-0" />
+        <Skeleton className="h-2.5 w-8 sm:w-10" />
       </div>
-      <Skeleton className="h-2.5 w-20 sm:w-24 mb-2" />
-      <Skeleton className="h-7 sm:h-8 w-12 sm:w-14" />
+      <Skeleton className="h-2 w-14 sm:h-2.5 sm:w-20 mb-1.5 sm:mb-2" />
+      <Skeleton className="h-6 sm:h-7 lg:h-8 w-10 sm:w-12" />
     </OutlinedCard>
   );
 }

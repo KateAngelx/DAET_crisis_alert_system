@@ -42,9 +42,9 @@ export default function GuideReportsPage() {
         <StatCardSkeletonGrid count={3} className={statGrid.dashboardThree} />
       ) : (
         <div className={statGrid.dashboardThree}>
-          <DashboardStatCard label="Total Reports" value={guideIncidents.length} icon={<FileText size={iconSize.stat} />} accent="blue" />
-          <DashboardStatCard label="Open Cases" value={openReports.length} icon={<AlertTriangle size={iconSize.stat} />} accent="orange" />
-          <DashboardStatCard label="Assigned to You" value={assignedToMe.length} icon={<FileText size={iconSize.stat} />} accent="purple" />
+          <DashboardStatCard compact label="Total Reports" value={guideIncidents.length} icon={<FileText size={iconSize.stat} />} accent="blue" />
+          <DashboardStatCard compact label="Open Cases" value={openReports.length} icon={<AlertTriangle size={iconSize.stat} />} accent="orange" />
+          <DashboardStatCard compact label="Assigned to You" value={assignedToMe.length} icon={<FileText size={iconSize.stat} />} accent="purple" />
         </div>
       )}
 

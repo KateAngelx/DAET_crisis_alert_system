@@ -16,7 +16,7 @@ export const typography = {
   /** Large public stat values — 32px */
   statValueLg: "text-[32px] font-black leading-none",
   /** Dashboard / panel stat values — responsive compact */
-  statValue: "text-2xl sm:text-[28px] font-black leading-none",
+  statValue: "text-xl sm:text-2xl lg:text-[28px] font-black leading-none",
   /** Stat card labels, eyebrows, micro CTAs — 10px */
   statLabel: "text-[10px] font-black uppercase tracking-widest",
   /** Section headings (e.g. ACTIVE TOURISTS) — 12px */
@@ -57,12 +57,16 @@ export const iconSize = {
   emptyLg: 40,
 };
 
-/** Responsive stat card grid layouts */
+/** Responsive stat card grid layouts — mobile-first (Crisis Hub style) */
 export const statGrid = {
-  dashboard: "grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4",
-  dashboardThree: "grid grid-cols-2 sm:grid-cols-3 gap-3 sm:gap-4",
+  /** 4 stats: 2×2 on mobile, row of 4 on large screens */
+  dashboard: "grid grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-3 lg:gap-4 min-w-0",
+  /** 3 stats: 3 columns on mobile (matches Crisis Hub) */
+  dashboardThree: "grid grid-cols-3 gap-2 sm:gap-3 lg:gap-4 min-w-0",
+  /** 5 stats: 2 cols mobile, 3 tablet, 5 desktop */
+  dashboardFive: "grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2 sm:gap-3 lg:gap-4 min-w-0",
   public: "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6",
-  /** Crisis Hub — three stats stay in one row on mobile */
+  /** Crisis Hub — three stats in one row on mobile */
   crisisHub: "grid grid-cols-3 gap-2 sm:gap-3 lg:gap-4 min-w-0",
 };
 
@@ -71,8 +75,8 @@ export const outlinedCard = {
   base: "bg-white shadow-xl border transition-all min-w-0",
   radius: "rounded-[40px]",
   radiusCompact: "rounded-3xl",
-  statPadding: "p-4 sm:p-5",
-  statPaddingCompact: "p-3 sm:p-4",
+  statPadding: "p-3 sm:p-4 lg:p-5",
+  statPaddingCompact: "p-2.5 sm:p-3 lg:p-4",
   alertPadding: "p-6",
   notificationPadding: "p-5 sm:p-6",
 };
@@ -197,11 +201,13 @@ export function getPriorityOutline(priority) {
 
 /** Stat card shell classes */
 export const statCard = {
-  shell: "p-4 sm:p-5 text-left min-w-0",
-  compact: "p-3 sm:p-5 text-left min-w-0",
-  dashboard: "p-4 sm:p-5 text-left min-w-0",
-  public: "p-4 sm:p-5 text-left min-w-0",
-  iconWrap: "p-2.5 sm:p-3 rounded-2xl shrink-0",
+  shell: "p-3 sm:p-4 lg:p-5 text-left min-w-0",
+  compact: "p-2.5 sm:p-3 lg:p-4 text-left min-w-0",
+  dashboard: "p-3 sm:p-4 lg:p-5 text-left min-w-0",
+  public: "p-3 sm:p-4 lg:p-5 text-left min-w-0",
+  iconWrap: "p-2 sm:p-2.5 lg:p-3 rounded-xl sm:rounded-2xl shrink-0 [&_svg]:size-4 sm:[&_svg]:size-[18px]",
+  iconRow: "flex items-start justify-between gap-1.5 sm:gap-2 mb-2 sm:mb-3 lg:mb-4",
+  label: "text-[9px] sm:text-[10px] font-black uppercase tracking-wide sm:tracking-widest leading-tight line-clamp-2",
 };
 
 /** Auth login / register — fixed viewport card, no page scroll */

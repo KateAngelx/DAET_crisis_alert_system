@@ -358,10 +358,10 @@ function RouteAdvisoriesAdminPanel({ embedded = false }) {
         <StatCardSkeletonGrid count={4} className={statGrid.dashboard} />
       ) : (
         <div className={`${statGrid.dashboard} grid-cols-2 lg:grid-cols-4`}>
-          <DashboardStatCard label="Active" value={activeAdvisories.length} icon={<Route size={iconSize.stat} />} accent="blue" />
-          <DashboardStatCard label="Safe" value={activeAdvisories.filter((a) => a.route_status === "Safe").length} icon={<CheckCircle size={iconSize.stat} />} accent="green" />
-          <DashboardStatCard label="Caution" value={activeAdvisories.filter((a) => a.route_status === "Caution").length} icon={<Navigation size={iconSize.stat} />} accent="orange" />
-          <DashboardStatCard label="Closed" value={activeAdvisories.filter((a) => a.route_status === "Closed").length} icon={<Ban size={iconSize.stat} />} accent="red" />
+          <DashboardStatCard compact label="Active" value={activeAdvisories.length} icon={<Route size={iconSize.stat} />} accent="blue" />
+          <DashboardStatCard compact label="Safe" value={activeAdvisories.filter((a) => a.route_status === "Safe").length} icon={<CheckCircle size={iconSize.stat} />} accent="green" />
+          <DashboardStatCard compact label="Caution" value={activeAdvisories.filter((a) => a.route_status === "Caution").length} icon={<Navigation size={iconSize.stat} />} accent="orange" />
+          <DashboardStatCard compact label="Closed" value={activeAdvisories.filter((a) => a.route_status === "Closed").length} icon={<Ban size={iconSize.stat} />} accent="red" />
         </div>
       )}
 

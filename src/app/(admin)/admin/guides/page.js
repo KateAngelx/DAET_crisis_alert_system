@@ -93,9 +93,9 @@ export default function AdminGuideMonitoringPage() {
         <StatCardSkeletonGrid count={3} className={statGrid.dashboardThree} />
       ) : (
         <div className={statGrid.dashboardThree}>
-          <DashboardStatCard label="Guides with Groups" value={stats.guideCount} icon={<Users size={iconSize.stat} />} accent="purple" />
-          <DashboardStatCard label="Active Tour Groups" value={stats.activeGroups} icon={<Compass size={iconSize.stat} />} accent="blue" />
-          <DashboardStatCard label="Assigned Tourists" value={stats.totalTourists} icon={<Users size={iconSize.stat} />} accent="green" />
+          <DashboardStatCard compact label="Guides with Groups" value={stats.guideCount} icon={<Users size={iconSize.stat} />} accent="purple" />
+          <DashboardStatCard compact label="Active Tour Groups" value={stats.activeGroups} icon={<Compass size={iconSize.stat} />} accent="blue" />
+          <DashboardStatCard compact label="Assigned Tourists" value={stats.totalTourists} icon={<Users size={iconSize.stat} />} accent="green" />
         </div>
       )}
 

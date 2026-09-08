@@ -269,9 +269,9 @@ export function AreaHazardsAdminPanel({ embedded = false }) {
         <StatCardSkeletonGrid count={3} className={statGrid.dashboardThree} />
       ) : (
         <div className={statGrid.dashboardThree}>
-          <DashboardStatCard label="Active Hazards" value={activeWarnings.length} icon={<AlertOctagon size={iconSize.stat} />} accent="red" />
-          <DashboardStatCard label="Avoid Areas" value={dangerousCount} icon={<ShieldAlert size={iconSize.stat} />} accent="red" />
-          <DashboardStatCard label="Caution Areas" value={cautionCount} icon={<Navigation size={iconSize.stat} />} accent="orange" />
+          <DashboardStatCard compact label="Active Hazards" value={activeWarnings.length} icon={<AlertOctagon size={iconSize.stat} />} accent="red" />
+          <DashboardStatCard compact label="Avoid Areas" value={dangerousCount} icon={<ShieldAlert size={iconSize.stat} />} accent="red" />
+          <DashboardStatCard compact label="Caution Areas" value={cautionCount} icon={<Navigation size={iconSize.stat} />} accent="orange" />
         </div>
       )}
 

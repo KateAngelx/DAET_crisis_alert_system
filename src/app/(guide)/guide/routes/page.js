@@ -186,11 +186,11 @@ export default function GuideRoutesPage() {
         <StatCardSkeletonGrid count={5} className={`${statGrid.dashboardThree} lg:grid-cols-5`} />
       ) : (
         <div className={`${statGrid.dashboardThree} lg:grid-cols-5`}>
-          <DashboardStatCard label="Safe (Your Groups)" value={relevantSafe.length} accent="green" />
-          <DashboardStatCard label="Caution" value={relevantActive.length} accent="orange" />
-          <DashboardStatCard label="Closed / Avoid" value={relevantAffected.length} accent="red" />
-          <DashboardStatCard label="Detours" value={relevantAlternative.length} accent="blue" />
-          <DashboardStatCard label="Area Hazards" value={activeAreaHazards.length} accent="red" />
+          <DashboardStatCard compact label="Safe (Your Groups)" value={relevantSafe.length} accent="green" />
+          <DashboardStatCard compact label="Caution" value={relevantActive.length} accent="orange" />
+          <DashboardStatCard compact label="Closed / Avoid" value={relevantAffected.length} accent="red" />
+          <DashboardStatCard compact label="Detours" value={relevantAlternative.length} accent="blue" />
+          <DashboardStatCard compact label="Area Hazards" value={activeAreaHazards.length} accent="red" />
         </div>
       )}
 

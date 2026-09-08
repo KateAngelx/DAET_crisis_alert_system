@@ -29,10 +29,11 @@ export function OutlinedCard({
 
   const radius = compact ? outlinedCard.radiusCompact : outlinedCard.radius;
   const pad = padding || (compact ? outlinedCard.statPaddingCompact : outlinedCard.statPadding);
+  const radiusClass = compact ? radius : "rounded-3xl sm:rounded-[40px]";
 
   return (
     <div
-      className={`${outlinedCard.base} ${radius} ${borderClass} ${pad} ${className}`}
+      className={`${outlinedCard.base} ${radiusClass} ${borderClass} ${pad} ${className}`}
       {...rest}
     >
       {children}

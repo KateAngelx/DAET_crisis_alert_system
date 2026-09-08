@@ -75,7 +75,7 @@ export async function broadcastDangerousLocationToTourists(admin, warningId) {
 
   const { data: recipients, error: recipientError } = await admin
     .from("profiles")
-    .select("id, email, phone, user_type, notification_channels, sms_suspended_at")
+    .select("id, email, phone, user_type, notification_channels")
     .in("user_type", audienceTypes)
     .eq("is_active", true);
 

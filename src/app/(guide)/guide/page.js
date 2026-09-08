@@ -102,10 +102,10 @@ export default function GuideDashboard() {
         <StatCardSkeletonGrid count={4} className={statGrid.dashboard} />
       ) : (
         <div className={statGrid.dashboard}>
-          <DashboardStatCard label="Active Tour Groups" value={activeGroups.length} icon={<Compass size={iconSize.stat} />} accent="purple" href="/guide/groups" hrefLabel="Manage" />
-          <DashboardStatCard label="Tourists in Groups" value={totalTourists} icon={<Users size={iconSize.stat} />} accent="blue" href="/guide/tourists" hrefLabel="Manage" />
-          <DashboardStatCard label="Active Alerts" value={activeAlerts.length} icon={<Bell size={iconSize.stat} />} accent="red" href="/guide/crisis" hrefLabel="View" />
-          <DashboardStatCard label="Open Reports" value={openIncidents.length} icon={<FileText size={iconSize.stat} />} accent="orange" href="/guide/reports" hrefLabel="View" />
+          <DashboardStatCard compact label="Active Tour Groups" value={activeGroups.length} icon={<Compass size={iconSize.stat} />} accent="purple" href="/guide/groups" hrefLabel="Manage" />
+          <DashboardStatCard compact label="Tourists in Groups" value={totalTourists} icon={<Users size={iconSize.stat} />} accent="blue" href="/guide/tourists" hrefLabel="Manage" />
+          <DashboardStatCard compact label="Active Alerts" value={activeAlerts.length} icon={<Bell size={iconSize.stat} />} accent="red" href="/guide/crisis" hrefLabel="View" />
+          <DashboardStatCard compact label="Open Reports" value={openIncidents.length} icon={<FileText size={iconSize.stat} />} accent="orange" href="/guide/reports" hrefLabel="View" />
         </div>
       )}
 

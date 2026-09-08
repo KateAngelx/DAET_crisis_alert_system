@@ -100,10 +100,10 @@ export default function GuideCrisisHubPage() {
         <StatCardSkeletonGrid count={4} className={statGrid.dashboard} />
       ) : (
         <div className={statGrid.dashboard}>
-          <DashboardStatCard label="Active Alerts" value={activeAlerts.length} icon={<Bell size={iconSize.stat} />} accent="red" href="/guide/crisis" hrefLabel="View" />
-          <DashboardStatCard label="Critical" value={criticalAlerts.length} icon={<AlertTriangle size={iconSize.stat} />} accent="red" />
-          <DashboardStatCard label="Your Tourists" value={totalTourists} icon={<Users size={iconSize.stat} />} accent="blue" href="/guide/groups" hrefLabel="Groups" />
-          <DashboardStatCard label="Open Reports" value={openIncidents.length} icon={<ShieldCheck size={iconSize.stat} />} accent="orange" href="/guide/reports" hrefLabel="Reports" />
+          <DashboardStatCard compact label="Active Alerts" value={activeAlerts.length} icon={<Bell size={iconSize.stat} />} accent="red" href="/guide/crisis" hrefLabel="View" />
+          <DashboardStatCard compact label="Critical" value={criticalAlerts.length} icon={<AlertTriangle size={iconSize.stat} />} accent="red" />
+          <DashboardStatCard compact label="Your Tourists" value={totalTourists} icon={<Users size={iconSize.stat} />} accent="blue" href="/guide/groups" hrefLabel="Groups" />
+          <DashboardStatCard compact label="Open Reports" value={openIncidents.length} icon={<ShieldCheck size={iconSize.stat} />} accent="orange" href="/guide/reports" hrefLabel="Reports" />
         </div>
       )}
 

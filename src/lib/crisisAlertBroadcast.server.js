@@ -55,7 +55,7 @@ export async function broadcastCrisisAlertToTourists(admin, alertId) {
 
   const { data: recipients, error: recipientError } = await admin
     .from('profiles')
-    .select('id, email, phone, user_type, notification_channels, sms_suspended_at')
+    .select('id, email, phone, user_type, notification_channels')
     .in('user_type', audienceTypes)
     .eq('is_active', true);
 
@@ -171,14 +171,24 @@ export async function broadcastCrisisAlertToTourists(admin, alertId) {
 
   const processResult = await processNotificationDeliveries({
     deliveryIds: (deliveries || []).map((d) => d.id),
-  });
+  }).catch((err) => ({
+    processed: 0,
+    results: [],
+    message: err.message,
+  }));
   results.deliveryResults = processResult.results || [];
 
-  const smsFailures = (processResult.results || []).filter(
+  if (processResult.message) {
+    results.errors.push(`Delivery processing failed: ${processResult.message}`);
+  }
+
+  const deliveryFailures = (processResult.results || []).filter(
     (r) => r.status === 'failed' || r.status === 'retrying'
   );
-  if (smsFailures.length) {
-    results.errors.push(`SMS delivery issues: ${smsFailures.map((r) => r.error || r.status).join('; ')}`);
+  if (deliveryFailures.length) {
+    results.errors.push(
+      `Delivery issues: ${deliveryFailures.map((r) => r.error || r.status).join('; ')}`
+    );
   }
 
   return results;

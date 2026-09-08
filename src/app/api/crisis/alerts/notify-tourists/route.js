@@ -16,8 +16,46 @@ export async function POST(request) {
 
     const results = await broadcastCrisisAlertToTourists(auth.admin, alertId);
 
-    if (results.errors.length && results.notified === 0) {
-      return NextResponse.json({ error: results.errors.join('; ') }, { status: 500 });
+    const reachCount =
+      (results.notified || 0) + (results.emailQueued || 0) + (results.smsQueued || 0);
+
+    // #region agent log
+    fetch('http://127.0.0.1:7540/ingest/3142bff0-53ba-4c2c-9606-b4d021977f0c', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'X-Debug-Session-Id': 'ee1adc' },
+      body: JSON.stringify({
+        sessionId: 'ee1adc',
+        location: 'api/crisis/alerts/notify-tourists/route.js:POST',
+        message: 'Broadcast notify-tourists result',
+        data: {
+          alertId,
+          notified: results.notified,
+          emailQueued: results.emailQueued,
+          smsQueued: results.smsQueued,
+          skipped: results.skipped,
+          errorCount: results.errors?.length || 0,
+          firstError: results.errors?.[0] || null,
+          reachCount,
+        },
+        timestamp: Date.now(),
+        runId: 'notify-tourists',
+        hypothesisId: 'broadcast-500',
+      }),
+    }).catch(() => {});
+    // #endregion
+
+    if (results.errors.length && reachCount === 0) {
+      return NextResponse.json(
+        {
+          error: results.errors.join('; '),
+          details: results.errors,
+          notified: results.notified,
+          emailQueued: results.emailQueued,
+          smsQueued: results.smsQueued,
+          skipped: results.skipped,
+        },
+        { status: 500 }
+      );
     }
 
     return NextResponse.json({
@@ -30,6 +68,25 @@ export async function POST(request) {
       warnings: results.errors,
     });
   } catch (err) {
-    return NextResponse.json({ error: err.message || 'Failed to notify tourists' }, { status: 500 });
+    // #region agent log
+    fetch('http://127.0.0.1:7540/ingest/3142bff0-53ba-4c2c-9606-b4d021977f0c', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'X-Debug-Session-Id': 'ee1adc' },
+      body: JSON.stringify({
+        sessionId: 'ee1adc',
+        location: 'api/crisis/alerts/notify-tourists/route.js:catch',
+        message: 'Broadcast notify-tourists exception',
+        data: { error: err.message },
+        timestamp: Date.now(),
+        runId: 'notify-tourists',
+        hypothesisId: 'broadcast-500',
+      }),
+    }).catch(() => {});
+    // #endregion
+
+    return NextResponse.json(
+      { error: err.message || 'Failed to notify tourists' },
+      { status: 500 }
+    );
   }
 }

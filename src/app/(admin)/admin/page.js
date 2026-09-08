@@ -12,7 +12,10 @@ import {
   MapPin,
   Radio,
   ShieldCheck,
+  UserPlus,
   Users,
+  UserX,
+  Wifi,
 } from "lucide-react";
 import { useGuideStore } from "@/app/store/guideStore";
 import { Card } from "@/app/components/ui/Card";
@@ -89,6 +92,30 @@ export default function AdminDashboard() {
   }, [fetchAlerts, fetchIncidents, fetchTotalUsers, fetchUserStats, fetchAllTourGroupsAdmin, fetchWarnings]);
 
   const isLoading = !statsReady || alertsLoading || incidentsLoading;
+
+  useEffect(() => {
+    if (isLoading || typeof window === "undefined") return;
+    // #region agent log
+    fetch("http://127.0.0.1:7540/ingest/3142bff0-53ba-4c2c-9606-b4d021977f0c", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "X-Debug-Session-Id": "ee1adc" },
+      body: JSON.stringify({
+        sessionId: "ee1adc",
+        runId: "mobile-stats-ui",
+        hypothesisId: "H1",
+        location: "admin/page.js:viewport",
+        message: "Admin dashboard stat grid viewport",
+        data: {
+          innerWidth: window.innerWidth,
+          innerHeight: window.innerHeight,
+          isMobile: window.innerWidth < 640,
+        },
+        timestamp: Date.now(),
+      }),
+    }).catch(() => {});
+    // #endregion
+  }, [isLoading]);
+
   const hasError = alertsError || incidentsError;
 
   const metrics = useMemo(() => {
@@ -232,6 +259,7 @@ export default function AdminDashboard() {
         <>
           <div className={statGrid.dashboard}>
             <DashboardStatCard
+              compact
               label="Active Crisis Alerts"
               value={metrics.activeAlerts.length}
               icon={<Radio size={iconSize.stat} />}
@@ -240,6 +268,7 @@ export default function AdminDashboard() {
               hrefLabel="Manage"
             />
             <DashboardStatCard
+              compact
               label="Critical / High Alerts"
               value={metrics.urgentAlerts.length}
               icon={<AlertTriangle size={iconSize.stat} />}
@@ -248,6 +277,7 @@ export default function AdminDashboard() {
               hrefLabel="Review"
             />
             <DashboardStatCard
+              compact
               label="Pending Reports"
               value={metrics.pendingReports.length}
               icon={<FileWarning size={iconSize.stat} />}
@@ -256,6 +286,7 @@ export default function AdminDashboard() {
               hrefLabel="Review"
             />
             <DashboardStatCard
+              compact
               label="Reports Requiring Action"
               value={metrics.actionRequired.length}
               icon={<Bell size={iconSize.stat} />}
@@ -518,31 +549,39 @@ export default function AdminDashboard() {
               Manage users <ArrowRight size={12} />
             </Link>
           </div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
-            <Card className="p-4 border-zinc-100 text-center">
-              <p className="text-[10px] font-black uppercase text-zinc-400 mb-1">Registered Tourists</p>
-              <p className="text-2xl font-black text-blue-600">{userStats?.touristCount ?? totalUsers}</p>
-              <p className="text-[10px] text-zinc-400 mt-1">
-                +{userStats?.newTouristsWeek ?? 0} this week
-              </p>
-            </Card>
-            <Card className="p-4 border-zinc-100 text-center">
-              <p className="text-[10px] font-black uppercase text-zinc-400 mb-1">Online Now</p>
-              <p className="text-2xl font-black text-green-600">{userStats?.onlineCount ?? 0}</p>
-              <p className="text-[10px] text-zinc-400 mt-1">
-                Active in last {userStats?.onlineThresholdMinutes ?? 15} min
-              </p>
-            </Card>
-            <Card className="p-4 border-zinc-100 text-center">
-              <p className="text-[10px] font-black uppercase text-zinc-400 mb-1">Inactive 30+ Days</p>
-              <p className="text-2xl font-black text-amber-600">{userStats?.inactiveOver30Days ?? 0}</p>
-              <p className="text-[10px] text-zinc-400 mt-1">SMS paused when processed</p>
-            </Card>
-            <Card className="p-4 border-zinc-100 text-center">
-              <p className="text-[10px] font-black uppercase text-zinc-400 mb-1">New Today</p>
-              <p className="text-2xl font-black text-purple-600">{userStats?.newTouristsToday ?? 0}</p>
-              <p className="text-[10px] text-zinc-400 mt-1">Tourist registrations</p>
-            </Card>
+          <div className={`${statGrid.dashboard} mb-4`}>
+            <DashboardStatCard
+              compact
+              label="Registered Tourists"
+              value={userStats?.touristCount ?? totalUsers}
+              icon={<Users size={iconSize.stat} />}
+              accent="blue"
+              subtext={`+${userStats?.newTouristsWeek ?? 0} this week`}
+            />
+            <DashboardStatCard
+              compact
+              label="Online Now"
+              value={userStats?.onlineCount ?? 0}
+              icon={<Wifi size={iconSize.stat} />}
+              accent="green"
+              subtext={`Active in last ${userStats?.onlineThresholdMinutes ?? 15} min`}
+            />
+            <DashboardStatCard
+              compact
+              label="Inactive 30+ Days"
+              value={userStats?.inactiveOver30Days ?? 0}
+              icon={<UserX size={iconSize.stat} />}
+              accent="orange"
+              subtext="SMS paused when processed"
+            />
+            <DashboardStatCard
+              compact
+              label="New Today"
+              value={userStats?.newTouristsToday ?? 0}
+              icon={<UserPlus size={iconSize.stat} />}
+              accent="purple"
+              subtext="Tourist registrations"
+            />
           </div>
           {userStats?.topInactiveUsers?.length > 0 ? (
             <Card className="p-4 border-amber-100 bg-amber-50/30">
@@ -573,19 +612,28 @@ export default function AdminDashboard() {
               Full monitoring <ArrowRight size={12} />
             </Link>
           </div>
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-4">
-            <Card className="p-4 border-zinc-100 text-center">
-              <p className="text-[10px] font-black uppercase text-zinc-400 mb-1">Registered Guides</p>
-              <p className="text-2xl font-black text-purple-600">{guideMonitoring.guideCount}</p>
-            </Card>
-            <Card className="p-4 border-zinc-100 text-center">
-              <p className="text-[10px] font-black uppercase text-zinc-400 mb-1">Active Tour Groups</p>
-              <p className="text-2xl font-black text-blue-600">{guideMonitoring.activeGroups}</p>
-            </Card>
-            <Card className="p-4 border-zinc-100 text-center">
-              <p className="text-[10px] font-black uppercase text-zinc-400 mb-1">Tourists in Groups</p>
-              <p className="text-2xl font-black text-green-600">{guideMonitoring.assignedTourists}</p>
-            </Card>
+          <div className={`${statGrid.dashboardThree} mb-4`}>
+            <DashboardStatCard
+              compact
+              label="Registered Guides"
+              value={guideMonitoring.guideCount}
+              icon={<Users size={iconSize.stat} />}
+              accent="purple"
+            />
+            <DashboardStatCard
+              compact
+              label="Active Tour Groups"
+              value={guideMonitoring.activeGroups}
+              icon={<Compass size={iconSize.stat} />}
+              accent="blue"
+            />
+            <DashboardStatCard
+              compact
+              label="Tourists in Groups"
+              value={guideMonitoring.assignedTourists}
+              icon={<Users size={iconSize.stat} />}
+              accent="green"
+            />
           </div>
           {guideMonitoring.recentGroups.length > 0 ? (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3">

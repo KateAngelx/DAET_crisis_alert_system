@@ -176,6 +176,9 @@ export default function CrisisAdminPage() {
         : { success: false, error: "Alert saved but notification dispatch could not start." };
 
       if (notifyResult.success) {
+        const emailPart = notifyResult.emailQueued
+          ? `${notifyResult.emailQueued} email(s) queued.`
+          : "No email queued (check tourist emails & Email channel).";
         const smsPart = notifyResult.smsQueued
           ? `${notifyResult.smsQueued} SMS queued.`
           : "No SMS queued (check phone numbers & SMS channel).";
@@ -183,7 +186,7 @@ export default function CrisisAdminPage() {
           ? ` Warnings: ${notifyResult.warnings.join("; ")}`
           : "";
         setToastMessage(
-          `Success: Alert broadcast. ${notifyResult.notified} user${notifyResult.notified === 1 ? "" : "s"} notified. ${smsPart}${warnPart}`
+          `Success: Alert broadcast. ${notifyResult.notified} in-app. ${emailPart} ${smsPart}${warnPart}`
         );
       } else {
         setToastMessage(`Alert saved, but tourist notifications failed: ${notifyResult.error}`);
@@ -514,10 +517,10 @@ export default function CrisisAdminPage() {
                 </>
               ) : (
                 <>
-                  <DashboardStatCard label="Total Users" value={totalUsers.toLocaleString()} icon={<Info size={iconSize.stat} />} accent="blue" badge="Live" />
-                  <DashboardStatCard label="Active Alerts" value={alerts.filter(a => a.status === 'Active').length} icon={<Radio size={iconSize.stat} />} accent="red" />
-                  <DashboardStatCard label="Resolved Alerts" value={alerts.filter(a => a.status === 'Resolved').length} icon={<CheckCircle size={iconSize.stat} />} accent="green" />
-                  <DashboardStatCard label="Critical Alerts" value={alerts.filter(a => a.severity === 'Critical' && a.status === 'Active').length} icon={<AlertTriangle size={iconSize.stat} />} accent="red" />
+                  <DashboardStatCard compact label="Total Users" value={totalUsers.toLocaleString()} icon={<Info size={iconSize.stat} />} accent="blue" badge="Live" />
+                  <DashboardStatCard compact label="Active Alerts" value={alerts.filter(a => a.status === 'Active').length} icon={<Radio size={iconSize.stat} />} accent="red" />
+                  <DashboardStatCard compact label="Resolved Alerts" value={alerts.filter(a => a.status === 'Resolved').length} icon={<CheckCircle size={iconSize.stat} />} accent="green" />
+                  <DashboardStatCard compact label="Critical Alerts" value={alerts.filter(a => a.severity === 'Critical' && a.status === 'Active').length} icon={<AlertTriangle size={iconSize.stat} />} accent="red" />
                 </>
               )}
             </div>

@@ -419,14 +419,14 @@ export default function AdminUsersPage() {
       <RoleContextBanner helper={ROLE_INTERFACE.admin.users.helper} tone="info" />
 
       {loading ? (
-        <StatCardSkeletonGrid count={5} className={statGrid.dashboardThree} />
+        <StatCardSkeletonGrid count={5} className={statGrid.dashboardFive} />
       ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
-          <DashboardStatCard label="Tourists" value={roleCounts.tourist || 0} icon={<User size={iconSize.stat} />} accent="blue" />
-          <DashboardStatCard label="Guides" value={roleCounts.guide || 0} icon={<Shield size={iconSize.stat} />} accent="purple" />
-          <DashboardStatCard label="Admins" value={roleCounts.admin || 0} icon={<Shield size={iconSize.stat} />} accent="red" />
-          <DashboardStatCard label="Online" value={userStats?.onlineCount ?? 0} icon={<Wifi size={iconSize.stat} />} accent="green" />
-          <DashboardStatCard label="Inactive 30d+" value={userStats?.inactiveOver30Days ?? 0} icon={<UserX size={iconSize.stat} />} accent="orange" />
+        <div className={statGrid.dashboardFive}>
+          <DashboardStatCard compact label="Tourists" value={roleCounts.tourist || 0} icon={<User size={iconSize.stat} />} accent="blue" />
+          <DashboardStatCard compact label="Guides" value={roleCounts.guide || 0} icon={<Shield size={iconSize.stat} />} accent="purple" />
+          <DashboardStatCard compact label="Admins" value={roleCounts.admin || 0} icon={<Shield size={iconSize.stat} />} accent="red" />
+          <DashboardStatCard compact label="Online" value={userStats?.onlineCount ?? 0} icon={<Wifi size={iconSize.stat} />} accent="green" />
+          <DashboardStatCard compact label="Inactive 30d+" value={userStats?.inactiveOver30Days ?? 0} icon={<UserX size={iconSize.stat} />} accent="orange" />
         </div>
       )}
 

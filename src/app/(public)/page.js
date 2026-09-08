@@ -186,6 +186,7 @@ export default function Home() {
             <h3 className={`${typography.cardTitle} mb-4`}>Your Current Alert Status</h3>
             <div className={statGrid.dashboardThree}>
               <DashboardStatCard
+                compact
                 label="Active Alerts"
                 value={activeAlerts.length}
                 accent="red"
@@ -194,6 +195,7 @@ export default function Home() {
                 footerLink
               />
               <DashboardStatCard
+                compact
                 label="My Reports"
                 value="Track"
                 accent="blue"
@@ -202,6 +204,7 @@ export default function Home() {
                 footerLink
               />
               <DashboardStatCard
+                compact
                 label="My Notifications"
                 value={unreadCount > 0 ? unreadCount : "—"}
                 accent="purple"
