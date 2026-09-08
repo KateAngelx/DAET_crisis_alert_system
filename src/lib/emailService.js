@@ -1,16 +1,22 @@
 import nodemailer from "nodemailer";
 
-const EMAIL_FROM = process.env.EMAIL_FROM || "CONNECT-DAET <noreply@connect-daet.local>";
-const EMAIL_REPLY_TO = process.env.EMAIL_REPLY_TO || "";
-const RESEND_API_KEY = process.env.RESEND_API_KEY || "";
-const EMAIL_API_URL = process.env.EMAIL_API_URL || "";
-const EMAIL_API_KEY = process.env.EMAIL_API_KEY || "";
+function trimEnv(value) {
+  return String(value || "")
+    .trim()
+    .replace(/^["']|["']$/g, "");
+}
 
-const SMTP_HOST = process.env.SMTP_HOST || "";
-const SMTP_PORT = parseInt(process.env.SMTP_PORT || "587", 10);
-const SMTP_USER = process.env.SMTP_USER || "";
-const SMTP_PASS = process.env.SMTP_PASS || "";
-const SMTP_SECURE = process.env.SMTP_SECURE === "true";
+const EMAIL_FROM = trimEnv(process.env.EMAIL_FROM) || "CONNECT-DAET <noreply@connect-daet.local>";
+const EMAIL_REPLY_TO = trimEnv(process.env.EMAIL_REPLY_TO);
+const RESEND_API_KEY = trimEnv(process.env.RESEND_API_KEY);
+const EMAIL_API_URL = trimEnv(process.env.EMAIL_API_URL);
+const EMAIL_API_KEY = trimEnv(process.env.EMAIL_API_KEY);
+
+const SMTP_HOST = trimEnv(process.env.SMTP_HOST);
+const SMTP_PORT = parseInt(trimEnv(process.env.SMTP_PORT) || "587", 10);
+const SMTP_USER = trimEnv(process.env.SMTP_USER);
+const SMTP_PASS = trimEnv(process.env.SMTP_PASS).replace(/\s+/g, "");
+const SMTP_SECURE = trimEnv(process.env.SMTP_SECURE) === "true";
 
 function buildHtmlBody(body, { title } = {}) {
   const safeBody = String(body || "")
@@ -43,44 +49,78 @@ function resolveProvider() {
 
 export function getEmailDiagnostics() {
   const provider = resolveProvider();
+  const missing = [];
+  if (!SMTP_HOST) missing.push("SMTP_HOST");
+  if (!SMTP_USER) missing.push("SMTP_USER");
+  if (!SMTP_PASS) missing.push("SMTP_PASS");
+
   return {
     provider,
     fromAddress: EMAIL_FROM,
     replyTo: EMAIL_REPLY_TO || null,
     smtpConfigured: Boolean(SMTP_HOST && SMTP_USER && SMTP_PASS),
     smtpHost: SMTP_HOST || null,
+    smtpPort: SMTP_PORT,
     smtpUser: SMTP_USER ? SMTP_USER.replace(/(.{2}).+(@.+)/, "$1***$2") : null,
+    smtpPassSet: Boolean(SMTP_PASS),
+    missingEnvVars: missing,
     resendConfigured: Boolean(RESEND_API_KEY),
     genericApiConfigured: Boolean(EMAIL_API_URL && EMAIL_API_KEY),
     recipientSource: "Each registered user's profile email (profiles.email)",
   };
 }
 
-let smtpTransport = null;
+function createSmtpTransport() {
+  return nodemailer.createTransport({
+    host: SMTP_HOST,
+    port: SMTP_PORT,
+    secure: SMTP_SECURE,
+    requireTLS: SMTP_PORT === 587,
+    auth: {
+      user: SMTP_USER,
+      pass: SMTP_PASS,
+    },
+    connectionTimeout: 15000,
+    greetingTimeout: 15000,
+    socketTimeout: 20000,
+  });
+}
 
-function getSmtpTransport() {
-  if (!smtpTransport) {
-    smtpTransport = nodemailer.createTransport({
-      host: SMTP_HOST,
-      port: SMTP_PORT,
-      secure: SMTP_SECURE,
-      auth: { user: SMTP_USER, pass: SMTP_PASS },
-    });
+function formatSmtpError(err) {
+  const code = err?.code || "";
+  const response = err?.response || err?.message || "Unknown SMTP error";
+
+  if (code === "EAUTH" || /invalid login|authentication/i.test(response)) {
+    return "Gmail rejected the login. Use a Google App Password (not your normal password), with 2-Step Verification enabled. Regenerate the app password and update SMTP_PASS in Vercel, then redeploy.";
   }
-  return smtpTransport;
+  if (code === "ETIMEDOUT" || code === "ESOCKET") {
+    return "Could not connect to Gmail SMTP. Check SMTP_HOST=smtp.gmail.com and SMTP_PORT=587.";
+  }
+  return response;
 }
 
 async function sendViaSmtp({ to, subject, body, html }) {
-  const transport = getSmtpTransport();
-  const info = await transport.sendMail({
-    from: EMAIL_FROM,
-    to,
-    replyTo: EMAIL_REPLY_TO || undefined,
-    subject,
-    text: body,
-    html: html || buildHtmlBody(body, { title: subject }),
-  });
-  return { success: true, messageId: info.messageId, provider: "smtp" };
+  const transport = createSmtpTransport();
+  try {
+    const info = await transport.sendMail({
+      from: EMAIL_FROM.includes("@") ? EMAIL_FROM : `"CONNECT-DAET" <${SMTP_USER}>`,
+      to,
+      replyTo: EMAIL_REPLY_TO || undefined,
+      subject,
+      text: body,
+      html: html || buildHtmlBody(body, { title: subject }),
+    });
+    return { success: true, messageId: info.messageId, provider: "smtp" };
+  } catch (err) {
+    return {
+      success: false,
+      error: formatSmtpError(err),
+      provider: "smtp",
+      errorCode: err?.code || null,
+    };
+  } finally {
+    transport.close();
+  }
 }
 
 async function sendViaResend({ to, subject, body, html }) {
@@ -185,10 +225,12 @@ export async function sendEmail({ to, subject, body, html }) {
           success: result.success,
           skipped: Boolean(result.skipped),
           hasMessageId: Boolean(result.messageId),
+          errorCode: result.errorCode || null,
+          missingEnvVars: getEmailDiagnostics().missingEnvVars,
         },
         timestamp: Date.now(),
-        runId: "email",
-        hypothesisId: "email-delivery",
+        runId: "email-fix",
+        hypothesisId: "email-config",
       }),
     }).catch(() => {});
     // #endregion

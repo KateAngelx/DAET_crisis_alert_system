@@ -122,7 +122,15 @@ export default function AdminSettingsPage() {
     try {
       const res = await authFetch("/api/admin/email-test", { method: "POST", body: JSON.stringify({}) });
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error || "Email test failed");
+      if (!res.ok) {
+        const hint =
+          data.step === "config" && data.diagnostics?.missingEnvVars?.length
+            ? ` Missing env: ${data.diagnostics.missingEnvVars.join(", ")}. Redeploy after adding them in Vercel.`
+            : data.step === "config"
+              ? " Redeploy Vercel after saving env vars."
+              : "";
+        throw new Error(`${data.error || "Email test failed"}${hint}`);
+      }
       setMessage({
         type: "success",
         text: `Test email sent via ${data.provider}${data.messageId ? ` (${data.messageId})` : ""} to ${data.to}.`,

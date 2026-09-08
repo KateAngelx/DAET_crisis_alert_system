@@ -24,12 +24,14 @@ export async function POST(request) {
   const diagnostics = getEmailDiagnostics();
 
   if (diagnostics.provider === "none") {
+    const missing = diagnostics.missingEnvVars?.length
+      ? ` Missing: ${diagnostics.missingEnvVars.join(", ")}.`
+      : "";
     return NextResponse.json(
       {
         success: false,
         step: "config",
-        error:
-          "Email is not configured. Use SMTP (own inbox) or RESEND_API_KEY + EMAIL_FROM. See README.",
+        error: `Email is not configured on the server.${missing} Add SMTP vars in Vercel and redeploy.`,
         diagnostics,
       },
       { status: 503 }
