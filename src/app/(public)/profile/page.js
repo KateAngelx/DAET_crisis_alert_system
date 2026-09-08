@@ -348,7 +348,7 @@ export default function ProfilePage() {
             <Card className="p-6 rounded-3xl mt-6">
               <h2 className="text-xl font-black uppercase tracking-tight text-zinc-900 mb-2">Communication Preferences</h2>
               <p className="text-sm text-zinc-500 font-medium mb-4">
-                Control how you receive crisis alerts and updates. Disabled channels will not receive notifications.
+                Control SMS and in-app notifications. Official crisis alert emails are always sent to your registered email address during emergencies.
                 {user?.notification_channels && !user.notification_channels.sms ? (
                   <span className="block mt-2 text-amber-700">
                     SMS is currently off. Sign in regularly and re-enable SMS here to receive text alerts again.

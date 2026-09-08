@@ -67,7 +67,7 @@ export const ROLE_INTERFACE = {
     users: {
       title: "User Management",
       description: "Monitor registrations, online activity, and inactive accounts. Create, edit, deactivate, or delete users.",
-      helper: "Users inactive 30+ days have SMS paused until they sign in again and re-enable it. Email notices for inactive accounts will be added when email delivery is configured.",
+      helper: "Users inactive 30+ days have SMS paused until they sign in again and re-enable it. Inactive notices are sent in-app and by email when RESEND_API_KEY is configured.",
     },
     workflow: {
       title: "Alert Pipeline",
@@ -77,7 +77,7 @@ export const ROLE_INTERFACE = {
     settings: {
       title: "System Settings",
       description: "Configure notification audience, exports, and LGU-wide delivery rules.",
-      helper: "Exclude administrators from SMS/email by default so broadcasts reach tourists and guides only.",
+      helper: "Crisis alert emails are sent to all registered tourists with an email on file when Email is enabled on the broadcast. SMS and in-app still follow user preferences.",
     },
   },
 };

@@ -4,7 +4,8 @@ import { NOTIFICATION_CHANNELS } from "@/lib/constants";
 import { processNotificationDeliveries } from "@/lib/notificationQueue.server";
 import {
   channelsFromProfile,
-  getEffectiveUserChannels,
+  getBroadcastAlertChannels,
+  hasProfileEmail,
 } from "@/lib/userNotificationChannels";
 import { audienceToUserTypes, isProfileInAudience } from "@/lib/notificationAudience";
 import { getSystemSettings } from "@/lib/systemSettings.server";
@@ -93,10 +94,14 @@ export async function broadcastDangerousLocationToTourists(admin, warningId) {
 
   const deliveryRecords = [];
 
-  for (const profile of toNotify) {
-    const effective = getEffectiveUserChannels(channelsFromProfile(profile));
+  const hazardChannelFlags = { email: true, sms: true, app: true };
 
-    if (!effective.email && !effective.sms && !effective.app) {
+  for (const profile of toNotify) {
+    const userChannels = channelsFromProfile(profile);
+    const effective = getBroadcastAlertChannels(hazardChannelFlags, userChannels);
+    const sendEmail = effective.email && hasProfileEmail(profile);
+
+    if (!sendEmail && !effective.sms && !effective.app) {
       results.skipped += 1;
       continue;
     }
@@ -127,7 +132,7 @@ export async function broadcastDangerousLocationToTourists(admin, warningId) {
       results.notified += 1;
     }
 
-    if (effective.email && profile.email) {
+    if (sendEmail) {
       deliveryRecords.push({
         notification_id: notificationId,
         user_id: profile.id,

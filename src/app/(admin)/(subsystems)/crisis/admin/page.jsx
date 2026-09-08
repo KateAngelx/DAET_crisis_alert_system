@@ -452,6 +452,11 @@ export default function CrisisAdminPage() {
                       </button>
                     ))}
                   </div>
+                  {formData.channels.email && (
+                    <p className="text-[10px] text-blue-700 font-medium -mt-2 mb-1">
+                      Email reaches all registered tourists with an email on file (see Admin → Settings → Notification Audience).
+                    </p>
+                  )}
                   <input required className="w-full p-4 bg-zinc-50 border border-gray-100 rounded-xl font-bold text-sm outline-none focus:ring-2 focus:ring-blue-500 transition-all" placeholder="Alert Title" value={formData.title} onChange={e => setFormData({...formData, title: e.target.value})} />
                   <div className="grid grid-cols-2 gap-4">
                     <select className="w-full p-4 bg-zinc-50 border border-gray-100 rounded-xl font-bold text-xs outline-none focus:ring-2 focus:ring-blue-500" value={formData.type} onChange={e => setFormData({...formData, type: e.target.value})}><option>Weather</option><option>Health</option><option>Security</option><option>General</option></select>

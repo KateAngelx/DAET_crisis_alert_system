@@ -45,6 +45,23 @@ export function getEffectiveAlertChannels(alertChannels, userChannels) {
   };
 }
 
+/**
+ * LGU emergency broadcasts (crisis alerts, area hazards).
+ * Email goes to every audience member with a profile email when the alert includes email.
+ * SMS and in-app still respect user communication preferences.
+ */
+export function getBroadcastAlertChannels(alertChannels, userChannels) {
+  return {
+    email: Boolean(alertChannels?.email),
+    sms: Boolean(alertChannels?.sms && userChannels.sms),
+    app: Boolean(alertChannels?.app && userChannels.app),
+  };
+}
+
+export function hasProfileEmail(profile) {
+  return Boolean(String(profile?.email || "").trim());
+}
+
 /** Area hazards / direct dispatch — user prefs only (no alert-level channel flags) */
 export function getEffectiveUserChannels(userChannels, requested = ["web", "email", "sms"]) {
   return {

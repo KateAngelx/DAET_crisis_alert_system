@@ -2,7 +2,7 @@
 
 import React, { useCallback, useEffect, useState } from "react";
 import {
-  Settings, Users, FileText, Download, Bell, Loader2, CheckCircle, AlertCircle,
+  Settings, Users, FileText, Download, Bell, Loader2, CheckCircle, AlertCircle, Mail, MessageSquare,
 } from "lucide-react";
 import { Card } from "@/app/components/ui/Card";
 import { DashboardPageHeader } from "@/app/components/dashboard/DashboardPageHeader";
@@ -29,6 +29,9 @@ export default function AdminSettingsPage() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [exporting, setExporting] = useState(null);
+  const [testingEmail, setTestingEmail] = useState(false);
+  const [testingSms, setTestingSms] = useState(false);
+  const [emailDiagnostics, setEmailDiagnostics] = useState(null);
   const [message, setMessage] = useState(null);
   const [updatedAt, setUpdatedAt] = useState(null);
 
@@ -49,6 +52,10 @@ export default function AdminSettingsPage() {
 
   useEffect(() => {
     loadSettings();
+    authFetch("/api/admin/email-test")
+      .then((res) => res.json())
+      .then((data) => setEmailDiagnostics(data.diagnostics))
+      .catch(() => {});
   }, [loadSettings]);
 
   const toggleAudience = (key) => {
@@ -106,6 +113,42 @@ export default function AdminSettingsPage() {
       setMessage({ type: "error", text: err.message });
     } finally {
       setExporting(null);
+    }
+  };
+
+  const handleTestEmail = async () => {
+    setTestingEmail(true);
+    setMessage(null);
+    try {
+      const res = await authFetch("/api/admin/email-test", { method: "POST", body: JSON.stringify({}) });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Email test failed");
+      setMessage({
+        type: "success",
+        text: `Test email sent via ${data.provider}${data.messageId ? ` (${data.messageId})` : ""} to ${data.to}.`,
+      });
+    } catch (err) {
+      setMessage({ type: "error", text: err.message });
+    } finally {
+      setTestingEmail(false);
+    }
+  };
+
+  const handleTestSms = async () => {
+    setTestingSms(true);
+    setMessage(null);
+    try {
+      const res = await authFetch("/api/admin/sms-test", { method: "POST", body: JSON.stringify({}) });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "SMS test failed");
+      setMessage({
+        type: "success",
+        text: `Test SMS sent to ${data.normalizedPhone}.`,
+      });
+    } catch (err) {
+      setMessage({ type: "error", text: err.message });
+    } finally {
+      setTestingSms(false);
     }
   };
 
@@ -176,7 +219,8 @@ export default function AdminSettingsPage() {
               </div>
 
               <p className="text-xs text-zinc-500 font-medium mb-4">
-                Each person&apos;s own communication preferences (Profile) still apply. Administrators are
+                When you broadcast with <strong>Email</strong> enabled, every included tourist with an email on their profile receives the alert (mandatory for emergencies).
+                SMS and in-app still follow each user&apos;s Profile preferences. Administrators are
                 <strong> excluded by default</strong> so LGU staff are not texted when broadcasting to the public.
               </p>
 
@@ -241,6 +285,55 @@ export default function AdminSettingsPage() {
         </Card>
       </div>
 
+      <Card className="p-6 rounded-3xl border-zinc-100">
+        <div className="flex items-center gap-3 mb-4">
+          <Bell size={20} className="text-blue-600" />
+          <div>
+            <h2 className="font-black uppercase tracking-tight text-zinc-900">Delivery Testing</h2>
+            <p className="text-xs text-zinc-500 font-medium mt-1">
+              Send a test to your admin profile email/phone to verify env configuration.
+            </p>
+            {emailDiagnostics && (
+              <div className="mt-2 text-[11px] text-zinc-500 font-medium space-y-1">
+                <p>
+                  <span className="font-black uppercase text-zinc-400">From:</span>{" "}
+                  {emailDiagnostics.fromAddress}
+                  {emailDiagnostics.provider !== "none" ? (
+                    <span className="ml-2 text-green-700">({emailDiagnostics.provider})</span>
+                  ) : (
+                    <span className="ml-2 text-amber-700">(not configured)</span>
+                  )}
+                </p>
+                <p>
+                  <span className="font-black uppercase text-zinc-400">To:</span>{" "}
+                  {emailDiagnostics.recipientSource}
+                </p>
+              </div>
+            )}
+          </div>
+        </div>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <button
+            type="button"
+            onClick={handleTestEmail}
+            disabled={testingEmail}
+            className="flex items-center justify-center gap-2 p-4 rounded-2xl bg-blue-600 text-white font-black uppercase text-xs tracking-widest hover:bg-blue-700 disabled:opacity-50"
+          >
+            {testingEmail ? <Loader2 size={16} className="animate-spin" /> : <Mail size={16} />}
+            {testingEmail ? "Sending..." : "Test Email"}
+          </button>
+          <button
+            type="button"
+            onClick={handleTestSms}
+            disabled={testingSms}
+            className="flex items-center justify-center gap-2 p-4 rounded-2xl bg-zinc-900 text-white font-black uppercase text-xs tracking-widest hover:bg-zinc-800 disabled:opacity-50"
+          >
+            {testingSms ? <Loader2 size={16} className="animate-spin" /> : <MessageSquare size={16} />}
+            {testingSms ? "Sending..." : "Test SMS"}
+          </button>
+        </div>
+      </Card>
+
       <Card className="p-6 rounded-3xl bg-zinc-50 border-zinc-200">
         <div className="flex items-center gap-3 mb-2">
           <Settings size={18} className="text-zinc-500" />
@@ -249,6 +342,9 @@ export default function AdminSettingsPage() {
         <ul className="text-sm text-zinc-600 font-medium space-y-2 list-disc pl-5">
           <li>Crisis Command Center alert channels (email/SMS/app) control <em>how</em> an alert is sent; this page controls <em>who</em> receives it.</li>
           <li>SMS delivery uses iProg — ensure <code className="text-xs bg-white px-1 rounded">IPROG_SMS_API_TOKEN</code> is set in environment variables.</li>
+          <li>Email delivery: use your <strong>own LGU inbox</strong> via SMTP, or your <strong>own domain</strong> via Resend. Recipients are always each user&apos;s registered profile email.</li>
+          <li>SMTP (own Gmail/Workspace/Outlook): <code className="text-xs bg-white px-1 rounded">SMTP_HOST</code>, <code className="text-xs bg-white px-1 rounded">SMTP_USER</code>, <code className="text-xs bg-white px-1 rounded">SMTP_PASS</code>, <code className="text-xs bg-white px-1 rounded">EMAIL_FROM</code></li>
+          <li>Resend (own domain): <code className="text-xs bg-white px-1 rounded">RESEND_API_KEY</code> + <code className="text-xs bg-white px-1 rounded">EMAIL_FROM</code></li>
           <li>Individual users can opt out of channels in Profile → Communication Preferences.</li>
         </ul>
       </Card>

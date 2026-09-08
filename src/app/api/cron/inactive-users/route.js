@@ -1,10 +1,7 @@
 import { NextResponse } from "next/server";
-import { createClient } from "@supabase/supabase-js";
 import { getSupabaseAdmin } from "@/lib/supabaseAdmin";
 import { INACTIVE_THRESHOLD_DAYS, isInactiveOverThreshold } from "@/lib/userActivity";
-
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+import { sendEmail } from "@/lib/emailService";
 
 const INACTIVE_NOTICE_TITLE = "Account inactive — SMS paused";
 const INACTIVE_NOTICE_BODY =
@@ -27,7 +24,7 @@ function requireCronSecret(request) {
   return { ok: true };
 }
 
-/** Suspend SMS for accounts inactive 30+ days and queue in-app notice (email stub for later) */
+/** Suspend SMS for accounts inactive 30+ days; notify in-app and by email when configured */
 export async function POST(request) {
   const gate = requireCronSecret(request);
   if (!gate.ok) return gate.response;
@@ -53,6 +50,7 @@ export async function POST(request) {
   let processed = 0;
   let smsSuspended = 0;
   let noticesQueued = 0;
+  let emailsSent = 0;
   const errors = [];
 
   for (const profile of profiles || []) {
@@ -94,8 +92,18 @@ export async function POST(request) {
       noticesQueued += 1;
     }
 
-    // Email delivery stub — wire to email service when ready
-    // await queueInactiveUserEmail(profile, INACTIVE_NOTICE_TITLE, INACTIVE_NOTICE_BODY);
+    if (profile.email) {
+      const emailResult = await sendEmail({
+        to: profile.email,
+        subject: INACTIVE_NOTICE_TITLE,
+        body: INACTIVE_NOTICE_BODY,
+      });
+      if (emailResult.success) {
+        emailsSent += 1;
+      } else if (!emailResult.skipped) {
+        errors.push(`${profile.id} email: ${emailResult.error}`);
+      }
+    }
   }
 
   return NextResponse.json({
@@ -103,6 +111,7 @@ export async function POST(request) {
     processed,
     smsSuspended,
     noticesQueued,
+    emailsSent,
     errors,
   });
 }

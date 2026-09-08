@@ -9,7 +9,7 @@ Official emergency communication platform for Daet, Camarines Norte. Provides re
 - **Incident Reporting** — Tourists and staff can submit and track emergency reports
 - **Command Center** — Authorized personnel create, manage, and resolve alerts
 - **Roads & Hazards (Admin)** — Publish route lines and point-in-area hazard warnings
-- **Notifications** — In-app notification system with delivery queue
+- **Notifications** — In-app, SMS (iProg), and email (Gmail SMTP) delivery queue
 - **User Management** — Role-based access for admins, tourists, and guides
 
 ## Tech Stack
@@ -45,6 +45,18 @@ IPROG_SMS_API_TOKEN=your_iprog_api_token_from_dashboard
 # SMS_API_URL=https://sms.iprogtech.com/api/v1/sms_messages   # default if omitted
 # SMS_PROVIDER=2   # 2 = multi-network provider (recommended)
 # SMS_MAX_LENGTH=480   # Max chars per SMS (480 ≈ 3 segments; iProg bills per segment)
+
+# Email — option A: your own inbox (Gmail / Google Workspace / Outlook SMTP)
+SMTP_HOST=smtp.gmail.com
+SMTP_PORT=587
+SMTP_USER=alerts@your-lgu.gov.ph
+SMTP_PASS=your_app_password
+EMAIL_FROM=CONNECT-DAET <alerts@your-lgu.gov.ph>
+# EMAIL_REPLY_TO=support@your-lgu.gov.ph
+
+# Email — option B: Resend with your own domain (https://resend.com)
+# RESEND_API_KEY=re_your_resend_api_key
+# EMAIL_FROM=CONNECT-DAET <alerts@your-verified-domain.com>
 ```
 
 ### Deploy to Vercel
@@ -80,7 +92,33 @@ POST /api/cron/inactive-users
 Header: x-cron-secret: YOUR_CRON_SECRET
 ```
 
-This pauses SMS for accounts inactive 30+ days and sends an in-app notice (email delivery to be wired later).
+This pauses SMS for accounts inactive 30+ days and sends an in-app notice plus email when SMTP or Resend is configured.
+
+### Email notifications (Gmail SMTP)
+
+**FROM** = your LGU Gmail (`EMAIL_FROM` / `SMTP_USER`)  
+**TO** = every registered tourist&apos;s profile email when you broadcast with **Email** enabled
+
+Crisis alert and area hazard **emails are mandatory** for all tourists in the notification audience who have an email on file — users cannot opt out of emergency email. SMS and in-app still respect Profile → Communication Preferences.
+
+**Setup (Gmail SMTP — free):**
+
+| Variable | Value |
+|----------|--------|
+| `SMTP_HOST` | `smtp.gmail.com` |
+| `SMTP_PORT` | `587` |
+| `SMTP_USER` | `your-lgu@gmail.com` |
+| `SMTP_PASS` | Google **App Password** (Security → 2-Step Verification → App passwords) |
+| `EMAIL_FROM` | `CONNECT-DAET <your-lgu@gmail.com>` |
+
+1. Add vars in Vercel → redeploy  
+2. **Admin → Settings** → ensure **Tourists** is included under Notification Audience  
+3. **Test Email** in Delivery Testing  
+4. **Command Center** → publish alert with **Email** channel on  
+
+Gmail limit: ~500 emails/day on free accounts.
+
+**Alternative:** Resend + own domain — set `RESEND_API_KEY` + `EMAIL_FROM` (remove SMTP vars). SMTP takes priority when both are set.
 
 ### User Roles
 

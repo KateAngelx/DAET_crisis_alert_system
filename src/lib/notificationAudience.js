@@ -36,7 +36,7 @@ export function isProfileInAudience(profile, audience) {
 }
 
 export const AUDIENCE_ROLE_OPTIONS = [
-  { key: "tourists", label: "Tourists", description: "Registered public users and visitors with accounts." },
+  { key: "tourists", label: "Tourists", description: "All registered tourists — crisis emails go to every profile with an email when Email is enabled on the broadcast." },
   { key: "guides", label: "Tourism Guides", description: "Assigned guides monitoring tour groups." },
   { key: "admins", label: "Administrators", description: "LGU staff with Command Center access." },
 ];

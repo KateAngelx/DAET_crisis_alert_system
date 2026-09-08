@@ -4,7 +4,8 @@ import { processNotificationDeliveries } from '@/lib/notificationQueue.server';
 import { agentDebugLog } from '@/lib/agentDebugLog.server';
 import {
   channelsFromProfile,
-  getEffectiveAlertChannels,
+  getBroadcastAlertChannels,
+  hasProfileEmail,
 } from '@/lib/userNotificationChannels';
 import { audienceToUserTypes, isProfileInAudience } from '@/lib/notificationAudience';
 import { getSystemSettings } from '@/lib/systemSettings.server';
@@ -77,9 +78,10 @@ export async function broadcastCrisisAlertToTourists(admin, alertId) {
 
   for (const profile of toNotify) {
     const userChannels = channelsFromProfile(profile);
-    const effective = getEffectiveAlertChannels(alertChannelFlags, userChannels);
+    const effective = getBroadcastAlertChannels(alertChannelFlags, userChannels);
+    const sendEmail = effective.email && hasProfileEmail(profile);
 
-    if (!effective.email && !effective.sms && !effective.app) {
+    if (!sendEmail && !effective.sms && !effective.app) {
       results.skipped += 1;
       continue;
     }
@@ -110,7 +112,7 @@ export async function broadcastCrisisAlertToTourists(admin, alertId) {
       results.notified += 1;
     }
 
-    if (effective.email && profile.email) {
+    if (sendEmail) {
       deliveryRecords.push({
         notification_id: notificationId,
         user_id: profile.id,

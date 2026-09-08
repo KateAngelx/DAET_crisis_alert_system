@@ -9,7 +9,7 @@ const CHANNEL_OPTIONS = [
   {
     key: "email",
     label: "Email",
-    description: "Receive alerts and updates in your inbox.",
+    description: "Official crisis alerts are always sent to your registered email. This toggle controls other LGU email updates.",
     icon: Mail,
   },
   {
