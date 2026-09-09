@@ -1,8 +1,8 @@
 "use client";
 
-import React, { useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import Link from "next/link";
-import { FileText, ArrowRight, AlertTriangle } from "lucide-react";
+import { FileText, ArrowRight, AlertTriangle, Plus } from "lucide-react";
 import { Card } from "@/app/components/ui/Card";
 import { DashboardPageHeader } from "@/app/components/dashboard/DashboardPageHeader";
 import { RoleContextBanner } from "@/app/components/dashboard/RoleContextBanner";
@@ -13,11 +13,14 @@ import { AsyncState, EmptyState } from "@/app/components/ui/AsyncState";
 import { useAuthStore } from "@/app/store/crisisStore";
 import { useGuideStore } from "@/app/store/guideStore";
 import { getStatusColor, getSeverityColor } from "@/lib/constants";
+import { GuideDashboardQuickActions } from "@/app/components/guide/GuideDashboardQuickActions";
+import { ReportIncidentModal } from "@/app/components/ReportIncidentModal";
 import { iconSize, statGrid } from "@/lib/designSystem";
 
 export default function GuideReportsPage() {
   const { user } = useAuthStore();
   const { guideIncidents, fetchGuideIncidents, resetGuideScope, loading, error } = useGuideStore();
+  const [modalOpen, setModalOpen] = useState(false);
 
   useEffect(() => {
     if (!user?.id) return;
@@ -35,6 +38,15 @@ export default function GuideReportsPage() {
       <DashboardPageHeader
         title={ROLE_INTERFACE.guide.reports.title}
         description={ROLE_INTERFACE.guide.reports.description}
+        action={
+          <button
+            type="button"
+            onClick={() => setModalOpen(true)}
+            className="flex items-center gap-2 bg-red-600 text-white px-5 py-2.5 rounded-2xl font-black uppercase text-xs tracking-widest hover:bg-red-700 transition-colors"
+          >
+            <Plus size={16} /> Report incident
+          </button>
+        }
       />
       <RoleContextBanner helper={ROLE_INTERFACE.guide.reports.helper} tone="info" />
 
@@ -92,6 +104,14 @@ export default function GuideReportsPage() {
           ))}
         </div>
       </AsyncState>
+
+      <GuideDashboardQuickActions className="mt-6" showReport={false} />
+
+      <ReportIncidentModal
+        open={modalOpen}
+        onClose={() => setModalOpen(false)}
+        onSuccess={() => user?.id && fetchGuideIncidents(user.id)}
+      />
     </div>
   );
 }

@@ -26,6 +26,8 @@ import { CrisisHubMap } from "@/app/components/maps/CrisisHubMap";
 import { CharCounterTextarea } from "@/app/components/ui/CharCounterTextarea";
 import { formatCrisisAlertSms } from "@/lib/smsMessageFormat";
 import { OutlinedCard } from "@/app/components/ui/OutlinedCard";
+import { ConfirmDialog } from "@/app/components/ui/ConfirmDialog";
+import { useConfirm } from "@/app/components/ui/ConfirmDialogProvider";
 import dynamic from 'next/dynamic';
 import "leaflet/dist/leaflet.css";
 
@@ -54,6 +56,7 @@ export default function CrisisAdminPage() {
   const [showToast, setShowToast] = useState(false);
   const [toastMessage, setToastMessage] = useState("");
   const [isPublishing, setIsPublishing] = useState(false);
+  const { confirm } = useConfirm();
 
   const [showCreateModal, setShowCreateModal] = useState(false); 
   const [showConfirmModal, setShowConfirmModal] = useState(false);
@@ -156,7 +159,6 @@ export default function CrisisAdminPage() {
   };
 
   const confirmAndBroadcast = async () => {
-    setShowConfirmModal(false);
     setIsPublishing(true);
 
     let broadcastPayload = { ...formData };
@@ -203,6 +205,7 @@ export default function CrisisAdminPage() {
     }
 
     setIsPublishing(false);
+    setShowConfirmModal(false);
   };
 
   const handleViewClick = (alert) => {
@@ -281,12 +284,17 @@ export default function CrisisAdminPage() {
   };
 
   const handleDelete = async (id) => {
-     if(confirm("Are you sure? This will remove the record from Database.")) {
-       await deleteAlert(id);
-       setToastMessage("Alert deleted permanently.");
-       setShowToast(true);
-     }
-   };
+    const ok = await confirm({
+      title: "Delete alert permanently?",
+      description: "This removes the record from the database and cannot be undone. It will no longer appear in active or resolved lists.",
+      confirmLabel: "Delete",
+      variant: "danger",
+    });
+    if (!ok) return;
+    await deleteAlert(id);
+    setToastMessage("Alert deleted permanently.");
+    setShowToast(true);
+  };
 
   const getAlertIcon = (type) => {
     switch (type) {
@@ -700,32 +708,28 @@ export default function CrisisAdminPage() {
             </div>
       </div>
 
-      {/* CONFIRMATION MODALS */}
-      {showResolveConfirm && selectedAlert && (
-        <div className="fixed inset-0 z-[2000] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
-          <div className="bg-background rounded-3xl p-8 max-w-sm w-full border border-gray-200 dark:border-white/10 text-center shadow-2xl">
-            <CheckCircle className="text-green-600 mx-auto mb-4" size={32} />
-            <h3 className="text-xl font-black mb-2 uppercase">Mark as Resolved?</h3>
-            <div className="flex gap-3 mt-8">
-              <button onClick={() => setShowResolveConfirm(false)} className="flex-1 py-4 bg-zinc-100 dark:bg-zinc-800 text-zinc-600 rounded-2xl font-black text-xs uppercase">No</button>
-              <button onClick={confirmResolve} className="flex-1 py-4 bg-green-600 text-white rounded-2xl font-black text-xs uppercase">Yes</button>
-            </div>
-          </div>
-        </div>
-      )}
+      <ConfirmDialog
+        open={showResolveConfirm && !!selectedAlert}
+        title="Mark as resolved?"
+        description="This removes the alert from the public active feed. Tourists can still view it under Resolved Alerts for reference."
+        confirmLabel="Yes, resolve"
+        cancelLabel="Not yet"
+        variant="success"
+        onConfirm={confirmResolve}
+        onCancel={() => setShowResolveConfirm(false)}
+      />
 
-      {showConfirmModal && (
-        <div className="fixed inset-0 z-[2000] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm">
-          <div className="bg-background rounded-3xl p-8 max-w-sm w-full border border-gray-200 dark:border-white/10 text-center shadow-2xl">
-            <AlertTriangle className="text-red-600 mx-auto mb-4" size={32} />
-            <h3 className="text-xl font-black mb-8 uppercase tracking-tight">Confirm Broadcast?</h3>
-            <div className="flex gap-3 font-bold">
-              <button onClick={() => setShowConfirmModal(false)} className="flex-1 py-4 bg-zinc-100 dark:bg-zinc-800 text-zinc-600 rounded-2xl font-black text-xs uppercase">Cancel</button>
-              <button onClick={confirmAndBroadcast} className="flex-1 py-4 bg-red-600 text-white rounded-2xl font-black text-xs shadow-lg">Send</button>
-            </div>
-          </div>
-        </div>
-      )}
+      <ConfirmDialog
+        open={showConfirmModal}
+        title="Confirm broadcast?"
+        description="This sends the crisis alert to registered tourists through the channels you selected — in-app, email, and/or SMS."
+        confirmLabel="Send alert"
+        cancelLabel="Cancel"
+        variant="danger"
+        loading={isPublishing}
+        onConfirm={confirmAndBroadcast}
+        onCancel={() => !isPublishing && setShowConfirmModal(false)}
+      />
       
       {showToast && (
         <div className="fixed top-6 left-1/2 -translate-x-1/2 z-[300] animate-in fade-in slide-in-from-top-4 duration-300">

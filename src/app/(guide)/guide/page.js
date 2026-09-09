@@ -8,7 +8,8 @@ import {
 import { Card } from "@/app/components/ui/Card";
 import { DashboardPageHeader } from "@/app/components/dashboard/DashboardPageHeader";
 import { DashboardStatCard } from "@/app/components/dashboard/DashboardStatCard";
-import { DestinationButton, DestinationModal } from "@/app/components/tour/DestinationModal";
+import { DestinationModal } from "@/app/components/tour/DestinationModal";
+import { TourGroupCard } from "@/app/components/tour/TourGroupCard";
 import { RouteListCard } from "@/app/components/routes/RouteListCard";
 import { RouteDetailModal } from "@/app/components/routes/RouteDetailModal";
 import { StatCardSkeletonGrid } from "@/app/components/ui/Skeletons";
@@ -19,7 +20,8 @@ import { buildRouteCatalog } from "@/lib/routesUtils";
 import { formatTourRoute, getRelevantRouteAdvisoriesForGroup } from "@/lib/tourGroupRoute";
 import { iconSize, statGrid, typography } from "@/lib/designSystem";
 import { ROLE_INTERFACE } from "@/lib/roleInterfaceCopy";
-import { RoleContextBanner } from "@/app/components/dashboard/RoleContextBanner";
+import { CompletedToursPanel } from "@/app/components/tour/CompletedToursPanel";
+import { GuideDashboardQuickActions } from "@/app/components/guide/GuideDashboardQuickActions";
 
 export default function GuideDashboard() {
   const { user } = useAuthStore();
@@ -43,6 +45,7 @@ export default function GuideDashboard() {
   const statsLoading = alertsLoading || guideLoading;
 
   const activeGroups = tourGroups.filter((g) => g.status === "active");
+  const completedGroups = tourGroups.filter((g) => g.status === "completed");
   const catalog = useMemo(() => buildRouteCatalog(advisories), [advisories]);
 
   const groupRouteAdvisories = useMemo(() => {
@@ -96,15 +99,13 @@ export default function GuideDashboard() {
         }
       />
 
-      <RoleContextBanner helper={ROLE_INTERFACE.guide.dashboard.helper} tone="info" />
-
       {statsLoading ? (
         <StatCardSkeletonGrid count={4} className={statGrid.dashboard} />
       ) : (
         <div className={statGrid.dashboard}>
-          <DashboardStatCard compact label="Active Tour Groups" value={activeGroups.length} icon={<Compass size={iconSize.stat} />} accent="purple" href="/guide/groups" hrefLabel="Manage" />
-          <DashboardStatCard compact label="Tourists in Groups" value={totalTourists} icon={<Users size={iconSize.stat} />} accent="blue" href="/guide/tourists" hrefLabel="Manage" />
-          <DashboardStatCard compact label="Active Alerts" value={activeAlerts.length} icon={<Bell size={iconSize.stat} />} accent="red" href="/guide/crisis" hrefLabel="View" />
+          <DashboardStatCard compact label="Active Groups" value={activeGroups.length} icon={<Compass size={iconSize.stat} />} accent="purple" href="/guide/groups" hrefLabel="Manage" />
+          <DashboardStatCard compact label="Active Tourists" value={totalTourists} icon={<Users size={iconSize.stat} />} accent="blue" href="/guide/tourists" hrefLabel="Manage" />
+          <DashboardStatCard compact label="Completed Tours" value={completedGroups.length} icon={<ShieldCheck size={iconSize.stat} />} accent="green" href="/guide/completed" hrefLabel="View" />
           <DashboardStatCard compact label="Open Reports" value={openIncidents.length} icon={<FileText size={iconSize.stat} />} accent="orange" href="/guide/reports" hrefLabel="View" />
         </div>
       )}
@@ -171,42 +172,30 @@ export default function GuideDashboard() {
         </Card>
       )}
 
-      <div>
-        <div className="flex items-center justify-between mb-4">
-          <h2 className={`${typography.sectionTitle} flex items-center gap-2`}>
-            <ShieldCheck size={16} /> Crisis Overview
-          </h2>
-          <Link href="/guide/crisis" className="text-[10px] font-black uppercase tracking-widest text-blue-600 hover:underline">
-            Open Crisis Hub
-          </Link>
-        </div>
+      {activeAlerts.length > 0 && (
         <Card className="p-5 border-zinc-100">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div>
-              <p className="text-[10px] font-black uppercase text-zinc-400 mb-1">Active Advisories</p>
-              <p className="text-2xl font-black text-zinc-900">{activeAlerts.length}</p>
-            </div>
-            <div>
-              <p className="text-[10px] font-black uppercase text-zinc-400 mb-1">Critical</p>
-              <p className="text-2xl font-black text-red-600">{criticalAlerts.length}</p>
-            </div>
-            <div>
-              <p className="text-[10px] font-black uppercase text-zinc-400 mb-1">Open Group Reports</p>
-              <p className="text-2xl font-black text-orange-600">{openIncidents.length}</p>
-            </div>
+          <div className="flex items-center justify-between gap-3 mb-3">
+            <h2 className={`${typography.sectionTitle} flex items-center gap-2 mb-0`}>
+              <Bell size={16} className="text-red-500" /> Active Crisis Alerts
+            </h2>
+            <Link href="/guide/crisis" className="text-[10px] font-black uppercase text-blue-600 hover:underline shrink-0">
+              Crisis Hub
+            </Link>
           </div>
-          {activeAlerts.slice(0, 2).map((alert) => (
-            <div key={alert.id} className="mt-4 pt-4 border-t border-zinc-100">
-              <p className="text-[10px] font-black uppercase text-zinc-400">{alert.severity}</p>
-              <p className="font-bold text-zinc-900 text-sm">{alert.title}</p>
-            </div>
-          ))}
+          <div className="space-y-3">
+            {activeAlerts.slice(0, 2).map((alert) => (
+              <div key={alert.id} className="p-3 bg-zinc-50 rounded-xl border border-zinc-100">
+                <p className="text-[10px] font-black uppercase text-zinc-400">{alert.severity}</p>
+                <p className="font-bold text-zinc-900 text-sm">{alert.title}</p>
+              </div>
+            ))}
+          </div>
         </Card>
-      </div>
+      )}
 
       <div>
         <div className="flex items-center justify-between mb-4">
-          <h2 className={typography.sectionTitle}>Your Tour Groups</h2>
+          <h2 className={typography.sectionTitle}>Active Tour Groups</h2>
           <Link href="/guide/groups" className="text-[10px] font-black uppercase tracking-widest text-blue-600 hover:underline">
             View all
           </Link>
@@ -214,43 +203,40 @@ export default function GuideDashboard() {
         {activeGroups.length > 0 ? (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {activeGroups.slice(0, 4).map((group) => (
-              <Card key={group.id} className="p-5 border-zinc-100 hover:shadow-md transition-all h-full flex flex-col">
-                <div className="flex items-start justify-between gap-3">
-                  <div className="min-w-0 flex-1">
-                    <h3 className="font-black text-zinc-900 uppercase tracking-tight">{group.name}</h3>
-                    <p className="text-xs font-bold text-blue-600 flex items-center gap-1 mt-1">
-                      <Navigation size={12} /> {formatTourRoute(group)}
-                    </p>
-                  </div>
-                  <span className="text-[10px] font-black uppercase px-2 py-1 rounded-full bg-green-100 text-green-700 shrink-0">
-                    {group.status}
-                  </span>
-                </div>
-                <p className="text-sm text-zinc-600 mt-3 line-clamp-2 flex-1">{group.trip_info || "No trip details added."}</p>
-                <div className="flex items-center justify-between mt-3 pt-3 border-t border-zinc-100">
-                  <p className="text-[10px] font-black uppercase text-zinc-400">
-                    {group.member_count || 0} tourist{(group.member_count || 0) !== 1 ? "s" : ""}
-                  </p>
-                  <div className="flex items-center gap-2">
-                    <DestinationButton onClick={() => openDestination(group)} />
-                    <Link href={`/guide/groups/${group.id}`} className="p-1.5 hover:bg-zinc-100 rounded-lg">
-                      <ArrowRight size={16} className="text-zinc-400" />
-                    </Link>
-                  </div>
-                </div>
-              </Card>
+              <TourGroupCard
+                key={group.id}
+                group={group}
+                guideId={user?.id}
+                compact
+                onOpenDestination={openDestination}
+                onCompleted={() => user?.id && fetchTourGroups(user.id)}
+              />
             ))}
           </div>
         ) : (
           <Card className="p-10 text-center border-zinc-100">
             <Compass size={40} className="mx-auto text-zinc-200 mb-3" />
-            <p className="text-zinc-400 font-black uppercase text-xs">No tour groups yet</p>
+            <p className="text-zinc-400 font-black uppercase text-xs">No active tour groups</p>
             <Link href="/guide/groups" className="inline-block mt-3 text-[10px] font-black uppercase text-blue-600 hover:underline">
               Create your first tour group
             </Link>
           </Card>
         )}
       </div>
+
+      {completedGroups.length > 0 && (
+        <div>
+          <div className="flex items-center justify-between mb-4">
+            <h2 className={typography.sectionTitle}>Completed Tours</h2>
+            <Link href="/guide/completed" className="text-[10px] font-black uppercase tracking-widest text-green-600 hover:underline">
+              View all
+            </Link>
+          </div>
+          <CompletedToursPanel groups={completedGroups} guideId={user?.id} compact limit={2} />
+        </div>
+      )}
+
+      <GuideDashboardQuickActions showCompleted={false} />
 
       {openIncidents.length > 0 && (
         <div>

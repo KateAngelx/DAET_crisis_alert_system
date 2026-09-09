@@ -1,10 +1,9 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import Link from "next/link";
 import { 
   Shield, Info, MapPin, 
-  Clock, Bell, X, Mail, MessageSquare, Radio, ArrowRight
+  Clock, Bell, X, Radio
 } from "lucide-react";
 import { Card } from "@/app/components/ui/Card";
 import { useCrisisStore, useAuthStore } from "@/app/store/crisisStore";
@@ -17,7 +16,6 @@ import { typography, iconSize, statGrid, getSeverityOutline, outlinedCard } from
 import { CrisisHubMap } from "@/app/components/maps/CrisisHubMap";
 import { ROLE_INTERFACE } from "@/lib/roleInterfaceCopy";
 import { RoleContextBanner } from "@/app/components/dashboard/RoleContextBanner";
-
 export default function CrisisPublicPage() {
   const { alerts, fetchAlerts, loading, error } = useCrisisStore();
   const { isAuthenticated } = useAuthStore();
@@ -29,7 +27,22 @@ export default function CrisisPublicPage() {
 
   useEffect(() => {
     setMounted(true);
-    
+    // #region agent log
+    fetch("http://127.0.0.1:7540/ingest/3142bff0-53ba-4c2c-9606-b4d021977f0c", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "X-Debug-Session-Id": "ee1adc" },
+      body: JSON.stringify({
+        sessionId: "ee1adc",
+        runId: "remove-dup-nav",
+        hypothesisId: "NAV1",
+        location: "crisis/page.js:mount",
+        message: "Crisis hub loaded without inline analytics or cross-page nav links",
+        data: { hasAnalyticsSection: false, hasResolvedLink: false, hasRoutesLink: false },
+        timestamp: Date.now(),
+      }),
+    }).catch(() => {});
+    // #endregion
+
     const initRealtime = async () => {
       const cleanup = await fetchAlerts();
       return cleanup;
@@ -97,7 +110,7 @@ export default function CrisisPublicPage() {
         <section className={publicLayout.section}>
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start">
             <div className="text-left">
-              <h2 className={`${publicLayout.sectionTitle} flex items-center gap-2`}>
+              <h2 className={`${publicLayout.sectionTitle} flex items-center gap-2 mb-4`}>
                 <Bell className="text-blue-600" size={iconSize.section} /> Active Announcements
               </h2>
 
@@ -150,14 +163,9 @@ export default function CrisisPublicPage() {
             </div>
 
             <div className={`text-left ${selectedAlert ? "pointer-events-none opacity-40" : ""}`}>
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
-                <h2 className={`${publicLayout.sectionTitle} flex items-center gap-2 mb-0`}>
-                  <Radio className="text-red-500 animate-pulse" size={iconSize.section} /> Affected Areas Map
-                </h2>
-                <Link href="/routes" className="inline-flex items-center gap-1.5 text-[10px] font-black uppercase text-blue-600 hover:underline">
-                  Roads & Travel <ArrowRight size={12} />
-                </Link>
-              </div>
+              <h2 className={`${publicLayout.sectionTitle} flex items-center gap-2 mb-4`}>
+                <Radio className="text-red-500 animate-pulse" size={iconSize.section} /> Affected Areas Map
+              </h2>
               {loading ? (
                 <MapSkeleton height="h-[480px]" />
               ) : mounted && (
@@ -170,15 +178,6 @@ export default function CrisisPublicPage() {
                 />
               )}
             </div>
-          </div>
-        </section>
-
-        <section className="mt-12">
-          <h2 className={publicLayout.sectionTitle}>Alert Delivery Channels</h2>
-          <div className={publicLayout.cardGridWide}>
-            <NotificationCard icon={<Mail />} label="Email Alerts" status="When issued" />
-            <NotificationCard icon={<MessageSquare />} label="SMS Alerts" status="When issued" />
-            <NotificationCard icon={<Shield />} label="App Notifications" status="When issued" />
           </div>
         </section>
 
@@ -245,17 +244,5 @@ export default function CrisisPublicPage() {
         </div>
       )}
     </PublicPageShell>
-  );
-}
-
-function NotificationCard({ icon, label, status }) {
-  return (
-    <OutlinedCard accent="blue" padding={outlinedCard.alertPadding} className="flex items-center justify-between text-left">
-      <div className="flex items-center gap-3">
-        <div className="p-2.5 rounded-2xl bg-blue-600 text-white">{icon}</div>
-        <span className="text-xs font-black uppercase tracking-widest">{label}</span>
-      </div>
-      <span className="text-[10px] font-bold text-green-600 uppercase">{status}</span>
-    </OutlinedCard>
   );
 }

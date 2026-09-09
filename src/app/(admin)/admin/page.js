@@ -34,6 +34,7 @@ import { getSeverityColor, getStatusColor } from "@/lib/constants";
 import { iconSize, statGrid } from "@/lib/designSystem";
 import { ROLE_INTERFACE } from "@/lib/roleInterfaceCopy";
 import { RoleContextBanner } from "@/app/components/dashboard/RoleContextBanner";
+import { AdminAnalyticsPanel } from "@/app/components/analytics/AdminAnalyticsPanel";
 
 const PENDING_STATUSES = ["Submitted", "Received", "Under Review"];
 const ACTION_STATUSES = ["Assigned", "Responding"];
@@ -714,6 +715,8 @@ export default function AdminDashboard() {
         </div>
       </div>
       )}
+
+      <AdminAnalyticsPanel className="mt-6" />
     </div>
   );
 }

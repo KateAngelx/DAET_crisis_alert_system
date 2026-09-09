@@ -3,12 +3,12 @@
 import { useEffect } from "react";
 import { useRouter } from "next/navigation";
 
-/** Legacy URL — emergency alerts live on Crisis Hub. */
+/** Legacy URL — resolved alerts archive. */
 export default function PublicAlertsRedirectPage() {
   const router = useRouter();
 
   useEffect(() => {
-    router.replace("/crisis");
+    router.replace("/crisis/resolved");
   }, [router]);
 
   return null;

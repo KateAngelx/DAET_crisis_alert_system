@@ -4,6 +4,7 @@ import { AuthSessionSync } from "@/app/components/AuthSessionSync";
 import { ChannelPreferencesGate } from "@/app/components/ChannelPreferencesGate";
 import { AssignmentRequestHandler } from "@/app/components/tour/AssignmentRequestHandler";
 import { NotificationArrivalListener } from "@/app/components/NotificationArrivalListener";
+import { ConfirmDialogProvider } from "@/app/components/ui/ConfirmDialogProvider";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -30,7 +31,7 @@ export default function RootLayout({ children }) {
         <AssignmentRequestHandler />
         <GlobalEmergencyBanner />
         <NotificationArrivalListener />
-        {children}
+        <ConfirmDialogProvider>{children}</ConfirmDialogProvider>
       </body>
     </html>
   );

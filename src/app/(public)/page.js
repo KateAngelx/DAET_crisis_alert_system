@@ -1,5 +1,5 @@
 "use client";
-import React, { useEffect, useState, useLayoutEffect } from "react";
+import React, { useEffect, useState, useLayoutEffect, useRef } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
@@ -11,13 +11,14 @@ import { HeroStatSkeleton } from "@/app/components/ui/Skeletons";
 import { DashboardStatCard } from "@/app/components/dashboard/DashboardStatCard";
 import { OutlinedCard } from "@/app/components/ui/OutlinedCard";
 import { typography, iconSize, statGrid } from "@/lib/designSystem";
-
+import { CommunicationChannelsOverview } from "@/app/components/CommunicationChannelsOverview";
 export default function Home() {
   const { fetchAlerts, alerts, loading, error } = useCrisisStore();
   const { isAuthenticated, user } = useAuthStore();
   const { unreadCount, fetchNotifications } = useNotificationStore();
   const [mounted, setMounted] = useState(false);
   const router = useRouter();
+  const heroRef = useRef(null);
 
   useEffect(() => {
     setMounted(true);
@@ -35,24 +36,54 @@ export default function Home() {
     if (user?.role === 'guide') router.replace('/guide');
   }, [mounted, isAuthenticated, user, router]);
 
+  useEffect(() => {
+    if (!mounted || typeof window === "undefined") return;
+    const heroEl = heroRef.current;
+    const heroHeight = heroEl?.getBoundingClientRect().height ?? 0;
+    // #region agent log
+    fetch("http://127.0.0.1:7540/ingest/3142bff0-53ba-4c2c-9606-b4d021977f0c", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "X-Debug-Session-Id": "ee1adc" },
+      body: JSON.stringify({
+        sessionId: "ee1adc",
+        runId: "landing-hero-ui",
+        hypothesisId: "H1",
+        location: "public/page.js:hero",
+        message: "Landing hero layout metrics",
+        data: {
+          innerWidth: window.innerWidth,
+          innerHeight: window.innerHeight,
+          heroHeight,
+          isAuthenticated,
+          role: user?.role ?? null,
+        },
+        timestamp: Date.now(),
+      }),
+    }).catch(() => {});
+    // #endregion
+  }, [mounted, isAuthenticated, user?.role]);
+
   if (!mounted || (isAuthenticated && (user?.role === 'admin' || user?.role === 'guide'))) return null;
 
   const activeAlerts = alerts.filter((a) => a.status === "Active" && a.is_public);
   const criticalCount = activeAlerts.filter((a) => a.severity === "Critical").length;
 
   return (
-    <div className="flex flex-col min-h-screen bg-white font-sans text-left">
+    <div className="flex flex-col bg-white font-sans text-left">
       
       {/* HERO SECTION */}
-      <section className="relative pt-8 pb-8 overflow-hidden bg-zinc-50 border-b border-zinc-200">
+      <section
+        ref={heroRef}
+        className="relative pt-10 pb-12 sm:pt-12 sm:pb-14 lg:pb-16 min-h-[calc(100dvh-4rem)] sm:min-h-0 overflow-hidden bg-zinc-50 border-b border-zinc-200 flex flex-col justify-center"
+      >
         <div className="absolute inset-0 w-full h-full bg-[linear-gradient(to_right,#80808012_1px,transparent_1px),linear-gradient(to_bottom,#80808012_1px,transparent_1px)] bg-[size:24px_24px]"></div>
         <div className="absolute top-0 right-0 -translate-y-12 translate-x-1/3 w-[800px] h-[800px] bg-blue-100 rounded-full blur-3xl opacity-60 mix-blend-multiply pointer-events-none"></div>
 
-        <div className="relative max-w-7xl mx-auto px-6 grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">
+        <div className="relative max-w-7xl mx-auto px-4 sm:px-6 grid grid-cols-1 lg:grid-cols-2 gap-10 lg:gap-16 items-center w-full">
           
-          <div className="flex flex-col items-start gap-6 z-10">
+          <div className="flex flex-col items-start gap-5 sm:gap-6 z-10 min-w-0">
             {isAuthenticated && (
-              <div className="animate-in fade-in slide-in-from-bottom-2 duration-700">
+              <div className="animate-in fade-in slide-in-from-bottom-2 duration-700 w-full">
                 <h2 className={`${typography.pageTitle} text-blue-600 leading-none mb-1.5`}>
                   Mabuhay, {user?.name || 'Traveler'}!
                 </h2>
@@ -62,7 +93,16 @@ export default function Home() {
               </div>
             )}
 
-            <div className="space-y-2">
+            <div className="space-y-3 w-full">
+              <div className="flex items-center gap-2">
+                <div className="bg-blue-600 rounded-lg size-8 flex items-center justify-center shadow-lg shadow-blue-600/20 shrink-0">
+                  <ShieldCheck size={iconSize.brand} className="text-white" />
+                </div>
+                <span className={`${typography.brand} text-blue-600`}>CONNECT-DAET</span>
+              </div>
+              <p className="text-[11px] sm:text-xs font-black uppercase tracking-[0.12em] sm:tracking-[0.15em] text-zinc-600 leading-snug max-w-md">
+                Daet Tourist Crisis Communication and Emergency Alert System
+              </p>
               <h1 className={`${typography.heroTitle} text-zinc-950`}>
                 Current <span className="text-blue-600">Alerts.</span>{" "}
                 <span className="text-zinc-400">Affected Areas.</span>
@@ -72,7 +112,7 @@ export default function Home() {
               </p>
             </div>
 
-            <div className="flex flex-col sm:flex-row gap-4 w-full sm:w-auto">
+            <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 w-full sm:w-auto">
               <Link
                 href="/crisis"
                 className="group flex items-center justify-center gap-3 bg-blue-600 text-white px-8 py-4 rounded-full font-black uppercase text-xs tracking-widest hover:bg-blue-700 transition-all shadow-xl shadow-blue-600/20 active:scale-95"
@@ -107,18 +147,18 @@ export default function Home() {
             {loading ? (
               <HeroStatSkeleton />
             ) : (
-            <div className="pt-8 border-t border-zinc-200 w-full flex items-center gap-8">
-              <div>
-                <p className="text-2xl font-black text-zinc-900 leading-none mb-1">{activeAlerts.length}</p>
-                <p className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest">Active Alerts</p>
+            <div className="pt-6 sm:pt-8 border-t border-zinc-200 w-full flex items-center justify-between sm:justify-start gap-4 sm:gap-8">
+              <div className="text-center sm:text-left min-w-0 flex-1 sm:flex-none">
+                <p className="text-xl sm:text-2xl font-black text-zinc-900 leading-none mb-1">{activeAlerts.length}</p>
+                <p className="text-[9px] sm:text-[10px] font-bold text-zinc-500 uppercase tracking-widest leading-tight">Active Alerts</p>
               </div>
-              <div>
-                <p className="text-2xl font-black text-red-600 leading-none mb-1">{criticalCount}</p>
-                <p className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest">Critical</p>
+              <div className="text-center sm:text-left min-w-0 flex-1 sm:flex-none">
+                <p className="text-xl sm:text-2xl font-black text-red-600 leading-none mb-1">{criticalCount}</p>
+                <p className="text-[9px] sm:text-[10px] font-bold text-zinc-500 uppercase tracking-widest leading-tight">Critical</p>
               </div>
-              <div>
-                <p className="text-2xl font-black text-zinc-900 leading-none mb-1">24/7</p>
-                <p className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest">Monitoring</p>
+              <div className="text-center sm:text-left min-w-0 flex-1 sm:flex-none">
+                <p className="text-xl sm:text-2xl font-black text-zinc-900 leading-none mb-1">24/7</p>
+                <p className="text-[9px] sm:text-[10px] font-bold text-zinc-500 uppercase tracking-widest leading-tight">Monitoring</p>
               </div>
             </div>
             )}
@@ -127,7 +167,31 @@ export default function Home() {
             )}
           </div>
 
-          {/* Right Content - Visual Presentation */}
+          {/* Mobile preview — fills hero on small screens */}
+          <div className="relative w-full max-w-sm mx-auto lg:hidden">
+            <div className="bg-zinc-900 rounded-[32px] shadow-2xl overflow-hidden border-[6px] border-white">
+              <div className="w-full bg-zinc-950 px-4 py-3 flex items-center justify-between border-b border-white/10">
+                <div className="flex items-center gap-2 min-w-0">
+                  <ShieldCheck size={14} className="text-blue-500 shrink-0" />
+                  <span className="text-[9px] font-black text-white uppercase tracking-widest truncate">CONNECT-DAET</span>
+                </div>
+                <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse shrink-0" />
+              </div>
+              <div className="bg-gradient-to-br from-zinc-800 to-zinc-900 p-5 space-y-3">
+                <p className="text-[9px] font-black uppercase tracking-widest text-blue-400 leading-tight">
+                  Daet Tourist Crisis Communication and Emergency Alert System
+                </p>
+                <div className="w-full h-24 bg-blue-900/30 rounded-2xl border border-blue-500/20 flex items-center justify-center">
+                  <Bell size={28} className="text-blue-400 animate-pulse" />
+                </div>
+                <div className="w-full py-3 bg-blue-600/20 text-blue-400 rounded-xl border border-blue-500/20 text-center text-[9px] font-black uppercase tracking-widest">
+                  Emergency Alert System
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Desktop visual */}
           <div className="relative h-[550px] w-full hidden lg:block perspective-1000">
             
             <div className="absolute top-12 right-4 bg-white p-6 rounded-[32px] shadow-2xl border border-zinc-100 w-72 animate-in slide-in-from-right-8 duration-700 delay-100 z-30 hover:-translate-y-2 transition-transform">
@@ -180,46 +244,32 @@ export default function Home() {
         </div>
       </section>
 
+      <section className="py-8 sm:py-10 bg-white border-b border-zinc-100">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6">
+          <CommunicationChannelsOverview showRegisterCta={!isAuthenticated} />
+          <p className="mt-6 pt-6 border-t border-zinc-100 text-xs text-zinc-500 font-medium">
+            Past emergencies marked resolved by Daet LGU are kept for reference under Resolved in the menu above.
+          </p>
+        </div>
+      </section>
+
       {isAuthenticated && user?.role === 'tourist' && (
-        <section className="py-16 bg-white border-b border-zinc-100">
-          <div className="max-w-7xl mx-auto px-6">
+        <section className="py-8 sm:py-10 bg-white border-b border-zinc-100">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6">
             <h3 className={`${typography.cardTitle} mb-4`}>Your Current Alert Status</h3>
             <div className={statGrid.dashboardThree}>
-              <DashboardStatCard
-                compact
-                label="Active Alerts"
-                value={activeAlerts.length}
-                accent="red"
-                href="/crisis"
-                hrefLabel="Open Crisis Hub"
-                footerLink
-              />
-              <DashboardStatCard
-                compact
-                label="My Reports"
-                value="Track"
-                accent="blue"
-                href="/crisis/reports"
-                hrefLabel="View Reports"
-                footerLink
-              />
-              <DashboardStatCard
-                compact
-                label="My Notifications"
-                value={unreadCount > 0 ? unreadCount : "—"}
-                accent="purple"
-                href="/notifications"
-                hrefLabel="Open Inbox"
-                footerLink
-              />
+              <DashboardStatCard compact label="Active Alerts" value={activeAlerts.length} accent="red" />
+              <DashboardStatCard compact label="My Reports" value="Track" accent="blue" />
+              <DashboardStatCard compact label="My Notifications" value={unreadCount > 0 ? unreadCount : "—"} accent="purple" />
             </div>
           </div>
         </section>
       )}
 
-      {/* SERVICES SECTION */}
-      <section className="py-16 bg-white relative z-20">
-        <div className="max-w-7xl mx-auto px-6 text-left">
+      {/* SERVICES SECTION — guests only; signed-in tourists use Crisis Hub directly */}
+      {!isAuthenticated && (
+      <section className="py-12 sm:py-16 bg-white relative z-20">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 text-left">
           
           <div className="mb-10 flex flex-col md:flex-row md:items-end justify-between gap-6">
             <div>
@@ -277,6 +327,8 @@ export default function Home() {
 
         </div>
       </section>
+      )}
+
     </div>
   );
 }

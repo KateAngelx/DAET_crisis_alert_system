@@ -1,6 +1,5 @@
 import { InfoPageHero, InfoSection, PublicPageShell, PublicPageContent } from "@/app/components/InfoPageHero";
 import { AboutNextSteps } from "@/app/components/AboutNextSteps";
-
 export const metadata = {
   title: "About | CONNECT-DAET Crisis Alert System",
   description: "How the Daet LGU crisis alert system works for tourists, guides, and responders.",

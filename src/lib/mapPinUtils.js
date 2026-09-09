@@ -13,6 +13,8 @@ export const ROUTE_LINE_LEGEND = [
   { id: "route_safe_line", label: "Safe Route Path", color: "#16a34a", kind: "line" },
   { id: "route_caution_line", label: "Caution Route Path", color: "#f97316", kind: "line" },
   { id: "route_closed_line", label: "Closed Route Path", color: "#dc2626", kind: "line" },
+  { id: "route_start", label: "Route Start (S)", color: "#2563eb", kind: "pin" },
+  { id: "route_end", label: "Route End (E)", color: "#16a34a", kind: "pin" },
 ];
 
 export const ROUTES_MAP_LEGEND = [

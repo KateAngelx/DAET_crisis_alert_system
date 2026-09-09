@@ -17,6 +17,7 @@ export const GUIDE_NAV = {
   operations: [
     { path: "/guide", label: "Dashboard" },
     { path: "/guide/groups", label: "Tour Groups" },
+    { path: "/guide/completed", label: "Completed Tours" },
     { path: "/guide/tourists", label: "Active Tourists" },
     { path: "/guide/notifications", label: "Notifications" },
   ],
@@ -33,6 +34,9 @@ export function isNavActive(pathname, path) {
   }
   if (path === "/guide/groups") {
     return pathname === "/guide/groups" || pathname.startsWith("/guide/groups/");
+  }
+  if (path === "/guide/completed") {
+    return pathname === "/guide/completed";
   }
   if (path.startsWith("/guide/")) {
     return pathname === path || pathname.startsWith(`${path}/`);

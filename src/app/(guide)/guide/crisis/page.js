@@ -22,6 +22,7 @@ import { formatTourRoute, getRelevantRouteAdvisoriesForGroup } from "@/lib/tourG
 import { iconSize, statGrid, typography } from "@/lib/designSystem";
 import { ROLE_INTERFACE } from "@/lib/roleInterfaceCopy";
 import { RoleContextBanner } from "@/app/components/dashboard/RoleContextBanner";
+import { GuideDashboardQuickActions } from "@/app/components/guide/GuideDashboardQuickActions";
 
 export default function GuideCrisisHubPage() {
   const { user } = useAuthStore();
@@ -259,6 +260,8 @@ export default function GuideCrisisHubPage() {
           )}
         </section>
       </div>
+
+      <GuideDashboardQuickActions className="mt-6" />
 
       <RouteDetailModal
         open={!!selectedRoute}

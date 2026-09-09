@@ -5,7 +5,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useAuthStore } from "@/app/store/crisisStore";
 import {
-  LayoutDashboard, Bell, ShieldCheck, FileText, Map, Zap, LogOut, Users, Compass,
+  LayoutDashboard, Bell, ShieldCheck, FileText, Map, Zap, LogOut, Users, Compass, CheckCircle,
 } from "lucide-react";
 import { GUIDE_NAV, isNavActive } from "@/lib/dashboardNav";
 import { NotificationPanel } from "@/app/components/NotificationPanel";
@@ -14,9 +14,11 @@ import { typography, iconSize } from "@/lib/designSystem";
 const ICONS = {
   Dashboard: LayoutDashboard,
   "Tour Groups": Compass,
+  "Completed Tours": CheckCircle,
   "Active Tourists": Users,
   Notifications: Bell,
   "Crisis Hub": ShieldCheck,
+  "Roads & Travel": Map,
   "Safety Advisories": Bell,
   "Group Reports": FileText,
 };

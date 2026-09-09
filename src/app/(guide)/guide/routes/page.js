@@ -31,6 +31,7 @@ import { useTravelDeepLinks } from "@/lib/useTravelDeepLinks";
 import { iconSize, statGrid } from "@/lib/designSystem";
 import { ROLE_INTERFACE } from "@/lib/roleInterfaceCopy";
 import { RoleContextBanner } from "@/app/components/dashboard/RoleContextBanner";
+import { GuideDashboardQuickActions } from "@/app/components/guide/GuideDashboardQuickActions";
 
 export default function GuideRoutesPage() {
   const { user } = useAuthStore();
@@ -365,6 +366,8 @@ export default function GuideRoutesPage() {
           </div>
         </div>
       </AsyncState>
+
+      <GuideDashboardQuickActions className="mt-6" />
 
       <RouteDetailModal
         open={!!selectedRoute}

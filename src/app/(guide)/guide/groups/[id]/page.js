@@ -7,6 +7,8 @@ import {
 } from "lucide-react";
 import { Card } from "@/app/components/ui/Card";
 import { DestinationButton, DestinationModal } from "@/app/components/tour/DestinationModal";
+import { MarkTourDoneButton } from "@/app/components/tour/MarkTourDoneButton";
+import { getTourGroupStatusStyle } from "@/lib/tourGroupRoute";
 import { useAuthStore, useCrisisStore } from "@/app/store/crisisStore";
 import { useGuideStore } from "@/app/store/guideStore";
 import { useRouteAdvisoryStore } from "@/app/store/routeAdvisoryStore";
@@ -14,6 +16,8 @@ import { TouristCardSkeleton } from "@/app/components/ui/Skeletons";
 import { EmptyState } from "@/app/components/ui/AsyncState";
 import { formatTourRoute } from "@/lib/tourGroupRoute";
 import { typography } from "@/lib/designSystem";
+import { useConfirm } from "@/app/components/ui/ConfirmDialogProvider";
+import { GuideDashboardQuickActions } from "@/app/components/guide/GuideDashboardQuickActions";
 
 export default function TourGroupDetailPage({ params }) {
   const { id } = React.use(params);
@@ -27,7 +31,6 @@ export default function TourGroupDetailPage({ params }) {
     fetchGroupMembers,
     removeTouristFromGroup,
     fetchGroupPendingMembers,
-    updateTourGroupStatus,
     updateTourGroupRoute,
     loading,
   } = useGuideStore();
@@ -36,6 +39,7 @@ export default function TourGroupDetailPage({ params }) {
   const [message, setMessage] = useState(null);
   const [showDestination, setShowDestination] = useState(false);
   const [pendingMembers, setPendingMembers] = useState([]);
+  const { confirm } = useConfirm();
 
   const loadData = async () => {
     if (!id || !user?.id) return;
@@ -52,7 +56,13 @@ export default function TourGroupDetailPage({ params }) {
   }, [id, user?.id, fetchAlerts, fetchAdvisories]);
 
   const handleRemove = async (assignmentId) => {
-    if (!window.confirm("Remove this tourist from the tour group?")) return;
+    const ok = await confirm({
+      title: "Remove tourist from group?",
+      description: "They will no longer be assigned to this tour group. You can invite them again later from Active Tourists.",
+      confirmLabel: "Remove",
+      variant: "warning",
+    });
+    if (!ok) return;
     setActionId(assignmentId);
     setMessage(null);
     const result = await removeTouristFromGroup(assignmentId, id, user.id);
@@ -62,16 +72,6 @@ export default function TourGroupDetailPage({ params }) {
       loadData();
     } else {
       setMessage({ type: "error", text: result.error || "Failed to remove tourist." });
-    }
-  };
-
-  const handleCompleteGroup = async () => {
-    if (!window.confirm("Mark this tour group as completed? Pending requests will be cancelled.")) return;
-    const result = await updateTourGroupStatus(id, "completed", user.id);
-    if (result.success) {
-      fetchTourGroupById(id, user.id);
-      setMessage({ type: "success", text: "Tour group marked as completed." });
-      loadData();
     }
   };
 
@@ -115,19 +115,29 @@ export default function TourGroupDetailPage({ params }) {
               )}
             </div>
           </div>
-          <div className="text-right shrink-0 space-y-2">
-            <span className={`text-[10px] font-black uppercase px-3 py-1 rounded-full ${
-              activeGroup.status === "active" ? "bg-green-100 text-green-700" : "bg-zinc-100 text-zinc-600"
-            }`}>
-              {activeGroup.status}
+          <div className="flex flex-col items-stretch sm:items-end gap-3 shrink-0 w-full sm:w-auto">
+            <span className={`text-[10px] font-black uppercase px-3 py-1 rounded-full w-fit ${getTourGroupStatusStyle(activeGroup.status).badge}`}>
+              {getTourGroupStatusStyle(activeGroup.status).label}
             </span>
-            <DestinationButton onClick={() => setShowDestination(true)} className="w-full justify-center" />
-            <p className={`${typography.statValue} text-blue-600`}>{groupMembers.length}</p>
-            <p className="text-[10px] font-black uppercase text-zinc-400">Confirmed Tourists</p>
+            <div className="text-left sm:text-right">
+              <p className={`${typography.statValue} text-blue-600`}>{groupMembers.length}</p>
+              <p className="text-[10px] font-black uppercase text-zinc-400">Confirmed Tourists</p>
+            </div>
             {activeGroup.status === "active" && (
-              <button type="button" onClick={handleCompleteGroup} className="mt-3 text-[10px] font-black uppercase text-zinc-500 hover:text-red-600">
-                Mark Completed
-              </button>
+              <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
+                <DestinationButton onClick={() => setShowDestination(true)} className="justify-center flex-1" />
+                <MarkTourDoneButton
+                  groupId={id}
+                  guideId={user.id}
+                  groupName={activeGroup.name}
+                  onSuccess={() => {
+                    setMessage({ type: "success", text: "Tour marked as done." });
+                    loadData();
+                    fetchTourGroupById(id, user.id);
+                  }}
+                  className="flex-1 justify-center"
+                />
+              </div>
             )}
           </div>
         </div>
@@ -218,6 +228,8 @@ export default function TourGroupDetailPage({ params }) {
           </div>
         )}
       </section>
+
+      <GuideDashboardQuickActions className="mt-6" showCompleted={false} />
 
       <DestinationModal
         open={showDestination}

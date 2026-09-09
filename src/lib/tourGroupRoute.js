@@ -1,3 +1,29 @@
+export const TOUR_GROUP_STATUS = {
+  active: {
+    label: "In Progress",
+    badge: "bg-green-100 text-green-700",
+  },
+  completed: {
+    label: "Done",
+    badge: "bg-blue-100 text-blue-700",
+  },
+  cancelled: {
+    label: "Cancelled",
+    badge: "bg-red-100 text-red-700",
+  },
+};
+
+export function getTourGroupStatusStyle(status) {
+  return TOUR_GROUP_STATUS[status] || TOUR_GROUP_STATUS.active;
+}
+
+/** True when tour end date is today or in the past (suggest marking done). */
+export function isTourPastEndDate(group) {
+  if (!group?.end_date) return false;
+  const end = new Date(`${group.end_date}T23:59:59`);
+  return !Number.isNaN(end.getTime()) && end.getTime() < Date.now();
+}
+
 export function formatTourRoute(group) {
   if (!group) return "—";
   const from = group.starting_location?.trim();

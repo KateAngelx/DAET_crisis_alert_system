@@ -12,6 +12,7 @@ import { CommunicationChannelForm } from "@/app/components/CommunicationChannelS
 import { ProfileSkeleton } from "@/app/components/ui/Skeletons";
 import { ErrorState } from "@/app/components/ui/AsyncState";
 import { formatTourRoute } from "@/lib/tourGroupRoute";
+import { useConfirm } from "@/app/components/ui/ConfirmDialogProvider";
 
 const ROLE_LABELS = {
   tourist: "Tourist",
@@ -20,6 +21,7 @@ const ROLE_LABELS = {
 };
 
 export default function ProfilePage() {
+  const { confirm } = useConfirm();
   const { user, isAuthenticated, loading, fetchProfile, updateProfile, updateNotificationChannels, deleteAccount } = useAuthStore();
   const { alerts, fetchAlerts } = useCrisisStore();
   const { touristActiveGroup, fetchTouristActiveGroup } = useGuideStore();
@@ -98,13 +100,15 @@ export default function ProfilePage() {
 
   const handleDeleteAccount = async () => {
     setDeleteError(null);
-    const confirmed = window.confirm(
-      "Permanently delete your account? You will stop receiving all alerts and cannot undo this action."
-    );
+    const confirmed = await confirm({
+      title: "Delete your account?",
+      description: "You will stop receiving all alerts and lose access to CONNECT-DAET. This action cannot be undone.",
+      requireText: "DELETE",
+      requireTextLabel: "Type DELETE to confirm account removal",
+      confirmLabel: "Delete account",
+      variant: "danger",
+    });
     if (!confirmed) return;
-
-    const typed = window.prompt('Type DELETE to confirm account removal:');
-    if (typed !== "DELETE") return;
 
     setDeleting(true);
     const result = await deleteAccount();

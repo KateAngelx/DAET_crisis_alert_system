@@ -1,25 +1,20 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
-import Link from "next/link";
-import { Compass, MapPin, Plus, Users, ArrowRight, Loader2, Navigation } from "lucide-react";
+import React, { useEffect, useMemo, useState } from "react";
+import { Compass, Plus, Users, Loader2, CheckCircle } from "lucide-react";
 import { Card } from "@/app/components/ui/Card";
 import { DashboardPageHeader } from "@/app/components/dashboard/DashboardPageHeader";
-import { DestinationButton, DestinationModal } from "@/app/components/tour/DestinationModal";
+import { DestinationModal } from "@/app/components/tour/DestinationModal";
+import { TourGroupCard } from "@/app/components/tour/TourGroupCard";
 import { useAuthStore, useCrisisStore } from "@/app/store/crisisStore";
 import { useGuideStore } from "@/app/store/guideStore";
 import { useRouteAdvisoryStore } from "@/app/store/routeAdvisoryStore";
 import { StatCardSkeletonGrid } from "@/app/components/ui/Skeletons";
 import { DashboardStatCard } from "@/app/components/dashboard/DashboardStatCard";
 import { EmptyState } from "@/app/components/ui/AsyncState";
-import { formatTourRoute, EMPTY_ROUTE_FORM } from "@/lib/tourGroupRoute";
+import { EMPTY_ROUTE_FORM } from "@/lib/tourGroupRoute";
+import { GuideDashboardQuickActions } from "@/app/components/guide/GuideDashboardQuickActions";
 import { typography, iconSize, statGrid } from "@/lib/designSystem";
-
-const STATUS_STYLES = {
-  active: "bg-green-100 text-green-700",
-  completed: "bg-zinc-100 text-zinc-600",
-  cancelled: "bg-red-100 text-red-700",
-};
 
 export default function GuideTourGroupsPage() {
   const { user } = useAuthStore();
@@ -35,6 +30,7 @@ export default function GuideTourGroupsPage() {
     loading,
   } = useGuideStore();
 
+  const [tab, setTab] = useState("active");
   const [showForm, setShowForm] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState(null);
@@ -47,9 +43,31 @@ export default function GuideTourGroupsPage() {
     fetchAdvisories();
   }, [user?.id, fetchTourGroups, fetchAlerts, fetchAdvisories]);
 
+  useEffect(() => {
+    if (typeof window !== "undefined" && window.location.search.includes("tab=completed")) {
+      setTab("completed");
+    }
+  }, []);
+
+  const activeGroups = useMemo(
+    () => tourGroups.filter((g) => g.status === "active"),
+    [tourGroups]
+  );
+  const completedGroups = useMemo(
+    () => tourGroups.filter((g) => g.status === "completed"),
+    [tourGroups]
+  );
+  const displayedGroups = tab === "completed" ? completedGroups : activeGroups;
+
+  const activeTourists = activeGroups.reduce((s, g) => s + (g.member_count || 0), 0);
+
   const openDestination = async (group) => {
     setModalGroup(group);
     if (user?.id) await fetchGroupMembers(group.id, user.id);
+  };
+
+  const refreshGroups = () => {
+    if (user?.id) fetchTourGroups(user.id);
   };
 
   const handleCreate = async (e) => {
@@ -76,19 +94,17 @@ export default function GuideTourGroupsPage() {
     if (result.success) {
       setForm({ ...EMPTY_ROUTE_FORM });
       setShowForm(false);
+      setTab("active");
     } else {
       setError(result.error || "Failed to create tour group.");
     }
   };
 
-  const activeCount = tourGroups.filter((g) => g.status === "active").length;
-  const totalMembers = tourGroups.reduce((s, g) => s + (g.member_count || 0), 0);
-
   return (
     <div className="space-y-6 text-left">
       <DashboardPageHeader
         title="Tour Groups"
-        description="Create tour groups with a defined route (From → To), tour date, and travel details. Add registered tourists to each group."
+        description="Create routes, assign tourists, and mark tours done when your group reaches the destination."
         action={
           <button
             type="button"
@@ -101,16 +117,37 @@ export default function GuideTourGroupsPage() {
       />
 
       {loading && tourGroups.length === 0 ? (
-        <StatCardSkeletonGrid count={2} className="grid grid-cols-2 gap-3 sm:gap-4" />
+        <StatCardSkeletonGrid count={3} className={statGrid.dashboardThree} />
       ) : (
-        <div className="grid grid-cols-2 gap-3 sm:gap-4">
-          <DashboardStatCard label="Active Groups" value={activeCount} icon={<Compass size={iconSize.stat} />} accent="purple" />
-          <DashboardStatCard label="Total Tourists" value={totalMembers} icon={<Users size={iconSize.stat} />} accent="blue" />
+        <div className={statGrid.dashboardThree}>
+          <DashboardStatCard compact label="Active Groups" value={activeGroups.length} icon={<Compass size={iconSize.stat} />} accent="purple" />
+          <DashboardStatCard compact label="Active Tourists" value={activeTourists} icon={<Users size={iconSize.stat} />} accent="blue" href="/guide/tourists" hrefLabel="Manage" />
+          <DashboardStatCard compact label="Completed Tours" value={completedGroups.length} icon={<CheckCircle size={iconSize.stat} />} accent="green" href="/guide/completed" hrefLabel="View" />
         </div>
       )}
 
+      <div className="flex gap-2 p-1 bg-zinc-100 rounded-2xl w-full sm:w-auto">
+        {[
+          { id: "active", label: "In Progress", count: activeGroups.length },
+          { id: "completed", label: "Done", count: completedGroups.length },
+        ].map((item) => (
+          <button
+            key={item.id}
+            type="button"
+            onClick={() => setTab(item.id)}
+            className={`flex-1 sm:flex-none px-4 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${
+              tab === item.id
+                ? "bg-white text-purple-700 shadow-sm"
+                : "text-zinc-500 hover:text-zinc-800"
+            }`}
+          >
+            {item.label} ({item.count})
+          </button>
+        ))}
+      </div>
+
       {showForm && (
-        <Card className="p-6 border-purple-100 bg-purple-50/30">
+        <Card className="p-5 sm:p-6 border-purple-100 bg-purple-50/30">
           <h2 className={`${typography.sectionTitle} text-purple-700 mb-4`}>Create Tour Group & Route</h2>
           {error && <p className="text-sm text-red-600 font-medium mb-4">{error}</p>}
           <form onSubmit={handleCreate} className="space-y-4">
@@ -166,20 +203,6 @@ export default function GuideTourGroupsPage() {
                 className="w-full p-3 bg-white border border-zinc-200 rounded-xl text-sm font-medium"
               />
             </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="space-y-1">
-                <label className="text-[10px] font-black uppercase text-zinc-400">Meeting / Pickup Location</label>
-                <input value={form.meeting_location} onChange={(e) => setForm({ ...form, meeting_location: e.target.value })} placeholder="e.g. SM City Naga terminal" className="w-full p-3 bg-white border border-zinc-200 rounded-xl text-sm font-bold" />
-              </div>
-              <div className="space-y-1">
-                <label className="text-[10px] font-black uppercase text-zinc-400">Estimated Travel Time</label>
-                <input value={form.estimated_travel_time} onChange={(e) => setForm({ ...form, estimated_travel_time: e.target.value })} placeholder="e.g. 4 hours" className="w-full p-3 bg-white border border-zinc-200 rounded-xl text-sm font-bold" />
-              </div>
-            </div>
-            <div className="space-y-1">
-              <label className="text-[10px] font-black uppercase text-zinc-400">Important Destination Information</label>
-              <textarea rows={2} value={form.destination_notes} onChange={(e) => setForm({ ...form, destination_notes: e.target.value })} placeholder="Safety tips, what to bring, local rules..." className="w-full p-3 bg-white border border-zinc-200 rounded-xl text-sm font-medium" />
-            </div>
             <button type="submit" disabled={saving} className="px-6 py-3 bg-purple-600 text-white rounded-xl font-black uppercase text-xs tracking-widest hover:bg-purple-700 disabled:opacity-50 flex items-center gap-2">
               {saving ? <><Loader2 size={14} className="animate-spin" /> Creating...</> : "Create Tour Group"}
             </button>
@@ -188,54 +211,36 @@ export default function GuideTourGroupsPage() {
       )}
 
       {loading ? (
-        <div className="space-y-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {Array.from({ length: 3 }).map((_, i) => (
-            <Card key={i} className="p-6 border-zinc-100 animate-pulse h-32" />
+            <Card key={i} className="p-6 border-zinc-100 animate-pulse h-40" />
           ))}
         </div>
-      ) : tourGroups.length === 0 ? (
-        <EmptyState icon={Compass} title="No tour groups" description="Create a tour group with a route to start adding tourists." />
+      ) : displayedGroups.length === 0 ? (
+        <EmptyState
+          icon={tab === "completed" ? CheckCircle : Compass}
+          title={tab === "completed" ? "No completed tours yet" : "No active tour groups"}
+          description={
+            tab === "completed"
+              ? "When you mark a tour as done, it will appear here for your records."
+              : "Create a tour group with a route to start adding tourists."
+          }
+        />
       ) : (
-        <div className="space-y-4">
-          {tourGroups.map((group) => (
-            <Card key={group.id} className="p-6 border-zinc-100 hover:shadow-md transition-all">
-              <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-                <div className="flex items-start gap-4 flex-1 min-w-0">
-                  <div className="p-3 bg-purple-100 rounded-2xl shrink-0">
-                    <Compass size={iconSize.stat} className="text-purple-600" />
-                  </div>
-                  <div className="min-w-0">
-                    <div className="flex flex-wrap items-center gap-2 mb-1">
-                      <h3 className="font-black text-zinc-900 uppercase tracking-tight">{group.name}</h3>
-                      <span className={`text-[9px] font-black uppercase px-2 py-0.5 rounded-full ${STATUS_STYLES[group.status] || STATUS_STYLES.active}`}>
-                        {group.status}
-                      </span>
-                    </div>
-                    <p className="text-sm font-bold text-blue-600 flex items-center gap-1">
-                      <Navigation size={12} /> {formatTourRoute(group)}
-                    </p>
-                    {group.trip_info && (
-                      <p className="text-sm text-zinc-600 mt-2 line-clamp-2">{group.trip_info}</p>
-                    )}
-                  </div>
-                </div>
-                <div className="flex items-center gap-3 shrink-0">
-                  <div className="text-right">
-                    <p className="text-2xl font-black text-blue-600">{group.member_count || 0}</p>
-                    <p className="text-[10px] font-black uppercase text-zinc-400 flex items-center gap-1 justify-end">
-                      <Users size={12} /> Tourists
-                    </p>
-                  </div>
-                  <DestinationButton onClick={() => openDestination(group)} />
-                  <Link href={`/guide/groups/${group.id}`} className="p-2 hover:bg-zinc-100 rounded-xl transition-colors">
-                    <ArrowRight size={18} className="text-zinc-400" />
-                  </Link>
-                </div>
-              </div>
-            </Card>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {displayedGroups.map((group) => (
+            <TourGroupCard
+              key={group.id}
+              group={group}
+              guideId={user?.id}
+              onOpenDestination={tab === "active" ? openDestination : undefined}
+              onCompleted={refreshGroups}
+            />
           ))}
         </div>
       )}
+
+      <GuideDashboardQuickActions className="mt-6" showCompleted={false} />
 
       <DestinationModal
         open={!!modalGroup}
@@ -248,7 +253,10 @@ export default function GuideTourGroupsPage() {
         editable
         onSave={async (updates) => {
           const result = await updateTourGroupRoute(modalGroup.id, user.id, updates);
-          if (result.success) setModalGroup(result.group);
+          if (result.success) {
+            setModalGroup(result.group);
+            refreshGroups();
+          }
           return result;
         }}
       />

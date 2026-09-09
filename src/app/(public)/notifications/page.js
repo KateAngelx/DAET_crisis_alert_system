@@ -60,14 +60,9 @@ export default function NotificationsPage() {
           <p className="text-sm text-zinc-500 mb-6 max-w-md mx-auto">
             Private in-app notifications are only available to registered, signed-in users. Public crisis alerts remain available on the Crisis Hub.
           </p>
-          <div className="flex flex-col sm:flex-row gap-3 justify-center">
-            <Link href="/login" className="text-blue-600 font-black uppercase text-xs px-6 py-3 rounded-full bg-blue-50 border border-blue-100">
-              Sign In
-            </Link>
-            <Link href="/crisis" className="text-zinc-600 font-black uppercase text-xs px-6 py-3 rounded-full border border-zinc-200">
-              View Crisis Hub
-            </Link>
-          </div>
+          <Link href="/login" className="inline-flex text-blue-600 font-black uppercase text-xs px-6 py-3 rounded-full bg-blue-50 border border-blue-100">
+            Sign In
+          </Link>
         </PublicPageContent>
       </PublicPageShell>
     );

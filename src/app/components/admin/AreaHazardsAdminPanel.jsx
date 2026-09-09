@@ -20,6 +20,8 @@ import { createCategoryPinIcon, getDangerPinCategory } from "@/lib/mapPinUtils";
 import { MapLegend } from "@/app/components/maps/MapLegend";
 import { iconSize, statGrid, typography, outlinedCard } from "@/lib/designSystem";
 import { CharCounterTextarea } from "@/app/components/ui/CharCounterTextarea";
+import { ConfirmDialog } from "@/app/components/ui/ConfirmDialog";
+import { useConfirm } from "@/app/components/ui/ConfirmDialogProvider";
 import { formatAreaHazardSms } from "@/lib/smsMessageFormat";
 import dynamic from "next/dynamic";
 import "leaflet/dist/leaflet.css";
@@ -65,6 +67,7 @@ export function AreaHazardsAdminPanel({ embedded = false }) {
   const [isSearching, setIsSearching] = useState(false);
   const [mapCenter, setMapCenter] = useState(DAET_CENTER);
   const [toast, setToast] = useState("");
+  const { confirm } = useConfirm();
 
   useEffect(() => {
     setMounted(true);
@@ -218,7 +221,13 @@ export function AreaHazardsAdminPanel({ embedded = false }) {
   };
 
   const handleDelete = async (id) => {
-    if (!window.confirm("Remove this area hazard permanently?")) return;
+    const ok = await confirm({
+      title: "Remove area hazard?",
+      description: "This permanently deletes the hazard record. Tourists will no longer see it on the travel map.",
+      confirmLabel: "Delete",
+      variant: "danger",
+    });
+    if (!ok) return;
     await deleteWarning(id);
     setToast("Area hazard removed.");
     await fetchWarnings();
@@ -448,19 +457,17 @@ export function AreaHazardsAdminPanel({ embedded = false }) {
         </div>
       )}
 
-      {showConfirm && (
-        <div className="fixed inset-0 z-[2000] flex items-center justify-center p-4 bg-black/70">
-          <div className="relative z-[2001] bg-white rounded-3xl p-8 max-w-md w-full text-center space-y-4">
-            <AlertOctagon className="mx-auto text-red-600" size={40} />
-            <h3 className="font-black uppercase text-lg">Confirm Area Hazard</h3>
-            <p className="text-sm text-zinc-600">Tourists will be notified about <strong>{formData.dangerous_location}</strong> and the alternative route to <strong>{formData.destination}</strong>.</p>
-            <div className="flex gap-3">
-              <button type="button" onClick={() => setShowConfirm(false)} className="flex-1 py-3 border rounded-xl font-black uppercase text-xs">Cancel</button>
-              <button type="button" onClick={confirmSave} className="flex-1 py-3 bg-red-600 text-white rounded-xl font-black uppercase text-xs">Confirm</button>
-            </div>
-          </div>
-        </div>
-      )}
+      <ConfirmDialog
+        open={showConfirm}
+        title={editingId ? "Update area hazard?" : "Publish area hazard?"}
+        description={`Tourists will be notified about ${formData.dangerous_location || "this area"} and the alternative route to ${formData.destination || "the safe destination"}.`}
+        confirmLabel={editingId ? "Update" : "Publish & notify"}
+        cancelLabel="Cancel"
+        variant="danger"
+        loading={isSaving}
+        onConfirm={confirmSave}
+        onCancel={() => setShowConfirm(false)}
+      />
     </div>
   );
 }

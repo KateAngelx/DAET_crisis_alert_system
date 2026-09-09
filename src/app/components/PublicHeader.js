@@ -9,12 +9,20 @@ import { NotificationPanel } from "@/app/components/NotificationPanel";
 import { isPublicNavActive } from "@/lib/navUtils";
 import { typography, iconSize } from "@/lib/designSystem";
 
-const BASE_NAV = [
+const GUEST_NAV = [
   { name: "Home", href: "/" },
   { name: "Crisis Hub", href: "/crisis" },
+  { name: "Resolved", href: "/crisis/resolved" },
   { name: "Roads & Travel", href: "/routes" },
   { name: "About", href: "/about" },
-  { name: "FAQ", href: "/faq" },
+];
+
+const AUTH_NAV = [
+  { name: "Home", href: "/" },
+  { name: "Crisis Hub", href: "/crisis" },
+  { name: "Resolved", href: "/crisis/resolved" },
+  { name: "Roads & Travel", href: "/routes" },
+  { name: "My Reports", href: "/crisis/reports" },
 ];
 
 export function PublicHeader() {
@@ -25,9 +33,7 @@ export function PublicHeader() {
 
   useEffect(() => setMounted(true), []);
 
-  const navItems = mounted && isAuthenticated
-    ? [...BASE_NAV, { name: "My Reports", href: "/crisis/reports" }]
-    : BASE_NAV;
+  const navItems = mounted && isAuthenticated ? AUTH_NAV : GUEST_NAV;
 
   const linkClass = (href) => {
     const active = isPublicNavActive(pathname, href);

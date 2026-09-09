@@ -11,6 +11,7 @@ import { ActiveTouristsPanel } from "@/app/components/tour/ActiveTouristsPanel";
 import { useAuthStore } from "@/app/store/crisisStore";
 import { useGuideStore } from "@/app/store/guideStore";
 import { StatCardSkeletonGrid } from "@/app/components/ui/Skeletons";
+import { GuideDashboardQuickActions } from "@/app/components/guide/GuideDashboardQuickActions";
 import { iconSize, statGrid, typography } from "@/lib/designSystem";
 
 export default function GuideActiveTouristsPage() {
@@ -100,9 +101,9 @@ export default function GuideActiveTouristsPage() {
         <StatCardSkeletonGrid count={3} className={statGrid.dashboardThree} />
       ) : (
         <div className={statGrid.dashboardThree}>
-          <DashboardStatCard label="Active Groups" value={activeGroups.length} icon={<Compass size={iconSize.stat} />} accent="purple" href="/guide/groups" hrefLabel="Manage" />
-          <DashboardStatCard label="Confirmed Tourists" value={confirmedCount} icon={<Users size={iconSize.stat} />} accent="blue" />
-          <DashboardStatCard label="Pending Requests" value={pendingAll.length} icon={<Clock size={iconSize.stat} />} accent="orange" />
+          <DashboardStatCard compact label="Active Groups" value={activeGroups.length} icon={<Compass size={iconSize.stat} />} accent="purple" href="/guide/groups" hrefLabel="Manage" />
+          <DashboardStatCard compact label="Confirmed Tourists" value={confirmedCount} icon={<Users size={iconSize.stat} />} accent="blue" />
+          <DashboardStatCard compact label="Pending Requests" value={pendingAll.length} icon={<Clock size={iconSize.stat} />} accent="orange" />
         </div>
       )}
 
@@ -167,6 +168,8 @@ export default function GuideActiveTouristsPage() {
           )}
         </>
       )}
+
+      <GuideDashboardQuickActions className="mt-6" />
     </div>
   );
 }

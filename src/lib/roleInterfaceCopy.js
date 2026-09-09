@@ -20,6 +20,13 @@ export const ROLE_INTERFACE = {
       description: "Submit and track incident reports you filed with Daet LGU.",
       helper: "For life-threatening emergencies, call 911 or 117 first, then report here if safe to do so.",
     },
+    resolvedAlerts: {
+      title: "Resolved Alerts",
+      description:
+        "Past LGU emergency alerts that have been marked resolved. Active emergencies are on Crisis Hub.",
+      helper:
+        "These records show what happened and when LGU cleared the situation. For current threats, open Crisis Hub.",
+    },
   },
   guide: {
     dashboard: {

@@ -1,18 +1,21 @@
 // src/app/(public)/layout.js
-import { PublicHeader } from "@/app/components/PublicHeader"; 
+import { PublicHeader } from "@/app/components/PublicHeader";
 import { PublicFooter } from "@/app/components/PublicFooter";
+import { FloatingFaqButton } from "@/app/components/FloatingFaqButton";
+import { PublicPageTracker } from "@/app/components/analytics/PublicPageTracker";
 
 export default function PublicLayout({ children }) {
   return (
     <div className="min-h-screen flex flex-col bg-background text-foreground scrollbar-none">
-      <PublicHeader /> 
-      
-      <main className="flex-1 scrollbar-none">
-        {children} {/* Dito lalabas ang content ng page.js */}
+      <PublicPageTracker />
+      <PublicHeader />
+
+      <main className="flex-1 scrollbar-none pb-20 sm:pb-24">
+        {children}
       </main>
 
-      {/* Lalabas ito sa ibaba ng bawat page */}
-      <PublicFooter /> 
+      <PublicFooter />
+      <FloatingFaqButton />
     </div>
   );
 }

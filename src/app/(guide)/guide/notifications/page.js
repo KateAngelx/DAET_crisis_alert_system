@@ -11,6 +11,7 @@ import { NotificationItemSkeleton } from "@/app/components/ui/Skeletons";
 import { useAuthStore } from "@/app/store/crisisStore";
 import { useNotificationStore } from "@/app/store/notificationStore";
 import { getActiveSession } from "@/lib/authSession";
+import { GuideDashboardQuickActions } from "@/app/components/guide/GuideDashboardQuickActions";
 
 export default function GuideNotificationsPage() {
   const { user } = useAuthStore();
@@ -114,6 +115,8 @@ export default function GuideNotificationsPage() {
           ))}
         </div>
       </AsyncState>
+
+      <GuideDashboardQuickActions className="mt-6" />
     </div>
   );
 }

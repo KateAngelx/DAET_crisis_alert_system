@@ -28,6 +28,7 @@ import { DashboardStatCard } from "@/app/components/dashboard/DashboardStatCard"
 import { StatCardSkeletonGrid, UserCardSkeletonList } from "@/app/components/ui/Skeletons";
 import { AsyncState, EmptyState } from "@/app/components/ui/AsyncState";
 import { getRedirectForRole } from "@/lib/authGuard";
+import { useConfirm } from "@/app/components/ui/ConfirmDialogProvider";
 import { iconSize, statGrid } from "@/lib/designSystem";
 import {
   getInactiveDays,
@@ -182,6 +183,7 @@ function UserAdminCard({ user, currentUserId, onChanged }) {
   });
   const [saving, setSaving] = useState(false);
   const [feedback, setFeedback] = useState(null);
+  const { confirm } = useConfirm();
 
   const isSelf = currentUserId === user.id;
   const role = ROLE_LABELS[user.user_type] || ROLE_LABELS.tourist;
@@ -200,7 +202,13 @@ function UserAdminCard({ user, currentUserId, onChanged }) {
   }, [user]);
 
   const handleSave = async () => {
-    if (!window.confirm(`Save changes for ${user.full_name}?`)) return;
+    const ok = await confirm({
+      title: "Save user changes?",
+      description: `Update profile and role settings for ${user.full_name}. Active status and contact details will take effect immediately.`,
+      confirmLabel: "Save changes",
+      variant: "info",
+    });
+    if (!ok) return;
     setSaving(true);
     setFeedback(null);
     const result = await updateUser(user.id, form);
@@ -219,7 +227,13 @@ function UserAdminCard({ user, currentUserId, onChanged }) {
 
   const handleDelete = async () => {
     if (isSelf) return;
-    if (!window.confirm(`Permanently delete ${user.full_name}? This cannot be undone.`)) return;
+    const ok = await confirm({
+      title: "Delete user permanently?",
+      description: `This removes ${user.full_name} from the system and cannot be undone. Their reports and assignment history may remain for audit purposes.`,
+      confirmLabel: "Delete user",
+      variant: "danger",
+    });
+    if (!ok) return;
     setSaving(true);
     const result = await deleteUser(user.id);
     setSaving(false);

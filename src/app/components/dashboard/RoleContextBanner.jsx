@@ -2,9 +2,13 @@
 
 import React from "react";
 import { Info } from "lucide-react";
+import { useAuthStore } from "@/app/store/crisisStore";
 
+/** Informational helper — shown only to guests on public pages. */
 export function RoleContextBanner({ helper, tone = "neutral" }) {
-  if (!helper) return null;
+  const { isAuthenticated } = useAuthStore();
+
+  if (!helper || isAuthenticated) return null;
 
   const tones = {
     neutral: "bg-zinc-50 border-zinc-200 text-zinc-700",

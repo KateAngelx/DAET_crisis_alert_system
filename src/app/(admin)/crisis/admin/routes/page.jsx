@@ -26,6 +26,8 @@ import { AreaHazardsAdminPanel } from "@/app/components/admin/AreaHazardsAdminPa
 import { ROLE_INTERFACE } from "@/lib/roleInterfaceCopy";
 import { RoleContextBanner } from "@/app/components/dashboard/RoleContextBanner";
 import { CharCounterTextarea } from "@/app/components/ui/CharCounterTextarea";
+import { ConfirmDialog } from "@/app/components/ui/ConfirmDialog";
+import { useConfirm } from "@/app/components/ui/ConfirmDialogProvider";
 import dynamic from "next/dynamic";
 import "leaflet/dist/leaflet.css";
 
@@ -82,6 +84,8 @@ function RouteAdvisoriesAdminPanel({ embedded = false }) {
   const [filterStatus, setFilterStatus] = useState("All");
   const [isSaving, setIsSaving] = useState(false);
   const [isBuildingPath, setIsBuildingPath] = useState(false);
+  const [showConfirm, setShowConfirm] = useState(false);
+  const { confirm } = useConfirm();
   const [previewPath, setPreviewPath] = useState([]);
   const [mapCenter, setMapCenter] = useState(DAET_CENTER);
   const [toast, setToast] = useState("");
@@ -206,13 +210,17 @@ function RouteAdvisoriesAdminPanel({ embedded = false }) {
     if (suggested) setFormData((prev) => ({ ...prev, title: suggested }));
   };
 
-  const handleSubmit = async (e) => {
+  const handleSubmit = (e) => {
     e.preventDefault();
     if (!formData.to_location?.trim()) {
       setToast("Destination (To) is required.");
       return;
     }
+    setShowConfirm(true);
+  };
 
+  const confirmSave = async () => {
+    setShowConfirm(false);
     setIsSaving(true);
 
     const routePath = await buildRoutePathFromLocations({
@@ -269,7 +277,13 @@ function RouteAdvisoriesAdminPanel({ embedded = false }) {
   };
 
   const handleDelete = async (id) => {
-    if (!window.confirm("Remove this route advisory permanently?")) return;
+    const ok = await confirm({
+      title: "Remove route advisory?",
+      description: "This permanently deletes the route record. It will no longer appear on the public travel map.",
+      confirmLabel: "Delete",
+      variant: "danger",
+    });
+    if (!ok) return;
     await deleteAdvisory(id);
     setToast("Route advisory removed.");
     await fetchAdvisories();
@@ -685,6 +699,18 @@ function RouteAdvisoriesAdminPanel({ embedded = false }) {
           </div>
         </div>
       )}
+
+      <ConfirmDialog
+        open={showConfirm}
+        title={editingId ? "Update route advisory?" : "Publish route advisory?"}
+        description={`Tourists will see this route on the travel map${formData.from_location && formData.to_location ? ` from ${formData.from_location} to ${formData.to_location}` : ""}.`}
+        confirmLabel={editingId ? "Update route" : "Publish route"}
+        cancelLabel="Cancel"
+        variant="info"
+        loading={isSaving}
+        onConfirm={confirmSave}
+        onCancel={() => !isSaving && setShowConfirm(false)}
+      />
     </div>
   );
 }
