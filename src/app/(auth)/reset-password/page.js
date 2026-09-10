@@ -12,6 +12,20 @@ import { typography, iconSize, authForm } from "@/lib/designSystem";
 
 async function establishRecoverySession() {
   const url = new URL(window.location.href);
+  const tokenHash = url.searchParams.get("token_hash");
+
+  if (tokenHash) {
+    const { data, error } = await supabase.auth.verifyOtp({
+      token_hash: tokenHash,
+      type: "recovery",
+    });
+    if (!error && data.session) {
+      window.history.replaceState({}, "", "/reset-password");
+      return { ok: true, method: "token_hash_verify" };
+    }
+    return { ok: false, error: error?.message || "Invalid or expired reset link." };
+  }
+
   const code = url.searchParams.get("code");
 
   if (code) {
@@ -80,6 +94,7 @@ export default function ResetPasswordPage() {
             ok: result.ok,
             method: result.method || null,
             hasCodeParam: typeof window !== "undefined" && Boolean(new URL(window.location.href).searchParams.get("code")),
+            hasTokenHash: typeof window !== "undefined" && Boolean(new URL(window.location.href).searchParams.get("token_hash")),
             error: result.error || null,
           },
           timestamp: Date.now(),

@@ -3,6 +3,7 @@ import { getSupabaseAdmin } from "@/lib/supabaseAdmin";
 import { sendEmail, getEmailDiagnostics } from "@/lib/emailService";
 import { buildPasswordResetEmail } from "@/lib/passwordResetEmail";
 import { getSiteUrl } from "@/lib/siteUrl";
+import { resolvePasswordResetLink } from "@/lib/passwordResetLink";
 
 const GENERIC_SUCCESS = {
   success: true,
@@ -39,7 +40,7 @@ export async function POST(request) {
     }
 
     const siteUrl = getSiteUrl(request);
-    const redirectTo = `${siteUrl}/auth/callback?next=/reset-password`;
+    const redirectTo = `${siteUrl}/reset-password`;
 
     const { data: linkData, error: linkError } = await admin.auth.admin.generateLink({
       type: "recovery",
@@ -47,20 +48,25 @@ export async function POST(request) {
       options: { redirectTo },
     });
 
+    const linkResolution = resolvePasswordResetLink({ siteUrl, linkData, request });
+
     // #region agent log
     fetch("http://127.0.0.1:7540/ingest/3142bff0-53ba-4c2c-9606-b4d021977f0c", {
       method: "POST",
       headers: { "Content-Type": "application/json", "X-Debug-Session-Id": "197cec" },
       body: JSON.stringify({
         sessionId: "197cec",
-        runId: "password-reset",
+        runId: "password-reset-fix",
         hypothesisId: "H1-H2",
         location: "api/auth/forgot-password:generateLink",
         message: "Password reset link generation",
         data: {
           emailDomain: email.split("@")[1] || null,
-          redirectTo,
-          hasActionLink: Boolean(linkData?.properties?.action_link),
+          requestedRedirectTo: redirectTo,
+          actionLinkRedirectTo: linkResolution.actionLinkRedirectTo,
+          usedAppLink: linkResolution.usedAppLink,
+          hasHashedToken: Boolean(linkData?.properties?.hashed_token),
+          resetLinkHost: linkResolution.resetLink ? new URL(linkResolution.resetLink).host : null,
           linkError: linkError?.message || null,
           emailProvider: emailDiagnostics.provider,
         },
@@ -79,7 +85,7 @@ export async function POST(request) {
       throw linkError;
     }
 
-    const resetLink = linkData?.properties?.action_link;
+    const resetLink = linkResolution.resetLink;
     if (!resetLink) {
       return NextResponse.json({ error: "Could not create reset link." }, { status: 500 });
     }
