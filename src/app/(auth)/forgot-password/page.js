@@ -42,7 +42,8 @@ export default function ForgotPasswordPage() {
           <p className={`${typography.statLabel} tracking-[0.25em] text-blue-600 mb-1`}>Check Your Email</p>
           <h1 className={`${typography.heroTitle} mb-2`}>Reset Link Sent</h1>
           <p className="text-zinc-500 text-xs mb-5 leading-relaxed">
-            If an account exists for <strong className="text-zinc-700">{email}</strong>, you will receive a password reset link shortly.
+            If an account exists for <strong className="text-zinc-700">{email}</strong>, check your inbox for a
+            CONNECT-DAET password reset email. The link expires in 1 hour.
           </p>
           <Link href="/login" className={authForm.submitBtn}>
             <ArrowLeft size={16} /> Back to Sign In
@@ -62,7 +63,7 @@ export default function ForgotPasswordPage() {
         <p className={`${typography.statLabel} tracking-[0.25em] text-blue-600 mb-1`}>Account Recovery</p>
         <h1 className={typography.heroTitle}>Forgot Password</h1>
         <p className={`${typography.description} mt-1 text-xs leading-snug`}>
-          Enter your email and we will send you a link to reset your password.
+          Enter your email and we will send a password reset link from CONNECT-DAET to your inbox.
         </p>
       </div>
 

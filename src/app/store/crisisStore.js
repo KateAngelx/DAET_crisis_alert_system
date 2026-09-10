@@ -555,14 +555,17 @@ export const useAuthStore = create(
       requestPasswordReset: async (email) => {
         set({ loading: true });
         try {
-          const redirectTo =
-            typeof window !== 'undefined'
-              ? `${window.location.origin}/reset-password`
-              : undefined;
-          const { error } = await supabase.auth.resetPasswordForEmail(email, { redirectTo });
-          if (error) throw error;
+          const res = await fetch('/api/auth/forgot-password', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email: email.trim() }),
+          });
+          const data = await res.json();
+          if (!res.ok) {
+            throw new Error(data.error || 'Could not send reset email.');
+          }
           set({ loading: false });
-          return { success: true };
+          return { success: true, message: data.message };
         } catch (err) {
           set({ loading: false });
           return { success: false, error: err.message };

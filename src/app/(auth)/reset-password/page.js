@@ -10,6 +10,44 @@ import { AuthBackLink } from "@/app/components/AuthShell";
 import { Lock, Eye, EyeOff, Loader2, CheckCircle } from "lucide-react";
 import { typography, iconSize, authForm } from "@/lib/designSystem";
 
+async function establishRecoverySession() {
+  const url = new URL(window.location.href);
+  const code = url.searchParams.get("code");
+
+  if (code) {
+    const { data, error } = await supabase.auth.exchangeCodeForSession(code);
+    if (!error && data.session) {
+      window.history.replaceState({}, "", "/reset-password");
+      return { ok: true, method: "code_exchange" };
+    }
+    return { ok: false, error: error?.message || "Invalid or expired reset code." };
+  }
+
+  const hashParams = new URLSearchParams(window.location.hash.replace(/^#/, ""));
+  const accessToken = hashParams.get("access_token");
+  const refreshToken = hashParams.get("refresh_token");
+  const type = hashParams.get("type");
+
+  if (accessToken && refreshToken && type === "recovery") {
+    const { data, error } = await supabase.auth.setSession({
+      access_token: accessToken,
+      refresh_token: refreshToken,
+    });
+    if (!error && data.session) {
+      window.history.replaceState({}, "", "/reset-password");
+      return { ok: true, method: "hash_recovery" };
+    }
+    return { ok: false, error: error?.message || "Invalid recovery session." };
+  }
+
+  const { data: { session } } = await supabase.auth.getSession();
+  if (session) {
+    return { ok: true, method: "existing_session" };
+  }
+
+  return { ok: false, error: "This reset link is invalid or has expired. Please request a new one." };
+}
+
 export default function ResetPasswordPage() {
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
@@ -25,34 +63,42 @@ export default function ResetPasswordPage() {
     let cancelled = false;
 
     (async () => {
-      try {
-        const { data, error: sessionError } = await supabase.auth.getSession();
-        if (cancelled) return;
+      const result = await establishRecoverySession();
+      if (cancelled) return;
 
-        if (sessionError) {
-          setError("This reset link is invalid or has expired. Please request a new one.");
-          setChecking(false);
-          return;
-        }
+      // #region agent log
+      fetch("http://127.0.0.1:7540/ingest/3142bff0-53ba-4c2c-9606-b4d021977f0c", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "X-Debug-Session-Id": "197cec" },
+        body: JSON.stringify({
+          sessionId: "197cec",
+          runId: "password-reset",
+          hypothesisId: "H4",
+          location: "reset-password/page:establishRecoverySession",
+          message: "Recovery session establishment",
+          data: {
+            ok: result.ok,
+            method: result.method || null,
+            hasCodeParam: typeof window !== "undefined" && Boolean(new URL(window.location.href).searchParams.get("code")),
+            error: result.error || null,
+          },
+          timestamp: Date.now(),
+        }),
+      }).catch(() => {});
+      // #endregion
 
-        if (data.session) {
-          setReady(true);
-          setChecking(false);
-          return;
-        }
-
-        setError("This reset link is invalid or has expired. Please request a new one.");
+      if (result.ok) {
+        setReady(true);
         setChecking(false);
-      } catch {
-        if (!cancelled) {
-          setError("Could not verify reset link. Please try again.");
-          setChecking(false);
-        }
+        setError(null);
+      } else {
+        setError(result.error);
+        setChecking(false);
       }
     })();
 
     const { data: listener } = supabase.auth.onAuthStateChange((event, session) => {
-      if (event === "PASSWORD_RECOVERY" && session) {
+      if ((event === "PASSWORD_RECOVERY" || event === "SIGNED_IN") && session) {
         setReady(true);
         setChecking(false);
         setError(null);
