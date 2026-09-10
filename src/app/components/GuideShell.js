@@ -168,7 +168,12 @@ export function GuideHeader() {
             <p className="text-sm font-black text-zinc-900 truncate max-w-[120px]">{user?.name || "Guide"}</p>
             <p className="text-[10px] text-zinc-400 font-bold uppercase tracking-widest">Tourism Guide</p>
           </div>
-          <button onClick={logout} className="p-2 text-red-500 hover:bg-red-50 rounded-lg transition-colors" title="Logout">
+          <button
+            onClick={logout}
+            className="lg:hidden p-2 text-red-500 hover:bg-red-50 rounded-lg transition-colors"
+            title="Logout"
+            aria-label="Logout"
+          >
             <LogOut size={16} />
           </button>
         </div>

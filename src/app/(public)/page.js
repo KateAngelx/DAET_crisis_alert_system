@@ -12,6 +12,8 @@ import { DashboardStatCard } from "@/app/components/dashboard/DashboardStatCard"
 import { OutlinedCard } from "@/app/components/ui/OutlinedCard";
 import { typography, iconSize, statGrid } from "@/lib/designSystem";
 import { CommunicationChannelsOverview } from "@/app/components/CommunicationChannelsOverview";
+import { PublicLiveAnalyticsSection } from "@/app/components/analytics/PublicAnalyticsOverview";
+import { PublicFeedbackSection } from "@/app/components/feedback/PublicFeedbackSection";
 export default function Home() {
   const { fetchAlerts, alerts, loading, error } = useCrisisStore();
   const { isAuthenticated, user } = useAuthStore();
@@ -19,6 +21,8 @@ export default function Home() {
   const [mounted, setMounted] = useState(false);
   const router = useRouter();
   const heroRef = useRef(null);
+  const mobilePreviewRef = useRef(null);
+  const desktopVisualRef = useRef(null);
 
   useEffect(() => {
     setMounted(true);
@@ -38,30 +42,61 @@ export default function Home() {
 
   useEffect(() => {
     if (!mounted || typeof window === "undefined") return;
-    const heroEl = heroRef.current;
-    const heroHeight = heroEl?.getBoundingClientRect().height ?? 0;
-    // #region agent log
-    fetch("http://127.0.0.1:7540/ingest/3142bff0-53ba-4c2c-9606-b4d021977f0c", {
-      method: "POST",
-      headers: { "Content-Type": "application/json", "X-Debug-Session-Id": "ee1adc" },
-      body: JSON.stringify({
-        sessionId: "ee1adc",
-        runId: "landing-hero-ui",
-        hypothesisId: "H1",
-        location: "public/page.js:hero",
-        message: "Landing hero layout metrics",
-        data: {
-          innerWidth: window.innerWidth,
-          innerHeight: window.innerHeight,
-          heroHeight,
-          isAuthenticated,
-          role: user?.role ?? null,
-        },
-        timestamp: Date.now(),
-      }),
-    }).catch(() => {});
-    // #endregion
-  }, [mounted, isAuthenticated, user?.role]);
+
+    const logHeroLayout = () => {
+      const heroEl = heroRef.current;
+      const mobileEl = mobilePreviewRef.current;
+      const desktopEl = desktopVisualRef.current;
+      const mobileStyle = mobileEl ? getComputedStyle(mobileEl) : null;
+      const desktopStyle = desktopEl ? getComputedStyle(desktopEl) : null;
+      const floatingCards = desktopEl
+        ? Array.from(desktopEl.querySelectorAll(".absolute.bg-white"))
+        : [];
+      const cardVisibility = floatingCards.map((card, i) => {
+        const style = getComputedStyle(card);
+        const rect = card.getBoundingClientRect();
+        return {
+          index: i,
+          display: style.display,
+          visibility: style.visibility,
+          width: Math.round(rect.width),
+          height: Math.round(rect.height),
+        };
+      });
+      const mockupFooter = (mobileEl || desktopEl)?.querySelector("[data-mockup-footer]");
+      const mockupFooterRect = mockupFooter?.getBoundingClientRect();
+      // #region agent log
+      fetch("http://127.0.0.1:7540/ingest/3142bff0-53ba-4c2c-9606-b4d021977f0c", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "X-Debug-Session-Id": "197cec" },
+        body: JSON.stringify({
+          sessionId: "197cec",
+          runId: "pre-fix",
+          hypothesisId: "H1-H2-H4",
+          location: "public/page.js:heroLayout",
+          message: "Hero section visibility and floating card metrics",
+          data: {
+            innerWidth: window.innerWidth,
+            innerHeight: window.innerHeight,
+            heroHeight: Math.round(heroEl?.getBoundingClientRect().height ?? 0),
+            mobilePreviewDisplay: mobileStyle?.display ?? "missing",
+            desktopVisualDisplay: desktopStyle?.display ?? "missing",
+            floatingCardCount: floatingCards.length,
+            cardVisibility,
+            mockupFooterText: mockupFooter?.textContent?.trim() ?? null,
+            mockupFooterWidth: Math.round(mockupFooterRect?.width ?? 0),
+            mockupFooterHeight: Math.round(mockupFooterRect?.height ?? 0),
+          },
+          timestamp: Date.now(),
+        }),
+      }).catch(() => {});
+      // #endregion
+    };
+
+    logHeroLayout();
+    window.addEventListener("resize", logHeroLayout);
+    return () => window.removeEventListener("resize", logHeroLayout);
+  }, [mounted]);
 
   if (!mounted || (isAuthenticated && (user?.role === 'admin' || user?.role === 'guide'))) return null;
 
@@ -147,16 +182,16 @@ export default function Home() {
             {loading ? (
               <HeroStatSkeleton />
             ) : (
-            <div className="pt-6 sm:pt-8 border-t border-zinc-200 w-full flex items-center justify-between sm:justify-start gap-4 sm:gap-8">
-              <div className="text-center sm:text-left min-w-0 flex-1 sm:flex-none">
+            <div className="pt-6 sm:pt-8 border-t border-zinc-200 w-full flex items-center justify-center gap-6 sm:gap-10">
+              <div className="text-center min-w-0">
                 <p className="text-xl sm:text-2xl font-black text-zinc-900 leading-none mb-1">{activeAlerts.length}</p>
                 <p className="text-[9px] sm:text-[10px] font-bold text-zinc-500 uppercase tracking-widest leading-tight">Active Alerts</p>
               </div>
-              <div className="text-center sm:text-left min-w-0 flex-1 sm:flex-none">
+              <div className="text-center min-w-0">
                 <p className="text-xl sm:text-2xl font-black text-red-600 leading-none mb-1">{criticalCount}</p>
                 <p className="text-[9px] sm:text-[10px] font-bold text-zinc-500 uppercase tracking-widest leading-tight">Critical</p>
               </div>
-              <div className="text-center sm:text-left min-w-0 flex-1 sm:flex-none">
+              <div className="text-center min-w-0">
                 <p className="text-xl sm:text-2xl font-black text-zinc-900 leading-none mb-1">24/7</p>
                 <p className="text-[9px] sm:text-[10px] font-bold text-zinc-500 uppercase tracking-widest leading-tight">Monitoring</p>
               </div>
@@ -168,7 +203,7 @@ export default function Home() {
           </div>
 
           {/* Mobile preview — fills hero on small screens */}
-          <div className="relative w-full max-w-sm mx-auto lg:hidden">
+          <div ref={mobilePreviewRef} className="relative w-full max-w-sm mx-auto xl:hidden">
             <div className="bg-zinc-900 rounded-[32px] shadow-2xl overflow-hidden border-[6px] border-white">
               <div className="w-full bg-zinc-950 px-4 py-3 flex items-center justify-between border-b border-white/10">
                 <div className="flex items-center gap-2 min-w-0">
@@ -184,7 +219,7 @@ export default function Home() {
                 <div className="w-full h-24 bg-blue-900/30 rounded-2xl border border-blue-500/20 flex items-center justify-center">
                   <Bell size={28} className="text-blue-400 animate-pulse" />
                 </div>
-                <div className="w-full py-3 bg-blue-600/20 text-blue-400 rounded-xl border border-blue-500/20 text-center text-[9px] font-black uppercase tracking-widest">
+                <div data-mockup-footer className="w-full py-3 bg-blue-600/20 text-blue-400 rounded-xl border border-blue-500/20 text-center text-[9px] font-black uppercase tracking-widest">
                   Emergency Alert System
                 </div>
               </div>
@@ -192,7 +227,7 @@ export default function Home() {
           </div>
 
           {/* Desktop visual */}
-          <div className="relative h-[550px] w-full hidden lg:block perspective-1000">
+          <div ref={desktopVisualRef} className="relative h-[550px] w-full hidden xl:block perspective-1000">
             
             <div className="absolute top-12 right-4 bg-white p-6 rounded-[32px] shadow-2xl border border-zinc-100 w-72 animate-in slide-in-from-right-8 duration-700 delay-100 z-30 hover:-translate-y-2 transition-transform">
               <div className="flex items-center gap-3 mb-3">
@@ -234,7 +269,7 @@ export default function Home() {
                 </div>
                 <div className="w-3/4 h-8 bg-zinc-800/50 rounded-lg border border-white/5" />
                 <div className="w-full h-8 bg-zinc-800/50 rounded-lg border border-white/5" />
-                <div className="mt-auto w-full py-4 bg-blue-600/20 text-blue-400 rounded-2xl border border-blue-500/20 text-center text-[10px] font-black uppercase tracking-widest">
+                <div data-mockup-footer className="mt-auto w-full py-4 bg-blue-600/20 text-blue-400 rounded-2xl border border-blue-500/20 text-center text-[10px] font-black uppercase tracking-widest">
                   Emergency Alert System
                 </div>
               </div>
@@ -252,6 +287,8 @@ export default function Home() {
           </p>
         </div>
       </section>
+
+      <PublicLiveAnalyticsSection />
 
       {isAuthenticated && user?.role === 'tourist' && (
         <section className="py-8 sm:py-10 bg-white border-b border-zinc-100">
@@ -288,7 +325,7 @@ export default function Home() {
             </Link>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 max-w-5xl mx-auto justify-items-center">
             <ServiceCard
               title="Crisis Hub"
               icon={<ShieldCheck size={28} />}
@@ -329,6 +366,8 @@ export default function Home() {
       </section>
       )}
 
+      <PublicFeedbackSection />
+
     </div>
   );
 }
@@ -337,10 +376,10 @@ function ServiceCard({ title, desc, icon, href = "#" }) {
   return (
     <Link
       href={href}
-      className="block no-underline min-w-0 group transition-all hover:-translate-y-2"
+      className="block no-underline min-w-0 w-full max-w-xs group transition-all hover:-translate-y-2"
     >
-      <OutlinedCard accent="blue" padding="p-8" className="flex flex-col h-full group-hover:shadow-2xl">
-        <div className="p-4 rounded-2xl w-fit mb-6 bg-blue-600 text-white transition-colors">
+      <OutlinedCard accent="blue" padding="p-8" className="flex flex-col h-full items-center text-center group-hover:shadow-2xl">
+        <div className="p-4 rounded-2xl mb-6 bg-blue-600 text-white transition-colors">
           {icon}
         </div>
         <h4 className="text-xl font-black uppercase mb-2 tracking-tight leading-none group-hover:text-blue-600 transition-colors">
@@ -349,7 +388,7 @@ function ServiceCard({ title, desc, icon, href = "#" }) {
         <p className="text-zinc-500 text-xs font-medium leading-relaxed mb-8 flex-1">
           {desc}
         </p>
-        <div className="flex items-center justify-between mt-auto">
+        <div className="flex items-center justify-center gap-2 mt-auto">
           <span className="text-[9px] font-black uppercase tracking-widest text-blue-600">
             Open
           </span>

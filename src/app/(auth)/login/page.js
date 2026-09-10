@@ -76,9 +76,17 @@ export default function LoginPage() {
         </div>
 
         <div className={authForm.fieldGap}>
-          <label htmlFor="login-password" className={authForm.label}>
-            <Lock size={12} /> Password
-          </label>
+          <div className="flex items-center justify-between ml-1">
+            <label htmlFor="login-password" className={authForm.label}>
+              <Lock size={12} /> Password
+            </label>
+            <Link
+              href="/forgot-password"
+              className="text-[10px] font-black uppercase tracking-widest text-blue-600 hover:underline"
+            >
+              Forgot password?
+            </Link>
+          </div>
           <div className="relative">
             <input
               id="login-password"

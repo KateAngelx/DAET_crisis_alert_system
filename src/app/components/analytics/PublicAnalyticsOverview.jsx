@@ -1,12 +1,36 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
-import { BarChart3, Eye, Users, Wifi, TrendingUp } from "lucide-react";
+import { BarChart3, Eye, Users, Wifi, TrendingUp, Activity, Sparkles } from "lucide-react";
 import { DashboardStatCard } from "@/app/components/dashboard/DashboardStatCard";
 import { PublicStatCard } from "@/app/components/dashboard/PublicStatCard";
 import { StatCardSkeletonGrid } from "@/app/components/ui/Skeletons";
 import { Card } from "@/app/components/ui/Card";
-import { iconSize, statGrid, typography } from "@/lib/designSystem";
+import { iconSize, statGrid, typography, getStatCardAccent } from "@/lib/designSystem";
+
+const LIVE_KPIS = [
+  { key: "viewsToday", label: "Page Views Today", icon: Eye, accent: "blue" },
+  { key: "uniqueVisitorsToday", label: "Unique Visitors", icon: Users, accent: "purple" },
+  { key: "registeredOnline", label: "Registered Online", icon: Wifi, accent: "green" },
+  { key: "viewsThisWeek", label: "Views This Week", icon: TrendingUp, accent: "orange" },
+];
+
+function LiveStatTile({ label, value, icon: Icon, accent }) {
+  const styles = getStatCardAccent(accent);
+  return (
+    <div className="group relative flex flex-col items-center justify-center text-center rounded-[28px] border border-white/10 bg-white/5 backdrop-blur-md px-4 py-6 sm:py-8 shadow-[0_8px_32px_rgba(0,0,0,0.25)] hover:bg-white/10 hover:border-white/20 transition-all duration-300 hover:-translate-y-1">
+      <div className={`mb-3 p-3 rounded-2xl ${styles.icon} shadow-lg`}>
+        <Icon size={22} strokeWidth={2.5} />
+      </div>
+      <p className="text-3xl sm:text-4xl font-black tabular-nums leading-none mb-2 text-white">
+        {value}
+      </p>
+      <p className="text-[10px] sm:text-[11px] font-black uppercase tracking-[0.18em] text-zinc-300 leading-snug max-w-[9rem]">
+        {label}
+      </p>
+    </div>
+  );
+}
 
 function formatRelativeTime(iso) {
   if (!iso) return "—";
@@ -217,6 +241,121 @@ export function PublicAnalyticsFooterKPI({ className = "" }) {
 
 /** @deprecated Use PublicAnalyticsFooterKPI */
 export const PublicAnalyticsFooterChart = PublicAnalyticsFooterKPI;
+
+/** Public live analytics — visible to guests and signed-in users */
+export function PublicLiveAnalyticsSection({ className = "" }) {
+  const [stats, setStats] = useState(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const res = await fetch("/api/analytics/public-stats");
+        const data = await res.json();
+        if (!cancelled) setStats(data.stats || null);
+      } catch {
+        if (!cancelled) setStats(null);
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  const topPages = stats?.topPages?.slice(0, 4) ?? [];
+  const maxPageViews = topPages.reduce((max, page) => Math.max(max, page.count), 0);
+
+  return (
+    <section
+      className={`relative py-12 sm:py-16 overflow-hidden bg-gradient-to-br from-zinc-950 via-zinc-900 to-blue-950 ${className}`}
+      aria-label="Live platform activity"
+    >
+      <div className="absolute inset-0 bg-[linear-gradient(to_right,#ffffff08_1px,transparent_1px),linear-gradient(to_bottom,#ffffff08_1px,transparent_1px)] bg-[size:28px_28px]" />
+      <div className="absolute -top-24 left-1/2 -translate-x-1/2 w-[520px] h-[520px] bg-blue-500/20 rounded-full blur-3xl pointer-events-none" />
+      <div className="absolute bottom-0 right-0 w-[320px] h-[320px] bg-purple-500/10 rounded-full blur-3xl pointer-events-none" />
+
+      <div className="relative max-w-6xl mx-auto px-4 sm:px-6">
+        <div className="text-center mb-8 sm:mb-10">
+          <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/10 border border-white/15 mb-4">
+            <span className="relative flex h-2 w-2">
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75" />
+              <span className="relative inline-flex rounded-full h-2 w-2 bg-green-400" />
+            </span>
+            <span className="text-[10px] font-black uppercase tracking-[0.2em] text-zinc-200">Live Activity</span>
+            <Sparkles size={12} className="text-blue-300" />
+          </div>
+          <h2 className="text-2xl sm:text-3xl font-black uppercase tracking-tight text-white mb-2">
+            Platform Pulse
+          </h2>
+          <p className="text-sm text-zinc-400 font-medium max-w-xl mx-auto leading-relaxed">
+            Real-time engagement on CONNECT-DAET — open to everyone checking alerts and safety information in Daet.
+          </p>
+        </div>
+
+        {loading ? (
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 max-w-4xl mx-auto">
+            {[0, 1, 2, 3].map((i) => (
+              <div key={i} className="h-36 sm:h-40 rounded-[28px] bg-white/5 border border-white/10 animate-pulse" />
+            ))}
+          </div>
+        ) : stats ? (
+          <>
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 max-w-4xl mx-auto">
+              {LIVE_KPIS.map(({ key, label, icon, accent }) => (
+                <LiveStatTile
+                  key={key}
+                  label={label}
+                  value={stats[key] ?? 0}
+                  icon={icon}
+                  accent={accent}
+                />
+              ))}
+            </div>
+
+            {topPages.length > 0 && (
+              <div className="mt-8 sm:mt-10 max-w-3xl mx-auto rounded-[28px] border border-white/10 bg-white/5 backdrop-blur-md p-5 sm:p-6">
+                <div className="flex items-center justify-center gap-2 mb-5">
+                  <Activity size={16} className="text-blue-300" />
+                  <p className="text-[10px] font-black uppercase tracking-[0.2em] text-zinc-300">
+                    Most Visited This Week
+                  </p>
+                </div>
+                <ul className="space-y-3">
+                  {topPages.map((page) => {
+                    const width = maxPageViews > 0 ? Math.round((page.count / maxPageViews) * 100) : 0;
+                    return (
+                      <li key={page.path} className="space-y-1.5">
+                        <div className="flex items-center justify-between gap-3 text-xs">
+                          <span className="font-bold text-zinc-100 truncate">{page.label}</span>
+                          <span className="text-[10px] font-black uppercase text-zinc-400 tabular-nums shrink-0">
+                            {page.count} view{page.count !== 1 ? "s" : ""}
+                          </span>
+                        </div>
+                        <div className="h-1.5 rounded-full bg-white/10 overflow-hidden">
+                          <div
+                            className="h-full rounded-full bg-gradient-to-r from-blue-500 to-cyan-400 transition-all duration-700"
+                            style={{ width: `${Math.max(width, 8)}%` }}
+                          />
+                        </div>
+                      </li>
+                    );
+                  })}
+                </ul>
+              </div>
+            )}
+          </>
+        ) : (
+          <p className="text-center text-sm text-zinc-500 font-medium">
+            Live activity stats will appear here once analytics are available.
+          </p>
+        )}
+      </div>
+    </section>
+  );
+}
 
 export function PublicRecentViewersList({ viewers = [], className = "" }) {
   if (!viewers.length) return null;

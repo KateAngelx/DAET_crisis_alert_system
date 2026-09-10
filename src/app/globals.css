@@ -134,3 +134,31 @@ body {
 .leaflet-modal-map-shell .leaflet-popup-pane {
   z-index: 2 !important;
 }
+
+@keyframes feedback-marquee-scroll {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(-50%);
+  }
+}
+
+.feedback-marquee {
+  animation: feedback-marquee-scroll 32s linear infinite;
+}
+
+.feedback-marquee-reverse {
+  animation: feedback-marquee-scroll 38s linear infinite reverse;
+}
+
+.feedback-marquee-mask {
+  mask-image: linear-gradient(to right, transparent, black 8%, black 92%, transparent);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .feedback-marquee,
+  .feedback-marquee-reverse {
+    animation: none;
+  }
+}

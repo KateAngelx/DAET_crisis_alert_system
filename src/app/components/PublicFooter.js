@@ -11,14 +11,53 @@ export function PublicFooter() {
   const { isAuthenticated, user } = useAuthStore();
   const [mounted, setMounted] = useState(false);
 
-  useEffect(() => setMounted(true), []);
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   const compact = mounted && isAuthenticated;
   const showResponderPortal = mounted && user?.role === "admin";
 
+  useEffect(() => {
+    if (!mounted || typeof window === "undefined") return;
+    const footerEl = document.querySelector("[data-public-footer]");
+    const faqEl = document.querySelector("[data-floating-faq]");
+    if (!footerEl) return;
+    const footerRect = footerEl.getBoundingClientRect();
+    const faqRect = faqEl?.getBoundingClientRect();
+    const overlapsFaq = faqRect
+      ? footerRect.bottom > faqRect.top && footerRect.right > faqRect.left && footerRect.left < faqRect.right
+      : false;
+    // #region agent log
+    fetch("http://127.0.0.1:7540/ingest/3142bff0-53ba-4c2c-9606-b4d021977f0c", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "X-Debug-Session-Id": "197cec" },
+      body: JSON.stringify({
+        sessionId: "197cec",
+        runId: "pre-fix",
+        hypothesisId: "H3-H5",
+        location: "PublicFooter.js:layout",
+        message: "Public footer layout metrics",
+        data: {
+          innerWidth: window.innerWidth,
+          compact,
+          footerTop: Math.round(footerRect.top),
+          footerBottom: Math.round(footerRect.bottom),
+          footerHeight: Math.round(footerRect.height),
+          docScrollHeight: document.documentElement.scrollHeight,
+          windowScrollY: Math.round(window.scrollY),
+          faqBottom: faqRect ? Math.round(faqRect.bottom) : null,
+          overlapsFaq,
+        },
+        timestamp: Date.now(),
+      }),
+    }).catch(() => {});
+    // #endregion
+  }, [mounted, compact]);
+
   if (compact) {
     return (
-      <footer className="bg-zinc-950 text-white border-t border-white/5 shrink-0">
+      <footer data-public-footer className="bg-zinc-950 text-white border-t border-white/5 shrink-0 pb-24 sm:pb-0">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 py-5 sm:py-6">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
             <div className="flex items-center gap-2 min-w-0">
@@ -52,7 +91,7 @@ export function PublicFooter() {
   }
 
   return (
-    <footer className="bg-zinc-950 text-white border-t border-white/5 shrink-0">
+    <footer data-public-footer className="bg-zinc-950 text-white border-t border-white/5 shrink-0 pb-24 sm:pb-0">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-10">
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-8 sm:gap-10">
           <div className="lg:col-span-2 space-y-4">
@@ -128,10 +167,10 @@ export function PublicFooter() {
         </div>
 
         <div className="border-t border-white/5 mt-8 sm:mt-10 pt-5 sm:pt-6 flex flex-col md:flex-row justify-between items-center gap-4">
-          <p className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest text-center md:text-left">
+          <p className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest text-center md:text-left max-sm:max-w-[calc(100%-5rem)] max-sm:leading-relaxed">
             &copy; {currentYear} CONNECT-DAET — Daet LGU Crisis Alert System
           </p>
-          <div className="flex flex-wrap justify-center gap-4 sm:gap-6 text-[9px] font-black uppercase tracking-[0.15em] text-zinc-500">
+          <div className="flex flex-wrap justify-center gap-4 sm:gap-6 text-[9px] font-black uppercase tracking-[0.15em] text-zinc-500 max-sm:pr-20">
             <Link href="/privacy" className="hover:text-white transition-colors">Privacy</Link>
             <Link href="/terms" className="hover:text-white transition-colors">Terms</Link>
             <Link href="/contact" className="hover:text-white transition-colors">Contact</Link>

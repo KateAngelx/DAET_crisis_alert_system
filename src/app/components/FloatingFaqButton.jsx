@@ -33,6 +33,7 @@ export function FloatingFaqButton() {
   return (
     <Link
       href="/faq"
+      data-floating-faq
       aria-label="Open frequently asked questions"
       className="fixed z-40 bottom-5 right-4 sm:bottom-6 sm:right-6 flex items-center gap-2 bg-blue-600 text-white pl-3 pr-4 py-3 rounded-full shadow-xl shadow-blue-600/30 hover:bg-blue-700 hover:scale-[1.02] active:scale-[0.98] transition-all border-2 border-white/20 font-black uppercase text-[10px] tracking-widest max-[380px]:px-3 max-[380px]:gap-1.5"
     >

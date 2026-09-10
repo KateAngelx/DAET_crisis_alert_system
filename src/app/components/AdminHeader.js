@@ -40,8 +40,9 @@ export function AdminHeader() {
           </div>
           <button
             onClick={logout}
-            className="p-2 text-red-500 hover:bg-red-50 rounded-lg transition-colors"
+            className="lg:hidden p-2 text-red-500 hover:bg-red-50 rounded-lg transition-colors"
             title="Logout"
+            aria-label="Logout"
           >
             <LogOut size={16} />
           </button>

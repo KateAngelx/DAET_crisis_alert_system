@@ -552,6 +552,36 @@ export const useAuthStore = create(
         }
       },
 
+      requestPasswordReset: async (email) => {
+        set({ loading: true });
+        try {
+          const redirectTo =
+            typeof window !== 'undefined'
+              ? `${window.location.origin}/reset-password`
+              : undefined;
+          const { error } = await supabase.auth.resetPasswordForEmail(email, { redirectTo });
+          if (error) throw error;
+          set({ loading: false });
+          return { success: true };
+        } catch (err) {
+          set({ loading: false });
+          return { success: false, error: err.message };
+        }
+      },
+
+      updatePassword: async (password) => {
+        set({ loading: true });
+        try {
+          const { error } = await supabase.auth.updateUser({ password });
+          if (error) throw error;
+          set({ loading: false });
+          return { success: true };
+        } catch (err) {
+          set({ loading: false });
+          return { success: false, error: err.message };
+        }
+      },
+
       logout: async () => {
         useNotificationStore.getState().clearNotifications();
         await supabase.auth.signOut();

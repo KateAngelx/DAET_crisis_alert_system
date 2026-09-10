@@ -21,6 +21,8 @@ export default function RegisterPage() {
   const [isRegistered, setIsRegistered] = useState(false);
   const [needsConfirmation, setNeedsConfirmation] = useState(false);
   const [regError, setRegError] = useState(null);
+  const [agreedToTerms, setAgreedToTerms] = useState(false);
+  const [agreedToPrivacy, setAgreedToPrivacy] = useState(false);
 
   const { register, loading } = useAuthStore();
   const router = useRouter();
@@ -31,6 +33,16 @@ export default function RegisterPage() {
 
     if (!formData.name || !formData.email || !formData.password || !formData.phone) {
       setRegError("Please fill in all required fields.");
+      return;
+    }
+
+    if (!agreedToTerms || !agreedToPrivacy) {
+      setRegError("Please agree to the Terms of Service and Privacy Policy before creating an account.");
+      return;
+    }
+
+    if (formData.password.length < 8) {
+      setRegError("Password must be at least 8 characters.");
       return;
     }
 
@@ -78,7 +90,7 @@ export default function RegisterPage() {
   }
 
   return (
-    <Card className={authForm.cardWide}>
+    <Card className={`${authForm.cardWide} overflow-y-auto`}>
       <AuthBackLink />
       <div className={authForm.header}>
         <div className={authForm.iconWrap}>
@@ -186,7 +198,45 @@ export default function RegisterPage() {
           </div>
         </div>
 
-        <button type="submit" disabled={loading} className={authForm.submitBtn}>
+        <div className="space-y-2.5 pt-1">
+          <label className="flex items-start gap-2.5 cursor-pointer group">
+            <input
+              type="checkbox"
+              disabled={loading}
+              className="mt-0.5 size-4 rounded-md border-2 border-zinc-200 checked:bg-blue-600 checked:border-blue-600 shrink-0"
+              checked={agreedToTerms}
+              onChange={(e) => setAgreedToTerms(e.target.checked)}
+            />
+            <span className="text-[10px] font-medium text-zinc-500 leading-relaxed group-hover:text-zinc-700">
+              I agree to the{" "}
+              <Link href="/terms" target="_blank" className="text-blue-600 font-black hover:underline">
+                Terms of Service
+              </Link>
+            </span>
+          </label>
+
+          <label className="flex items-start gap-2.5 cursor-pointer group">
+            <input
+              type="checkbox"
+              disabled={loading}
+              className="mt-0.5 size-4 rounded-md border-2 border-zinc-200 checked:bg-blue-600 checked:border-blue-600 shrink-0"
+              checked={agreedToPrivacy}
+              onChange={(e) => setAgreedToPrivacy(e.target.checked)}
+            />
+            <span className="text-[10px] font-medium text-zinc-500 leading-relaxed group-hover:text-zinc-700">
+              I agree to the{" "}
+              <Link href="/privacy" target="_blank" className="text-blue-600 font-black hover:underline">
+                Privacy Policy
+              </Link>
+            </span>
+          </label>
+        </div>
+
+        <button
+          type="submit"
+          disabled={loading || !agreedToTerms || !agreedToPrivacy}
+          className={authForm.submitBtn}
+        >
           {loading ? (
             <>
               <Loader2 className="animate-spin" size={18} />
