@@ -1,8 +1,9 @@
 import { InfoPageHero, InfoSection, PublicPageShell, PublicPageContent } from "@/app/components/InfoPageHero";
+import { siteInfo } from "@/lib/siteInfo";
 
 export const metadata = {
-  title: "Privacy Policy | CONNECT-DAET Crisis Alert System",
-  description: "Privacy policy for the CONNECT-DAET Tourism Crisis Communication and Emergency Alert System.",
+  title: `Privacy Policy | ${siteInfo.brandName}`,
+  description: `Privacy policy for the ${siteInfo.systemName}.`,
 };
 
 export default function PrivacyPage() {
@@ -10,14 +11,14 @@ export default function PrivacyPage() {
     <PublicPageShell>
       <InfoPageHero
         title="Privacy Policy"
-        description="How CONNECT-DAET collects, uses, and protects your personal information."
+        description={`How ${siteInfo.brandName} collects, uses, and protects your personal information.`}
       />
 
       <PublicPageContent>
         <p className="text-xs text-zinc-400 font-bold uppercase tracking-widest mb-10">Last updated: September 2026</p>
 
         <InfoSection title="Information We Collect">
-          <p>When you register or use CONNECT-DAET, we may collect:</p>
+          <p>When you register or use {siteInfo.brandName}, we may collect:</p>
           <ul className="list-disc pl-5 space-y-1 mt-2">
             <li>Full name, email address, and phone number</li>
             <li>Nationality and account role (tourist, guide, or admin)</li>
@@ -38,25 +39,29 @@ export default function PrivacyPage() {
 
         <InfoSection title="Data Sharing">
           <p>
-            Your information is shared only with authorized LGU personnel and responders involved in crisis coordination. We do not sell personal data to third parties. Email and SMS delivery may involve third-party service providers bound by confidentiality requirements.
+            Your information is shared only with authorized personnel of the {siteInfo.officeName} and responders involved in crisis coordination. We do not sell personal data to third parties. Email and SMS delivery may involve third-party service providers bound by confidentiality requirements.
           </p>
         </InfoSection>
 
         <InfoSection title="Data Security">
           <p>
-            We use industry-standard security measures including encrypted connections, role-based access controls, and secure database storage through Supabase. Despite these measures, no system is completely immune to security risks.
+            We use industry-standard security measures including encrypted connections, role-based access controls, and secure database storage. Despite these measures, no system is completely immune to security risks.
           </p>
         </InfoSection>
 
         <InfoSection title="Your Rights">
           <p>
-            You may request access to, correction of, or deletion of your personal data by contacting crisis@connect-daet.ai. Account deletion may affect your ability to receive alerts and track incident reports.
+            You may request access to, correction of, or deletion of your personal data by contacting{" "}
+            <a href={`mailto:${siteInfo.emailTourism}`} className="text-blue-600 font-bold hover:underline">{siteInfo.emailTourism}</a>.
+            Account deletion may affect your ability to receive alerts and track incident reports.
           </p>
         </InfoSection>
 
         <InfoSection title="Contact">
           <p>
-            For privacy-related inquiries, contact the Daet LGU Data Protection Officer at crisis@connect-daet.ai or Municipal Hall, Daet, Camarines Norte.
+            For privacy-related inquiries, contact the {siteInfo.officeName} at{" "}
+            <a href={`mailto:${siteInfo.emailTourism}`} className="text-blue-600 font-bold hover:underline">{siteInfo.emailTourism}</a>,{" "}
+            <a href={`tel:${siteInfo.phoneTourismTel}`} className="text-blue-600 font-bold hover:underline">{siteInfo.phoneTourism}</a>, or {siteInfo.address}.
           </p>
         </InfoSection>
       </PublicPageContent>

@@ -6,6 +6,8 @@ import { ChannelPreferencesGate } from "@/app/components/ChannelPreferencesGate"
 import { AssignmentRequestHandler } from "@/app/components/tour/AssignmentRequestHandler";
 import { NotificationArrivalListener } from "@/app/components/NotificationArrivalListener";
 import { ConfirmDialogProvider } from "@/app/components/ui/ConfirmDialogProvider";
+import { InstallPwaPrompt } from "@/app/components/InstallPwaPrompt";
+import { siteInfo } from "@/lib/siteInfo";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -19,8 +21,28 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata = {
-  title: "CONNECT-DAET | Daet LGU Crisis Alerts",
-  description: "Official crisis alerts, safety advisories, and incident reporting for tourists in Daet, Camarines Norte.",
+  title: `${siteInfo.brandName} | Crisis Alerts — Daet, Camarines Norte`,
+  description: siteInfo.tagline,
+  applicationName: siteInfo.brandName,
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "black-translucent",
+    title: siteInfo.brandName,
+  },
+  formatDetection: {
+    telephone: false,
+  },
+  icons: {
+    icon: [
+      { url: "/icons/icon-192.png", sizes: "192x192", type: "image/png" },
+      { url: "/icons/icon-512.png", sizes: "512x512", type: "image/png" },
+    ],
+    apple: [{ url: "/icons/apple-touch-icon.png", sizes: "180x180", type: "image/png" }],
+  },
+};
+
+export const viewport = {
+  themeColor: "#2563eb",
 };
 
 export default function RootLayout({ children }) {
@@ -34,6 +56,7 @@ export default function RootLayout({ children }) {
         <GlobalEmergencyBanner />
         <NotificationArrivalListener />
         <ConfirmDialogProvider>{children}</ConfirmDialogProvider>
+        <InstallPwaPrompt />
       </body>
     </html>
   );

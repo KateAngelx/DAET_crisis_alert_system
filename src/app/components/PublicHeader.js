@@ -3,12 +3,13 @@
 import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Menu, X, Zap, User } from "lucide-react";
+import { Menu, X, User } from "lucide-react";
+import { BrandLogo } from "@/app/components/BrandLogo";
+import { siteInfo } from "@/lib/siteInfo";
+import { typography } from "@/lib/designSystem";
 import { useAuthStore } from "../store/crisisStore";
 import { NotificationPanel } from "@/app/components/NotificationPanel";
 import { isPublicNavActive } from "@/lib/navUtils";
-import { typography, iconSize } from "@/lib/designSystem";
-
 const GUEST_NAV = [
   { name: "Home", href: "/" },
   { name: "Crisis Hub", href: "/crisis" },
@@ -45,11 +46,9 @@ export function PublicHeader() {
   return (
     <header className="sticky top-0 z-50 w-full bg-background/80 backdrop-blur-md border-b border-gray-200 dark:border-white/10">
       <div className="max-w-7xl mx-auto px-4 h-16 flex items-center justify-between">
-        <Link href="/" className={`flex items-center gap-2 text-blue-600 ${typography.brand}`}>
-          <div className="bg-blue-600 rounded-lg size-8 flex items-center justify-center shadow-lg shadow-blue-600/20">
-            <Zap size={iconSize.brand} className="text-white" fill="white" />
-          </div>
-          <span className={`hidden sm:block ${typography.brand}`}>CONNECT-DAET</span>
+        <Link href="/" className="flex items-center gap-2.5 shrink-0" aria-label={`${siteInfo.officeName} — Home`}>
+          <BrandLogo size={44} />
+          <span className={`hidden sm:block ${typography.brand} text-blue-600`}>{siteInfo.brandName}</span>
         </Link>
 
         <nav className="hidden xl:flex items-center gap-1">

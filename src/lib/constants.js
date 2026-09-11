@@ -60,7 +60,7 @@ export const TOURIST_STATUSES = ['registered', 'on_tour', 'checked_in', 'emergen
 export const EMERGENCY_FALLBACK = {
   title: 'Important: This app does not replace emergency services',
   message:
-    'In a life-threatening emergency, call 911 or 117 immediately. This app provides official Daet LGU crisis updates and report tracking. It requires internet access and does not dispatch emergency responders.',
+    'In a life-threatening emergency, call 911 or 117 immediately. This app provides official crisis updates from the Daet Municipal Tourism Office and report tracking. It requires internet access and does not dispatch emergency responders.',
   hotlines: [
     { name: 'National Emergency Hotline', number: '911' },
     { name: 'PNP', number: '117' },

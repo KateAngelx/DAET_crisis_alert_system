@@ -88,7 +88,7 @@ export function PublicAnalyticsOverview({ compact = false, showTopPages = true, 
           <div>
             <h3 className={typography.cardTitle}>Platform Activity</h3>
             <p className={`${typography.description} mt-1 max-w-2xl`}>
-              Live engagement on CONNECT-DAET — how many people are checking alerts and safety information today.
+              Live engagement on DAET TOURISM — how many people are checking alerts and safety information today.
             </p>
           </div>
         </div>
@@ -221,7 +221,7 @@ export function PublicAnalyticsFooterKPI({ className = "" }) {
         <BarChart3 size={14} className="text-blue-600 shrink-0" />
         <div>
           <p className="text-[9px] font-black uppercase tracking-widest text-zinc-500">Live Activity</p>
-          <p className="text-[10px] text-zinc-400 font-medium">Today on CONNECT-DAET</p>
+          <p className="text-[10px] text-zinc-400 font-medium">Today on DAET TOURISM</p>
         </div>
       </div>
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-3">
@@ -291,7 +291,7 @@ export function PublicLiveAnalyticsSection({ className = "" }) {
             Platform Pulse
           </h2>
           <p className="text-sm text-zinc-400 font-medium max-w-xl mx-auto leading-relaxed">
-            Real-time engagement on CONNECT-DAET — open to everyone checking alerts and safety information in Daet.
+            Real-time engagement on DAET TOURISM — open to everyone checking alerts and safety information in Daet.
           </p>
         </div>
 

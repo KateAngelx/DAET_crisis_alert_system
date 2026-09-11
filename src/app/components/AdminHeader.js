@@ -1,12 +1,13 @@
 "use client";
 
 import React from "react";
-import { User, LogOut, Zap } from "lucide-react";
+import { User, LogOut } from "lucide-react";
+import { BrandLogo } from "@/app/components/BrandLogo";
 import { useAuthStore } from "../store/crisisStore";
 import Link from "next/link";
 import { MobileAdminMenu } from "./MobileAdminMenu";
 import { NotificationPanel } from "@/app/components/NotificationPanel";
-import { typography, iconSize } from "@/lib/designSystem";
+import { typography } from "@/lib/designSystem";
 
 export function AdminHeader() {
   const { user, logout } = useAuthStore();
@@ -16,7 +17,7 @@ export function AdminHeader() {
       <div className="flex items-center gap-4">
         <MobileAdminMenu />
         <Link href="/admin" className={`lg:hidden flex items-center gap-2 ${typography.brand} text-zinc-900`}>
-          <Zap size={iconSize.brand} className="text-blue-600" fill="currentColor" />
+          <BrandLogo size={28} />
           <span className={typography.brand}>CONNECT-DAET</span>
         </Link>
         <div className="hidden sm:block">

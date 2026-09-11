@@ -4,12 +4,13 @@ import React, { useEffect, useState } from "react";
 import { Mail, MessageSquare, Smartphone, Bell, Loader2, Info } from "lucide-react";
 import { Card } from "@/app/components/ui/Card";
 import { useAuthStore } from "@/app/store/crisisStore";
+import { siteInfo } from "@/lib/siteInfo";
 
 const CHANNEL_OPTIONS = [
   {
     key: "email",
     label: "Email",
-    description: "Official crisis alerts are always sent to your registered email. This toggle controls other LGU email updates.",
+    description: `Official crisis alerts are always sent to your registered email. This toggle controls other updates from the ${siteInfo.officeName}.`,
     icon: Mail,
   },
   {
@@ -21,7 +22,7 @@ const CHANNEL_OPTIONS = [
   {
     key: "app",
     label: "In-App",
-    description: "Show notifications inside CONNECT-DAET when you are signed in.",
+    description: `Show notifications inside ${siteInfo.brandName} when you are signed in.`,
     icon: Smartphone,
   },
 ];
@@ -62,7 +63,7 @@ export function CommunicationChannelForm({
         <div className="flex items-start gap-3 p-4 rounded-2xl bg-blue-50 border border-blue-100 text-sm text-blue-900 font-medium">
           <Info className="shrink-0 mt-0.5 opacity-80" size={18} />
           <p>
-            Choose how Daet LGU can reach you for crisis alerts and important updates.
+            Choose how the {siteInfo.officeName} can reach you for crisis alerts and important updates.
             You can change these anytime under <strong>Profile → Communication Preferences</strong>.
           </p>
         </div>
@@ -70,7 +71,7 @@ export function CommunicationChannelForm({
 
       {!showProfileHint && (
         <p className="text-sm text-zinc-600 font-medium">
-          Choose how Daet LGU can reach you for crisis alerts and important updates.
+          Choose how the {siteInfo.officeName} can reach you for crisis alerts and important updates.
           You can change this anytime in your profile.
         </p>
       )}

@@ -14,6 +14,8 @@ import { typography, iconSize, statGrid } from "@/lib/designSystem";
 import { CommunicationChannelsOverview } from "@/app/components/CommunicationChannelsOverview";
 import { PublicLiveAnalyticsSection } from "@/app/components/analytics/PublicAnalyticsOverview";
 import { PublicFeedbackSection } from "@/app/components/feedback/PublicFeedbackSection";
+import { BrandLogo } from "@/app/components/BrandLogo";
+import { siteInfo } from "@/lib/siteInfo";
 export default function Home() {
   const { fetchAlerts, alerts, loading, error } = useCrisisStore();
   const { isAuthenticated, user } = useAuthStore();
@@ -129,14 +131,12 @@ export default function Home() {
             )}
 
             <div className="space-y-3 w-full">
-              <div className="flex items-center gap-2">
-                <div className="bg-blue-600 rounded-lg size-8 flex items-center justify-center shadow-lg shadow-blue-600/20 shrink-0">
-                  <ShieldCheck size={iconSize.brand} className="text-white" />
-                </div>
-                <span className={`${typography.brand} text-blue-600`}>CONNECT-DAET</span>
+              <div className="flex items-center gap-3">
+                <BrandLogo size={44} />
+                <span className={`${typography.brand} text-blue-600`}>{siteInfo.brandName}</span>
               </div>
               <p className="text-[11px] sm:text-xs font-black uppercase tracking-[0.12em] sm:tracking-[0.15em] text-zinc-600 leading-snug max-w-md">
-                Daet Tourist Crisis Communication and Emergency Alert System
+                {siteInfo.officeName} — {siteInfo.tagline}
               </p>
               <h1 className={`${typography.heroTitle} text-zinc-950`}>
                 Current <span className="text-blue-600">Alerts.</span>{" "}
@@ -207,14 +207,13 @@ export default function Home() {
             <div className="bg-zinc-900 rounded-[32px] shadow-2xl overflow-hidden border-[6px] border-white">
               <div className="w-full bg-zinc-950 px-4 py-3 flex items-center justify-between border-b border-white/10">
                 <div className="flex items-center gap-2 min-w-0">
-                  <ShieldCheck size={14} className="text-blue-500 shrink-0" />
-                  <span className="text-[9px] font-black text-white uppercase tracking-widest truncate">CONNECT-DAET</span>
+                  <BrandLogo size={20} />
                 </div>
                 <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse shrink-0" />
               </div>
               <div className="bg-gradient-to-br from-zinc-800 to-zinc-900 p-5 space-y-3">
                 <p className="text-[9px] font-black uppercase tracking-widest text-blue-400 leading-tight">
-                  Daet Tourist Crisis Communication and Emergency Alert System
+                  {siteInfo.brandName} · {siteInfo.officeName}
                 </p>
                 <div className="w-full h-24 bg-blue-900/30 rounded-2xl border border-blue-500/20 flex items-center justify-center">
                   <Bell size={28} className="text-blue-400 animate-pulse" />
@@ -235,11 +234,11 @@ export default function Home() {
                   <Bell size={20} className="animate-pulse" />
                 </div>
                 <div>
-                  <p className="text-[10px] font-black uppercase tracking-widest text-red-600">Critical — Weather</p>
-                  <p className="text-sm font-bold text-zinc-900">Typhoon Signal No. 2</p>
+                  <p className="text-[10px] font-black uppercase tracking-widest text-red-600">Critical Alert</p>
+                  <p className="text-sm font-bold text-zinc-900">Official weather advisory</p>
                 </div>
               </div>
-              <p className="text-xs text-zinc-500 font-medium">Reported 6:30 AM · Affects Bagasbas Beach. Avoid coastal areas until LGU clearance.</p>
+              <p className="text-xs text-zinc-500 font-medium">Shows alert type, severity, affected area, and safety instructions from {siteInfo.officeName}.</p>
             </div>
 
             <div className="absolute bottom-16 left-0 bg-white p-6 rounded-[32px] shadow-2xl border border-zinc-100 w-72 animate-in slide-in-from-bottom-8 duration-700 delay-300 z-30 hover:-translate-y-2 transition-transform">
@@ -248,19 +247,16 @@ export default function Home() {
                   <MapPin size={20} />
                 </div>
                 <div>
-                  <p className="text-[10px] font-black uppercase tracking-widest text-blue-600">Restricted Area</p>
-                  <p className="text-sm font-bold text-zinc-900">Bagasbas Beach</p>
+                  <p className="text-[10px] font-black uppercase tracking-widest text-blue-600">Affected Area</p>
+                  <p className="text-sm font-bold text-zinc-900">Location & travel guidance</p>
                 </div>
               </div>
-              <p className="text-xs text-zinc-500 font-medium">Status: Active · Tourists advised to stay inland and follow barangay evacuation routes.</p>
+              <p className="text-xs text-zinc-500 font-medium">Restricted zones, route status, and tourist safety guidance published by {siteInfo.officeName}.</p>
             </div>
 
             <div className="absolute inset-0 m-auto w-[320px] h-[450px] bg-zinc-900 rounded-[48px] shadow-2xl overflow-hidden z-20 border-[8px] border-white flex flex-col">
               <div className="w-full bg-zinc-950 p-4 flex items-center justify-between border-b border-white/10">
-                <div className="flex items-center gap-2">
-                  <ShieldCheck size={16} className="text-blue-500" />
-                  <span className="text-[10px] font-black text-white uppercase tracking-widest">CONNECT-DAET</span>
-                </div>
+                <BrandLogo size={22} />
                 <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse" />
               </div>
               <div className="flex-1 bg-gradient-to-br from-zinc-800 to-zinc-900 p-6 flex flex-col gap-4">
@@ -283,7 +279,7 @@ export default function Home() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6">
           <CommunicationChannelsOverview showRegisterCta={!isAuthenticated} />
           <p className="mt-6 pt-6 border-t border-zinc-100 text-xs text-zinc-500 font-medium">
-            Past emergencies marked resolved by Daet LGU are kept for reference under Resolved in the menu above.
+            Past emergencies marked resolved by the Daet Municipal Tourism Office are kept for reference under Resolved in the menu above.
           </p>
         </div>
       </section>
@@ -314,7 +310,7 @@ export default function Home() {
                 What You Can Check Here
               </h3>
               <p className="text-zinc-500 font-medium max-w-xl text-sm leading-relaxed">
-                Each section shows specific crisis information: active alerts, affected locations, report status, and official announcements from Daet LGU.
+                Each section shows specific crisis information: active alerts, affected locations, report status, and official announcements from the Daet Municipal Tourism Office.
               </p>
             </div>
             <Link 
@@ -329,25 +325,25 @@ export default function Home() {
             <ServiceCard
               title="Crisis Hub"
               icon={<ShieldCheck size={28} />}
-              desc="Active emergency alerts, affected-area map, safety instructions, and official LGU announcements."
+              desc="Active emergency alerts, affected-area map, safety instructions, and official announcements from the Daet Municipal Tourism Office."
               href="/crisis"
             />
             <ServiceCard
               title="Roads & Travel"
               icon={<Navigation size={28} />}
-              desc="Route status, detours, area hazards, and LGU-recommended paths on one map."
+              desc="Route status, detours, area hazards, and tourism-office recommended paths on one map."
               href="/routes"
             />
             <ServiceCard
               title="Incident Reporting"
               icon={<FileText size={28} />}
-              desc="Report a hazard or emergency with location details and track LGU response status."
+              desc="Report a hazard or emergency with location details and track response status from the tourism office."
               href="/crisis/reports"
             />
             <ServiceCard
               title="Alert Notifications"
               icon={<Radio size={28} />}
-              desc="Sign in to receive private in-app updates when LGU responds to your reports or account activity occurs."
+              desc="Sign in to receive private in-app updates when the tourism office responds to your reports or account activity occurs."
               href={isAuthenticated ? "/notifications" : "/login"}
             />
           </div>

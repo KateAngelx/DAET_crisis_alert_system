@@ -1,8 +1,9 @@
 import { InfoPageHero, InfoSection, PublicPageShell, PublicPageContent } from "@/app/components/InfoPageHero";
+import { siteInfo } from "@/lib/siteInfo";
 
 export const metadata = {
-  title: "Terms of Service | CONNECT-DAET Crisis Alert System",
-  description: "Terms of service for using the CONNECT-DAET Tourism Crisis Communication and Emergency Alert System.",
+  title: `Terms of Service | ${siteInfo.brandName}`,
+  description: `Terms of service for using the ${siteInfo.systemName}.`,
 };
 
 export default function TermsPage() {
@@ -10,7 +11,7 @@ export default function TermsPage() {
     <PublicPageShell>
       <InfoPageHero
         title="Terms of Service"
-        description="Terms and conditions for using the CONNECT-DAET crisis communication platform."
+        description={`Terms and conditions for using the ${siteInfo.brandName} crisis communication platform.`}
       />
 
       <PublicPageContent>
@@ -18,13 +19,13 @@ export default function TermsPage() {
 
         <InfoSection title="Acceptance of Terms">
           <p>
-            By accessing or using CONNECT-DAET, you agree to these Terms of Service. If you do not agree, please do not use the system. The platform is provided by the Local Government Unit of Daet, Camarines Norte.
+            By accessing or using {siteInfo.brandName}, you agree to these Terms of Service. If you do not agree, please do not use the system. The platform is provided by the {siteInfo.officeName}, Municipality of Daet, Camarines Norte.
           </p>
         </InfoSection>
 
         <InfoSection title="Purpose of the System">
           <p>
-            CONNECT-DAET is a Tourism Crisis Communication and Emergency Alert System designed to disseminate crisis information and coordinate emergency responses. It is not a substitute for professional emergency services such as 911, PNP (117), or BFP (160).
+            {siteInfo.brandName} is a tourism crisis communication and emergency alert system designed to disseminate crisis information and coordinate emergency responses. It is not a substitute for professional emergency services such as 911, PNP (117), or BFP (160).
           </p>
         </InfoSection>
 
@@ -40,19 +41,19 @@ export default function TermsPage() {
 
         <InfoSection title="Account Terms">
           <p>
-            Accounts are intended for tourists, tourism personnel, and authorized responders. The LGU reserves the right to suspend or terminate accounts that violate these terms or misuse the system.
+            Accounts are intended for tourists, tourism personnel, and authorized responders. The {siteInfo.officeName} reserves the right to suspend or terminate accounts that violate these terms or misuse the system.
           </p>
         </InfoSection>
 
         <InfoSection title="Alert Accuracy & Availability">
           <p>
-            While we strive for timely and accurate alerts, the system depends on internet connectivity, third-party services, and human input. The LGU is not liable for delays, omissions, or service interruptions beyond reasonable control.
+            While we strive for timely and accurate alerts, the system depends on internet connectivity, third-party services, and human input. The municipal government is not liable for delays, omissions, or service interruptions beyond reasonable control.
           </p>
         </InfoSection>
 
         <InfoSection title="Limitation of Liability">
           <p>
-            CONNECT-DAET is provided &quot;as is&quot; for crisis communication support. The LGU shall not be liable for damages arising from reliance on alerts, system downtime, or failure to receive notifications. Users must contact emergency services directly for life-threatening situations.
+            {siteInfo.brandName} is provided &quot;as is&quot; for crisis communication support. The {siteInfo.officeName} shall not be liable for damages arising from reliance on alerts, system downtime, or failure to receive notifications. Users must contact emergency services directly for life-threatening situations.
           </p>
         </InfoSection>
 
@@ -64,7 +65,9 @@ export default function TermsPage() {
 
         <InfoSection title="Contact">
           <p>
-            Questions about these terms may be directed to crisis@connect-daet.ai or the Municipal Hall of Daet, Camarines Norte.
+            Questions about these terms may be directed to{" "}
+            <a href={`mailto:${siteInfo.emailTourism}`} className="text-blue-600 font-bold hover:underline">{siteInfo.emailTourism}</a>,{" "}
+            <a href={`tel:${siteInfo.phoneTourismTel}`} className="text-blue-600 font-bold hover:underline">{siteInfo.phoneTourism}</a>, or {siteInfo.address}.
           </p>
         </InfoSection>
       </PublicPageContent>

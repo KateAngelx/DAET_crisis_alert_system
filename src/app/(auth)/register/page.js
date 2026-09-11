@@ -75,7 +75,7 @@ export default function RegisterPage() {
           <p className="text-zinc-500 text-xs mb-5 leading-relaxed">
             {needsConfirmation
               ? "Check your email to confirm your account, then sign in."
-              : "Your account is ready. You can now receive alerts and submit reports through CONNECT-DAET."}
+              : "Your account is ready. You can now receive alerts and submit reports through DAET TOURISM."}
           </p>
           <button
             type="button"

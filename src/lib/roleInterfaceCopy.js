@@ -1,31 +1,33 @@
 /** Informational copy tailored per role / surface */
 
+const OFFICE = "Daet Municipal Tourism Office";
+
 export const ROLE_INTERFACE = {
   public: {
     crisisHub: {
       title: "Crisis Hub",
       description:
-        "Official LGU emergency alerts for Daet. Check severity, affected areas, and instructions before you travel.",
+        `Official emergency alerts from the ${OFFICE}. Check severity, affected areas, and instructions before you travel.`,
       helper:
         "For road closures and detours, use Roads & Travel. This page is for weather, health, security, and other emergencies.",
     },
     routes: {
       title: "Roads & Travel Advisories",
       description:
-        "Route status, recommended detours, and area hazards published by Daet LGU — on one map.",
+        `Route status, recommended detours, and area hazards published by the ${OFFICE} — on one map.`,
       helper: "Lines follow drivable roads. Pins mark places to avoid or use with caution.",
     },
     reports: {
       title: "My Reports",
-      description: "Submit and track incident reports you filed with Daet LGU.",
+      description: `Submit and track incident reports you filed with the ${OFFICE}.`,
       helper: "For life-threatening emergencies, call 911 or 117 first, then report here if safe to do so.",
     },
     resolvedAlerts: {
       title: "Resolved Alerts",
       description:
-        "Past LGU emergency alerts that have been marked resolved. Active emergencies are on Crisis Hub.",
+        `Past emergency alerts from the ${OFFICE} that have been marked resolved. Active emergencies are on Crisis Hub.`,
       helper:
-        "These records show what happened and when LGU cleared the situation. For current threats, open Crisis Hub.",
+        `These records show what happened and when the ${OFFICE} cleared the situation. For current threats, open Crisis Hub.`,
     },
   },
   guide: {

@@ -2,10 +2,11 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
-import { Zap, Phone, Mail, MapPin } from "lucide-react";
+import { Phone, Mail, MapPin } from "lucide-react";
+import { BrandLogo } from "@/app/components/BrandLogo";
 import { useAuthStore } from "@/app/store/crisisStore";
-import { typography, iconSize } from "@/lib/designSystem";
-
+import { siteInfo } from "@/lib/siteInfo";
+import { typography } from "@/lib/designSystem";
 export function PublicFooter() {
   const currentYear = new Date().getFullYear();
   const { isAuthenticated, user } = useAuthStore();
@@ -60,14 +61,12 @@ export function PublicFooter() {
       <footer data-public-footer className="bg-zinc-950 text-white border-t border-white/5 shrink-0 pb-24 sm:pb-0">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 py-5 sm:py-6">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-            <div className="flex items-center gap-2 min-w-0">
-              <div className="bg-blue-600 rounded-lg size-8 flex items-center justify-center shrink-0">
-                <Zap size={iconSize.brand} className="text-white" fill="white" />
-              </div>
+            <div className="flex items-center gap-3 min-w-0">
+              <BrandLogo size={40} />
               <div className="min-w-0">
-                <span className={`${typography.brand} text-white block`}>CONNECT-DAET</span>
-                <p className="text-[9px] font-bold text-zinc-500 uppercase tracking-wide leading-tight line-clamp-2">
-                  Daet Tourist Crisis Communication & Emergency Alert System
+                <p className={`${typography.brand} text-white`}>{siteInfo.brandName}</p>
+                <p className="text-[9px] font-bold text-zinc-500 uppercase tracking-wide leading-tight line-clamp-2 mt-0.5">
+                  {siteInfo.officeName}
                 </p>
               </div>
             </div>
@@ -83,7 +82,7 @@ export function PublicFooter() {
             </div>
           </div>
           <p className="text-[9px] font-bold text-zinc-600 uppercase tracking-widest mt-4 text-center sm:text-left">
-            &copy; {currentYear} Daet LGU
+            &copy; {currentYear} {siteInfo.officeName}
           </p>
         </div>
       </footer>
@@ -95,14 +94,13 @@ export function PublicFooter() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-10">
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-8 sm:gap-10">
           <div className="lg:col-span-2 space-y-4">
-            <div className="flex items-center gap-2">
-              <div className="bg-blue-600 rounded-lg size-9 flex items-center justify-center shadow-lg shadow-blue-600/20">
-                <Zap size={iconSize.brand} className="text-white" fill="white" />
-              </div>
-              <span className={typography.brand}>CONNECT-DAET</span>
+            <div className="flex items-center gap-3">
+              <BrandLogo size={44} />
+              <span className={`${typography.brand} text-white`}>{siteInfo.brandName}</span>
             </div>
             <p className="text-xs sm:text-sm text-zinc-400 max-w-sm leading-relaxed font-medium">
-              Daet Tourist Crisis Communication and Emergency Alert System — official alerts and incident reporting for Daet, Camarines Norte.
+              <span className="block font-black uppercase tracking-wide text-zinc-300 mb-1">{siteInfo.officeName}</span>
+              {siteInfo.tagline}
             </p>
           </div>
 
@@ -141,7 +139,15 @@ export function PublicFooter() {
             <ul className="space-y-3 text-sm font-bold">
               <li className="flex items-start gap-3">
                 <MapPin size={16} className="text-blue-500 shrink-0 mt-0.5" />
-                <span className="text-zinc-400 leading-snug text-xs sm:text-sm">Municipal Hall, Daet, Camarines Norte</span>
+                <span className="text-zinc-400 leading-snug text-xs sm:text-sm">{siteInfo.address}</span>
+              </li>
+              <li className="flex items-center gap-3">
+                <Phone size={16} className="text-blue-500 shrink-0" />
+                <a href={`tel:${siteInfo.phoneMunicipalTel}`} className="text-zinc-400 hover:text-white transition-colors">{siteInfo.phoneMunicipal} — Municipal Hotline</a>
+              </li>
+              <li className="flex items-center gap-3">
+                <Phone size={16} className="text-blue-500 shrink-0" />
+                <a href={`tel:${siteInfo.phoneTourismTel}`} className="text-zinc-400 hover:text-white transition-colors">{siteInfo.phoneTourism} — Tourism Office</a>
               </li>
               <li className="flex items-center gap-3">
                 <Phone size={16} className="text-blue-500 shrink-0" />
@@ -153,7 +159,7 @@ export function PublicFooter() {
               </li>
               <li className="flex items-center gap-3">
                 <Mail size={16} className="text-blue-500 shrink-0" />
-                <a href="mailto:crisis@connect-daet.ai" className="text-zinc-400 hover:text-white transition-colors truncate text-xs sm:text-sm">crisis@connect-daet.ai</a>
+                <a href={`mailto:${siteInfo.emailTourism}`} className="text-zinc-400 hover:text-white transition-colors truncate text-xs sm:text-sm">{siteInfo.emailTourism}</a>
               </li>
               {showResponderPortal && (
                 <li className="pt-1">
@@ -168,7 +174,7 @@ export function PublicFooter() {
 
         <div className="border-t border-white/5 mt-8 sm:mt-10 pt-5 sm:pt-6 flex flex-col md:flex-row justify-between items-center gap-4">
           <p className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest text-center md:text-left max-sm:max-w-[calc(100%-5rem)] max-sm:leading-relaxed">
-            &copy; {currentYear} CONNECT-DAET — Daet LGU Crisis Alert System
+            &copy; {currentYear} {siteInfo.officeName}
           </p>
           <div className="flex flex-wrap justify-center gap-4 sm:gap-6 text-[9px] font-black uppercase tracking-[0.15em] text-zinc-500 max-sm:pr-20">
             <Link href="/privacy" className="hover:text-white transition-colors">Privacy</Link>

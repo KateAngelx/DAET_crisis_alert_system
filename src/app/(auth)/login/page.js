@@ -5,10 +5,11 @@ import { useAuthStore } from "@/app/store/crisisStore";
 import { useRouter } from "next/navigation";
 import { Card } from "@/app/components/ui/Card";
 import { AuthBackLink } from "@/app/components/AuthShell";
-import { LogIn, Zap, Lock, Mail, Eye, EyeOff, Loader2 } from "lucide-react";
+import { LogIn, Lock, Mail, Eye, EyeOff, Loader2 } from "lucide-react";
+import { BrandLogo } from "@/app/components/BrandLogo";
 import Link from "next/link";
 import { getRedirectForRole } from "@/lib/authGuard";
-import { typography, iconSize, authForm } from "@/lib/designSystem";
+import { typography, authForm } from "@/lib/designSystem";
 
 export default function LoginPage() {
   const [email, setEmail] = useState("");
@@ -38,9 +39,7 @@ export default function LoginPage() {
     <Card className={authForm.card}>
       <AuthBackLink />
       <div className={authForm.header}>
-        <div className={authForm.iconWrap}>
-          <Zap size={iconSize.auth} className="text-white" fill="white" />
-        </div>
+        <BrandLogo size={44} className="mx-auto mb-3" />
         <p className={`${typography.statLabel} tracking-[0.25em] text-blue-600 mb-1`}>Account Access</p>
         <h1 className={typography.heroTitle}>Sign In</h1>
         <p className={`${typography.description} mt-1 text-xs leading-snug`}>
@@ -140,7 +139,7 @@ export default function LoginPage() {
 
       <div className={authForm.footer}>
         <p className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest">
-          New to CONNECT-DAET?
+          New to DAET TOURISM?
           <Link href="/register" className="ml-2 text-blue-600 hover:underline font-black">
             Create an account
           </Link>

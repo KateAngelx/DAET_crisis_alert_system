@@ -5,13 +5,14 @@ import Link from "next/link";
 import { Mail, MessageSquare, Bell, ArrowRight } from "lucide-react";
 import { OutlinedCard } from "@/app/components/ui/OutlinedCard";
 import { typography, iconSize, statGrid, statCard, getStatCardAccent } from "@/lib/designSystem";
+import { siteInfo } from "@/lib/siteInfo";
 
 const CHANNELS = [
   {
     icon: Mail,
     label: "Email Alerts",
     short: "Email",
-    description: "Official crisis updates sent to your registered email when LGU broadcasts an alert.",
+    description: `Official crisis updates sent to your registered email when the ${siteInfo.officeName} broadcasts an alert.`,
     accent: "blue",
   },
   {
@@ -25,7 +26,7 @@ const CHANNELS = [
     icon: Bell,
     label: "App Notifications",
     short: "In-App",
-    description: "Real-time notices inside CONNECT-DAET when you are signed in.",
+    description: `Real-time notices inside ${siteInfo.brandName} when you are signed in.`,
     accent: "purple",
   },
 ];
@@ -55,10 +56,10 @@ export function CommunicationChannelsOverview({ showRegisterCta = false, classNa
       <div className="mb-4 sm:mb-5">
         <p className={`${typography.sectionTitle} text-blue-600 mb-2`}>Communication Channels</p>
         <h2 className={`${typography.cardTitle} mb-2`}>
-          How Daet LGU Reaches You During a Crisis
+          How {siteInfo.officeName} Reaches You During a Crisis
         </h2>
         <p className={`${typography.description} max-w-2xl`}>
-          CONNECT-DAET is the official tourist crisis communication system. When an emergency alert is
+          {siteInfo.brandName} is the official tourist crisis communication platform. When an emergency alert is
           issued, registered users may receive it through these channels.
         </p>
       </div>

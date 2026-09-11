@@ -5,8 +5,9 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useAuthStore } from "@/app/store/crisisStore";
 import {
-  LayoutDashboard, Bell, ShieldCheck, FileText, Map, Zap, LogOut, Users, Compass, CheckCircle,
+  LayoutDashboard, Bell, ShieldCheck, FileText, Map, LogOut, Users, Compass, CheckCircle,
 } from "lucide-react";
+import { BrandLogo } from "@/app/components/BrandLogo";
 import { GUIDE_NAV, isNavActive } from "@/lib/dashboardNav";
 import { NotificationPanel } from "@/app/components/NotificationPanel";
 import { typography, iconSize } from "@/lib/designSystem";
@@ -26,9 +27,7 @@ const ICONS = {
 function Logo() {
   return (
     <div className="h-[72px] border-b border-zinc-200 px-6 flex items-center gap-3">
-      <div className="bg-blue-600 rounded-lg size-8 flex items-center justify-center shadow-lg shadow-blue-600/20">
-        <Zap size={iconSize.brand} className="text-white" fill="white" />
-      </div>
+      <BrandLogo size={32} />
       <div className="leading-none">
         <span className={`${typography.brand} text-blue-600 block`}>CONNECT-DAET</span>
         <span className={`${typography.badge} text-zinc-400 tracking-widest`}>Guide Portal</span>

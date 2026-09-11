@@ -187,7 +187,7 @@ export default function CrisisPublicPage() {
           </h3>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6 text-sm font-medium opacity-90 text-left">
             <p>1. During typhoon season (June–December), check this page before visiting beaches or remote areas.</p>
-            <p>2. Save emergency numbers: <strong>911</strong> (national), <strong>117</strong> (PNP), municipal hotline <strong>(054) 440-1234</strong>.</p>
+            <p>2. Save emergency numbers: <strong>911</strong> (national), <strong>117</strong> (PNP), municipal hotline <strong>(054) 472-3000</strong>, tourism office <strong>0907 834 1818</strong>.</p>
             <p>3. When a Critical alert is posted, follow the listed instructions and avoid named affected areas.</p>
             {!isAuthenticated ? (
               <p>4. Register your account to receive email, SMS, and app notifications when LGU issues a new alert.</p>

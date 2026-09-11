@@ -2,10 +2,11 @@ import Link from "next/link";
 import { InfoPageHero, InfoSection, PublicPageShell, PublicPageContent, publicLayout } from "@/app/components/InfoPageHero";
 import { Phone, Mail, MapPin, Clock } from "lucide-react";
 import { iconSize, typography } from "@/lib/designSystem";
+import { siteInfo } from "@/lib/siteInfo";
 
 export const metadata = {
-  title: "Contact | CONNECT-DAET Crisis Alert System",
-  description: "Contact the Daet LGU crisis communication team for support and inquiries.",
+  title: `Contact | ${siteInfo.brandName}`,
+  description: `Contact the ${siteInfo.officeName} for tourism and crisis alert inquiries.`,
 };
 
 export default function ContactPage() {
@@ -13,7 +14,7 @@ export default function ContactPage() {
     <PublicPageShell>
       <InfoPageHero
         title="Contact Us"
-        description="For non-emergency inquiries about alerts, incident reports, or account issues. For immediate danger, call 911 or 117."
+        description={`For non-emergency inquiries about alerts, incident reports, or account issues. For immediate danger, call 911 or 117.`}
       />
 
       <PublicPageContent>
@@ -21,37 +22,37 @@ export default function ContactPage() {
           <ContactCard
             icon={<MapPin size={iconSize.stat} className="text-blue-600" />}
             title="Office Location"
-            content="Municipal Hall, Daet, Camarines Norte, Philippines"
+            content={siteInfo.address}
           />
           <ContactCard
             icon={<Phone size={iconSize.stat} className="text-blue-600" />}
             title="Municipal Hotline"
-            content="(054) 440-1234"
-            href="tel:+63544401234"
+            content={siteInfo.phoneMunicipal}
+            href={`tel:${siteInfo.phoneMunicipalTel}`}
+          />
+          <ContactCard
+            icon={<Phone size={iconSize.stat} className="text-blue-600" />}
+            title="Tourism Office Mobile"
+            content={`${siteInfo.phoneTourism} / ${siteInfo.phoneTourismAlt}`}
+            href={`tel:${siteInfo.phoneTourismTel}`}
           />
           <ContactCard
             icon={<Mail size={iconSize.stat} className="text-blue-600" />}
-            title="Crisis Communication Email"
-            content="crisis@connect-daet.ai"
-            href="mailto:crisis@connect-daet.ai"
+            title="Tourism Office Email"
+            content={siteInfo.emailTourism}
+            href={`mailto:${siteInfo.emailTourism}`}
           />
           <ContactCard
             icon={<Clock size={iconSize.stat} className="text-blue-600" />}
-            title="Alert Monitoring"
-            content="24/7 automated monitoring. Staff response during LGU office hours."
+            title="Office Hours"
+            content={siteInfo.officeHours}
           />
         </div>
 
         <InfoSection title="Emergency Hotlines">
           <p>For life-threatening emergencies, contact these numbers immediately — do not use this contact page:</p>
           <ul className="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-4">
-            {[
-              { name: "National Emergency Hotline", number: "911" },
-              { name: "PNP", number: "117" },
-              { name: "BFP", number: "160" },
-              { name: "DOH", number: "1555" },
-              { name: "Red Cross", number: "143" },
-            ].map((h) => (
+            {siteInfo.emergencyHotlines.map((h) => (
               <li key={h.number} className="flex items-center justify-between p-4 bg-blue-50 border border-blue-100 rounded-2xl">
                 <span className="font-bold text-sm text-zinc-700">{h.name}</span>
                 <a href={`tel:${h.number}`} className="font-black text-blue-600">{h.number}</a>
@@ -62,9 +63,13 @@ export default function ContactPage() {
 
         <InfoSection title="System Support">
           <p>
-            For account issues, incident report inquiries, or technical support with the CONNECT-DAET system, email{" "}
-            <a href="mailto:crisis@connect-daet.ai" className="text-blue-600 font-bold hover:underline">crisis@connect-daet.ai</a>{" "}
-            or call the municipal hotline. Authorized responders can access the{" "}
+            For account issues, incident report inquiries, or technical support, email{" "}
+            <a href={`mailto:${siteInfo.emailTourism}`} className="text-blue-600 font-bold hover:underline">{siteInfo.emailTourism}</a>{" "}
+            or call the tourism office at{" "}
+            <a href={`tel:${siteInfo.phoneTourismTel}`} className="text-blue-600 font-bold hover:underline">{siteInfo.phoneTourism}</a>.
+            You may also reach the municipal hotline at{" "}
+            <a href={`tel:${siteInfo.phoneMunicipalTel}`} className="text-blue-600 font-bold hover:underline">{siteInfo.phoneMunicipal}</a>.
+            Authorized responders can access the{" "}
             <Link href="/admin" className="text-blue-600 font-bold hover:underline">Responder Portal</Link>.
           </p>
         </InfoSection>

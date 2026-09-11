@@ -4,11 +4,12 @@ import React, { useState } from "react";
 import Link from "next/link";
 import { InfoPageHero, PublicPageShell, PublicPageContent, PublicInfoCallout } from "@/app/components/InfoPageHero";
 import { ChevronDown } from "lucide-react";
+import { siteInfo } from "@/lib/siteInfo";
 
 const faqs = [
   {
-    q: "What is CONNECT-DAET?",
-    a: "It is the Daet LGU crisis alert system. It publishes official alerts with crisis type, severity, affected location, and safety instructions. Registered users can also submit incident reports and track response status.",
+    q: `What is ${siteInfo.brandName}?`,
+    a: `It is the official crisis alert platform of the ${siteInfo.officeName}. It publishes alerts with crisis type, severity, affected location, and safety instructions. Registered users can also submit incident reports and track response status.`,
   },
   {
     q: "Do I need an account to view alerts?",
@@ -16,7 +17,7 @@ const faqs = [
   },
   {
     q: "How do I receive emergency notifications?",
-    a: "Create an account with a valid email and phone number. When LGU issues an alert, notifications are sent through the channels selected for that alert (app, email, and/or SMS).",
+    a: `Create an account with a valid email and phone number. When the ${siteInfo.officeName} issues an alert, notifications are sent through the channels selected for that alert (app, email, and/or SMS).`,
   },
   {
     q: "How do I report an emergency or incident?",
@@ -32,11 +33,11 @@ const faqs = [
   },
   {
     q: "How do user roles work?",
-    a: "New registrations are assigned the tourist role by default. Tourism guide and administrator roles are assigned by LGU staff. Guides can monitor assigned tourists; admins can issue alerts and manage reports.",
+    a: `New registrations are assigned the tourist role by default. Tourism guide and administrator roles are assigned by ${siteInfo.officeName} staff. Guides can monitor assigned tourists; admins can issue alerts and manage reports.`,
   },
   {
     q: "Who can access the admin portal and Command Center?",
-    a: "Only users with the administrator role assigned by LGU staff. Tourists and guides cannot access admin features.",
+    a: `Only users with the administrator role assigned by ${siteInfo.officeName} staff. Tourists and guides cannot access admin features.`,
   },
   {
     q: "Is my personal information secure?",
@@ -48,7 +49,7 @@ const faqs = [
   },
   {
     q: "How can tourism guides use this system?",
-    a: "Guides can view active alerts, check on assigned tourists, and review incident reports linked to their group. Contact LGU administration to be assigned the guide role.",
+    a: `Guides can view active alerts, check on assigned tourists, and review incident reports linked to their group. Contact the ${siteInfo.officeName} to be assigned the guide role.`,
   },
 ];
 
@@ -77,7 +78,7 @@ export default function FaqPage() {
     <PublicPageShell>
       <InfoPageHero
         title="Frequently Asked Questions"
-        description="How to read alerts, report incidents, and use the Daet LGU crisis alert system."
+        description={`How to read alerts, report incidents, and use the ${siteInfo.officeName} crisis alert system.`}
       />
 
       <PublicPageContent>
@@ -89,7 +90,9 @@ export default function FaqPage() {
 
         <PublicInfoCallout variant="zinc" label="Emergency Contacts" className="mt-12">
           <p className="text-sm text-zinc-600 font-medium mb-4">
-            For immediate danger: call <strong>911</strong> or <strong>117</strong>. For non-emergency system support, contact the Daet LGU crisis team at crisis@connect-daet.ai or visit the Contact page.
+            For immediate danger: call <strong>911</strong> or <strong>117</strong>. For non-emergency support, contact the {siteInfo.officeName} at{" "}
+            <a href={`mailto:${siteInfo.emailTourism}`} className="text-blue-600 font-bold hover:underline">{siteInfo.emailTourism}</a>{" "}
+            or <a href={`tel:${siteInfo.phoneTourismTel}`} className="text-blue-600 font-bold hover:underline">{siteInfo.phoneTourism}</a>.
           </p>
           <Link href="/contact" className="inline-flex items-center gap-2 text-blue-600 font-black uppercase text-xs tracking-widest hover:underline">
             Go to Contact
