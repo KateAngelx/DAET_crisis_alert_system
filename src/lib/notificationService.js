@@ -68,6 +68,8 @@ export async function notifyTouristsOfCrisisAlert(alertId) {
       skipped: data.skipped || 0,
       emailQueued: data.emailQueued || 0,
       smsQueued: data.smsQueued || 0,
+      smsDiagnostics: data.smsDiagnostics || null,
+      smsPerRecipient: data.smsPerRecipient || [],
       deliveryResults: data.deliveryResults || [],
       warnings: data.warnings || [],
     };

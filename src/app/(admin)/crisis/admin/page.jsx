@@ -5,6 +5,7 @@ import { useCrisisStore } from "@/app/store/crisisStore";
 import { useDangerousLocationStore } from "@/app/store/dangerousLocationStore";
 import { useRouteAdvisoryStore } from "@/app/store/routeAdvisoryStore";
 import { notifyTouristsOfCrisisAlert } from "@/lib/notificationService";
+import { formatBroadcastNotifyToast } from "@/lib/broadcastNotifyToast";
 import { Skeleton } from "@/app/components/ui/Skeleton";
 import { Card } from "@/app/components/ui/Card";
 import { AdminPanel } from "@/app/components/admin/AdminPanel";
@@ -79,8 +80,8 @@ export default function CrisisAdminPage() {
   const [searchTerm, setSearchTerm] = useState("");
   const [filterSeverity, setFilterSeverity] = useState("All");
 
-  const [currentPage, setCurrentPage] = useState(1);
-  const itemsPerPage = 5;
+  const auditLogPreviewCount = 5;
+  const [auditLogExpanded, setAuditLogExpanded] = useState(false);
   const [logSearchTerm, setLogSearchTerm] = useState("");
 
   const [formData, setFormData] = useState({
@@ -212,18 +213,7 @@ export default function CrisisAdminPage() {
         : { success: false, error: "Alert saved but notification dispatch could not start." };
 
       if (notifyResult.success) {
-        const emailPart = notifyResult.emailQueued
-          ? `${notifyResult.emailQueued} email(s) queued.`
-          : "No email queued (check tourist emails & Email channel).";
-        const smsPart = notifyResult.smsQueued
-          ? `${notifyResult.smsQueued} SMS queued.`
-          : "No SMS queued (check phone numbers & SMS channel).";
-        const warnPart = notifyResult.warnings?.length
-          ? ` Warnings: ${notifyResult.warnings.join("; ")}`
-          : "";
-        setToastMessage(
-          `Success: Alert broadcast. ${notifyResult.notified} in-app. ${emailPart} ${smsPart}${warnPart}`
-        );
+        setToastMessage(formatBroadcastNotifyToast(notifyResult));
       } else {
         setToastMessage(`Alert saved, but tourist notifications failed: ${notifyResult.error}`);
       }
@@ -231,7 +221,7 @@ export default function CrisisAdminPage() {
       setShowToast(true);
       setShowCreateModal(false);
       setFormData({ title: "", message: "", type: "General", severity: "Low", location: "", latitude: null, longitude: null, channels: { email: true, sms: true, app: true } });
-      setCurrentPage(1);
+      setAuditLogExpanded(false);
       await fetchAlerts();
     } else {
       setToastMessage(`Error: ${result.error}`);
@@ -354,10 +344,16 @@ export default function CrisisAdminPage() {
     return alerts.filter(a => a.id.toLowerCase().includes(logSearchTerm.toLowerCase()) || a.title?.toLowerCase().includes(logSearchTerm.toLowerCase()));
   }, [alerts, logSearchTerm]);
 
-  const paginatedAlerts = useMemo(() => {
-    const startIndex = (currentPage - 1) * itemsPerPage;
-    return logFilteredAlerts.slice(startIndex, startIndex + itemsPerPage);
-  }, [logFilteredAlerts, currentPage, itemsPerPage]);
+  const displayedAuditAlerts = useMemo(() => {
+    if (auditLogExpanded) return logFilteredAlerts;
+    return logFilteredAlerts.slice(0, auditLogPreviewCount);
+  }, [logFilteredAlerts, auditLogExpanded, auditLogPreviewCount]);
+
+  const auditLogHasMore = logFilteredAlerts.length > auditLogPreviewCount;
+
+  useEffect(() => {
+    setAuditLogExpanded(false);
+  }, [logSearchTerm]);
 
   return (
     <>
@@ -712,6 +708,7 @@ export default function CrisisAdminPage() {
                       />
                 </div>
               </div>
+                <div className={auditLogExpanded && auditLogHasMore ? portalLayout.listScrollPaneAdmin : undefined}>
                 <table className="w-full border-collapse leading-none">
                   <thead>
                     <tr className="bg-zinc-50 dark:bg-zinc-900/80 text-zinc-500 dark:text-zinc-400 text-[9px] uppercase tracking-widest font-black">
@@ -725,7 +722,7 @@ export default function CrisisAdminPage() {
                   <tbody className="divide-y divide-gray-200 dark:divide-white/10 font-medium">
                     {loading ? (
                       <TableSkeleton rows={5} columns={5} />
-                    ) : paginatedAlerts.length > 0 ? paginatedAlerts.map(alert => (
+                    ) : displayedAuditAlerts.length > 0 ? displayedAuditAlerts.map(alert => (
                       <tr key={alert.id} className="hover:bg-zinc-50/80 dark:hover:bg-zinc-900/50 transition-colors text-xs group font-bold leading-none">
                         <td className="px-6 py-4"><span className={`text-[8px] font-black uppercase px-2 py-1 rounded-full ${alert.status === 'Active' ? 'bg-red-100 text-red-700 dark:bg-red-900/30' : 'bg-green-100 text-green-700 dark:bg-green-900/30'}`}>{alert.status}</span></td>
                         <td className="px-6 py-4"><p className="text-xs font-black uppercase text-zinc-900 dark:text-white truncate max-w-[200px] mb-1">{alert.title}</p><p className="text-[9px] text-zinc-400 font-mono italic">{alert.location}</p></td>
@@ -753,6 +750,23 @@ export default function CrisisAdminPage() {
                     )}
                   </tbody>
                 </table>
+                </div>
+                {!loading && auditLogHasMore ? (
+                  <div className="px-4 sm:px-6 py-3 border-t border-zinc-100 bg-zinc-50/50 flex flex-wrap items-center justify-between gap-3">
+                    <p className="text-[10px] font-bold text-zinc-500 uppercase tracking-wide font-sans">
+                      {auditLogExpanded
+                        ? `Showing all ${logFilteredAlerts.length} entries`
+                        : `Showing ${displayedAuditAlerts.length} of ${logFilteredAlerts.length} entries`}
+                    </p>
+                    <button
+                      type="button"
+                      onClick={() => setAuditLogExpanded((v) => !v)}
+                      className={`${adminShell.btnGhost} !text-[10px] !py-2 !px-3`}
+                    >
+                      {auditLogExpanded ? "Show less" : "View more"}
+                    </button>
+                  </div>
+                ) : null}
             </AdminTablePanel>
       </>
 
@@ -783,7 +797,7 @@ export default function CrisisAdminPage() {
         <div className="fixed top-6 left-1/2 -translate-x-1/2 z-[300] animate-in fade-in slide-in-from-top-4 duration-300">
           <div className="bg-slate-900 text-white px-6 py-4 rounded-2xl shadow-2xl flex items-center gap-4 min-w-[300px]">
             <div className="bg-green-500 p-2 rounded-lg"><BellRing size={20}/></div>
-            <div className="flex-1 font-bold text-sm uppercase">{toastMessage}</div>
+            <div className="flex-1 font-medium text-sm leading-snug normal-case">{toastMessage}</div>
             <button onClick={() => setShowToast(false)}><X size={18}/></button>
           </div>
         </div>

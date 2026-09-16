@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import { getSupabaseAdmin } from '@/lib/supabaseAdmin';
+import { normalizePhilippinePhone } from '@/lib/phoneUtils';
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
@@ -44,7 +45,7 @@ export async function POST(request) {
     if (existing) {
       const activityUpdate = {
         full_name: meta.full_name || existing.full_name,
-        phone: meta.phone ?? existing.phone,
+        phone: normalizePhilippinePhone(meta.phone) ?? normalizePhilippinePhone(existing.phone) ?? existing.phone,
         email: user.email,
         nationality: meta.nationality || existing.nationality,
         last_seen_at: now,
@@ -52,8 +53,16 @@ export async function POST(request) {
 
       if (isLoginEvent) {
         activityUpdate.last_login_at = now;
-        activityUpdate.sms_suspended_at = null;
-        activityUpdate.inactive_notice_sent_at = null;
+        const ch = existing.notification_channels || { email: true, sms: true, app: true };
+        const legacyInactiveSmsOff =
+          ch.sms === false && Boolean(existing.inactive_notice_sent_at);
+        if (existing.sms_suspended_at || legacyInactiveSmsOff) {
+          activityUpdate.sms_suspended_at = null;
+          activityUpdate.notification_channels = { ...ch, sms: true };
+        }
+        if (!existing.sms_suspended_at && !legacyInactiveSmsOff) {
+          activityUpdate.inactive_notice_sent_at = null;
+        }
       }
 
       const { data: updated, error: updateError } = await admin
@@ -83,7 +92,7 @@ export async function POST(request) {
       .insert({
         id: user.id,
         full_name: meta.full_name || 'User',
-        phone: meta.phone || null,
+        phone: normalizePhilippinePhone(meta.phone) || null,
         email: user.email,
         nationality: meta.nationality || 'Filipino',
         user_type: 'tourist',

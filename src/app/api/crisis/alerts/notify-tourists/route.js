@@ -64,6 +64,8 @@ export async function POST(request) {
       skipped: results.skipped,
       emailQueued: results.emailQueued,
       smsQueued: results.smsQueued,
+      smsDiagnostics: results.smsDiagnostics,
+      smsPerRecipient: results.smsPerRecipient || [],
       deliveryResults: results.deliveryResults || [],
       warnings: results.errors,
     });

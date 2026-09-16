@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
 import { requireAdmin } from "@/lib/adminAuth";
+import { formatIProgSmsErrorForAdmin } from "@/lib/iprogSmsErrors";
 import {
+  detectIProgPhoneNetwork,
   fetchIProgMessageStatus,
   getSmsDiagnostics,
   normalizePhilippinePhone,
@@ -49,6 +51,8 @@ export async function POST(request) {
     );
   }
 
+  const network = await detectIProgPhoneNetwork(normalized);
+
   const result = await sendSms({
     to: normalized,
     message:
@@ -57,13 +61,18 @@ export async function POST(request) {
   });
 
   if (!result.success) {
+    const adminHint = formatIProgSmsErrorForAdmin(result.error);
     return NextResponse.json(
       {
         success: false,
         step: "iprog",
         error: result.error,
+        adminHint,
+        errorCode: result.errorCode,
+        billed: Boolean(result.billed),
         diagnostics,
         normalizedPhone: normalized,
+        detectedNetwork: network.network || result.detectedNetwork || null,
         skipped: Boolean(result.skipped),
       },
       { status: 502 }
@@ -82,6 +91,7 @@ export async function POST(request) {
     mode: result.mode,
     apiMessage: result.apiMessage,
     normalizedPhone: normalized,
+    detectedNetwork: network.network || result.detectedNetwork || null,
     apiPhone: normalized ? `63${normalized.slice(1)}` : null,
     deliveryStatus: deliveryStatus?.messageStatus || null,
     diagnostics,

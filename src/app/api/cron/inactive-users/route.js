@@ -57,13 +57,11 @@ export async function POST(request) {
     if (!isInactiveOverThreshold(profile, INACTIVE_THRESHOLD_DAYS, nowMs)) continue;
 
     processed += 1;
-    const channels = profile.notification_channels || { email: true, sms: true, app: true };
-    const hadSms = Boolean(channels.sms);
+    const hadSms = Boolean((profile.notification_channels || {}).sms ?? true);
 
     const { error: updateError } = await admin
       .from("profiles")
       .update({
-        notification_channels: { ...channels, sms: false },
         sms_suspended_at: profile.sms_suspended_at || now,
         inactive_notice_sent_at: now,
       })

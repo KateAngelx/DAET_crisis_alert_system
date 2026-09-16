@@ -423,9 +423,15 @@ export const useAuthStore = create(
           const session = await getActiveSession();
           if (!session) throw new Error("Not authenticated");
 
+          const { normalizePhilippinePhone } = await import("@/lib/phoneUtils");
+          const normalizedPhone = normalizePhilippinePhone(phone);
+          if (!normalizedPhone) {
+            throw new Error("Enter a valid Philippine mobile number (09XXXXXXXXX).");
+          }
+
           const { data, error } = await supabase
             .from("profiles")
-            .update({ full_name, phone, nationality })
+            .update({ full_name, phone: normalizedPhone, nationality })
             .eq("id", session.user.id)
             .select()
             .single();
@@ -433,7 +439,7 @@ export const useAuthStore = create(
           if (error) throw error;
 
           await supabase.auth.updateUser({
-            data: { full_name, phone, nationality },
+            data: { full_name, phone: normalizedPhone, nationality },
           });
 
           const userData = mapProfileToUser(data);
@@ -527,15 +533,22 @@ export const useAuthStore = create(
       register: async (name, email, password, phone, nationality) => {
         set({ loading: true });
         try {
-          const { data, error } = await supabase.auth.signUp({ 
-            email, 
+          const { normalizePhilippinePhone } = await import("@/lib/phoneUtils");
+          const normalizedPhone = normalizePhilippinePhone(phone);
+          if (!normalizedPhone) {
+            set({ loading: false });
+            return { success: false, error: "Enter a valid Philippine mobile number (09XXXXXXXXX)." };
+          }
+
+          const { data, error } = await supabase.auth.signUp({
+            email,
             password,
-            options: { 
-              data: { 
+            options: {
+              data: {
                 full_name: name,
-                phone: phone,
-                nationality: nationality 
-              } 
+                phone: normalizedPhone,
+                nationality: nationality
+              }
             }
           });
           if (error) throw error;

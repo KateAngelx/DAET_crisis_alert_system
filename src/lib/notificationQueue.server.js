@@ -24,16 +24,20 @@ async function processDelivery(supabase, delivery) {
       sessionId: '197cec',
       location: 'notificationQueue.server.js:processDelivery',
       message: 'SMS delivery processed',
-      hypothesisId: 'E',
-      runId: 'sms-fix-v1',
+      hypothesisId: 'G-globe',
+      runId: 'sms-globe-v1',
       data: {
         deliveryId: delivery.id,
+        userId: delivery.user_id,
+        recipientPrefix: String(delivery.recipient || '').slice(0, 4),
         success: result.success,
         skipped: Boolean(result.skipped),
         permanent: Boolean(result.permanent),
         error: result.error || null,
         messageId: result.messageId || null,
         apiAttempts: result.apiAttempts ?? 1,
+        detectedNetwork: result.detectedNetwork || null,
+        billed: Boolean(result.billed),
       },
     });
   } else {
@@ -52,8 +56,12 @@ async function processDelivery(supabase, delivery) {
       .eq('id', delivery.id);
     return {
       id: delivery.id,
+      channel: delivery.channel,
       status: result.skipped ? 'failed' : 'sent',
       error: result.skipped ? (result.error || 'Channel not configured') : null,
+      messageId: result.messageId || null,
+      billed: Boolean(result.billed),
+      detectedNetwork: result.detectedNetwork || null,
     };
   }
 
@@ -73,7 +81,15 @@ async function processDelivery(supabase, delivery) {
     })
     .eq('id', delivery.id);
 
-  return { id: delivery.id, status: shouldRetry ? 'retrying' : 'failed', error: result.error };
+  return {
+    id: delivery.id,
+    channel: delivery.channel,
+    status: shouldRetry ? 'retrying' : 'failed',
+    error: result.error,
+    errorCode: result.errorCode,
+    billed: Boolean(result.billed),
+    detectedNetwork: result.detectedNetwork || null,
+  };
 }
 
 export async function processNotificationDeliveries({ deliveryIds } = {}) {

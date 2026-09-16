@@ -32,6 +32,9 @@ export default function AdminSettingsPage() {
   const [exporting, setExporting] = useState(null);
   const [testingEmail, setTestingEmail] = useState(false);
   const [testingSms, setTestingSms] = useState(false);
+  const [diagPhone, setDiagPhone] = useState("");
+  const [diagLoading, setDiagLoading] = useState(false);
+  const [diagResult, setDiagResult] = useState(null);
   const [emailDiagnostics, setEmailDiagnostics] = useState(null);
   const [message, setMessage] = useState(null);
   const [updatedAt, setUpdatedAt] = useState(null);
@@ -143,16 +146,48 @@ export default function AdminSettingsPage() {
     }
   };
 
+  const handleDiagnoseTouristSms = async () => {
+    setDiagLoading(true);
+    setDiagResult(null);
+    setMessage(null);
+    try {
+      const res = await authFetch("/api/admin/sms-diagnose", {
+        method: "POST",
+        body: JSON.stringify({ phone: diagPhone.trim(), sendTest: true }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Diagnose failed");
+      setDiagResult(data);
+      if (data.send?.success) {
+        setMessage({
+          type: "success",
+          text: `SMS accepted for ${data.phoneNormalized}. Network: ${data.network?.network || data.send.detectedNetwork || "—"}. ID: ${data.send.messageId || "—"}`,
+        });
+      } else if (data.send) {
+        setMessage({
+          type: "error",
+          text: data.send.adminHint || data.send.error || "SMS not accepted by iProg.",
+        });
+      }
+    } catch (err) {
+      setMessage({ type: "error", text: err.message });
+    } finally {
+      setDiagLoading(false);
+    }
+  };
+
   const handleTestSms = async () => {
     setTestingSms(true);
     setMessage(null);
     try {
       const res = await authFetch("/api/admin/sms-test", { method: "POST", body: JSON.stringify({}) });
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error || "SMS test failed");
+      if (!res.ok) {
+        throw new Error(data.adminHint || data.error || "SMS test failed");
+      }
       setMessage({
         type: "success",
-        text: `SMS queued for ${data.normalizedPhone}${data.messageId ? ` (${data.messageId})` : ""}.${data.deliveryStatus ? ` Provider status: ${data.deliveryStatus}.` : ""} ${data.note || ""}`,
+        text: `SMS accepted by iProg for ${data.normalizedPhone}${data.messageId ? ` (${data.messageId})` : ""}.${data.deliveryStatus ? ` Status: ${data.deliveryStatus}.` : ""} ${data.note || ""}`,
       });
     } catch (err) {
       setMessage({ type: "error", text: err.message });
@@ -298,6 +333,32 @@ export default function AdminSettingsPage() {
               </div>
             )}
           </div>
+        <div className="mb-4 p-4 rounded-2xl border border-zinc-100 bg-zinc-50/80 space-y-3">
+          <p className="text-[10px] font-black uppercase tracking-widest text-zinc-500">
+            Diagnose tourist number (iProg network detect + test send)
+          </p>
+          <input
+            className={`${adminShell.input} w-full`}
+            placeholder="09XXXXXXXXX — same as tourist profile"
+            value={diagPhone}
+            onChange={(e) => setDiagPhone(e.target.value)}
+          />
+          <button
+            type="button"
+            onClick={handleDiagnoseTouristSms}
+            disabled={diagLoading || !diagPhone.trim()}
+            className={`${adminShell.btnPrimary} w-full justify-center disabled:opacity-50`}
+          >
+            {diagLoading ? <Loader2 size={16} className="animate-spin" /> : null}
+            {diagLoading ? "Diagnosing…" : "Diagnose & test send"}
+          </button>
+          {diagResult?.network?.network ? (
+            <p className="text-xs text-zinc-600 font-medium">
+              iProg sees this number as: <strong>{diagResult.network.network}</strong>
+              {diagResult.network.isSmartTnt ? " (Smart/TNT — shared sender blocked until you register a sender name)" : null}
+            </p>
+          ) : null}
+        </div>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <button
             type="button"
@@ -323,7 +384,19 @@ export default function AdminSettingsPage() {
       <AdminPanel title="System notes" bodyClassName="bg-zinc-50/80">
         <ul className="text-sm text-zinc-600 font-medium space-y-2 list-disc pl-5">
           <li>Crisis Command Center alert channels (email/SMS/app) control <em>how</em> an alert is sent; this page controls <em>who</em> receives it.</li>
-          <li>SMS delivery uses iProg — ensure <code className="text-xs bg-white px-1 rounded">IPROG_SMS_API_TOKEN</code> is set in environment variables.</li>
+          <li>
+            SMS uses iProg (<code className="text-xs bg-white px-1 rounded">IPROG_SMS_API_TOKEN</code>).
+            Smart/TNT numbers require an{" "}
+            <a
+              href="https://www.iprogsms.com/sender-names/new"
+              className="text-blue-600 font-bold hover:underline"
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              approved sender name
+            </a>
+            ; until then iProg rejects the send and credits are not deducted.
+          </li>
           <li>Email delivery: use your <strong>office inbox</strong> via SMTP, or your <strong>own domain</strong> via Resend. Recipients are always each user&apos;s registered profile email.</li>
           <li>SMTP (own Gmail/Workspace/Outlook): <code className="text-xs bg-white px-1 rounded">SMTP_HOST</code>, <code className="text-xs bg-white px-1 rounded">SMTP_USER</code>, <code className="text-xs bg-white px-1 rounded">SMTP_PASS</code>, <code className="text-xs bg-white px-1 rounded">EMAIL_FROM</code></li>
           <li>Resend (own domain): <code className="text-xs bg-white px-1 rounded">RESEND_API_KEY</code> + <code className="text-xs bg-white px-1 rounded">EMAIL_FROM</code></li>
