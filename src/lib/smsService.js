@@ -4,14 +4,17 @@ import { truncateForSms, getSmsMaxLength } from "@/lib/smsMessageFormat";
 const DEFAULT_IPROG_URL = "https://sms.iprogtech.com/api/v1/sms_messages";
 
 function getSmsConfig() {
+  const parsedProvider = parseInt(process.env.SMS_PROVIDER ?? "0", 10);
   return {
     url: process.env.SMS_API_URL || DEFAULT_IPROG_URL,
     token: process.env.IPROG_SMS_API_TOKEN || process.env.SMS_API_KEY || "",
-    provider: parseInt(process.env.SMS_PROVIDER || "2", 10) || 2,
+    /** iProg default is 0 — avoid cycling 2/0/1 which charges credits per attempt */
+    provider: Number.isFinite(parsedProvider) ? parsedProvider : 0,
+    allowQueryFallback: process.env.SMS_IPROG_QUERY_FALLBACK === "true",
   };
 }
 
-/** Normalize to 09XXXXXXXXX — iProg's preferred Philippine mobile format */
+/** Normalize to 09XXXXXXXXX — local Philippine mobile format */
 export function normalizePhilippinePhone(raw) {
   if (!raw) return null;
   const digits = String(raw).replace(/\D/g, "");
@@ -26,7 +29,39 @@ export function normalizePhilippinePhone(raw) {
   return null;
 }
 
-async function callIProg({ url, token, phone_number, message, sms_provider }) {
+/** iProg accepts 639XXXXXXXXX in many examples — use for API requests */
+export function formatPhoneForIProgApi(raw) {
+  const local = normalizePhilippinePhone(raw);
+  if (!local) return null;
+  return `63${local.slice(1)}`;
+}
+
+function parseIProgSendResponse(data, httpOk) {
+  if (!httpOk) {
+    return { ok: false, error: data?.message || "SMS HTTP request failed" };
+  }
+  if (!data || typeof data !== "object") {
+    return { ok: false, error: "Empty SMS API response" };
+  }
+  if (data.status === "error" || data.status === 500 || data.status === "failed") {
+    return { ok: false, error: data.message || "SMS provider returned an error" };
+  }
+
+  const messageId = data.message_id || (typeof data.message_ids === "string" ? data.message_ids.split(",")[0]?.trim() : null);
+  const statusOk = data.status === 200 || data.status === "success";
+
+  if (statusOk && messageId) {
+    return { ok: true, messageId, apiMessage: data.message || null };
+  }
+
+  return {
+    ok: false,
+    error: data.message || `Unexpected iProg response (status=${String(data.status)})`,
+    rawStatus: data.status,
+  };
+}
+
+async function postIProgJson({ url, token, phone_number, message, sms_provider }) {
   const jsonResponse = await fetch(url, {
     method: "POST",
     headers: { "Content-Type": "application/json", Accept: "application/json" },
@@ -42,18 +77,16 @@ async function callIProg({ url, token, phone_number, message, sms_provider }) {
     message: await jsonResponse.text().catch(() => "Unknown error"),
   }));
 
-  const jsonOk =
-    jsonResponse.ok &&
-    jsonData?.status !== "error" &&
-    (jsonData?.status === undefined ||
-      jsonData?.status === 200 ||
-      jsonData?.status === "success");
+  const parsed = parseIProgSendResponse(jsonData, jsonResponse.ok);
+  return {
+    ...parsed,
+    mode: "json",
+    httpStatus: jsonResponse.status,
+    raw: jsonData,
+  };
+}
 
-  if (jsonOk) {
-    return { ok: true, data: jsonData, mode: "json", httpStatus: jsonResponse.status };
-  }
-
-  // Fallback: query-string POST (documented alternate format)
+async function postIProgQuery({ url, token, phone_number, message, sms_provider }) {
   const params = new URLSearchParams({
     api_token: token,
     phone_number,
@@ -69,32 +102,58 @@ async function callIProg({ url, token, phone_number, message, sms_provider }) {
     message: await queryResponse.text().catch(() => "Unknown error"),
   }));
 
-  const queryOk =
-    queryResponse.ok &&
-    queryData?.status !== "error" &&
-    (queryData?.status === undefined ||
-      queryData?.status === 200 ||
-      queryData?.status === "success");
-
+  const parsed = parseIProgSendResponse(queryData, queryResponse.ok);
   return {
-    ok: queryOk,
-    data: queryOk ? queryData : jsonData,
-    mode: queryOk ? "query" : "json",
-    httpStatus: queryOk ? queryResponse.status : jsonResponse.status,
-    jsonError: jsonOk ? null : jsonData?.message || jsonData?.error,
-    queryError: queryOk ? null : queryData?.message || queryData?.error,
+    ...parsed,
+    mode: "query",
+    httpStatus: queryResponse.status,
+    raw: queryData,
   };
 }
 
+export async function fetchIProgMessageStatus(messageId) {
+  const { url, token } = getSmsConfig();
+  if (!token || !messageId) return { ok: false, error: "Missing token or message_id" };
+
+  const base = url.replace(/\/sms_messages\/?$/, "");
+  const statusUrl = `${base}/sms_messages/status?api_token=${encodeURIComponent(token)}&message_id=${encodeURIComponent(messageId)}`;
+
+  try {
+    const res = await fetch(statusUrl, { method: "GET", headers: { Accept: "application/json" } });
+    const data = await res.json().catch(() => ({}));
+    return {
+      ok: res.ok && data?.status !== "error",
+      messageStatus: data?.message_status || null,
+      raw: data,
+    };
+  } catch (err) {
+    return { ok: false, error: err.message };
+  }
+}
+
+export function isPermanentSmsError(errorMessage) {
+  const msg = String(errorMessage || "").toLowerCase();
+  return (
+    msg.includes("invalid phone") ||
+    msg.includes("invalid token") ||
+    msg.includes("validation") ||
+    msg.includes("phishing") ||
+    msg.includes("insufficient") ||
+    msg.includes("not configured")
+  );
+}
+
 export async function sendSms({ to, message }) {
-  const { url, token, provider } = getSmsConfig();
+  const { url, token, provider, allowQueryFallback } = getSmsConfig();
   const tokenConfigured = Boolean(token);
 
   agentDebugLog({
+    sessionId: "197cec",
     location: "smsService.js:sendSms:entry",
     message: "sendSms called",
     hypothesisId: "A",
-    data: { tokenConfigured, provider, rawToPrefix: String(to || "").slice(0, 4) },
+    runId: "sms-fix-v1",
+    data: { tokenConfigured, provider, allowQueryFallback, rawToPrefix: String(to || "").slice(0, 4) },
   });
 
   if (!token) {
@@ -102,91 +161,106 @@ export async function sendSms({ to, message }) {
     return { success: false, error: "SMS service not configured", skipped: true };
   }
 
-  const phone_number = normalizePhilippinePhone(to);
-  if (!phone_number) {
+  const phone_number = formatPhoneForIProgApi(to);
+  const localPhone = normalizePhilippinePhone(to);
+  if (!phone_number || !localPhone) {
     agentDebugLog({
+      sessionId: "197cec",
       location: "smsService.js:sendSms:invalidPhone",
       message: "phone normalization failed",
       hypothesisId: "D",
+      runId: "sms-fix-v1",
       data: { rawLength: String(to || "").length },
     });
-    return { success: false, error: `Invalid Philippine phone number: ${to}` };
+    return { success: false, error: `Invalid Philippine phone number: ${to}`, permanent: true };
   }
 
   const rawLength = String(message ?? "").length;
   const smsMessage = truncateForSms(message);
-  const providersToTry = [provider, 0, 1, 2].filter(
-    (value, index, arr) => arr.indexOf(value) === index
-  );
+  let apiAttempts = 0;
 
-  let lastError = "Unknown SMS error";
+  try {
+    let result = await postIProgJson({
+      url,
+      token,
+      phone_number,
+      message: smsMessage,
+      sms_provider: provider,
+    });
+    apiAttempts += 1;
 
-  for (const sms_provider of providersToTry) {
-    try {
-      const result = await callIProg({
+    if (!result.ok && allowQueryFallback) {
+      result = await postIProgQuery({
         url,
         token,
         phone_number,
         message: smsMessage,
-        sms_provider,
+        sms_provider: provider,
       });
-
-      agentDebugLog({
-        location: "smsService.js:sendSms:response",
-        message: "iProg API response",
-        hypothesisId: "C",
-        data: {
-          provider: sms_provider,
-          mode: result.mode,
-          httpStatus: result.httpStatus,
-          apiStatus: result.data?.status,
-          ok: result.ok,
-          messageId: result.data?.message_id || null,
-          rawLength,
-          sentLength: smsMessage.length,
-          maxLength: getSmsMaxLength(),
-          errorMsg: result.ok
-            ? null
-            : result.data?.message || result.jsonError || result.queryError || null,
-        },
-      });
-
-      if (result.ok) {
-        return {
-          success: true,
-          messageId: result.data?.message_id || null,
-          provider: sms_provider,
-          mode: result.mode,
-        };
-      }
-
-      lastError =
-        result.data?.message ||
-        result.jsonError ||
-        result.queryError ||
-        JSON.stringify(result.data);
-    } catch (err) {
-      lastError = err.message;
-      agentDebugLog({
-        location: "smsService.js:sendSms:exception",
-        message: "sendSms fetch threw",
-        hypothesisId: "C",
-        data: { provider: sms_provider, error: err.message },
-      });
+      apiAttempts += 1;
     }
-  }
 
-  return { success: false, error: lastError };
+    agentDebugLog({
+      sessionId: "197cec",
+      location: "smsService.js:sendSms:response",
+      message: "iProg API response",
+      hypothesisId: "C",
+      runId: "sms-fix-v1",
+      data: {
+        provider,
+        mode: result.mode,
+        httpStatus: result.httpStatus,
+        apiStatus: result.raw?.status,
+        ok: result.ok,
+        messageId: result.messageId || null,
+        apiAttempts,
+        rawLength,
+        sentLength: smsMessage.length,
+        maxLength: getSmsMaxLength(),
+        phoneFormat: "63xxxxxxxxxx",
+        errorMsg: result.ok ? null : result.error || null,
+      },
+    });
+
+    if (result.ok) {
+      return {
+        success: true,
+        messageId: result.messageId,
+        provider,
+        mode: result.mode,
+        apiMessage: result.apiMessage,
+        normalizedPhone: localPhone,
+      };
+    }
+
+    return {
+      success: false,
+      error: result.error || "Unknown SMS error",
+      permanent: isPermanentSmsError(result.error),
+      apiAttempts,
+    };
+  } catch (err) {
+    agentDebugLog({
+      sessionId: "197cec",
+      location: "smsService.js:sendSms:exception",
+      message: "sendSms fetch threw",
+      hypothesisId: "C",
+      runId: "sms-fix-v1",
+      data: { provider, error: err.message, apiAttempts },
+    });
+    return { success: false, error: err.message, apiAttempts };
+  }
 }
 
 /** Non-secret diagnostics for admin test endpoint */
 export function getSmsDiagnostics() {
-  const { url, token, provider } = getSmsConfig();
+  const { url, token, provider, allowQueryFallback } = getSmsConfig();
   return {
     tokenConfigured: Boolean(token),
     tokenLength: token ? token.length : 0,
     apiUrl: url,
     provider,
+    allowQueryFallback,
     envKeysChecked: ["IPROG_SMS_API_TOKEN", "SMS_API_KEY"],
   };
 }

@@ -152,7 +152,7 @@ export default function AdminSettingsPage() {
       if (!res.ok) throw new Error(data.error || "SMS test failed");
       setMessage({
         type: "success",
-        text: `Test SMS sent to ${data.normalizedPhone}.`,
+        text: `SMS queued for ${data.normalizedPhone}${data.messageId ? ` (${data.messageId})` : ""}.${data.deliveryStatus ? ` Provider status: ${data.deliveryStatus}.` : ""} ${data.note || ""}`,
       });
     } catch (err) {
       setMessage({ type: "error", text: err.message });

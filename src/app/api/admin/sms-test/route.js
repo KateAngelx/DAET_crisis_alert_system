@@ -1,6 +1,11 @@
 import { NextResponse } from "next/server";
 import { requireAdmin } from "@/lib/adminAuth";
-import { getSmsDiagnostics, normalizePhilippinePhone, sendSms } from "@/lib/smsService";
+import {
+  fetchIProgMessageStatus,
+  getSmsDiagnostics,
+  normalizePhilippinePhone,
+  sendSms,
+} from "@/lib/smsService";
 
 export async function POST(request) {
   const auth = await requireAdmin(request);
@@ -65,12 +70,22 @@ export async function POST(request) {
     );
   }
 
+  let deliveryStatus = null;
+  if (result.messageId) {
+    deliveryStatus = await fetchIProgMessageStatus(result.messageId);
+  }
+
   return NextResponse.json({
     success: true,
     messageId: result.messageId,
     provider: result.provider,
     mode: result.mode,
+    apiMessage: result.apiMessage,
     normalizedPhone: normalized,
+    apiPhone: normalized ? `63${normalized.slice(1)}` : null,
+    deliveryStatus: deliveryStatus?.messageStatus || null,
     diagnostics,
+    note:
+      "iProg charges credits when a message is queued (message_id returned). Delivery to the handset can still fail — check deliveryStatus or the iProg dashboard.",
   });
 }

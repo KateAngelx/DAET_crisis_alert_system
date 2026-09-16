@@ -1,6 +1,6 @@
 import { getSupabaseAdmin } from '@/lib/supabaseAdmin';
 import { sendEmail } from '@/lib/emailService';
-import { sendSms } from '@/lib/smsService';
+import { isPermanentSmsError, sendSms } from '@/lib/smsService';
 import { agentDebugLog } from '@/lib/agentDebugLog.server';
 
 const MAX_RETRIES = 3;
@@ -21,15 +21,19 @@ async function processDelivery(supabase, delivery) {
   } else if (delivery.channel === 'sms') {
     result = await sendSms({ to: delivery.recipient, message: delivery.body });
     agentDebugLog({
+      sessionId: '197cec',
       location: 'notificationQueue.server.js:processDelivery',
       message: 'SMS delivery processed',
       hypothesisId: 'E',
+      runId: 'sms-fix-v1',
       data: {
         deliveryId: delivery.id,
         success: result.success,
         skipped: Boolean(result.skipped),
+        permanent: Boolean(result.permanent),
         error: result.error || null,
         messageId: result.messageId || null,
+        apiAttempts: result.apiAttempts ?? 1,
       },
     });
   } else {
@@ -54,7 +58,10 @@ async function processDelivery(supabase, delivery) {
   }
 
   const newRetryCount = (delivery.retry_count || 0) + 1;
-  const shouldRetry = newRetryCount < (delivery.max_retries || MAX_RETRIES);
+  const permanentFailure =
+    delivery.channel === 'sms' && (result.permanent || isPermanentSmsError(result.error));
+  const shouldRetry =
+    !permanentFailure && newRetryCount < (delivery.max_retries || MAX_RETRIES);
 
   await supabase
     .from('notification_deliveries')
