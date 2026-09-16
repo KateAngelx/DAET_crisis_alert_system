@@ -3,7 +3,8 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { Compass, Plus, Users, Loader2, CheckCircle } from "lucide-react";
 import { Card } from "@/app/components/ui/Card";
-import { DashboardPageHeader } from "@/app/components/dashboard/DashboardPageHeader";
+import { GuidePageHeader } from "@/app/components/guide/GuidePageHeader";
+import { guideShell } from "@/lib/designSystem";
 import { DestinationModal } from "@/app/components/tour/DestinationModal";
 import { TourGroupCard } from "@/app/components/tour/TourGroupCard";
 import { useAuthStore, useCrisisStore } from "@/app/store/crisisStore";
@@ -101,15 +102,15 @@ export default function GuideTourGroupsPage() {
   };
 
   return (
-    <div className="space-y-6 text-left">
-      <DashboardPageHeader
+    <>
+      <GuidePageHeader
         title="Tour Groups"
         description="Create routes, assign tourists, and mark tours done when your group reaches the destination."
         action={
           <button
             type="button"
             onClick={() => setShowForm(!showForm)}
-            className="flex items-center gap-2 bg-purple-600 text-white px-5 py-2.5 rounded-2xl font-black uppercase text-xs tracking-widest hover:bg-purple-700 transition-colors"
+            className={guideShell.btnGuide}
           >
             <Plus size={16} /> {showForm ? "Cancel" : "New Tour Group"}
           </button>
@@ -240,7 +241,7 @@ export default function GuideTourGroupsPage() {
         </div>
       )}
 
-      <GuideDashboardQuickActions className="mt-6" showCompleted={false} />
+      <GuideDashboardQuickActions showCompleted={false} />
 
       <DestinationModal
         open={!!modalGroup}
@@ -260,6 +261,6 @@ export default function GuideTourGroupsPage() {
           return result;
         }}
       />
-    </div>
+    </>
   );
 }

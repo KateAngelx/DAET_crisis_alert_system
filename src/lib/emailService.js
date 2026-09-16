@@ -34,7 +34,7 @@ function buildHtmlBody(body, { title } = {}) {
     <div style="font-size:14px;line-height:1.6;">${safeBody}</div>
     <hr style="border:none;border-top:1px solid #e4e4e7;margin:24px 0;">
     <p style="color:#a1a1aa;font-size:11px;line-height:1.5;margin:0;">
-      Automated message from CONNECT-DAET (Daet LGU). Do not reply to this email.
+      Automated message from CONNECT-DAET (Daet Municipal Tourism Office). Do not reply to this email.
       Manage alert preferences in your profile after signing in.
     </p>
   </div>`;

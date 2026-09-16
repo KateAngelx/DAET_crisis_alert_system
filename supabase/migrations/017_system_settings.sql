@@ -1,4 +1,4 @@
--- Singleton LGU system settings (notification audience, etc.)
+-- Singleton system settings (notification audience, etc.)
 
 CREATE TABLE IF NOT EXISTS system_settings (
   id TEXT PRIMARY KEY DEFAULT 'default',

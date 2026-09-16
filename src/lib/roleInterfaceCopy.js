@@ -34,11 +34,11 @@ export const ROLE_INTERFACE = {
     dashboard: {
       title: "Guide Dashboard",
       description: "Your tour operations at a glance — groups, tourists, and what needs attention.",
-      helper: "Use Crisis Hub for LGU alerts affecting your groups. Use Roads & Travel for route and hazard details.",
+      helper: "Use Crisis Hub for tourism office alerts affecting your groups. Use Roads & Travel for route and hazard details.",
     },
     crisis: {
       title: "Crisis Hub",
-      description: "LGU emergency alerts plus how they relate to your active tour groups.",
+      description: "Tourism office emergency alerts plus how they relate to your active tour groups.",
       helper: "Share relevant alerts with tourists in the field. Critical items should be communicated immediately.",
     },
     routes: {
@@ -49,7 +49,7 @@ export const ROLE_INTERFACE = {
     reports: {
       title: "Group Reports",
       description: "Incident reports linked to tourists in your assigned groups.",
-      helper: "Escalate Critical or High severity items to LGU admins through your normal channels.",
+      helper: "Escalate Critical or High severity items to tourism office administrators through your normal channels.",
     },
   },
   admin: {
@@ -85,7 +85,7 @@ export const ROLE_INTERFACE = {
     },
     settings: {
       title: "System Settings",
-      description: "Configure notification audience, exports, and LGU-wide delivery rules.",
+      description: "Configure notification audience, exports, and office-wide delivery rules.",
       helper: "Crisis alert emails are sent to all registered tourists with an email on file when Email is enabled on the broadcast. SMS and in-app still follow user preferences.",
     },
   },

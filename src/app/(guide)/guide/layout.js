@@ -1,5 +1,7 @@
 import { GuideSidebar, GuideHeader } from "@/app/components/GuideShell";
+import { GuidePageShell } from "@/app/components/guide/GuidePageShell";
 import { AuthGuard } from "@/app/components/AuthGuard";
+import { guideShell } from "@/lib/designSystem";
 
 export default function GuideLayout({ children }) {
   return (
@@ -8,7 +10,9 @@ export default function GuideLayout({ children }) {
         <GuideSidebar />
         <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
           <GuideHeader />
-          <main className="flex-1 overflow-y-auto p-4 md:p-8 scrollbar-none">{children}</main>
+          <main className={`${guideShell.main} scrollbar-none`}>
+            <GuidePageShell>{children}</GuidePageShell>
+          </main>
         </div>
       </div>
     </AuthGuard>

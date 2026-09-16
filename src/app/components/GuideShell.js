@@ -5,7 +5,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useAuthStore } from "@/app/store/crisisStore";
 import {
-  LayoutDashboard, Bell, ShieldCheck, FileText, Map, LogOut, Users, Compass, CheckCircle,
+  LayoutDashboard, Bell, ShieldCheck, FileText, Map, LogOut, Users, Compass, CheckCircle, History,
 } from "lucide-react";
 import { BrandLogo } from "@/app/components/BrandLogo";
 import { GUIDE_NAV, isNavActive } from "@/lib/dashboardNav";
@@ -16,6 +16,7 @@ const ICONS = {
   Dashboard: LayoutDashboard,
   "Tour Groups": Compass,
   "Completed Tours": CheckCircle,
+  "History & Records": History,
   "Active Tourists": Users,
   Notifications: Bell,
   "Crisis Hub": ShieldCheck,
@@ -26,7 +27,7 @@ const ICONS = {
 
 function Logo() {
   return (
-    <div className="h-[72px] border-b border-zinc-200 px-6 flex items-center gap-3">
+    <div className="h-[72px] border-b border-zinc-200 bg-zinc-50/80 px-6 flex items-center gap-3">
       <BrandLogo size={32} />
       <div className="leading-none">
         <span className={`${typography.brand} text-blue-600 block`}>CONNECT-DAET</span>
@@ -151,9 +152,9 @@ export function GuideHeader() {
     <header className="h-[72px] bg-white border-b border-zinc-200 px-4 lg:px-6 flex items-center justify-between sticky top-0 z-10 dashboard-shell">
       <div className="flex items-center gap-4">
         <MobileGuideMenu />
-        <div>
-          <p className={`${typography.statLabel} tracking-[0.2em] text-blue-600 leading-none mb-0.5`}>Guide Operations</p>
-          <h1 className={`${typography.pageTitle} leading-none`}>Guide Operations</h1>
+        <div className="hidden sm:block">
+          <p className={`${typography.statLabel} tracking-[0.2em] text-zinc-400 leading-none mb-0.5`}>Guide portal</p>
+          <h1 className={`${typography.pageTitle} leading-none text-zinc-800`}>Tour operations</h1>
         </div>
       </div>
 

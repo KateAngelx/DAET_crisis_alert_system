@@ -4,7 +4,7 @@ import React, { useEffect, useState } from "react";
 import Link from "next/link";
 import { ArrowLeft, MapPin, Clock, User, Image as ImageIcon } from "lucide-react";
 import { Card } from "@/app/components/ui/Card";
-import { DashboardPageHeader } from "@/app/components/dashboard/DashboardPageHeader";
+import { GuidePageHeader } from "@/app/components/guide/GuidePageHeader";
 import { ReportDetailSkeleton } from "@/app/components/ui/Skeletons";
 import { ErrorState, EmptyState } from "@/app/components/ui/AsyncState";
 import { useAuthStore } from "@/app/store/crisisStore";
@@ -69,12 +69,12 @@ export default function GuideReportDetailPage({ params }) {
   const inc = currentIncident;
 
   return (
-    <div className="space-y-6 text-left">
+    <>
       <Link href="/guide/reports" className="inline-flex items-center gap-2 text-xs font-black uppercase text-zinc-400 hover:text-blue-600">
         <ArrowLeft size={14} /> Group Reports
       </Link>
 
-      <DashboardPageHeader
+      <GuidePageHeader
         title={inc.category}
         description={`${inc.reference_number} · Reported ${new Date(inc.created_at).toLocaleString()}`}
       />
@@ -149,6 +149,6 @@ export default function GuideReportDetailPage({ params }) {
           </div>
         </Card>
       )}
-    </div>
+    </>
   );
 }

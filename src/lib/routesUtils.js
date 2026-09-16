@@ -12,6 +12,9 @@ export const ROUTE_STATUS = {
     text: "text-green-800",
     bg: "bg-green-50",
     accent: "green",
+    icon: "border-green-200 bg-green-50 text-green-700",
+    title: "text-zinc-900 group-hover:text-green-800 group-active:text-green-800 transition-colors",
+    titleStatic: "text-green-800",
   },
   caution: {
     label: "Caution",
@@ -20,6 +23,9 @@ export const ROUTE_STATUS = {
     text: "text-orange-800",
     bg: "bg-orange-50",
     accent: "orange",
+    icon: "border-orange-200 bg-orange-50 text-orange-700",
+    title: "text-zinc-900 group-hover:text-orange-800 group-active:text-orange-800 transition-colors",
+    titleStatic: "text-orange-800",
   },
   unsafe: {
     label: "Unsafe",
@@ -28,6 +34,9 @@ export const ROUTE_STATUS = {
     text: "text-red-800",
     bg: "bg-red-50",
     accent: "red",
+    icon: "border-red-200 bg-red-50 text-red-700",
+    title: "text-zinc-900 group-hover:text-red-800 group-active:text-red-800 transition-colors",
+    titleStatic: "text-red-800",
   },
 };
 
@@ -78,15 +87,15 @@ export function advisoryToRouteItem(advisory, view) {
       advisory.reason ||
       (advisory.hazard_type
         ? `${advisory.hazard_type}${advisory.affected_location ? ` at ${advisory.affected_location}` : ""}.`
-        : "Route advisory published by Daet LGU."),
+        : "Route advisory published by the Daet Municipal Tourism Office."),
     recommendedAction:
       advisory.safety_instructions ||
       (resolvedView === "alternative"
-        ? "Use this LGU-recommended detour and follow your guide's instructions."
+        ? "Use this tourism office–recommended detour and follow your guide's instructions."
         : resolvedView === "safe"
           ? "Route is open. Stay alert for updates before you travel."
           : resolvedView === "caution"
-            ? "Proceed with caution and follow LGU guidance."
+            ? "Proceed with caution and follow tourism office guidance."
             : "Avoid this route and use a published detour below."),
     alternativeRoute: advisory.via_location,
     parentRouteId: advisory.parent_route_id,

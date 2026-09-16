@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { Users, Compass, Clock, ArrowRight } from "lucide-react";
 import { Card } from "@/app/components/ui/Card";
-import { DashboardPageHeader } from "@/app/components/dashboard/DashboardPageHeader";
+import { GuidePageHeader } from "@/app/components/guide/GuidePageHeader";
 import { DashboardStatCard } from "@/app/components/dashboard/DashboardStatCard";
 import { ActiveTouristsPanel } from "@/app/components/tour/ActiveTouristsPanel";
 import { useAuthStore } from "@/app/store/crisisStore";
@@ -83,8 +83,8 @@ export default function GuideActiveTouristsPage() {
   const confirmedCount = activeGroups.reduce((sum, g) => sum + (g.member_count || 0), 0);
 
   return (
-    <div className="space-y-6 text-left">
-      <DashboardPageHeader
+    <>
+      <GuidePageHeader
         title="Active Tourists"
         description="Find registered tourists, send assignment requests, and track pending confirmations for your tour groups."
         action={
@@ -169,7 +169,7 @@ export default function GuideActiveTouristsPage() {
         </>
       )}
 
-      <GuideDashboardQuickActions className="mt-6" />
-    </div>
+      <GuideDashboardQuickActions />
+    </>
   );
 }

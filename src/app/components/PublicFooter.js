@@ -7,90 +7,92 @@ import { BrandLogo } from "@/app/components/BrandLogo";
 import { useAuthStore } from "@/app/store/crisisStore";
 import { siteInfo } from "@/lib/siteInfo";
 import { typography } from "@/lib/designSystem";
+
 export function PublicFooter() {
   const currentYear = new Date().getFullYear();
-  const { isAuthenticated, user } = useAuthStore();
+  const { user } = useAuthStore();
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
     setMounted(true);
-  }, []);
-
-  const compact = mounted && isAuthenticated;
-  const showResponderPortal = mounted && user?.role === "admin";
-
-  useEffect(() => {
-    if (!mounted || typeof window === "undefined") return;
-    const footerEl = document.querySelector("[data-public-footer]");
-    const faqEl = document.querySelector("[data-floating-faq]");
-    if (!footerEl) return;
-    const footerRect = footerEl.getBoundingClientRect();
-    const faqRect = faqEl?.getBoundingClientRect();
-    const overlapsFaq = faqRect
-      ? footerRect.bottom > faqRect.top && footerRect.right > faqRect.left && footerRect.left < faqRect.right
-      : false;
     // #region agent log
     fetch("http://127.0.0.1:7540/ingest/3142bff0-53ba-4c2c-9606-b4d021977f0c", {
       method: "POST",
       headers: { "Content-Type": "application/json", "X-Debug-Session-Id": "197cec" },
       body: JSON.stringify({
         sessionId: "197cec",
-        runId: "pre-fix",
-        hypothesisId: "H3-H5",
-        location: "PublicFooter.js:layout",
-        message: "Public footer layout metrics",
-        data: {
-          innerWidth: window.innerWidth,
-          compact,
-          footerTop: Math.round(footerRect.top),
-          footerBottom: Math.round(footerRect.bottom),
-          footerHeight: Math.round(footerRect.height),
-          docScrollHeight: document.documentElement.scrollHeight,
-          windowScrollY: Math.round(window.scrollY),
-          faqBottom: faqRect ? Math.round(faqRect.bottom) : null,
-          overlapsFaq,
-        },
+        runId: "footer-verify",
+        hypothesisId: "H1",
+        location: "PublicFooter.js:mount",
+        message: "Footer rendered — unified layout",
+        data: { variant: "full", mounted: true, hasUser: Boolean(user), userRole: user?.role ?? null },
         timestamp: Date.now(),
       }),
     }).catch(() => {});
     // #endregion
-  }, [mounted, compact]);
+  }, []);
 
-  if (compact) {
-    return (
-      <footer data-public-footer className="bg-zinc-950 text-white border-t border-white/5 shrink-0 pb-24 sm:pb-0">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 py-5 sm:py-6">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-            <div className="flex items-center gap-3 min-w-0">
-              <BrandLogo size={40} />
-              <div className="min-w-0">
-                <p className={`${typography.brand} text-white`}>{siteInfo.brandName}</p>
-                <p className="text-[9px] font-bold text-zinc-500 uppercase tracking-wide leading-tight line-clamp-2 mt-0.5">
-                  {siteInfo.officeName}
-                </p>
-              </div>
-            </div>
-            <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-[10px] font-black uppercase tracking-widest text-zinc-500">
-              <a href="tel:911" className="hover:text-white transition-colors">911</a>
-              <a href="tel:117" className="hover:text-white transition-colors">117 PNP</a>
-              <Link href="/crisis" className="text-blue-400 hover:text-blue-300 transition-colors">
-                Crisis Hub
-              </Link>
-              <Link href="/crisis/resolved" className="text-green-400 hover:text-green-300 transition-colors">
-                Resolved
-              </Link>
-            </div>
-          </div>
-          <p className="text-[9px] font-bold text-zinc-600 uppercase tracking-widest mt-4 text-center sm:text-left">
-            &copy; {currentYear} {siteInfo.officeName}
-          </p>
-        </div>
-      </footer>
-    );
-  }
+  useEffect(() => {
+    if (!mounted) return;
+    // #region agent log
+    fetch("http://127.0.0.1:7540/ingest/3142bff0-53ba-4c2c-9606-b4d021977f0c", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "X-Debug-Session-Id": "197cec" },
+      body: JSON.stringify({
+        sessionId: "197cec",
+        runId: "footer-verify",
+        hypothesisId: "H2",
+        location: "PublicFooter.js:auth-change",
+        message: "Footer auth state after mount",
+        data: { variant: "full", hasUser: Boolean(user), userRole: user?.role ?? null, showResponderPortal: user?.role === "admin" },
+        timestamp: Date.now(),
+      }),
+    }).catch(() => {});
+    // #endregion
+  }, [mounted, user]);
+
+  useEffect(() => {
+    if (!mounted || typeof document === "undefined") return;
+    const id = requestAnimationFrame(() => {
+      const pulse = document.querySelector("section[aria-label='Live platform activity']");
+      const footer = document.querySelector("[data-public-footer]");
+      const pulseStyle = pulse ? getComputedStyle(pulse) : null;
+      const footerStyle = footer ? getComputedStyle(footer) : null;
+      const pulseRect = pulse?.getBoundingClientRect();
+      const footerRect = footer?.getBoundingClientRect();
+      const overlapPx =
+        pulseRect && footerRect ? Math.round(pulseRect.bottom - footerRect.top) : null;
+      // #region agent log
+      fetch("http://127.0.0.1:7540/ingest/3142bff0-53ba-4c2c-9606-b4d021977f0c", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "X-Debug-Session-Id": "197cec" },
+        body: JSON.stringify({
+          sessionId: "197cec",
+          runId: "post-fix-overlap",
+          hypothesisId: "H1-H3",
+          location: "PublicFooter.js:overlapMetrics",
+          message: "Pulse vs footer geometry and stacking",
+          data: {
+            overlapPx,
+            gapPx: pulseRect && footerRect ? Math.round(footerRect.top - pulseRect.bottom) : null,
+            pulseMarginBottom: pulseStyle?.marginBottom ?? null,
+            pulseZIndex: pulseStyle?.zIndex ?? null,
+            footerZIndex: footerStyle?.zIndex ?? null,
+            mainPaddingBottom: document.querySelector("[data-public-main]") &&
+              getComputedStyle(document.querySelector("[data-public-main]")).paddingBottom,
+          },
+          timestamp: Date.now(),
+        }),
+      }).catch(() => {});
+      // #endregion
+    });
+    return () => cancelAnimationFrame(id);
+  }, [mounted]);
+
+  const showResponderPortal = mounted && user?.role === "admin";
 
   return (
-    <footer data-public-footer className="bg-zinc-950 text-white border-t border-white/5 shrink-0 pb-24 sm:pb-0">
+    <footer data-public-footer className="relative z-10 bg-zinc-950 text-white border-t border-white/5 shrink-0 pb-24 sm:pb-0">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-10">
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-8 sm:gap-10">
           <div className="lg:col-span-2 space-y-4">

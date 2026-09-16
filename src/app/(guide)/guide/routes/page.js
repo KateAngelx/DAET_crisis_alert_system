@@ -14,7 +14,7 @@ import { CrisisHubMap } from "@/app/components/maps/CrisisHubMap";
 import { RouteListCard } from "@/app/components/routes/RouteListCard";
 import { RouteDetailModal } from "@/app/components/routes/RouteDetailModal";
 import { DangerousLocationCard } from "@/app/components/danger/DangerousLocationCard";
-import { DashboardPageHeader } from "@/app/components/dashboard/DashboardPageHeader";
+import { GuidePageHeader } from "@/app/components/guide/GuidePageHeader";
 import { DashboardStatCard } from "@/app/components/dashboard/DashboardStatCard";
 import { StatCardSkeletonGrid, MapSkeleton } from "@/app/components/ui/Skeletons";
 import { AsyncState, EmptyState, ErrorState } from "@/app/components/ui/AsyncState";
@@ -167,8 +167,8 @@ export default function GuideRoutesPage() {
   }, [searchParams, catalog, loading]);
 
   return (
-    <div className="space-y-6 text-left">
-      <DashboardPageHeader
+    <>
+      <GuidePageHeader
         title={ROLE_INTERFACE.guide.routes.title}
         description={ROLE_INTERFACE.guide.routes.description}
         action={
@@ -217,7 +217,7 @@ export default function GuideRoutesPage() {
           <EmptyState
             icon={Route}
             title="No travel advisories"
-            description="The LGU has not published any active routes or area hazards yet."
+            description="The tourism office has not published any active routes or area hazards yet."
           />
         }
       >
@@ -367,7 +367,7 @@ export default function GuideRoutesPage() {
         </div>
       </AsyncState>
 
-      <GuideDashboardQuickActions className="mt-6" />
+      <GuideDashboardQuickActions />
 
       <RouteDetailModal
         open={!!selectedRoute}
@@ -376,6 +376,6 @@ export default function GuideRoutesPage() {
         onClose={closeRoute}
         onSelectRoute={openRoute}
       />
-    </div>
+    </>
   );
 }

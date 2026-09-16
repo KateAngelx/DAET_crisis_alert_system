@@ -21,10 +21,8 @@ export function AdminHeader() {
           <span className={typography.brand}>CONNECT-DAET</span>
         </Link>
         <div className="hidden sm:block">
-          <p className={`${typography.statLabel} tracking-[0.2em] text-blue-600 leading-none mb-0.5`}>Administration</p>
-          <h1 className={`${typography.pageTitle} leading-none`}>
-            Crisis Operations
-          </h1>
+          <p className={`${typography.statLabel} tracking-[0.2em] text-zinc-400 leading-none mb-0.5`}>Admin portal</p>
+          <h1 className={`${typography.pageTitle} leading-none text-zinc-800`}>DAET crisis operations</h1>
         </div>
       </div>
 

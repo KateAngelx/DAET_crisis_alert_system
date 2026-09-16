@@ -4,7 +4,7 @@ Official emergency communication platform for Daet, Camarines Norte. Provides re
 
 ## Features
 
-- **Crisis Hub** — Official LGU emergency alerts with affected-area maps and safety instructions
+- **Crisis Hub** — Official tourism office emergency alerts with affected-area maps and safety instructions
 - **Roads & Travel** — Route advisories, detours, and area hazards on one unified map
 - **Incident Reporting** — Tourists and staff can submit and track emergency reports
 - **Command Center** — Authorized personnel create, manage, and resolve alerts
@@ -49,10 +49,10 @@ IPROG_SMS_API_TOKEN=your_iprog_api_token_from_dashboard
 # Email — option A: your own inbox (Gmail / Google Workspace / Outlook SMTP)
 SMTP_HOST=smtp.gmail.com
 SMTP_PORT=587
-SMTP_USER=alerts@your-lgu.gov.ph
+SMTP_USER=alerts@your-tourism-office.gov.ph
 SMTP_PASS=your_app_password
-EMAIL_FROM=CONNECT-DAET <alerts@your-lgu.gov.ph>
-# EMAIL_REPLY_TO=support@your-lgu.gov.ph
+EMAIL_FROM=CONNECT-DAET <alerts@your-tourism-office.gov.ph>
+# EMAIL_REPLY_TO=support@your-tourism-office.gov.ph
 
 # Email — option B: Resend with your own domain (https://resend.com)
 # RESEND_API_KEY=re_your_resend_api_key
@@ -82,7 +82,7 @@ Run migrations in order in the Supabase SQL Editor:
 8. `014_unify_area_advisories.sql` — merges area hazards into `route_advisories`
 9. `015_user_notification_channels.sql` — user email/SMS/app preferences
 10. `016_fix_profiles_update_rls.sql` — fixes profile update infinite recursion
-11. `017_system_settings.sql` — LGU notification audience settings
+11. `017_system_settings.sql` — notification audience settings
 12. `018_user_activity_tracking.sql` — last login/seen, inactive SMS suspension
 
 Schedule inactive-user processing (daily recommended):
@@ -96,7 +96,7 @@ This pauses SMS for accounts inactive 30+ days and sends an in-app notice plus e
 
 ### Email notifications (Gmail SMTP)
 
-**FROM** = your LGU Gmail (`EMAIL_FROM` / `SMTP_USER`)  
+**FROM** = your office Gmail (`EMAIL_FROM` / `SMTP_USER`)  
 **TO** = every registered tourist&apos;s profile email when you broadcast with **Email** enabled
 
 Crisis alert and area hazard **emails are mandatory** for all tourists in the notification audience who have an email on file — users cannot opt out of emergency email. SMS and in-app still respect Profile → Communication Preferences.
@@ -107,9 +107,9 @@ Crisis alert and area hazard **emails are mandatory** for all tourists in the no
 |----------|--------|
 | `SMTP_HOST` | `smtp.gmail.com` |
 | `SMTP_PORT` | `587` |
-| `SMTP_USER` | `your-lgu@gmail.com` |
+| `SMTP_USER` | `your-office@gmail.com` |
 | `SMTP_PASS` | Google **App Password** (Security → 2-Step Verification → App passwords) |
-| `EMAIL_FROM` | `CONNECT-DAET <your-lgu@gmail.com>` |
+| `EMAIL_FROM` | `CONNECT-DAET <your-office@gmail.com>` |
 
 1. Add vars in Vercel → redeploy  
 2. **Admin → Settings** → ensure **Tourists** is included under Notification Audience  

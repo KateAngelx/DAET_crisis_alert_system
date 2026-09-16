@@ -94,7 +94,7 @@ export default function TourGroupDetailPage({ params }) {
   }
 
   return (
-    <div className="space-y-6 text-left">
+    <>
       <Link href="/guide/groups" className="inline-flex items-center gap-2 text-xs font-black uppercase text-zinc-400 hover:text-blue-600">
         <ArrowLeft size={14} /> All Tour Groups
       </Link>
@@ -229,7 +229,7 @@ export default function TourGroupDetailPage({ params }) {
         )}
       </section>
 
-      <GuideDashboardQuickActions className="mt-6" showCompleted={false} />
+      <GuideDashboardQuickActions showCompleted={false} />
 
       <DestinationModal
         open={showDestination}
@@ -246,6 +246,6 @@ export default function TourGroupDetailPage({ params }) {
           return result;
         }}
       />
-    </div>
+    </>
   );
 }

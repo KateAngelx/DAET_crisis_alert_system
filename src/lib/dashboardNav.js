@@ -1,6 +1,7 @@
 export const ADMIN_NAV = {
   coreAdmin: [
     { path: "/admin", label: "Dashboard" },
+    { path: "/admin/activity", label: "Activity Log" },
     { path: "/admin/users", label: "Users" },
     { path: "/admin/guides", label: "Guide Monitoring" },
     { path: "/admin/workflow", label: "Alert Pipeline" },
@@ -10,6 +11,7 @@ export const ADMIN_NAV = {
     { path: "/crisis/admin", label: "Command Center" },
     { path: "/crisis/admin/routes", label: "Roads & Hazards" },
     { path: "/admin/incidents", label: "Incident Reports" },
+    { path: "/admin/archive", label: "Archive & History" },
   ],
 };
 
@@ -18,6 +20,7 @@ export const GUIDE_NAV = {
     { path: "/guide", label: "Dashboard" },
     { path: "/guide/groups", label: "Tour Groups" },
     { path: "/guide/completed", label: "Completed Tours" },
+    { path: "/guide/history", label: "History & Records" },
     { path: "/guide/tourists", label: "Active Tourists" },
     { path: "/guide/notifications", label: "Notifications" },
   ],
@@ -37,6 +40,12 @@ export function isNavActive(pathname, path) {
   }
   if (path === "/guide/completed") {
     return pathname === "/guide/completed";
+  }
+  if (path === "/guide/history") {
+    return pathname === "/guide/history";
+  }
+  if (path === "/admin/archive") {
+    return pathname === "/admin/archive";
   }
   if (path.startsWith("/guide/")) {
     return pathname === path || pathname.startsWith(`${path}/`);

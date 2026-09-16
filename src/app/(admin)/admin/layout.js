@@ -1,6 +1,8 @@
 import { AdminSidebar } from "@/app/components/AdminSidebar";
 import { AdminHeader } from "@/app/components/AdminHeader";
+import { AdminPageShell } from "@/app/components/admin/AdminPageShell";
 import { AuthGuard } from "@/app/components/AuthGuard";
+import { adminShell } from "@/lib/designSystem";
 
 export default function AdminLayout({ children }) {
   return (
@@ -10,8 +12,8 @@ export default function AdminLayout({ children }) {
         <AdminSidebar />
         <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
           <AdminHeader />
-          <main className="flex-1 overflow-y-auto p-4 md:p-8 scrollbar-none">
-            {children}
+          <main className={`${adminShell.main} scrollbar-none`}>
+            <AdminPageShell>{children}</AdminPageShell>
           </main>
         </div>
       </div>

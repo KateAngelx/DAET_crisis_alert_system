@@ -322,7 +322,14 @@ export const useCrisisStore = create((set, get) => ({
 
   updateAlertStatus: async (id, status) => {
     try {
-      const { error } = await supabase.from('crisis_alerts').update({ status }).eq('id', id);
+      const updatePayload = { status };
+      if (status === 'Resolved') {
+        updatePayload.resolved_at = new Date().toISOString();
+      } else if (status === 'Active') {
+        updatePayload.resolved_at = null;
+      }
+
+      const { error } = await supabase.from('crisis_alerts').update(updatePayload).eq('id', id);
       if (error) throw error;
       return { success: true };
     } catch (err) {

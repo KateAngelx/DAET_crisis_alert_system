@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { InfoPageHero, InfoSection, PublicPageShell, PublicPageContent, publicLayout } from "@/app/components/InfoPageHero";
 import { Phone, Mail, MapPin, Clock } from "lucide-react";
-import { iconSize, typography } from "@/lib/designSystem";
+import { iconSize, typography, portalShell } from "@/lib/designSystem";
 import { siteInfo } from "@/lib/siteInfo";
 
 export const metadata = {
@@ -18,7 +18,7 @@ export default function ContactPage() {
       />
 
       <PublicPageContent>
-        <div className={`${publicLayout.cardGrid} mb-10`}>
+        <div className={publicLayout.cardGrid}>
           <ContactCard
             icon={<MapPin size={iconSize.stat} className="text-blue-600" />}
             title="Office Location"
@@ -80,7 +80,7 @@ export default function ContactPage() {
 
 function ContactCard({ icon, title, content, href }) {
   const inner = (
-    <div className="p-5 sm:p-6 bg-zinc-50 border border-zinc-200 rounded-3xl h-full min-w-0">
+    <div className={`${portalShell.statMini} p-5 sm:p-6 h-full text-left`}>
       <div className="mb-3">{icon}</div>
       <p className={`${typography.statLabel} text-zinc-400 tracking-widest mb-1`}>{title}</p>
       <p className={`${typography.body} font-bold text-zinc-900`}>{content}</p>

@@ -7,6 +7,15 @@ import { useRouteAdvisoryStore } from "@/app/store/routeAdvisoryStore";
 import { notifyTouristsOfCrisisAlert } from "@/lib/notificationService";
 import { Skeleton } from "@/app/components/ui/Skeleton";
 import { Card } from "@/app/components/ui/Card";
+import { AdminPanel } from "@/app/components/admin/AdminPanel";
+import { AdminFilterBar } from "@/app/components/admin/AdminFilterBar";
+import { AdminDashboardKpiSection } from "@/app/components/admin/AdminDashboardKpiSection";
+import {
+  AdminDashboardQuickNavDivider,
+  AdminDashboardQuickNavLink,
+  AdminDashboardQuickNavRow,
+} from "@/app/components/admin/AdminDashboardQuickNavLink";
+import { AdminTablePanel } from "@/app/components/admin/AdminTablePanel";
 import { StatCardSkeleton, AlertCardSkeletonList, MapSkeleton, TableSkeleton } from "@/app/components/ui/Skeletons";
 import { ErrorState } from "@/app/components/ui/AsyncState";
 import { DashboardPageHeader } from "@/app/components/dashboard/DashboardPageHeader";
@@ -15,9 +24,9 @@ import {
   AlertTriangle, Cloud, Heart, Shield, Info, MapPin, Search, CheckCircle, 
   Radio, X, BellRing, FileText, ChevronLeft, ChevronRight,
   Trash2, Edit3, Eye,
-  Mail, MessageSquare, Smartphone, Map, Plus, ArrowRight, Route
+  Mail, MessageSquare, Smartphone, Map, Plus, ArrowRight, Route, Users, Archive
 } from "lucide-react";
-import { iconSize, statGrid, typography, getSeverityOutline, outlinedCard } from "@/lib/designSystem";
+import { adminShell, iconSize, statGrid, typography, getSeverityOutline, outlinedCard, portalLayout } from "@/lib/designSystem";
 import { ROLE_INTERFACE } from "@/lib/roleInterfaceCopy";
 import { RoleContextBanner } from "@/app/components/dashboard/RoleContextBanner";
 import { geocodeLocation } from "@/lib/geocodeLocation";
@@ -26,6 +35,7 @@ import { CrisisHubMap } from "@/app/components/maps/CrisisHubMap";
 import { CharCounterTextarea } from "@/app/components/ui/CharCounterTextarea";
 import { formatCrisisAlertSms } from "@/lib/smsMessageFormat";
 import { OutlinedCard } from "@/app/components/ui/OutlinedCard";
+import { PublicCategorizedCardList } from "@/app/components/shell/PublicCategorizedCardList";
 import { ConfirmDialog } from "@/app/components/ui/ConfirmDialog";
 import { useConfirm } from "@/app/components/ui/ConfirmDialogProvider";
 import dynamic from 'next/dynamic';
@@ -48,7 +58,7 @@ const ChangeMapView = dynamic(() => Promise.resolve(({ center }) => {
 }), { ssr: false });
 
 export default function CrisisAdminPage() {
-  const { alerts, addAlert, updateAlert, updateAlertStatus, fetchAlerts, deleteAlert, totalUsers, fetchTotalUsers, loading, error } = useCrisisStore();
+  const { alerts, addAlert, updateAlert, updateAlertStatus, fetchAlerts, deleteAlert, userStats, fetchUserStats, loading, error } = useCrisisStore();
   const { warnings, fetchWarnings } = useDangerousLocationStore();
   const { advisories, fetchAdvisories } = useRouteAdvisoryStore();
   
@@ -86,7 +96,7 @@ export default function CrisisAdminPage() {
   useEffect(() => { 
     setMounted(true);
     fetchAlerts(); 
-    fetchTotalUsers();
+    fetchUserStats();
     fetchWarnings();
     fetchAdvisories();
       
@@ -103,7 +113,31 @@ export default function CrisisAdminPage() {
     return () => {
       setMounted(false);
     };
-  }, [fetchAlerts, fetchTotalUsers, fetchWarnings, fetchAdvisories]);
+  }, [fetchAlerts, fetchUserStats, fetchWarnings, fetchAdvisories]);
+
+  useEffect(() => {
+    if (!mounted) return;
+    // #region agent log
+    fetch("http://127.0.0.1:7540/ingest/3142bff0-53ba-4c2c-9606-b4d021977f0c", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "X-Debug-Session-Id": "197cec" },
+      body: JSON.stringify({
+        sessionId: "197cec",
+        runId: "command-center-stats",
+        hypothesisId: "H3",
+        location: "crisis/admin/page.jsx:registeredTourists",
+        message: "Command Center registered tourists stat",
+        data: {
+          registeredTourists: userStats?.touristCount ?? null,
+          compactCommandLayout: true,
+          roadsArchivePanelsRemoved: true,
+          inlineQuickLinks: true,
+        },
+        timestamp: Date.now(),
+      }),
+    }).catch(() => {});
+    // #endregion
+  }, [mounted, userStats?.touristCount]);
 
   const findLocationOnMap = async () => {
     if (!formData.location) return;
@@ -488,7 +522,7 @@ export default function CrisisAdminPage() {
                     value={formData.message}
                     onChange={(e) => setFormData({ ...formData, message: e.target.value })}
                   />
-                  <button type="submit" disabled={isPublishing} className={`w-full py-5 rounded-[24px] font-black transition-all shadow-lg uppercase tracking-widest text-sm flex items-center justify-center gap-3 active:scale-[0.98] ${isPublishing ? "bg-red-400" : "bg-red-600 text-white hover:bg-red-700 shadow-red-100"}`}>
+                  <button type="submit" disabled={isPublishing} className={`w-full py-4 ${adminShell.btnDanger} !text-sm !py-4 disabled:opacity-50`}>
                      {isPublishing ? "Broadcasting..." : (<><AlertTriangle size={20}/> Broadcast Alert Now</>)}
                   </button>
               </form>
@@ -496,14 +530,15 @@ export default function CrisisAdminPage() {
         </div>
       )}
 
-      <div className="space-y-6 text-left">
+      <>
             <DashboardPageHeader
               title={ROLE_INTERFACE.admin.commandCenter.title}
               description={ROLE_INTERFACE.admin.commandCenter.description}
               action={
                 <button
+                  type="button"
                   onClick={() => setShowCreateModal(true)}
-                  className="flex items-center gap-2 bg-red-600 hover:bg-red-700 text-white px-5 py-2.5 rounded-2xl font-black uppercase text-xs tracking-widest transition-all active:scale-95"
+                  className={adminShell.btnDanger}
                 >
                   <Plus size={18} /> New Broadcast
                 </button>
@@ -516,138 +551,157 @@ export default function CrisisAdminPage() {
               <ErrorState message={error} onRetry={fetchAlerts} title="Could not load alerts" />
             )}
 
-            <div className={statGrid.dashboard}>
-              {loading ? (
-                <>
-                  {Array.from({ length: 4 }).map((_, i) => (
-                    <StatCardSkeleton key={i} />
-                  ))}
-                </>
-              ) : (
-                <>
-                  <DashboardStatCard compact label="Total Users" value={totalUsers.toLocaleString()} icon={<Info size={iconSize.stat} />} accent="blue" badge="Live" />
-                  <DashboardStatCard compact label="Active Alerts" value={alerts.filter(a => a.status === 'Active').length} icon={<Radio size={iconSize.stat} />} accent="red" />
-                  <DashboardStatCard compact label="Resolved Alerts" value={alerts.filter(a => a.status === 'Resolved').length} icon={<CheckCircle size={iconSize.stat} />} accent="green" />
-                  <DashboardStatCard compact label="Critical Alerts" value={alerts.filter(a => a.severity === 'Critical' && a.status === 'Active').length} icon={<AlertTriangle size={iconSize.stat} />} accent="red" />
-                </>
-              )}
-            </div>
-
-            <Card className="p-5 border-zinc-100 bg-blue-50/50">
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                <div className="flex items-start gap-3">
-                  <Route className="text-blue-600 shrink-0" size={22} />
-                  <div>
-                    <p className="text-xs font-black uppercase text-blue-700 tracking-widest">Roads & Hazards</p>
-                    <p className="text-sm text-blue-900 font-medium mt-1">
-                      {activeRouteAdvisories.length} active route{activeRouteAdvisories.length === 1 ? "" : "s"},{" "}
-                      {activeDangerWarnings.length} area hazard{activeDangerWarnings.length === 1 ? "" : "s"}.
-                      Manage routes and point hazards in one place.
-                    </p>
-                  </div>
-                </div>
-                <Link
-                  href="/crisis/admin/routes"
-                  className="inline-flex items-center gap-2 bg-blue-600 text-white px-5 py-2.5 rounded-2xl font-black uppercase text-xs tracking-widest hover:bg-blue-700 shrink-0"
-                >
-                  Manage <ArrowRight size={14} />
-                </Link>
-              </div>
-            </Card>
-
-            <div>
-              <h2 className="text-sm font-black uppercase tracking-widest text-zinc-400 mb-4">Live Command Filters</h2>
-              <Card className="p-4 border-zinc-100">
-                <div className="flex flex-col md:flex-row gap-3">
-                  <div className="relative flex-1">
-                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-400" size={16} />
-                    <input
-                      className="w-full pl-10 pr-4 py-2.5 bg-zinc-50 border border-zinc-100 rounded-xl text-sm font-medium outline-none focus:ring-2 focus:ring-blue-500"
-                      placeholder="Search by area or alert name..."
-                      value={searchTerm}
-                      onChange={e => setSearchTerm(e.target.value)}
+            <AdminDashboardKpiSection
+              pageId="command-center"
+              footer={
+                <AdminDashboardQuickNavRow>
+                  <AdminDashboardQuickNavLink
+                    href="/crisis/admin/routes"
+                    icon={Route}
+                    label="Roads & hazards"
+                    meta={`${activeRouteAdvisories.length} routes · ${activeDangerWarnings.length} hazards`}
+                  />
+                  <AdminDashboardQuickNavDivider />
+                  <AdminDashboardQuickNavLink
+                    href="/admin/archive"
+                    icon={Archive}
+                    label="Archive & history"
+                    meta={`${alerts.filter((a) => a.status === "Resolved").length} resolved`}
+                  />
+                </AdminDashboardQuickNavRow>
+              }
+            >
+              <div className={statGrid.dashboard}>
+                {loading ? (
+                  <>
+                    {Array.from({ length: 4 }).map((_, i) => (
+                      <StatCardSkeleton key={i} />
+                    ))}
+                  </>
+                ) : (
+                  <>
+                    <DashboardStatCard
+                      compact
+                      label="Registered Tourists"
+                      value={(userStats?.touristCount ?? 0).toLocaleString()}
+                      icon={<Users size={iconSize.stat} />}
+                      accent="blue"
+                      badge="Live"
                     />
-                  </div>
-                  <select
-                    className="px-3 py-2.5 bg-zinc-50 border border-zinc-100 rounded-xl text-sm font-bold outline-none focus:ring-2 focus:ring-blue-500"
-                    value={filterSeverity}
-                    onChange={e => setFilterSeverity(e.target.value)}
-                  >
-                    <option value="All">All Severity</option>
-                    <option>Critical</option>
-                    <option>High</option>
-                    <option>Medium</option>
-                    <option>Low</option>
-                  </select>
-                </div>
-              </Card>
-            </div>
+                    <DashboardStatCard compact label="Active Alerts" value={alerts.filter(a => a.status === 'Active').length} icon={<Radio size={iconSize.stat} />} accent="red" />
+                    <DashboardStatCard compact label="Resolved Alerts" value={alerts.filter(a => a.status === 'Resolved').length} icon={<CheckCircle size={iconSize.stat} />} accent="green" />
+                    <DashboardStatCard compact label="Critical Alerts" value={alerts.filter(a => a.severity === 'Critical' && a.status === 'Active').length} icon={<AlertTriangle size={iconSize.stat} />} accent="red" />
+                  </>
+                )}
+              </div>
+            </AdminDashboardKpiSection>
 
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              <div>
-                <h2 className="text-sm font-black uppercase tracking-widest text-zinc-400 mb-4">Active Incidents</h2>
-                
-                <div className="space-y-4 max-h-[500px] overflow-y-auto">
-                  {loading ? (
+            <AdminFilterBar
+              compact
+              title="Live command filters"
+              searchPlaceholder="Search by area or alert name..."
+              searchValue={searchTerm}
+              onSearchChange={(e) => setSearchTerm(e.target.value)}
+            >
+              <select
+                className={`${adminShell.select} !py-2 !text-xs min-w-[7.5rem]`}
+                value={filterSeverity}
+                onChange={(e) => setFilterSeverity(e.target.value)}
+              >
+                <option value="All">All Severity</option>
+                <option>Critical</option>
+                <option>High</option>
+                <option>Medium</option>
+                <option>Low</option>
+              </select>
+            </AdminFilterBar>
+
+            <div className={portalLayout.splitGrid}>
+              <AdminPanel
+                title="Active incidents"
+                compact
+                className={portalLayout.panelFill}
+                bodyClassName={portalLayout.panelBodyStack}
+              >
+                {loading ? (
+                  <div className={portalLayout.listScrollPaneCompact}>
                     <AlertCardSkeletonList count={3} />
-                  ) : filteredAlerts.length > 0 ? (
-                    filteredAlerts.map((alert) => (
+                  </div>
+                ) : filteredAlerts.length > 0 ? (
+                  <PublicCategorizedCardList
+                    items={filteredAlerts}
+                    getCategory={(alert) => alert.type}
+                    getSeverity={(alert) => alert.severity}
+                    categoryLabel="Crisis type"
+                    modalTitle="Active incidents"
+                    modalSubtitle={`${filteredAlerts.length} matching filters`}
+                    listClassName="space-y-2"
+                    filtersClassName="!gap-2 [&_p]:!mb-1"
+                    listPaneClassName={portalLayout.listScrollPaneCompact}
+                    renderItem={(alert) => (
                       <OutlinedCard
-                        key={alert.id}
                         variant="severity"
                         severity={alert.severity}
-                        padding={outlinedCard.alertPadding}
+                        padding={outlinedCard.statPaddingCompact}
                         className="bg-background"
                       >
-                        <div className="flex justify-between items-start">
-                          <div className="flex items-center gap-4">
-                            <div className="p-3 bg-zinc-100 dark:bg-zinc-800 rounded-xl text-zinc-600 dark:text-zinc-400 leading-none">{getAlertIcon(alert.type)}</div>
-                            <div>
-                              <span className="text-[9px] font-black uppercase tracking-widest px-2 py-1 rounded-full bg-zinc-100 dark:bg-zinc-800 leading-none">{alert.severity} • {alert.type}</span>
-                              <h3 className="text-lg font-black mt-1 leading-tight uppercase font-bold">{alert.title}</h3>
+                        <div className="flex justify-between items-start gap-2">
+                          <div className="flex items-center gap-2 min-w-0">
+                            <div className="p-2 bg-zinc-100 dark:bg-zinc-800 rounded-lg text-zinc-600 dark:text-zinc-400 leading-none shrink-0">{getAlertIcon(alert.type)}</div>
+                            <div className="min-w-0">
+                              <span className="text-[8px] font-black uppercase tracking-widest px-1.5 py-0.5 rounded-full bg-zinc-100 dark:bg-zinc-800 leading-none">{alert.severity} • {alert.type}</span>
+                              <h3 className="text-sm font-black mt-0.5 leading-tight uppercase truncate">{alert.title}</h3>
                             </div>
                           </div>
-                          <span className="text-[10px] font-bold opacity-60 bg-zinc-100 dark:bg-zinc-800 px-2 py-1 rounded-md leading-none font-sans">{new Date(alert.created_at).toLocaleTimeString()}</span>
+                          <span className="text-[9px] font-bold opacity-60 bg-zinc-100 dark:bg-zinc-800 px-1.5 py-0.5 rounded-md leading-none font-sans shrink-0">{new Date(alert.created_at).toLocaleTimeString()}</span>
                         </div>
-                        <p className="mt-3 text-zinc-700 dark:text-zinc-300 text-sm font-medium leading-relaxed italic">"{alert.message}"</p>
-                        <div className="mt-4 pt-4 border-t border-gray-200 dark:border-white/10 flex justify-between items-center leading-none">
-                          <div className="flex items-center gap-2 text-xs font-bold text-zinc-500 uppercase leading-none"><MapPin size={14} className="text-blue-500" /> {alert.location}</div>
-                          <button onClick={() => handleResolveClick(alert)} className="px-4 py-2 bg-foreground text-background rounded-xl text-[10px] font-black uppercase hover:opacity-90 active:scale-95 transition-all leading-none shadow-sm font-sans">Resolve Incident</button>
+                        <p className="mt-2 text-zinc-700 dark:text-zinc-300 text-xs font-medium leading-snug line-clamp-2 italic">&ldquo;{alert.message}&rdquo;</p>
+                        <div className="mt-2 pt-2 border-t border-gray-200 dark:border-white/10 flex justify-between items-center gap-2 leading-none">
+                          <div className="flex items-center gap-1 text-[10px] font-bold text-zinc-500 uppercase min-w-0 truncate"><MapPin size={12} className="text-blue-500 shrink-0" /> {alert.location}</div>
+                          <button type="button" onClick={() => handleResolveClick(alert)} className={`${adminShell.btnCardAction} !py-1.5 !px-3 !text-[9px]`}>Resolve</button>
                         </div>
                       </OutlinedCard>
-                    ))
-                  ) : (
-                    <div className="py-20 text-center border-2 border-dashed border-zinc-200 rounded-3xl">
-                       <Shield size={48} className="mx-auto text-zinc-200 mb-4" />
-                       <p className="text-zinc-400 font-black uppercase tracking-widest text-xs">No Active Alerts</p>
-                    </div>
-                  )}
-                </div>
-              </div>
+                    )}
+                  />
+                ) : (
+                  <div className="py-12 text-center border-2 border-dashed border-zinc-200 rounded-2xl">
+                    <Shield size={36} className="mx-auto text-zinc-200 mb-2" />
+                    <p className="text-zinc-400 font-black uppercase tracking-widest text-[10px]">No Active Alerts</p>
+                  </div>
+                )}
+              </AdminPanel>
 
-              <div className={mapBlocked ? "pointer-events-none opacity-40" : ""}>
-                <h2 className="text-sm font-black uppercase tracking-widest text-zinc-400 mb-4">Alert Map</h2>
-                <Card className="overflow-hidden !p-0 border-zinc-100 relative z-0">
+              <AdminPanel
+                title="Alert map"
+                className={`${portalLayout.panelFill} ${mapBlocked ? "pointer-events-none opacity-40" : ""}`}
+                noPadding
+                bodyClassName={portalLayout.mapColumnBody}
+              >
                   {loading ? (
-                    <MapSkeleton height="h-[500px]" />
+                    <MapSkeleton height={portalLayout.mapColumnFill} />
                   ) : mounted && !mapBlocked ? (
                     <CrisisHubMap
                       alerts={activeAlerts}
                       warnings={[]}
-                      heightClass="h-[500px]"
+                      heightClass={portalLayout.mapColumnFill}
                     />
                   ) : (
                     <div className="h-[500px] bg-zinc-50" />
                   )}
-                </Card>
-              </div>
+              </AdminPanel>
             </div>
 
-            {/* AUDIT LOG SECTION */}
-            <div>
-              <h2 className="text-sm font-black uppercase tracking-widest text-zinc-400 mb-4">Crisis Audit Log</h2>
-              <Card className="overflow-hidden border-zinc-100 !p-0">
-              <div className="p-5 border-b border-zinc-100 flex flex-col md:flex-row justify-between items-center gap-4 bg-zinc-50/50">
+            <AdminTablePanel
+              title="Crisis audit log"
+              action={
+                !loading ? (
+                  <button type="button" onClick={handleExportCSV} className="text-[10px] font-black uppercase tracking-widest text-blue-600 flex items-center gap-2 hover:underline">
+                    <FileText size={14} /> Export CSV
+                  </button>
+                ) : null
+              }
+            >
+              <div className="px-4 sm:px-6 py-4 border-b border-zinc-100 bg-zinc-50/70 flex flex-col md:flex-row justify-between items-center gap-4">
                 <div className="relative w-full md:w-auto">
                       <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-400" size={14} />
                       <input
@@ -657,11 +711,7 @@ export default function CrisisAdminPage() {
                         onChange={(e) => setLogSearchTerm(e.target.value)}
                       />
                 </div>
-                {!loading && (
-                  <button onClick={handleExportCSV} className="text-[10px] font-black uppercase tracking-widest text-blue-600 flex items-center gap-2 hover:underline"><FileText size={14} /> Export CSV</button>
-                )}
               </div>
-              <div className="overflow-x-auto">
                 <table className="w-full border-collapse leading-none">
                   <thead>
                     <tr className="bg-zinc-50 dark:bg-zinc-900/80 text-zinc-500 dark:text-zinc-400 text-[9px] uppercase tracking-widest font-black">
@@ -703,10 +753,8 @@ export default function CrisisAdminPage() {
                     )}
                   </tbody>
                 </table>
-              </div>
-              </Card>
-            </div>
-      </div>
+            </AdminTablePanel>
+      </>
 
       <ConfirmDialog
         open={showResolveConfirm && !!selectedAlert}

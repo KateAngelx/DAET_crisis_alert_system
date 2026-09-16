@@ -2,14 +2,13 @@
 
 import React, { useEffect, useMemo, useState } from "react";
 import {
-  AlertOctagon, Plus, Search, X, Trash2, Edit3, Ban, BellRing, Navigation, ShieldAlert,
+  AlertOctagon, Plus, Search, X, Trash2, Edit3, BellRing, Navigation, ShieldAlert,
 } from "lucide-react";
 import { useDangerousLocationStore } from "@/app/store/dangerousLocationStore";
 import { notifyTouristsOfDangerousLocation } from "@/lib/notificationService";
 import { geocodeLocation } from "@/lib/geocodeLocation";
 import { DashboardPageHeader } from "@/app/components/dashboard/DashboardPageHeader";
 import { DashboardStatCard } from "@/app/components/dashboard/DashboardStatCard";
-import { OutlinedCard } from "@/app/components/ui/OutlinedCard";
 import { ErrorState } from "@/app/components/ui/AsyncState";
 import { StatCardSkeletonGrid, AlertCardSkeletonList } from "@/app/components/ui/Skeletons";
 import { AlternativeRouteDisplay } from "@/app/components/danger/AlternativeRouteDisplay";
@@ -18,7 +17,16 @@ import {
 } from "@/lib/dangerousLocationUtils";
 import { createCategoryPinIcon, getDangerPinCategory } from "@/lib/mapPinUtils";
 import { MapLegend } from "@/app/components/maps/MapLegend";
-import { iconSize, statGrid, typography, outlinedCard } from "@/lib/designSystem";
+import { adminShell, iconSize, statGrid, portalLayout } from "@/lib/designSystem";
+import { AdminFilterBar } from "@/app/components/admin/AdminFilterBar";
+import { AdminPanel } from "@/app/components/admin/AdminPanel";
+import { RoadsHazardsSectionFilters } from "@/app/components/admin/RoadsHazardsSectionFilters";
+import { AdminDashboardKpiSection } from "@/app/components/admin/AdminDashboardKpiSection";
+import { AdminDashboardQuickNavLink, AdminDashboardQuickNavRow } from "@/app/components/admin/AdminDashboardQuickNavLink";
+import { Radio } from "lucide-react";
+import { DangerSeverityIcon } from "@/app/components/ui/cardTypeIcons";
+import { AdminTablePanel } from "@/app/components/admin/AdminTablePanel";
+import { AdminActiveOpsCard, hazardSeverityToCardSeverity } from "@/app/components/admin/AdminActiveOpsCard";
 import { CharCounterTextarea } from "@/app/components/ui/CharCounterTextarea";
 import { ConfirmDialog } from "@/app/components/ui/ConfirmDialog";
 import { useConfirm } from "@/app/components/ui/ConfirmDialogProvider";
@@ -50,7 +58,13 @@ const EMPTY_FORM = {
   longitude: null,
 };
 
-export function AreaHazardsAdminPanel({ embedded = false }) {
+export function AreaHazardsAdminPanel({
+  embedded = false,
+  createIntent = false,
+  onCreateIntentConsumed,
+  activeSection = "areas",
+  onSectionChange,
+}) {
   const {
     warnings, fetchWarnings, addWarning, updateWarning, setWarningStatus, deleteWarning,
     loading, error,
@@ -91,6 +105,7 @@ export function AreaHazardsAdminPanel({ embedded = false }) {
   }, [toast]);
 
   const activeWarnings = warnings.filter((w) => w.status === "Active");
+  const inactiveWarnings = warnings.filter((w) => w.status !== "Active");
   const dangerousCount = activeWarnings.filter((w) => w.severity !== "Caution").length;
   const cautionCount = activeWarnings.filter((w) => w.severity === "Caution").length;
 
@@ -116,6 +131,12 @@ export function AreaHazardsAdminPanel({ embedded = false }) {
     setMapCenter(DAET_CENTER);
     setShowModal(true);
   };
+
+  useEffect(() => {
+    if (!createIntent) return;
+    openCreate();
+    onCreateIntentConsumed?.();
+  }, [createIntent, onCreateIntentConsumed]);
 
   const openEdit = (warning) => {
     setEditingId(warning.id);
@@ -204,12 +225,27 @@ export function AreaHazardsAdminPanel({ embedded = false }) {
   };
 
   const handleDeactivate = async (warning) => {
+    const ok = await confirm({
+      title: "Deactivate area hazard?",
+      description:
+        "This removes the hazard from the public travel map. You can reactivate it later from the inactive list.",
+      confirmLabel: "Deactivate",
+      variant: "warning",
+    });
+    if (!ok) return;
     const result = await setWarningStatus(warning.id, "Inactive");
     setToast(result.success ? "Area hazard deactivated." : result.error);
     if (result.success) await fetchWarnings();
   };
 
   const handleReactivate = async (warning) => {
+    const ok = await confirm({
+      title: "Reactivate area hazard?",
+      description: "This publishes the hazard on the public map again and sends tourist notifications.",
+      confirmLabel: "Reactivate & notify",
+      variant: "success",
+    });
+    if (!ok) return;
     const result = await setWarningStatus(warning.id, "Active");
     if (result.success) {
       await notifyTouristsOfDangerousLocation(warning.id);
@@ -234,7 +270,7 @@ export function AreaHazardsAdminPanel({ embedded = false }) {
   };
 
   return (
-    <div className="space-y-6 text-left">
+    <div className={`${portalLayout.stack} text-left`}>
       {toast && (
         <div className="fixed top-24 right-4 z-[200] bg-zinc-900 text-white px-5 py-3 rounded-2xl shadow-xl text-sm font-bold animate-in slide-in-from-top-2">
           {toast}
@@ -249,7 +285,7 @@ export function AreaHazardsAdminPanel({ embedded = false }) {
             <button
               type="button"
               onClick={openCreate}
-              className="flex items-center gap-2 bg-red-600 hover:bg-red-700 text-white px-5 py-2.5 rounded-2xl font-black uppercase text-xs tracking-widest"
+              className={adminShell.btnDanger}
             >
               <Plus size={16} /> Mark Area Hazard
             </button>
@@ -257,118 +293,132 @@ export function AreaHazardsAdminPanel({ embedded = false }) {
         />
       )}
 
-      {embedded && (
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-          <p className="text-sm text-zinc-600 font-medium">
-            Point hazards for specific places (beaches, barangays, landmarks) — not full road segments.
-          </p>
-          <button
-            type="button"
-            onClick={openCreate}
-            className="flex items-center gap-2 bg-red-600 hover:bg-red-700 text-white px-5 py-2.5 rounded-2xl font-black uppercase text-xs tracking-widest shrink-0"
-          >
-            <Plus size={16} /> Mark Area Hazard
-          </button>
-        </div>
-      )}
-
       {error && <ErrorState message={error} onRetry={fetchWarnings} title="Could not load area hazards" />}
 
-      {loading ? (
-        <StatCardSkeletonGrid count={3} className={statGrid.dashboardThree} />
-      ) : (
-        <div className={statGrid.dashboardThree}>
-          <DashboardStatCard compact label="Active Hazards" value={activeWarnings.length} icon={<AlertOctagon size={iconSize.stat} />} accent="red" />
-          <DashboardStatCard compact label="Avoid Areas" value={dangerousCount} icon={<ShieldAlert size={iconSize.stat} />} accent="red" />
-          <DashboardStatCard compact label="Caution Areas" value={cautionCount} icon={<Navigation size={iconSize.stat} />} accent="orange" />
-        </div>
-      )}
-
-      {activeWarnings.length > 0 && (
-        <div className="p-4 rounded-2xl bg-red-50 border-2 border-red-200 flex items-start gap-3">
-          <AlertOctagon className="text-red-600 shrink-0" size={20} />
-          <div>
-            <p className="text-xs font-black uppercase text-red-700 tracking-widest">Active Area Hazards</p>
-            <p className="text-sm text-red-800 font-medium mt-1">
-              {activeWarnings.length} area{activeWarnings.length > 1 ? "s" : ""} currently marked unsafe for tourists.
-            </p>
+      <AdminDashboardKpiSection
+        footer={
+          embedded ? (
+            <AdminDashboardQuickNavRow>
+              <AdminDashboardQuickNavLink href="/crisis/admin" icon={Radio} label="Command Center" />
+            </AdminDashboardQuickNavRow>
+          ) : null
+        }
+      >
+        {loading ? (
+          <StatCardSkeletonGrid count={3} className={statGrid.dashboardThree} />
+        ) : (
+          <div className={statGrid.dashboardThree}>
+            <DashboardStatCard compact label="Active Hazards" value={activeWarnings.length} icon={<AlertOctagon size={iconSize.stat} />} accent="red" />
+            <DashboardStatCard compact label="Avoid Areas" value={dangerousCount} icon={<ShieldAlert size={iconSize.stat} />} accent="red" />
+            <DashboardStatCard compact label="Caution Areas" value={cautionCount} icon={<Navigation size={iconSize.stat} />} accent="orange" />
           </div>
-        </div>
-      )}
+        )}
+      </AdminDashboardKpiSection>
 
-      <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
-        <div className="space-y-4">
-          <div className="flex flex-col sm:flex-row gap-3">
-            <div className="relative flex-1">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-400" size={16} />
-              <input
-                className="w-full pl-10 pr-4 py-3 bg-white border border-zinc-200 rounded-2xl text-sm font-bold outline-none focus:ring-2 focus:ring-red-500"
-                placeholder="Search location or destination..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-              />
-            </div>
-            <select
-              className="px-4 py-3 bg-white border border-zinc-200 rounded-2xl text-xs font-black uppercase"
-              value={filterSeverity}
-              onChange={(e) => setFilterSeverity(e.target.value)}
-            >
-              <option value="All">All Severity</option>
-              {DANGER_SEVERITIES.map((s) => (
-                <option key={s} value={s}>{s}</option>
-              ))}
-            </select>
-          </div>
+      <AdminFilterBar
+        compact
+        title="Live command filters"
+        searchPlaceholder="Search location or destination..."
+        searchValue={searchTerm}
+        onSearchChange={(e) => setSearchTerm(e.target.value)}
+      >
+        <select
+          className={`${adminShell.select} !py-2 !text-xs min-w-[7.5rem]`}
+          value={filterSeverity}
+          onChange={(e) => setFilterSeverity(e.target.value)}
+        >
+          <option value="All">All Severity</option>
+          {DANGER_SEVERITIES.map((s) => (
+            <option key={s} value={s}>{s}</option>
+          ))}
+        </select>
+      </AdminFilterBar>
 
+      <div className={portalLayout.splitGrid}>
+        <AdminPanel
+          title="Active area hazards"
+          compact
+          className={portalLayout.panelFill}
+          bodyClassName={portalLayout.panelBodyStack}
+        >
+          {onSectionChange ? (
+            <RoadsHazardsSectionFilters activeSection={activeSection} onSectionChange={onSectionChange} />
+          ) : null}
           {loading ? (
-            <AlertCardSkeletonList count={3} />
-          ) : filtered.length === 0 ? (
-            <div className="py-16 text-center border-2 border-dashed border-zinc-200 rounded-3xl">
-              <Navigation size={40} className="mx-auto text-zinc-300 mb-3" />
-              <p className="text-xs font-black uppercase text-zinc-400">No area hazards yet</p>
+            <div className={portalLayout.listScrollPaneCompact}>
+              <AlertCardSkeletonList count={3} />
+            </div>
+          ) : filtered.filter((w) => w.status === "Active").length === 0 ? (
+            <div className="py-12 text-center border-2 border-dashed border-zinc-200 rounded-2xl">
+              <Navigation size={36} className="mx-auto text-zinc-300 mb-2" />
+              <p className="font-black uppercase tracking-widest text-[10px] text-zinc-400">No active area hazards</p>
             </div>
           ) : (
-            filtered.map((warning) => {
-              const styles = getDangerSeverityStyles(warning.severity);
-              return (
-                <OutlinedCard key={warning.id} padding={outlinedCard.alertPadding} className={`border-2 ${styles.border}`}>
-                  <div className="space-y-3">
-                    <div className="flex flex-wrap items-start justify-between gap-3">
-                      <div>
-                        <div className="flex flex-wrap gap-2 mb-2">
-                          <span className={`text-[9px] font-black uppercase px-2 py-1 rounded ${styles.badge}`}>{warning.severity}</span>
-                          <span className={`text-[9px] font-black uppercase px-2 py-1 rounded ${warning.status === "Active" ? "bg-green-100 text-green-700" : "bg-zinc-100 text-zinc-500"}`}>
-                            {warning.status}
-                          </span>
-                          <span className="text-[9px] font-black uppercase px-2 py-1 bg-zinc-100 text-zinc-600 rounded">{warning.danger_type}</span>
+            <div className={`space-y-2 ${portalLayout.listScrollPaneCompact}`}>
+            {filtered
+              .filter((w) => w.status === "Active")
+              .map((warning) => {
+                const styles = getDangerSeverityStyles(warning.severity);
+                const meta = `${warning.severity} • ${warning.danger_type || "Hazard"}`;
+                const message =
+                  warning.safety_instructions?.trim() ||
+                  warning.reason?.trim() ||
+                  formatWarningTimeRange(warning);
+                return (
+                  <div key={warning.id} className="space-y-2">
+                    <AdminActiveOpsCard
+                      compact
+                      severityForCard={hazardSeverityToCardSeverity(warning.severity)}
+                      borderClassName={styles.border}
+                      metaLabel={meta}
+                      title={warning.dangerous_location}
+                      message={message}
+                      location={warning.affected_area || warning.dangerous_location}
+                      timeLabel={
+                        warning.updated_at
+                          ? new Date(warning.updated_at).toLocaleTimeString()
+                          : warning.created_at
+                            ? new Date(warning.created_at).toLocaleTimeString()
+                            : null
+                      }
+                      icon={
+                        <div className="p-2 bg-zinc-100 dark:bg-zinc-800 rounded-lg text-zinc-600 dark:text-zinc-400 leading-none shrink-0">
+                          <DangerSeverityIcon severity={warning.severity} size={iconSize.section} />
                         </div>
-                        <h3 className={typography.cardTitle}>{warning.dangerous_location}</h3>
-                        <p className="text-xs text-zinc-500 font-medium mt-1">{formatWarningTimeRange(warning)}</p>
-                      </div>
-                      <div className="flex gap-1">
-                        <button type="button" onClick={() => openEdit(warning)} className="p-2 hover:bg-amber-50 text-amber-600 rounded-lg" title="Edit"><Edit3 size={16} /></button>
-                        {warning.status === "Active" ? (
-                          <button type="button" onClick={() => handleDeactivate(warning)} className="p-2 hover:bg-zinc-100 text-zinc-600 rounded-lg" title="Deactivate"><Ban size={16} /></button>
-                        ) : (
-                          <button type="button" onClick={() => handleReactivate(warning)} className="p-2 hover:bg-green-50 text-green-600 rounded-lg" title="Reactivate"><BellRing size={16} /></button>
-                        )}
-                        <button type="button" onClick={() => handleDelete(warning.id)} className="p-2 hover:bg-red-50 text-red-600 rounded-lg" title="Remove"><Trash2 size={16} /></button>
-                      </div>
-                    </div>
+                      }
+                      primaryAction={{ label: "Deactivate", onClick: () => handleDeactivate(warning) }}
+                      secondaryActions={[
+                        {
+                          key: "edit",
+                          label: "Edit",
+                          icon: Edit3,
+                          onClick: () => openEdit(warning),
+                          className: "hover:bg-amber-50 text-amber-600",
+                        },
+                        {
+                          key: "delete",
+                          label: "Delete",
+                          icon: Trash2,
+                          onClick: () => handleDelete(warning.id),
+                          className: "hover:bg-red-50 text-red-600",
+                        },
+                      ]}
+                    />
                     <AlternativeRouteDisplay warning={warning} compact />
-                    {warning.safety_instructions && (
-                      <p className="text-xs text-zinc-600 italic line-clamp-2">{warning.safety_instructions}</p>
-                    )}
                   </div>
-                </OutlinedCard>
-              );
-            })
+                );
+              })}
+            </div>
           )}
-        </div>
+        </AdminPanel>
 
-        <div>
-          <h2 className="text-sm font-black uppercase tracking-widest text-zinc-400 mb-4">Hazard Map</h2>
-          <div className={`leaflet-map-shell bg-zinc-50 rounded-3xl border border-zinc-200 h-[520px] overflow-hidden relative ${mapBlocked ? "pointer-events-none opacity-40" : ""}`}>
+        <AdminPanel
+          title="Hazard map"
+          className={`${portalLayout.panelFill} ${mapBlocked ? "pointer-events-none opacity-40" : ""}`}
+          noPadding
+          bodyClassName={portalLayout.mapColumnBody}
+        >
+          <div className={`leaflet-map-shell relative ${portalLayout.mapColumnFill}`}>
             {mounted && !mapBlocked && (
               <MapContainer center={DAET_CENTER} zoom={13} style={{ height: "100%", width: "100%" }}>
                 <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" attribution="&copy; OpenStreetMap" />
@@ -379,8 +429,47 @@ export function AreaHazardsAdminPanel({ embedded = false }) {
               <MapLegend compact />
             </div>
           </div>
-        </div>
+        </AdminPanel>
       </div>
+
+      {inactiveWarnings.length > 0 && (
+        <AdminTablePanel title="Inactive area hazards" subtitle="Deactivated hazards — reactivate or delete from here">
+          <table className="w-full border-collapse text-xs">
+            <thead>
+              <tr className="bg-zinc-50 text-zinc-500 text-[9px] uppercase tracking-widest font-black">
+                <th className="px-6 py-3 text-left">Status</th>
+                <th className="px-6 py-3 text-left">Location</th>
+                <th className="px-6 py-3 text-left">Severity</th>
+                <th className="px-6 py-3 text-right">Actions</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-zinc-100">
+              {inactiveWarnings.map((warning) => (
+                <tr key={warning.id} className="hover:bg-zinc-50/80">
+                  <td className="px-6 py-3">
+                    <span className="text-[8px] font-black uppercase px-2 py-1 rounded-full bg-zinc-100 text-zinc-600">Inactive</span>
+                  </td>
+                  <td className="px-6 py-3 font-black uppercase text-zinc-900 max-w-[220px] truncate">{warning.dangerous_location}</td>
+                  <td className="px-6 py-3 text-zinc-500 font-medium">{warning.severity}</td>
+                  <td className="px-6 py-3 text-right">
+                    <div className="flex justify-end gap-2">
+                      <button type="button" onClick={() => handleReactivate(warning)} className="p-2 hover:bg-green-50 text-green-600 rounded-lg" title="Reactivate">
+                        <BellRing size={16} />
+                      </button>
+                      <button type="button" onClick={() => openEdit(warning)} className="p-2 hover:bg-amber-50 text-amber-600 rounded-lg" title="Edit">
+                        <Edit3 size={16} />
+                      </button>
+                      <button type="button" onClick={() => handleDelete(warning.id)} className="p-2 hover:bg-red-50 text-red-600 rounded-lg" title="Delete">
+                        <Trash2 size={16} />
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </AdminTablePanel>
+      )}
 
       {showModal && (
         <div className="fixed inset-0 z-[2000] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
@@ -449,7 +538,7 @@ export function AreaHazardsAdminPanel({ embedded = false }) {
                 onChange={(e) => setFormData({ ...formData, safety_instructions: e.target.value })}
               />
 
-              <button type="submit" disabled={isSaving} className="w-full py-4 bg-red-600 text-white rounded-2xl font-black uppercase text-xs tracking-widest hover:bg-red-700 disabled:opacity-60">
+              <button type="submit" disabled={isSaving} className={`w-full ${adminShell.btnDanger} disabled:opacity-60`}>
                 {isSaving ? "Saving..." : editingId ? "Update Hazard" : "Publish Hazard & Notify Tourists"}
               </button>
             </form>

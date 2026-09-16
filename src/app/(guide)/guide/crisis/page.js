@@ -8,7 +8,7 @@ import {
 import { OutlinedCard } from "@/app/components/ui/OutlinedCard";
 import { Card } from "@/app/components/ui/Card";
 import { outlinedCard } from "@/lib/designSystem";
-import { DashboardPageHeader } from "@/app/components/dashboard/DashboardPageHeader";
+import { GuidePageHeader } from "@/app/components/guide/GuidePageHeader";
 import { DashboardStatCard } from "@/app/components/dashboard/DashboardStatCard";
 import { StatCardSkeletonGrid } from "@/app/components/ui/Skeletons";
 import { AsyncState, EmptyState } from "@/app/components/ui/AsyncState";
@@ -19,10 +19,16 @@ import { RouteListCard } from "@/app/components/routes/RouteListCard";
 import { RouteDetailModal } from "@/app/components/routes/RouteDetailModal";
 import { buildRouteCatalog } from "@/lib/routesUtils";
 import { formatTourRoute, getRelevantRouteAdvisoriesForGroup } from "@/lib/tourGroupRoute";
-import { iconSize, statGrid, typography } from "@/lib/designSystem";
+import { iconSize, statGrid, typography, getSeverityOutline, portalLayout } from "@/lib/designSystem";
+import { GuidePanel } from "@/app/components/guide/GuidePanel";
+import { CardIconBox } from "@/app/components/ui/CardIconBox";
+import { AlertSeverityIcon } from "@/app/components/ui/cardTypeIcons";
 import { ROLE_INTERFACE } from "@/lib/roleInterfaceCopy";
 import { RoleContextBanner } from "@/app/components/dashboard/RoleContextBanner";
 import { GuideDashboardQuickActions } from "@/app/components/guide/GuideDashboardQuickActions";
+import { PublicCategorizedCardList } from "@/app/components/shell/PublicCategorizedCardList";
+import { PublicCardListPreview } from "@/app/components/shell/PublicCardListPreview";
+import { INCIDENT_SEVERITIES } from "@/lib/constants";
 
 export default function GuideCrisisHubPage() {
   const { user } = useAuthStore();
@@ -81,8 +87,8 @@ export default function GuideCrisisHubPage() {
   const statsLoading = alertsLoading || guideLoading;
 
   return (
-    <div className="space-y-6 text-left">
-      <DashboardPageHeader
+    <>
+      <GuidePageHeader
         title={ROLE_INTERFACE.guide.crisis.title}
         description={ROLE_INTERFACE.guide.crisis.description}
         action={
@@ -138,24 +144,26 @@ export default function GuideCrisisHubPage() {
               View all routes
             </Link>
           </div>
-          <div className="space-y-3">
-            {relevantRouteAdvisories.slice(0, 3).map((route) => (
-              <RouteListCard key={route.id} route={route} onSelect={setSelectedRoute} />
-            ))}
-          </div>
+          <PublicCardListPreview
+            items={relevantRouteAdvisories}
+            modalTitle="Route advisories for your groups"
+            scrollPaneClassName={portalLayout.listScrollPane}
+            renderItem={(route) => <RouteListCard route={route} onSelect={setSelectedRoute} />}
+          />
         </Card>
       )}
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <section>
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="text-sm font-black uppercase tracking-widest text-zinc-400">
-              Alerts Affecting Your Destinations
-            </h2>
+      <div className={portalLayout.splitGrid}>
+        <GuidePanel
+          title="Alerts affecting your destinations"
+          className={portalLayout.panelFill}
+          bodyClassName={portalLayout.panelBodyStack}
+          action={
             <Link href="/guide/crisis" className="text-[10px] font-black uppercase text-blue-600 hover:underline">
               View all
             </Link>
-          </div>
+          }
+        >
           <AsyncState
             loading={alertsLoading}
             error={alertsError}
@@ -169,55 +177,65 @@ export default function GuideCrisisHubPage() {
               />
             }
           >
-            <div className="space-y-3">
-              {relevantAlerts.slice(0, 5).map((alert) => (
-                <OutlinedCard
-                  key={alert.id}
-                  variant="severity"
-                  severity={alert.severity}
-                  padding={outlinedCard.statPadding}
-                >
-                  <div className="flex items-start justify-between gap-3">
-                    <div>
-                      <p className="text-[10px] font-black uppercase tracking-widest text-zinc-400 mb-1">
-                        {alert.severity} · {alert.alert_type || alert.type}
-                      </p>
-                      <h3 className="font-black text-zinc-900 uppercase text-sm">{alert.title}</h3>
-                      <p className="text-sm text-zinc-600 mt-2 line-clamp-2">{alert.description || alert.message}</p>
-                      <div className="flex flex-wrap gap-3 mt-3 text-xs text-zinc-500">
-                        {(alert.location || alert.affected_area) && (
-                          <span className="flex items-center gap-1">
-                            <MapPin size={12} /> {alert.location || alert.affected_area}
-                          </span>
-                        )}
-                        {alert.created_at && (
-                          <span className="flex items-center gap-1">
-                            <Clock size={12} /> {new Date(alert.created_at).toLocaleString()}
-                          </span>
-                        )}
+            <PublicCategorizedCardList
+              items={relevantAlerts}
+              getCategory={(alert) => alert.type || alert.alert_type}
+              getSeverity={(alert) => alert.severity}
+              listPaneClassName={portalLayout.listScrollPane}
+              modalTitle="Alerts affecting your destinations"
+              modalSubtitle={`${relevantAlerts.length} relevant`}
+              renderItem={(alert) => {
+                const alertStyles = getSeverityOutline(alert.severity);
+                return (
+                  <OutlinedCard variant="severity" severity={alert.severity} padding={outlinedCard.statPadding}>
+                    <div className="flex items-start gap-3">
+                      <CardIconBox boxClass={alertStyles.icon}>
+                        <AlertSeverityIcon severity={alert.severity} size={iconSize.stat} />
+                      </CardIconBox>
+                      <div className="min-w-0 flex-1">
+                        <p className="text-[10px] font-black uppercase tracking-widest text-zinc-400 mb-1">
+                          {alert.severity} · {alert.alert_type || alert.type}
+                        </p>
+                        <h3 className={`${typography.cardTitleBase} ${alertStyles.titleStatic}`}>{alert.title}</h3>
+                        <p className="text-sm text-zinc-600 mt-2 line-clamp-2">{alert.description || alert.message}</p>
+                        <div className="flex flex-wrap gap-3 mt-3 text-xs text-zinc-500">
+                          {(alert.location || alert.affected_area) && (
+                            <span className="flex items-center gap-1">
+                              <MapPin size={12} /> {alert.location || alert.affected_area}
+                            </span>
+                          )}
+                          {alert.created_at && (
+                            <span className="flex items-center gap-1">
+                              <Clock size={12} /> {new Date(alert.created_at).toLocaleString()}
+                            </span>
+                          )}
+                        </div>
                       </div>
                     </div>
-                  </div>
-                </OutlinedCard>
-              ))}
-            </div>
+                  </OutlinedCard>
+                );
+              }}
+            />
           </AsyncState>
-        </section>
+        </GuidePanel>
 
-        <section>
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="text-sm font-black uppercase tracking-widest text-zinc-400">Your Active Tour Groups</h2>
+        <GuidePanel
+          title="Your active tour groups"
+          className={portalLayout.panelFill}
+          bodyClassName={portalLayout.panelBodyStack}
+          action={
             <Link href="/guide/groups" className="text-[10px] font-black uppercase text-blue-600 hover:underline">
               Manage
             </Link>
-          </div>
+          }
+        >
           {activeGroups.length === 0 ? (
             <Card className="p-8 text-center border-zinc-100">
               <Compass size={32} className="mx-auto text-zinc-200 mb-2" />
               <p className="text-xs font-black uppercase text-zinc-400">No active tour groups</p>
             </Card>
           ) : (
-            <div className="space-y-3">
+            <div className={`space-y-3 ${portalLayout.listScrollPane}`}>
               {activeGroups.map((group) => (
                 <Link key={group.id} href={`/guide/groups/${group.id}`} className="block no-underline">
                   <Card className="p-4 border-zinc-100 hover:shadow-md transition-all">
@@ -238,30 +256,37 @@ export default function GuideCrisisHubPage() {
           )}
 
           {openIncidents.length > 0 && (
-            <div className="mt-6">
-              <div className="flex items-center justify-between mb-4">
+            <div className="flex flex-col gap-4">
+              <div className="flex items-center justify-between">
                 <h2 className="text-sm font-black uppercase tracking-widest text-zinc-400">Recent Group Reports</h2>
                 <Link href="/guide/reports" className="text-[10px] font-black uppercase text-blue-600 hover:underline flex items-center gap-1">
                   All reports <ArrowRight size={12} />
                 </Link>
               </div>
-              <div className="space-y-3">
-                {openIncidents.slice(0, 3).map((inc) => (
-                  <Link key={inc.id} href={`/guide/reports/${inc.id}`} className="block no-underline">
+              <PublicCategorizedCardList
+                items={openIncidents}
+                getCategory={(inc) => inc.category}
+                getSeverity={(inc) => inc.severity}
+                categoryLabel="Report category"
+                severityOrder={[...INCIDENT_SEVERITIES].reverse()}
+                listPaneClassName={portalLayout.listScrollPane}
+                modalTitle="Recent group reports"
+                renderItem={(inc) => (
+                  <Link href={`/guide/reports/${inc.id}`} className="block no-underline">
                     <Card className="p-4 border-zinc-100 hover:shadow-md transition-all">
                       <p className="font-mono text-xs text-blue-600 font-black">{inc.reference_number}</p>
                       <h3 className="font-black text-zinc-900 uppercase text-sm">{inc.category}</h3>
                       <p className="text-xs text-zinc-500 line-clamp-1 mt-1">{inc.description}</p>
                     </Card>
                   </Link>
-                ))}
-              </div>
+                )}
+              />
             </div>
           )}
-        </section>
+        </GuidePanel>
       </div>
 
-      <GuideDashboardQuickActions className="mt-6" />
+      <GuideDashboardQuickActions />
 
       <RouteDetailModal
         open={!!selectedRoute}
@@ -270,6 +295,6 @@ export default function GuideCrisisHubPage() {
         onClose={() => setSelectedRoute(null)}
         onSelectRoute={setSelectedRoute}
       />
-    </div>
+    </>
   );
 }

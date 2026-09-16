@@ -12,7 +12,7 @@ export async function GET(request) {
       {
         headers: {
           "Accept-Language": "en",
-          "User-Agent": "CONNECT-DAET-Crisis-Alert-System/1.0 (Daet LGU; crisis@connect-daet.ai)",
+          "User-Agent": "CONNECT-DAET-Crisis-Alert-System/1.0 (Daet Municipal Tourism Office; crisis@connect-daet.ai)",
         },
         next: { revalidate: 86400 },
       }

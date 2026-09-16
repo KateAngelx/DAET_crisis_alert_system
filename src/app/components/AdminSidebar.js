@@ -5,7 +5,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useAuthStore } from "@/app/store/crisisStore";
 import {
-  LayoutDashboard, Users, Workflow, AlertTriangle, FileWarning, LogOut,
+  LayoutDashboard, Users, Workflow, AlertTriangle, FileWarning, LogOut, Archive, ClipboardList,
 } from "lucide-react";
 import { BrandLogo } from "@/app/components/BrandLogo";
 import { ADMIN_NAV, isNavActive } from "@/lib/dashboardNav";
@@ -13,15 +13,17 @@ import { typography, iconSize } from "@/lib/designSystem";
 
 const ICONS = {
   Dashboard: LayoutDashboard,
+  "Activity Log": ClipboardList,
   Users,
   "Alert Pipeline": Workflow,
   "Command Center": AlertTriangle,
   "Incident Reports": FileWarning,
+  "Archive & History": Archive,
 };
 
 function Logo() {
   return (
-    <div className="h-[72px] border-b border-zinc-200 px-6 flex items-center gap-3">
+    <div className="h-[72px] border-b border-zinc-200 bg-zinc-50/80 px-6 flex items-center gap-3">
       <BrandLogo size={32} />
       <div className="leading-none">
         <span className={`${typography.brand} text-blue-600 block`}>CONNECT-DAET</span>

@@ -3,7 +3,7 @@
 import React, { Suspense, useEffect, useMemo, useState } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import {
-  Route, Plus, Search, X, MapPin, Trash2, Edit3, Ban, CheckCircle, Navigation, Loader2,
+  Route, Plus, X, MapPin, Trash2, Edit3, Ban, CheckCircle, Navigation, Loader2, Radio, Archive, FileWarning,
 } from "lucide-react";
 import { useRouteAdvisoryStore } from "@/app/store/routeAdvisoryStore";
 import {
@@ -15,14 +15,25 @@ import {
 } from "@/lib/routeGeometryUtils";
 import { DashboardPageHeader } from "@/app/components/dashboard/DashboardPageHeader";
 import { DashboardStatCard } from "@/app/components/dashboard/DashboardStatCard";
-import { OutlinedCard } from "@/app/components/ui/OutlinedCard";
 import { ErrorState } from "@/app/components/ui/AsyncState";
 import { StatCardSkeletonGrid, AlertCardSkeletonList } from "@/app/components/ui/Skeletons";
 import {
   ROUTE_ADVISORY_STATUSES, ROUTE_ADVISORY_TYPES, HAZARD_TYPES, getRouteAdvisoryStatusStyles,
 } from "@/lib/routeAdvisoryUtils";
-import { iconSize, statGrid, typography, outlinedCard } from "@/lib/designSystem";
+import { AdminPanel } from "@/app/components/admin/AdminPanel";
+import { AdminFilterBar } from "@/app/components/admin/AdminFilterBar";
+import { AdminTablePanel } from "@/app/components/admin/AdminTablePanel";
+import { AdminActiveOpsCard, routeStatusToCardSeverity } from "@/app/components/admin/AdminActiveOpsCard";
+import { adminShell, iconSize, statGrid, portalLayout } from "@/lib/designSystem";
+import { RouteAdvisoryIcon } from "@/app/components/ui/cardTypeIcons";
 import { AreaHazardsAdminPanel } from "@/app/components/admin/AreaHazardsAdminPanel";
+import { RoadsHazardsSectionFilters } from "@/app/components/admin/RoadsHazardsSectionFilters";
+import { AdminDashboardKpiSection } from "@/app/components/admin/AdminDashboardKpiSection";
+import {
+  AdminDashboardQuickNavDivider,
+  AdminDashboardQuickNavLink,
+  AdminDashboardQuickNavRow,
+} from "@/app/components/admin/AdminDashboardQuickNavLink";
 import { ROLE_INTERFACE } from "@/lib/roleInterfaceCopy";
 import { RoleContextBanner } from "@/app/components/dashboard/RoleContextBanner";
 import { CharCounterTextarea } from "@/app/components/ui/CharCounterTextarea";
@@ -69,7 +80,13 @@ function FormSection({ step, title, description, children }) {
   );
 }
 
-function RouteAdvisoriesAdminPanel({ embedded = false }) {
+function RouteAdvisoriesAdminPanel({
+  embedded = false,
+  createIntent = null,
+  onCreateIntentConsumed,
+  activeSection = "routes",
+  onSectionChange,
+}) {
   const router = useRouter();
   const {
     advisories, fetchAdvisories, addAdvisory, updateAdvisory, setAdvisoryStatus, deleteAdvisory,
@@ -138,6 +155,7 @@ function RouteAdvisoriesAdminPanel({ embedded = false }) {
   }, [showModal, formData.from_location, formData.to_location, formData.via_location]);
 
   const activeAdvisories = advisories.filter((a) => a.status === "Active");
+  const inactiveAdvisories = advisories.filter((a) => a.status !== "Active");
 
   const filtered = useMemo(() => {
     return advisories.filter((a) => {
@@ -177,6 +195,12 @@ function RouteAdvisoriesAdminPanel({ embedded = false }) {
     setMapCenter(DAET_CENTER);
     setShowModal(true);
   };
+
+  useEffect(() => {
+    if (!createIntent) return;
+    openCreate(createIntent === "alternative" ? "alternative" : "primary");
+    onCreateIntentConsumed?.();
+  }, [createIntent, onCreateIntentConsumed]);
 
   const openEdit = (advisory) => {
     setEditingId(advisory.id);
@@ -265,12 +289,42 @@ function RouteAdvisoriesAdminPanel({ embedded = false }) {
   };
 
   const handleDeactivate = async (advisory) => {
+    const ok = await confirm({
+      title: "Deactivate route advisory?",
+      description:
+        "This removes the route from the public travel map. You can reactivate it later from the inactive list below.",
+      confirmLabel: "Deactivate",
+      variant: "warning",
+    });
+    // #region agent log
+    fetch("http://127.0.0.1:7540/ingest/3142bff0-53ba-4c2c-9606-b4d021977f0c", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "X-Debug-Session-Id": "197cec" },
+      body: JSON.stringify({
+        sessionId: "197cec",
+        runId: "roads-hazards-confirm",
+        hypothesisId: "H1",
+        location: "routes/page.jsx:handleDeactivate",
+        message: "Route deactivate confirmation result",
+        data: { ok, advisoryId: advisory.id },
+        timestamp: Date.now(),
+      }),
+    }).catch(() => {});
+    // #endregion
+    if (!ok) return;
     const result = await setAdvisoryStatus(advisory.id, "Inactive");
     setToast(result.success ? "Route advisory deactivated." : result.error);
     if (result.success) await fetchAdvisories();
   };
 
   const handleReactivate = async (advisory) => {
+    const ok = await confirm({
+      title: "Reactivate route advisory?",
+      description: "This publishes the route on the public travel map again.",
+      confirmLabel: "Reactivate",
+      variant: "success",
+    });
+    if (!ok) return;
     const result = await setAdvisoryStatus(advisory.id, "Active");
     setToast(result.success ? "Route advisory reactivated." : result.error);
     if (result.success) await fetchAdvisories();
@@ -290,12 +344,14 @@ function RouteAdvisoriesAdminPanel({ embedded = false }) {
   };
 
   return (
-    <div className="space-y-6 text-left">
+    <>
       {toast && (
         <div className="fixed top-24 right-4 z-[200] bg-zinc-900 text-white px-5 py-3 rounded-2xl shadow-xl text-sm font-bold">
           {toast}
         </div>
       )}
+
+      <div className={portalLayout.stack}>
 
       {!embedded && (
         <DashboardPageHeader
@@ -306,14 +362,14 @@ function RouteAdvisoriesAdminPanel({ embedded = false }) {
               <button
                 type="button"
                 onClick={() => openCreate("primary")}
-                className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-5 py-2.5 rounded-2xl font-black uppercase text-xs tracking-widest"
+                className={adminShell.btnPrimary}
               >
                 <Plus size={16} /> New Route
               </button>
               <button
                 type="button"
                 onClick={() => openCreate("alternative")}
-                className="flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white px-5 py-2.5 rounded-2xl font-black uppercase text-xs tracking-widest"
+                className={adminShell.btnSuccess}
               >
                 <Navigation size={16} /> New Detour
               </button>
@@ -322,168 +378,220 @@ function RouteAdvisoriesAdminPanel({ embedded = false }) {
         />
       )}
 
-      {embedded && (
-        <div className="flex flex-col sm:flex-row sm:items-center justify-end gap-2">
-          <button
-            type="button"
-            onClick={() => openCreate("primary")}
-            className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-5 py-2.5 rounded-2xl font-black uppercase text-xs tracking-widest"
-          >
-            <Plus size={16} /> New Route
-          </button>
-          <button
-            type="button"
-            onClick={() => openCreate("alternative")}
-            className="flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white px-5 py-2.5 rounded-2xl font-black uppercase text-xs tracking-widest"
-          >
-            <Navigation size={16} /> New Detour
-          </button>
-        </div>
-      )}
-
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-3 text-sm">
-        <div className="p-4 rounded-2xl bg-blue-50 border border-blue-100">
-          <p className="font-black uppercase text-[10px] text-blue-700">Primary route</p>
-          <p className="text-blue-900 mt-1">Main road status — Safe, Caution, or Closed.</p>
-        </div>
-        <div className="p-4 rounded-2xl bg-green-50 border border-green-100">
-          <p className="font-black uppercase text-[10px] text-green-700">Detour</p>
-          <p className="text-green-900 mt-1">Alternative path linked to a closed/caution route.</p>
-        </div>
-        <div className="p-4 rounded-2xl bg-zinc-50 border border-zinc-200">
-          <p className="font-black uppercase text-[10px] text-zinc-500">Area hazards</p>
-          <p className="text-zinc-700 mt-1">
-            Point hazards (beaches, landmarks) are on the{" "}
-            <button
-              type="button"
-              onClick={() => router.replace("/crisis/admin/routes?tab=areas", { scroll: false })}
-              className="text-blue-600 font-bold hover:underline"
-            >
-              Area Hazards
-            </button>{" "}
-            tab.
-          </p>
-        </div>
-      </div>
-
       {error && <ErrorState message={error} onRetry={fetchAdvisories} title="Could not load route advisories" />}
 
-      {loading ? (
-        <StatCardSkeletonGrid count={4} className={statGrid.dashboard} />
-      ) : (
-        <div className={`${statGrid.dashboard} grid-cols-2 lg:grid-cols-4`}>
-          <DashboardStatCard compact label="Active" value={activeAdvisories.length} icon={<Route size={iconSize.stat} />} accent="blue" />
-          <DashboardStatCard compact label="Safe" value={activeAdvisories.filter((a) => a.route_status === "Safe").length} icon={<CheckCircle size={iconSize.stat} />} accent="green" />
-          <DashboardStatCard compact label="Caution" value={activeAdvisories.filter((a) => a.route_status === "Caution").length} icon={<Navigation size={iconSize.stat} />} accent="orange" />
-          <DashboardStatCard compact label="Closed" value={activeAdvisories.filter((a) => a.route_status === "Closed").length} icon={<Ban size={iconSize.stat} />} accent="red" />
-        </div>
-      )}
-
-      <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
-        <div className="space-y-4">
-          <div className="flex flex-col sm:flex-row gap-3">
-            <div className="relative flex-1">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-400" size={16} />
-              <input
-                className="w-full pl-10 pr-4 py-3 bg-white border border-zinc-200 rounded-2xl text-sm font-bold outline-none focus:ring-2 focus:ring-blue-500"
-                placeholder="Search routes..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-              />
-            </div>
-            <select
-              className="px-4 py-3 bg-white border border-zinc-200 rounded-2xl text-xs font-black uppercase"
-              value={filterStatus}
-              onChange={(e) => setFilterStatus(e.target.value)}
-            >
-              <option value="All">All Status</option>
-              {ROUTE_ADVISORY_STATUSES.map((s) => (
-                <option key={s} value={s}>{s}</option>
-              ))}
-            </select>
+      <AdminDashboardKpiSection
+        pageId="roads-hazards"
+        footer={
+          <AdminDashboardQuickNavRow>
+            <AdminDashboardQuickNavLink href="/crisis/admin" icon={Radio} label="Command Center" />
+            {!embedded ? (
+              <>
+                <AdminDashboardQuickNavDivider />
+                <AdminDashboardQuickNavLink
+                  href="/admin/incidents"
+                  icon={FileWarning}
+                  label="Incident reports"
+                />
+                <AdminDashboardQuickNavDivider />
+                <AdminDashboardQuickNavLink href="/admin/archive" icon={Archive} label="Archive & history" />
+              </>
+            ) : null}
+          </AdminDashboardQuickNavRow>
+        }
+      >
+        {loading ? (
+          <StatCardSkeletonGrid count={4} className={statGrid.dashboard} />
+        ) : (
+          <div className={statGrid.dashboard}>
+            <DashboardStatCard compact label="Active" value={activeAdvisories.length} icon={<Route size={iconSize.stat} />} accent="blue" />
+            <DashboardStatCard compact label="Safe" value={activeAdvisories.filter((a) => a.route_status === "Safe").length} icon={<CheckCircle size={iconSize.stat} />} accent="green" />
+            <DashboardStatCard compact label="Caution" value={activeAdvisories.filter((a) => a.route_status === "Caution").length} icon={<Navigation size={iconSize.stat} />} accent="orange" />
+            <DashboardStatCard compact label="Closed" value={activeAdvisories.filter((a) => a.route_status === "Closed").length} icon={<Ban size={iconSize.stat} />} accent="red" />
           </div>
+        )}
+      </AdminDashboardKpiSection>
 
+      <AdminFilterBar
+        compact
+        title="Live command filters"
+        searchPlaceholder="Search routes..."
+        searchValue={searchTerm}
+        onSearchChange={(e) => setSearchTerm(e.target.value)}
+      >
+        <select
+          className={`${adminShell.select} !py-2 !text-xs min-w-[7.5rem]`}
+          value={filterStatus}
+          onChange={(e) => setFilterStatus(e.target.value)}
+        >
+          <option value="All">All Status</option>
+          {ROUTE_ADVISORY_STATUSES.map((s) => (
+            <option key={s} value={s}>{s}</option>
+          ))}
+        </select>
+      </AdminFilterBar>
+
+      <div className={portalLayout.splitGrid}>
+        <AdminPanel
+          title="Active routes"
+          compact
+          className={portalLayout.panelFill}
+          bodyClassName={portalLayout.panelBodyStack}
+        >
+          {onSectionChange ? (
+            <RoadsHazardsSectionFilters
+              activeSection={activeSection}
+              onSectionChange={(id) => {
+                onSectionChange(id);
+                // #region agent log
+                fetch("http://127.0.0.1:7540/ingest/3142bff0-53ba-4c2c-9606-b4d021977f0c", {
+                  method: "POST",
+                  headers: { "Content-Type": "application/json", "X-Debug-Session-Id": "197cec" },
+                  body: JSON.stringify({
+                    sessionId: "197cec",
+                    runId: "roads-section-filter",
+                    hypothesisId: "H-section",
+                    location: "crisis/admin/routes:sectionFilter",
+                    message: "Section filter inside active panel",
+                    data: { section: id, insideListPanel: true },
+                    timestamp: Date.now(),
+                  }),
+                }).catch(() => {});
+                // #endregion
+              }}
+            />
+          ) : null}
           {loading ? (
-            <AlertCardSkeletonList count={3} />
-          ) : filtered.length === 0 ? (
-            <div className="py-16 text-center border-2 border-dashed border-zinc-200 rounded-3xl">
-              <Route size={40} className="mx-auto text-zinc-200 mb-3" />
-              <p className="font-black uppercase text-xs text-zinc-400">No route advisories yet</p>
+            <div className={portalLayout.listScrollPaneCompact}>
+              <AlertCardSkeletonList count={3} />
+            </div>
+          ) : filtered.filter((a) => a.status === "Active").length === 0 ? (
+            <div className="py-12 text-center border-2 border-dashed border-zinc-200 rounded-2xl">
+              <Route size={36} className="mx-auto text-zinc-200 mb-2" />
+              <p className="font-black uppercase tracking-widest text-[10px] text-zinc-400">No active route advisories</p>
             </div>
           ) : (
-            <div className="space-y-3 max-h-[640px] overflow-y-auto">
-              {filtered.map((advisory) => {
+            <div className={`space-y-2 ${portalLayout.listScrollPaneCompact}`}>
+              {filtered.filter((a) => a.status === "Active").map((advisory) => {
                 const styles = getRouteAdvisoryStatusStyles(advisory.route_status);
                 const pathReady = hasRoutePath(advisory) || (advisory.from_location && advisory.to_location);
+                const meta = `${advisory.route_status} • ${advisory.route_type === "alternative" ? "Detour" : "Primary"}`;
+                const locationLine = `${advisory.from_location || "Start"} → ${advisory.to_location || "End"}`;
+                const message =
+                  advisory.reason?.trim() ||
+                  (pathReady ? "Map line ready for tourists." : "Add From and To locations to draw the map line.");
                 return (
-                  <OutlinedCard
+                  <AdminActiveOpsCard
                     key={advisory.id}
-                    padding={outlinedCard.alertPadding}
-                    className={`border-2 ${styles.border} ${advisory.status === "Inactive" ? "opacity-60" : ""}`}
-                  >
-                    <div className="flex items-start justify-between gap-3">
-                      <div className="min-w-0">
-                        <div className="flex flex-wrap gap-2 mb-2">
-                          <span className={`text-[9px] font-black uppercase px-2 py-1 rounded ${styles.badge}`}>
-                            {advisory.route_status}
-                          </span>
-                          <span className="text-[9px] font-black uppercase px-2 py-1 rounded bg-zinc-100 text-zinc-600">
-                            {advisory.route_type === "alternative" ? "Detour" : "Primary"}
-                          </span>
-                        </div>
-                        <h3 className={typography.cardTitle}>{advisory.title}</h3>
-                        <p className="text-xs text-blue-600 font-medium mt-1">
-                          {advisory.from_location || "Start"} → {advisory.to_location}
-                        </p>
-                        {pathReady ? (
-                          <p className="text-[10px] text-green-700 font-black uppercase mt-1">Map line ready</p>
-                        ) : (
-                          <p className="text-[10px] text-orange-700 font-black uppercase mt-1">Add From + To for map line</p>
-                        )}
+                    compact
+                    severityForCard={routeStatusToCardSeverity(advisory.route_status)}
+                    borderClassName={styles.border}
+                    metaLabel={meta}
+                    title={advisory.title}
+                    message={message}
+                    location={locationLine}
+                    timeLabel={
+                      advisory.updated_at
+                        ? new Date(advisory.updated_at).toLocaleTimeString()
+                        : advisory.created_at
+                          ? new Date(advisory.created_at).toLocaleTimeString()
+                          : null
+                    }
+                    icon={
+                      <div className="p-2 bg-zinc-100 dark:bg-zinc-800 rounded-lg text-zinc-600 dark:text-zinc-400 leading-none shrink-0">
+                        <RouteAdvisoryIcon routeStatus={advisory.route_status} size={iconSize.section} />
                       </div>
-                      <div className="flex flex-col gap-1 shrink-0">
-                        <button type="button" onClick={() => openEdit(advisory)} className="p-2 hover:bg-zinc-100 rounded-lg" aria-label="Edit">
-                          <Edit3 size={14} />
-                        </button>
-                        {advisory.status === "Active" ? (
-                          <button type="button" onClick={() => handleDeactivate(advisory)} className="p-2 hover:bg-zinc-100 rounded-lg text-orange-600" aria-label="Deactivate">
-                            <Ban size={14} />
-                          </button>
-                        ) : (
-                          <button type="button" onClick={() => handleReactivate(advisory)} className="p-2 hover:bg-zinc-100 rounded-lg text-green-600" aria-label="Reactivate">
-                            <CheckCircle size={14} />
-                          </button>
-                        )}
-                        <button type="button" onClick={() => handleDelete(advisory.id)} className="p-2 hover:bg-red-50 rounded-lg text-red-600" aria-label="Delete">
-                          <Trash2 size={14} />
-                        </button>
-                      </div>
-                    </div>
-                  </OutlinedCard>
+                    }
+                    primaryAction={{ label: "Deactivate", onClick: () => handleDeactivate(advisory) }}
+                    secondaryActions={[
+                      {
+                        key: "edit",
+                        label: "Edit",
+                        icon: Edit3,
+                        onClick: () => openEdit(advisory),
+                        className: "hover:bg-amber-50 text-amber-600",
+                      },
+                      {
+                        key: "delete",
+                        label: "Delete",
+                        icon: Trash2,
+                        onClick: () => handleDelete(advisory.id),
+                        className: "hover:bg-red-50 text-red-600",
+                      },
+                    ]}
+                  />
                 );
               })}
             </div>
           )}
-        </div>
+        </AdminPanel>
 
-        <div>
-          <h2 className="text-sm font-black uppercase tracking-widest text-zinc-400 mb-4 flex items-center gap-2">
-            <MapPin size={16} className="text-blue-600" /> Live Map
-          </h2>
+        <AdminPanel
+          title="Route map"
+          className={portalLayout.panelFill}
+          noPadding
+          bodyClassName={portalLayout.mapColumnBody}
+        >
           {mounted && !showModal ? (
-            <div className="h-[480px] rounded-3xl overflow-hidden border border-zinc-200">
+            <div className={portalLayout.mapColumnFill}>
               <MapContainer center={mapCenter} zoom={13} style={{ height: "100%", width: "100%" }}>
                 <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" attribution="&copy; OpenStreetMap" />
                 <RouteAdvisoryPolylines advisories={activeAdvisories} />
               </MapContainer>
             </div>
           ) : (
-            <div className="h-[480px] rounded-3xl bg-zinc-100 animate-pulse flex items-center justify-center">
-              <p className="text-xs font-black uppercase text-zinc-400">Map preview</p>
+            <div className={`${portalLayout.mapColumnFill} bg-zinc-100 animate-pulse flex items-center justify-center`}>
+              <p className="text-[10px] font-black uppercase text-zinc-400">Map preview</p>
             </div>
           )}
-        </div>
+        </AdminPanel>
       </div>
+
+      {inactiveAdvisories.length > 0 && (
+        <AdminTablePanel
+          title="Inactive routes"
+          subtitle="Deactivated advisories — reactivate or delete from here"
+        >
+          <table className="w-full border-collapse text-xs">
+            <thead>
+              <tr className="bg-zinc-50 text-zinc-500 text-[9px] uppercase tracking-widest font-black">
+                <th className="px-6 py-3 text-left">Status</th>
+                <th className="px-6 py-3 text-left">Route</th>
+                <th className="px-6 py-3 text-left">Segment</th>
+                <th className="px-6 py-3 text-right">Actions</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-zinc-100">
+              {inactiveAdvisories.map((advisory) => (
+                <tr key={advisory.id} className="hover:bg-zinc-50/80">
+                  <td className="px-6 py-3">
+                    <span className="text-[8px] font-black uppercase px-2 py-1 rounded-full bg-zinc-100 text-zinc-600">
+                      Inactive
+                    </span>
+                  </td>
+                  <td className="px-6 py-3 font-black uppercase text-zinc-900 max-w-[200px] truncate">{advisory.title}</td>
+                  <td className="px-6 py-3 text-zinc-500 font-medium">
+                    {advisory.from_location || "—"} → {advisory.to_location || "—"}
+                  </td>
+                  <td className="px-6 py-3 text-right">
+                    <div className="flex justify-end gap-2">
+                      <button type="button" onClick={() => handleReactivate(advisory)} className="p-2 hover:bg-green-50 text-green-600 rounded-lg" title="Reactivate">
+                        <CheckCircle size={16} />
+                      </button>
+                      <button type="button" onClick={() => openEdit(advisory)} className="p-2 hover:bg-amber-50 text-amber-600 rounded-lg" title="Edit">
+                        <Edit3 size={16} />
+                      </button>
+                      <button type="button" onClick={() => handleDelete(advisory.id)} className="p-2 hover:bg-red-50 text-red-600 rounded-lg" title="Delete">
+                        <Trash2 size={16} />
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </AdminTablePanel>
+      )}
 
       {showModal && (
         <div className="fixed inset-0 z-[2000] flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm">
@@ -688,10 +796,10 @@ function RouteAdvisoriesAdminPanel({ embedded = false }) {
               </FormSection>
 
               <div className="flex gap-3 pt-4">
-                <button type="submit" disabled={isSaving} className="flex-1 py-3 bg-blue-600 text-white rounded-2xl font-black uppercase text-xs tracking-widest disabled:opacity-50">
+                <button type="submit" disabled={isSaving} className={`flex-1 ${adminShell.btnPrimary} disabled:opacity-50`}>
                   {isSaving ? "Saving..." : editingId ? "Update Route" : "Publish Route"}
                 </button>
-                <button type="button" onClick={() => setShowModal(false)} className="px-6 py-3 bg-zinc-100 text-zinc-600 rounded-2xl font-black uppercase text-xs">
+                <button type="button" onClick={() => setShowModal(false)} className={adminShell.btnGhost}>
                   Cancel
                 </button>
               </div>
@@ -699,6 +807,8 @@ function RouteAdvisoriesAdminPanel({ embedded = false }) {
           </div>
         </div>
       )}
+
+      </div>
 
       <ConfirmDialog
         open={showConfirm}
@@ -711,50 +821,107 @@ function RouteAdvisoriesAdminPanel({ embedded = false }) {
         onConfirm={confirmSave}
         onCancel={() => !isSaving && setShowConfirm(false)}
       />
-    </div>
+    </>
   );
 }
-
-const ADMIN_TABS = [
-  { id: "routes", label: "Routes" },
-  { id: "areas", label: "Area Hazards" },
-];
 
 function RoadsAndHazardsAdminPage() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const tab = searchParams.get("tab") === "areas" ? "areas" : "routes";
+  const [routeCreateIntent, setRouteCreateIntent] = useState(null);
+  const [hazardCreateIntent, setHazardCreateIntent] = useState(false);
 
   const setTab = (next) => {
     router.replace(next === "areas" ? "/crisis/admin/routes?tab=areas" : "/crisis/admin/routes", { scroll: false });
   };
 
+  useEffect(() => {
+    // #region agent log
+    fetch("http://127.0.0.1:7540/ingest/3142bff0-53ba-4c2c-9606-b4d021977f0c", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "X-Debug-Session-Id": "197cec" },
+      body: JSON.stringify({
+        sessionId: "197cec",
+        runId: "roads-hazards-cc-layout",
+        hypothesisId: "H-cc-parity",
+        location: "crisis/admin/routes/page.jsx:shell",
+        message: "Command Center link below stats row",
+        data: { tab, commandCenterBelowStats: true },
+        timestamp: Date.now(),
+      }),
+    }).catch(() => {});
+    // #endregion
+  }, [tab]);
+
   return (
-    <div className="space-y-6 text-left">
+    <>
       <DashboardPageHeader
         title={ROLE_INTERFACE.admin.roadsHazards.title}
         description={ROLE_INTERFACE.admin.roadsHazards.description}
+        action={
+          tab === "routes" ? (
+            <div className="flex flex-wrap gap-2">
+              <button
+                type="button"
+                onClick={() => {
+                  setRouteCreateIntent("primary");
+                  // #region agent log
+                  fetch("http://127.0.0.1:7540/ingest/3142bff0-53ba-4c2c-9606-b4d021977f0c", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json", "X-Debug-Session-Id": "197cec" },
+                    body: JSON.stringify({
+                      sessionId: "197cec",
+                      runId: "roads-header-actions",
+                      hypothesisId: "H-header",
+                      location: "crisis/admin/routes/page.jsx:header",
+                      message: "New route from page header",
+                      data: { action: "primary" },
+                      timestamp: Date.now(),
+                    }),
+                  }).catch(() => {});
+                  // #endregion
+                }}
+                className={adminShell.btnPrimary}
+              >
+                <Plus size={iconSize.button} /> New Route
+              </button>
+              <button
+                type="button"
+                onClick={() => setRouteCreateIntent("alternative")}
+                className={adminShell.btnSuccess}
+              >
+                <Navigation size={iconSize.button} /> New Detour
+              </button>
+            </div>
+          ) : (
+            <button type="button" onClick={() => setHazardCreateIntent(true)} className={adminShell.btnDanger}>
+              <Plus size={iconSize.button} /> Mark Area Hazard
+            </button>
+          )
+        }
       />
 
       <RoleContextBanner helper={ROLE_INTERFACE.admin.roadsHazards.helper} tone="info" />
 
-      <div className="flex flex-wrap gap-2">
-        {ADMIN_TABS.map(({ id, label }) => (
-          <button
-            key={id}
-            type="button"
-            onClick={() => setTab(id)}
-            className={`px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-colors ${
-              tab === id ? "bg-blue-600 text-white" : "bg-zinc-100 text-zinc-600 hover:bg-zinc-200"
-            }`}
-          >
-            {label}
-          </button>
-        ))}
-      </div>
-
-      {tab === "routes" ? <RouteAdvisoriesAdminPanel embedded /> : <AreaHazardsAdminPanel embedded />}
-    </div>
+      {tab === "routes" ? (
+        <RouteAdvisoriesAdminPanel
+          embedded
+          activeSection={tab}
+          onSectionChange={setTab}
+          createIntent={routeCreateIntent}
+          onCreateIntentConsumed={() => setRouteCreateIntent(null)}
+        />
+      ) : (
+        <AreaHazardsAdminPanel
+          embedded
+          activeSection={tab}
+          onSectionChange={setTab}
+          createIntent={hazardCreateIntent}
+          onCreateIntentConsumed={() => setHazardCreateIntent(false)}
+        />
+      )}
+    </>
   );
 }
 

@@ -2,12 +2,12 @@
 
 import React, { useEffect, useState } from "react";
 import Link from "next/link";
-import { User, Mail, Phone, Globe, Shield, Loader2, CheckCircle, Compass, MapPin, Navigation, Trash2, AlertTriangle } from "lucide-react";
-import { Card } from "@/app/components/ui/Card";
+import { User, Mail, Phone, Globe, Shield, Loader2, CheckCircle, MapPin, Navigation, Trash2, AlertTriangle } from "lucide-react";
+import { portalShell } from "@/lib/designSystem";
 import { DestinationModal } from "@/app/components/tour/DestinationModal";
 import { useAuthStore, useCrisisStore } from "@/app/store/crisisStore";
 import { useGuideStore } from "@/app/store/guideStore";
-import { InfoPageHero, PublicPageShell, PublicPageContent } from "@/app/components/InfoPageHero";
+import { InfoPageHero, PublicPageShell, PublicPageContent, PublicPanel } from "@/app/components/InfoPageHero";
 import { CommunicationChannelForm } from "@/app/components/CommunicationChannelSetup";
 import { ProfileSkeleton } from "@/app/components/ui/Skeletons";
 import { ErrorState } from "@/app/components/ui/AsyncState";
@@ -134,9 +134,12 @@ export default function ProfilePage() {
   if (!isAuthenticated) {
     return (
       <PublicPageShell>
-        <PublicPageContent className="text-center">
-          <p className="text-zinc-500 mb-4 text-sm font-medium">Sign in to view and edit your profile.</p>
-          <Link href="/login" className="text-blue-600 font-bold uppercase text-xs">Sign In</Link>
+        <InfoPageHero title="My Profile" description="Sign in to manage account details and alert preferences." />
+        <PublicPageContent>
+          <PublicPanel title="Sign in required">
+            <p className="text-sm text-zinc-600 font-medium mb-4">Your profile and communication settings are available after you sign in.</p>
+            <Link href="/login" className={portalShell.btnPrimary}>Sign in</Link>
+          </PublicPanel>
         </PublicPageContent>
       </PublicPageShell>
     );
@@ -177,11 +180,8 @@ export default function ProfilePage() {
         ) : (
           <>
           {user?.role === "tourist" && touristActiveGroup?.tour_group && (
-            <Card className="p-6 mb-6 border-purple-100 bg-purple-50/30 rounded-3xl">
-              <h2 className="text-sm font-black uppercase tracking-widest text-purple-700 mb-2 flex items-center gap-2">
-                <Compass size={16} /> My Tour
-              </h2>
-              <p className="text-xs text-purple-600 font-bold mb-4">
+            <PublicPanel title="My tour" subtitle="Your assigned guide and route" bodyClassName="bg-purple-50/30">
+              <p className="text-xs text-purple-700 font-bold mb-4">
                 You are currently assigned to this tour group and guide.
               </p>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
@@ -206,17 +206,13 @@ export default function ProfilePage() {
                   </p>
                 </div>
               </div>
-              <button
-                type="button"
-                onClick={() => setShowDestination(true)}
-                className="mt-5 inline-flex items-center gap-2 px-5 py-2.5 bg-blue-600 text-white rounded-2xl font-black uppercase text-xs tracking-widest hover:bg-blue-700 transition-colors"
-              >
-                <MapPin size={14} /> View Destination
+              <button type="button" onClick={() => setShowDestination(true)} className={`mt-5 ${portalShell.btnPrimary}`}>
+                <MapPin size={14} /> View destination
               </button>
-            </Card>
+            </PublicPanel>
           )}
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            <Card className="p-6 bg-zinc-50 border border-zinc-200 rounded-3xl lg:col-span-1">
+            <PublicPanel title="Account summary" className="lg:col-span-1" bodyClassName="bg-zinc-50/50">
               <div className="flex items-center gap-4 mb-6">
                 <div className="bg-blue-600 p-3 rounded-2xl text-white">
                   <User size={24} />
@@ -250,11 +246,9 @@ export default function ProfilePage() {
                   My Reports
                 </Link>
               </div>
-            </Card>
+            </PublicPanel>
 
-            <Card className="p-6 rounded-3xl lg:col-span-2">
-              <h2 className="text-xl font-black uppercase tracking-tight text-zinc-900 mb-4">Account Details</h2>
-
+            <PublicPanel title="Account details" className="lg:col-span-2">
               {message && (
                 <div className={`mb-6 p-4 rounded-2xl flex items-start gap-3 text-sm font-medium ${
                   message.type === "success"
@@ -276,7 +270,7 @@ export default function ProfilePage() {
                     disabled={loading}
                     value={form.full_name}
                     onChange={(e) => setForm({ ...form, full_name: e.target.value })}
-                    className="w-full p-4 bg-zinc-50 border border-zinc-100 rounded-2xl font-bold text-sm outline-none focus:ring-2 focus:ring-blue-500 text-zinc-900 disabled:opacity-50"
+                    className={`${portalShell.input} font-bold disabled:opacity-50`}
                   />
                 </div>
 
@@ -287,7 +281,7 @@ export default function ProfilePage() {
                   <input
                     readOnly
                     value={user?.email || ""}
-                    className="w-full p-4 bg-zinc-100 border border-zinc-100 rounded-2xl font-bold text-sm text-zinc-500 cursor-not-allowed"
+                    className={`${portalShell.input} bg-zinc-100 text-zinc-500 cursor-not-allowed`}
                   />
                 </div>
 
@@ -301,7 +295,7 @@ export default function ProfilePage() {
                     disabled={loading}
                     value={form.phone}
                     onChange={(e) => setForm({ ...form, phone: e.target.value })}
-                    className="w-full p-4 bg-zinc-50 border border-zinc-100 rounded-2xl font-bold text-sm outline-none focus:ring-2 focus:ring-blue-500 text-zinc-900 disabled:opacity-50"
+                    className={`${portalShell.input} font-bold disabled:opacity-50`}
                   />
                 </div>
 
@@ -314,7 +308,7 @@ export default function ProfilePage() {
                     disabled={loading}
                     value={form.nationality}
                     onChange={(e) => setForm({ ...form, nationality: e.target.value })}
-                    className="w-full p-4 bg-zinc-50 border border-zinc-100 rounded-2xl font-bold text-sm outline-none focus:ring-2 focus:ring-blue-500 text-zinc-900 appearance-none disabled:opacity-50"
+                    className={`${portalShell.select} w-full appearance-none disabled:opacity-50`}
                   >
                     <option value="Filipino">Filipino</option>
                     <option value="Foreigner">Foreigner</option>
@@ -328,29 +322,24 @@ export default function ProfilePage() {
                   <input
                     readOnly
                     value={ROLE_LABELS[user?.role] || user?.role || "Tourist"}
-                    className="w-full p-4 bg-zinc-100 border border-zinc-100 rounded-2xl font-bold text-sm text-zinc-500 cursor-not-allowed"
+                    className={`${portalShell.input} bg-zinc-100 text-zinc-500 cursor-not-allowed`}
                   />
                   <p className="text-xs text-zinc-400 font-medium mt-1">
-                    Role changes are managed by Daet LGU administrators.
+                    Role changes are managed by Daet Municipal Tourism Office administrators.
                   </p>
                 </div>
 
                 <div className="pt-2">
-                  <button
-                    type="submit"
-                    disabled={loading}
-                    className="w-full sm:w-auto px-8 py-4 bg-blue-600 text-white rounded-2xl font-black uppercase text-xs tracking-widest hover:bg-blue-700 transition-all disabled:opacity-50 flex items-center justify-center gap-2"
-                  >
-                    {loading ? <><Loader2 size={16} className="animate-spin" /> Saving...</> : "Save Changes"}
+                  <button type="submit" disabled={loading} className={`w-full sm:w-auto ${portalShell.btnPrimary} disabled:opacity-50`}>
+                    {loading ? <><Loader2 size={16} className="animate-spin" /> Saving...</> : "Save changes"}
                   </button>
                 </div>
               </form>
-            </Card>
+            </PublicPanel>
           </div>
 
           {user?.role !== "admin" ? (
-            <Card className="p-6 rounded-3xl mt-6">
-              <h2 className="text-xl font-black uppercase tracking-tight text-zinc-900 mb-2">Communication Preferences</h2>
+            <PublicPanel title="Communication preferences" subtitle="SMS and in-app channels">
               <p className="text-sm text-zinc-500 font-medium mb-4">
                 Control SMS and in-app notifications. Official crisis alert emails are always sent to your registered email address during emergencies.
                 {user?.notification_channels && !user.notification_channels.sms ? (
@@ -373,24 +362,23 @@ export default function ProfilePage() {
                 onSave={handleChannelSave}
                 saving={channelSaving}
               />
-            </Card>
+            </PublicPanel>
           ) : (
-            <Card className="p-6 rounded-3xl mt-6 bg-zinc-50 border-zinc-200">
-              <h2 className="text-xl font-black uppercase tracking-tight text-zinc-900 mb-2">Communication Preferences</h2>
+            <PublicPanel title="Communication preferences" bodyClassName="bg-zinc-50/50">
               <p className="text-sm text-zinc-600 font-medium">
                 Administrator accounts manage alerts in Command Center and do not receive tourist/guide SMS or email broadcasts.
               </p>
-            </Card>
+            </PublicPanel>
           )}
 
           {user?.role !== "admin" ? (
-            <Card className="p-6 rounded-3xl mt-6 border-red-100 bg-red-50/20">
-              <h2 className="text-xl font-black uppercase tracking-tight text-zinc-900 mb-2 flex items-center gap-2">
-                <AlertTriangle size={20} className="text-red-600" /> Delete Account
-              </h2>
-              <p className="text-sm text-zinc-600 font-medium mb-4">
+            <PublicPanel title="Delete account" subtitle="Permanent — cannot be undone" bodyClassName="bg-red-50/20">
+              <p className="text-sm text-zinc-600 font-medium mb-4 flex items-start gap-2">
+                <AlertTriangle size={18} className="text-red-600 shrink-0 mt-0.5" />
+                <span>
                 If you no longer want alerts from CONNECT-DAET, you can permanently delete your account.
                 Inactive accounts (30+ days without signing in) have SMS paused automatically until you sign in again.
+                </span>
               </p>
               {deleteError && (
                 <p className="text-sm text-red-600 font-medium mb-3">{deleteError}</p>
@@ -399,12 +387,12 @@ export default function ProfilePage() {
                 type="button"
                 onClick={handleDeleteAccount}
                 disabled={deleting || loading}
-                className="inline-flex items-center gap-2 px-6 py-3 bg-red-600 text-white rounded-2xl font-black uppercase text-xs tracking-widest hover:bg-red-700 disabled:opacity-50"
+                className={portalShell.btnDanger}
               >
                 {deleting ? <Loader2 size={16} className="animate-spin" /> : <Trash2 size={16} />}
-                {deleting ? "Deleting..." : "Delete My Account"}
+                {deleting ? "Deleting..." : "Delete my account"}
               </button>
-            </Card>
+            </PublicPanel>
           ) : null}
           </>
         )}

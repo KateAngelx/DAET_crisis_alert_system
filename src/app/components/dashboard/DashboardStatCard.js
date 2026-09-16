@@ -2,7 +2,7 @@ import React from "react";
 import Link from "next/link";
 import { ArrowRight } from "lucide-react";
 import { OutlinedCard } from "@/app/components/ui/OutlinedCard";
-import { typography, iconSize, statCard, getStatCardAccent } from "@/lib/designSystem";
+import { typography, iconSize, statCard, getStatCardAccent, cardGroupTouchShadow } from "@/lib/designSystem";
 
 export function DashboardStatCard({
   label,
@@ -15,8 +15,14 @@ export function DashboardStatCard({
   footerLink = false,
   subtext,
   compact = false,
+  tone = "light",
 }) {
-  const styles = getStatCardAccent(accent);
+  const dark = tone === "dark";
+  const styles = getStatCardAccent(accent, { dark });
+  const pad = compact ? "p-2.5 sm:p-3 lg:p-4" : "p-3 sm:p-4 lg:p-5";
+  const shellClass = dark
+    ? `${styles.shell || "border border-white/10 bg-white/5 backdrop-blur-md"} ${pad} rounded-xl h-full min-w-0`
+    : null;
   const showIconRow = icon || badge || (href && !footerLink);
 
   const cardBody = (
@@ -48,7 +54,7 @@ export function DashboardStatCard({
         </div>
       )}
       <p className={`${statCard.label} ${styles.label} mb-0.5 sm:mb-1`}>{label}</p>
-      <p className={`${typography.statValue} ${styles.value} break-words tabular-nums`}>{value}</p>
+      <p className={`${typography.statValue} ${styles.value} break-words tabular-nums font-bold`}>{value}</p>
       {subtext ? (
         <p className="text-[9px] sm:text-[10px] text-zinc-400 mt-1 font-medium leading-tight line-clamp-2">
           {subtext}
@@ -63,13 +69,29 @@ export function DashboardStatCard({
     </>
   );
 
+  if (dark) {
+    const inner = <div className={shellClass}>{cardBody}</div>;
+    if (href && footerLink) {
+      return (
+        <Link href={href} className="block no-underline min-w-0 group">
+          {inner}
+        </Link>
+      );
+    }
+    return inner;
+  }
+
   if (href && footerLink) {
     return (
       <Link
         href={href}
-        className="block no-underline min-w-0 group transition-all hover:-translate-y-0.5"
+        className="block no-underline min-w-0 group"
       >
-        <OutlinedCard accent={accent} compact={compact} className="group-hover:shadow-2xl h-full">
+        <OutlinedCard
+          accent={accent}
+          compact={compact}
+          className={`${cardGroupTouchShadow} h-full`}
+        >
           {cardBody}
         </OutlinedCard>
       </Link>

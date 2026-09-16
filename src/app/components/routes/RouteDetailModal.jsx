@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useMemo } from "react";
+import React, { useEffect, useMemo, useRef } from "react";
 import { X, MapPin, Navigation, ShieldAlert, Clock, Route, ExternalLink, AlertTriangle, Download } from "lucide-react";
 import { AlternativeRouteDisplay } from "@/app/components/danger/AlternativeRouteDisplay";
 import { Card } from "@/app/components/ui/Card";
@@ -233,7 +233,7 @@ export function RouteDetailContent({ route, catalog, onSelectRoute }) {
             )}
           </div>
           <p className="text-[10px] text-zinc-400 font-medium">
-            Opens Google Maps in a new tab. Follow LGU and guide instructions on the ground.
+            Opens Google Maps in a new tab. Follow tourism office and guide instructions on the ground.
           </p>
         </div>
       )}
@@ -242,6 +242,12 @@ export function RouteDetailContent({ route, catalog, onSelectRoute }) {
 }
 
 export function RouteDetailModal({ open, route, catalog, onClose, onSelectRoute }) {
+  const scrollLoggedRef = useRef(false);
+
+  useEffect(() => {
+    scrollLoggedRef.current = false;
+  }, [open, route?.advisoryId, route?.id]);
+
   useEffect(() => {
     if (!open) return undefined;
     const prev = document.body.style.overflow;
@@ -255,6 +261,10 @@ export function RouteDetailModal({ open, route, catalog, onClose, onSelectRoute 
 
   const styles = getRouteStatusStyles(route.status);
 
+  // #region agent log
+  fetch("http://127.0.0.1:7540/ingest/3142bff0-53ba-4c2c-9606-b4d021977f0c",{method:"POST",headers:{"Content-Type":"application/json","X-Debug-Session-Id":"197cec"},body:JSON.stringify({sessionId:"197cec",runId:"route-modal-header",hypothesisId:"A",location:"RouteDetailModal.jsx:open",message:"Route modal opened with fixed header layout",data:{routeId:route.advisoryId||route.id,layout:"flex-col-overflow-body"},timestamp:Date.now()})}).catch(()=>{});
+  // #endregion
+
   return (
     <div
       className="fixed inset-0 z-[2000] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm"
@@ -263,36 +273,50 @@ export function RouteDetailModal({ open, route, catalog, onClose, onSelectRoute 
       aria-modal="true"
       aria-labelledby="route-detail-title"
     >
-      <Card
-        className={`relative z-[2001] max-w-2xl w-full max-h-[90vh] overflow-y-auto border-2 ${styles.border} shadow-2xl animate-in zoom-in-95 duration-200`}
+      <div
+        className="relative z-[2001] max-w-2xl w-full max-h-[90vh]"
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="sticky top-0 bg-white border-b border-zinc-100 px-6 py-4 flex items-start justify-between gap-4 z-10">
-          <p id="route-detail-title" className="text-[10px] font-black uppercase tracking-widest text-zinc-400">
-            Route advisory details
-          </p>
-          <button
-            type="button"
-            onClick={onClose}
-            className="p-2 hover:bg-zinc-100 rounded-full transition-colors shrink-0"
-            aria-label="Close route details"
+        <Card
+          className={`p-0 flex flex-col max-h-[90vh] overflow-hidden border-2 ${styles.border} shadow-2xl animate-in zoom-in-95 duration-200`}
+        >
+          <div className="shrink-0 bg-white rounded-t-2xl border-b border-zinc-100 px-6 py-4 flex items-start justify-between gap-4">
+            <p id="route-detail-title" className="text-[10px] font-black uppercase tracking-widest text-zinc-400">
+              Route advisory details
+            </p>
+            <button
+              type="button"
+              onClick={onClose}
+              className="p-2 hover:bg-zinc-100 rounded-full transition-colors shrink-0"
+              aria-label="Close route details"
+            >
+              <X size={20} />
+            </button>
+          </div>
+          <div
+            className="flex-1 overflow-y-auto p-6 bg-white"
+            onScroll={(e) => {
+              // #region agent log
+              if (!scrollLoggedRef.current && e.currentTarget.scrollTop > 8) {
+                scrollLoggedRef.current = true;
+                fetch("http://127.0.0.1:7540/ingest/3142bff0-53ba-4c2c-9606-b4d021977f0c",{method:"POST",headers:{"Content-Type":"application/json","X-Debug-Session-Id":"197cec"},body:JSON.stringify({sessionId:"197cec",runId:"route-modal-header",hypothesisId:"B",location:"RouteDetailModal.jsx:scroll",message:"Body scrolled under fixed header",data:{scrollTop:e.currentTarget.scrollTop},timestamp:Date.now()})}).catch(()=>{});
+              }
+              // #endregion
+            }}
           >
-            <X size={20} />
-          </button>
-        </div>
-        <div className="p-6">
-          <RouteDetailContent route={route} catalog={catalog} onSelectRoute={onSelectRoute} />
-        </div>
-        <div className="sticky bottom-0 bg-white border-t border-zinc-100 p-4">
-          <button
-            type="button"
-            onClick={onClose}
-            className="w-full py-3 bg-zinc-900 text-white rounded-2xl font-black uppercase text-xs tracking-widest"
-          >
-            Close
-          </button>
-        </div>
-      </Card>
+            <RouteDetailContent route={route} catalog={catalog} onSelectRoute={onSelectRoute} />
+          </div>
+          <div className="shrink-0 bg-white rounded-b-2xl border-t border-zinc-100 p-4">
+            <button
+              type="button"
+              onClick={onClose}
+              className="w-full py-3 bg-zinc-900 text-white rounded-2xl font-black uppercase text-xs tracking-widest"
+            >
+              Close
+            </button>
+          </div>
+        </Card>
+      </div>
     </div>
   );
 }

@@ -2,10 +2,11 @@
 
 import React, { useCallback, useEffect, useState } from "react";
 import {
-  Settings, Users, FileText, Download, Bell, Loader2, CheckCircle, AlertCircle, Mail, MessageSquare,
+  Users, FileText, Download, Bell, Loader2, CheckCircle, AlertCircle, Mail, MessageSquare,
 } from "lucide-react";
-import { Card } from "@/app/components/ui/Card";
+import { AdminPanel } from "@/app/components/admin/AdminPanel";
 import { DashboardPageHeader } from "@/app/components/dashboard/DashboardPageHeader";
+import { adminShell } from "@/lib/designSystem";
 import { RoleContextBanner } from "@/app/components/dashboard/RoleContextBanner";
 import { ROLE_INTERFACE } from "@/lib/roleInterfaceCopy";
 import { AUDIENCE_ROLE_OPTIONS } from "@/lib/notificationAudience";
@@ -161,7 +162,7 @@ export default function AdminSettingsPage() {
   };
 
   return (
-    <div className="space-y-6 text-left pb-8">
+    <>
       <DashboardPageHeader
         title={ROLE_INTERFACE.admin.settings.title}
         description={ROLE_INTERFACE.admin.settings.description}
@@ -184,19 +185,10 @@ export default function AdminSettingsPage() {
       )}
 
       <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
-        <Card className="p-6 rounded-3xl">
-          <div className="flex items-center gap-3 mb-4">
-            <div className="p-2.5 bg-blue-600 text-white rounded-xl">
-              <Bell size={18} />
-            </div>
-            <div>
-              <h2 className="font-black uppercase tracking-tight text-zinc-900">Notification Audience</h2>
-              <p className="text-xs text-zinc-500 font-medium mt-0.5">
-                Who receives crisis alerts and area hazard SMS/email/in-app notifications
-              </p>
-            </div>
-          </div>
-
+        <AdminPanel
+          title="Notification audience"
+          subtitle="Who receives crisis alerts and area hazard SMS/email/in-app notifications"
+        >
           {loading ? (
             <div className="flex items-center gap-2 text-sm text-zinc-500 py-8 justify-center">
               <Loader2 size={16} className="animate-spin" /> Loading settings...
@@ -229,7 +221,7 @@ export default function AdminSettingsPage() {
               <p className="text-xs text-zinc-500 font-medium mb-4">
                 When you broadcast with <strong>Email</strong> enabled, every included tourist with an email on their profile receives the alert (mandatory for emergencies).
                 SMS and in-app still follow each user&apos;s Profile preferences. Administrators are
-                <strong> excluded by default</strong> so LGU staff are not texted when broadcasting to the public.
+                <strong> excluded by default</strong> so tourism office staff are not texted when broadcasting to the public.
               </p>
 
               {updatedAt && (
@@ -242,25 +234,15 @@ export default function AdminSettingsPage() {
                 type="button"
                 onClick={handleSave}
                 disabled={saving}
-                className="w-full py-3.5 bg-blue-600 text-white rounded-2xl font-black uppercase text-xs tracking-widest hover:bg-blue-700 disabled:opacity-50 flex items-center justify-center gap-2"
+                className={`${adminShell.btnPrimary} w-full py-3.5 disabled:opacity-50`}
               >
                 {saving ? <><Loader2 size={16} className="animate-spin" /> Saving...</> : "Save Notification Settings"}
               </button>
             </>
           )}
-        </Card>
+        </AdminPanel>
 
-        <Card className="p-6 rounded-3xl">
-          <div className="flex items-center gap-3 mb-4">
-            <div className="p-2.5 bg-zinc-800 text-white rounded-xl">
-              <Download size={18} />
-            </div>
-            <div>
-              <h2 className="font-black uppercase tracking-tight text-zinc-900">Data Export</h2>
-              <p className="text-xs text-zinc-500 font-medium mt-0.5">Download CSV snapshots for reporting</p>
-            </div>
-          </div>
-
+        <AdminPanel title="Data export" subtitle="Download CSV snapshots for reporting">
           <div className="space-y-3">
             <button
               type="button"
@@ -290,17 +272,14 @@ export default function AdminSettingsPage() {
               {exporting === "incidents" && <Loader2 size={16} className="animate-spin text-zinc-400" />}
             </button>
           </div>
-        </Card>
+        </AdminPanel>
       </div>
 
-      <Card className="p-6 rounded-3xl border-zinc-100">
-        <div className="flex items-center gap-3 mb-4">
-          <Bell size={20} className="text-blue-600" />
-          <div>
-            <h2 className="font-black uppercase tracking-tight text-zinc-900">Delivery Testing</h2>
-            <p className="text-xs text-zinc-500 font-medium mt-1">
-              Send a test to your admin profile email/phone to verify env configuration.
-            </p>
+      <AdminPanel
+        title="Delivery testing"
+        subtitle="Send a test to your admin profile email/phone to verify env configuration"
+      >
+          <div className="mb-4">
             {emailDiagnostics && (
               <div className="mt-2 text-[11px] text-zinc-500 font-medium space-y-1">
                 <p>
@@ -319,7 +298,6 @@ export default function AdminSettingsPage() {
               </div>
             )}
           </div>
-        </div>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <button
             type="button"
@@ -340,22 +318,18 @@ export default function AdminSettingsPage() {
             {testingSms ? "Sending..." : "Test SMS"}
           </button>
         </div>
-      </Card>
+      </AdminPanel>
 
-      <Card className="p-6 rounded-3xl bg-zinc-50 border-zinc-200">
-        <div className="flex items-center gap-3 mb-2">
-          <Settings size={18} className="text-zinc-500" />
-          <h2 className="font-black uppercase tracking-tight text-zinc-900 text-sm">System Notes</h2>
-        </div>
+      <AdminPanel title="System notes" bodyClassName="bg-zinc-50/80">
         <ul className="text-sm text-zinc-600 font-medium space-y-2 list-disc pl-5">
           <li>Crisis Command Center alert channels (email/SMS/app) control <em>how</em> an alert is sent; this page controls <em>who</em> receives it.</li>
           <li>SMS delivery uses iProg — ensure <code className="text-xs bg-white px-1 rounded">IPROG_SMS_API_TOKEN</code> is set in environment variables.</li>
-          <li>Email delivery: use your <strong>own LGU inbox</strong> via SMTP, or your <strong>own domain</strong> via Resend. Recipients are always each user&apos;s registered profile email.</li>
+          <li>Email delivery: use your <strong>office inbox</strong> via SMTP, or your <strong>own domain</strong> via Resend. Recipients are always each user&apos;s registered profile email.</li>
           <li>SMTP (own Gmail/Workspace/Outlook): <code className="text-xs bg-white px-1 rounded">SMTP_HOST</code>, <code className="text-xs bg-white px-1 rounded">SMTP_USER</code>, <code className="text-xs bg-white px-1 rounded">SMTP_PASS</code>, <code className="text-xs bg-white px-1 rounded">EMAIL_FROM</code></li>
           <li>Resend (own domain): <code className="text-xs bg-white px-1 rounded">RESEND_API_KEY</code> + <code className="text-xs bg-white px-1 rounded">EMAIL_FROM</code></li>
           <li>Individual users can opt out of channels in Profile → Communication Preferences.</li>
         </ul>
-      </Card>
-    </div>
+      </AdminPanel>
+    </>
   );
 }

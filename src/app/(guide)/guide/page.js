@@ -5,8 +5,9 @@ import Link from "next/link";
 import {
   Users, Bell, AlertTriangle, FileText, ArrowRight, Plus, Compass, ShieldCheck, Navigation, Route,
 } from "lucide-react";
-import { Card } from "@/app/components/ui/Card";
-import { DashboardPageHeader } from "@/app/components/dashboard/DashboardPageHeader";
+import { GuidePageHeader } from "@/app/components/guide/GuidePageHeader";
+import { GuidePanel } from "@/app/components/guide/GuidePanel";
+import { guideShell, iconSize, statGrid, typography, portalLayout } from "@/lib/designSystem";
 import { DashboardStatCard } from "@/app/components/dashboard/DashboardStatCard";
 import { DestinationModal } from "@/app/components/tour/DestinationModal";
 import { TourGroupCard } from "@/app/components/tour/TourGroupCard";
@@ -18,10 +19,12 @@ import { useGuideStore } from "@/app/store/guideStore";
 import { useRouteAdvisoryStore } from "@/app/store/routeAdvisoryStore";
 import { buildRouteCatalog } from "@/lib/routesUtils";
 import { formatTourRoute, getRelevantRouteAdvisoriesForGroup } from "@/lib/tourGroupRoute";
-import { iconSize, statGrid, typography } from "@/lib/designSystem";
 import { ROLE_INTERFACE } from "@/lib/roleInterfaceCopy";
 import { CompletedToursPanel } from "@/app/components/tour/CompletedToursPanel";
 import { GuideDashboardQuickActions } from "@/app/components/guide/GuideDashboardQuickActions";
+import { PublicCardListPreview } from "@/app/components/shell/PublicCardListPreview";
+import { PublicCategorizedCardList } from "@/app/components/shell/PublicCategorizedCardList";
+import { INCIDENT_SEVERITIES } from "@/lib/constants";
 
 export default function GuideDashboard() {
   const { user } = useAuthStore();
@@ -85,15 +88,12 @@ export default function GuideDashboard() {
   };
 
   return (
-    <div className="space-y-6 text-left">
-      <DashboardPageHeader
+    <>
+      <GuidePageHeader
         title={`Welcome, ${user?.name || "Guide"}`}
         description={ROLE_INTERFACE.guide.dashboard.description}
         action={
-          <Link
-            href="/guide/groups"
-            className="flex items-center gap-2 bg-purple-600 text-white px-5 py-2.5 rounded-2xl font-black uppercase text-xs tracking-widest hover:bg-purple-700 transition-colors"
-          >
+          <Link href="/guide/groups" className={`${guideShell.btnGuide} no-underline`}>
             <Plus size={16} /> New Tour Group
           </Link>
         }
@@ -111,7 +111,7 @@ export default function GuideDashboard() {
       )}
 
       {criticalAlerts.length > 0 && (
-        <Card className="p-5 bg-red-50 border-red-200">
+        <GuidePanel title="Critical alert active" bodyClassName="bg-red-50/60">
           <div className="flex items-start gap-4">
             <AlertTriangle className="text-red-600 shrink-0" size={iconSize.section} />
             <div>
@@ -124,32 +124,19 @@ export default function GuideDashboard() {
               </Link>
             </div>
           </div>
-        </Card>
+        </GuidePanel>
       )}
 
       {relevantRouteItems.length > 0 && (
-        <Card className="p-5 bg-orange-50 border-orange-200">
-          <div className="flex items-start justify-between gap-4 mb-4">
-            <div className="flex items-start gap-4">
-              <Route className="text-orange-600 shrink-0" size={iconSize.section} />
-              <div>
-                <p className="text-xs font-black uppercase text-orange-600 tracking-widest mb-1">
-                  Routes Affecting Your Groups
-                </p>
-                <p className="text-sm text-orange-900 font-medium">
-                  {relevantRouteItems.length} published route advisories match your active tour group paths.
-                  Review detours before departure and share updates with tourists.
-                </p>
-              </div>
-            </div>
-            <Link
-              href="/guide/routes"
-              className="text-[10px] font-black uppercase text-blue-600 hover:underline shrink-0"
-            >
+        <GuidePanel title="Routes affecting your groups" bodyClassName={`bg-orange-50/50 ${portalLayout.panelBodyStack}`}>
+          <div className="flex justify-end mb-3">
+            <Link href="/guide/routes" className="text-[10px] font-black uppercase text-blue-600 hover:underline">
               All routes
             </Link>
           </div>
-
+          <p className="text-sm text-orange-900 font-medium mb-4">
+            {relevantRouteItems.length} published route advisories match your active tour group paths.
+          </p>
           {activeGroups.length > 0 && (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-2 mb-4">
               {[...groupRouteAdvisories.values()].map(({ group, advisories: items }) => (
@@ -164,92 +151,130 @@ export default function GuideDashboard() {
             </div>
           )}
 
-          <div className="space-y-3">
-            {relevantRouteItems.slice(0, 3).map((route) => (
-              <RouteListCard key={route.id} route={route} onSelect={setSelectedRoute} />
-            ))}
-          </div>
-        </Card>
+          <PublicCardListPreview
+            items={relevantRouteItems}
+            modalTitle="Routes affecting your groups"
+            listClassName="space-y-3"
+            scrollPaneClassName={portalLayout.listScrollPane}
+            renderItem={(route) => <RouteListCard route={route} onSelect={setSelectedRoute} />}
+          />
+        </GuidePanel>
       )}
 
       {activeAlerts.length > 0 && (
-        <Card className="p-5 border-zinc-100">
-          <div className="flex items-center justify-between gap-3 mb-3">
-            <h2 className={`${typography.sectionTitle} flex items-center gap-2 mb-0`}>
-              <Bell size={16} className="text-red-500" /> Active Crisis Alerts
-            </h2>
-            <Link href="/guide/crisis" className="text-[10px] font-black uppercase text-blue-600 hover:underline shrink-0">
+        <GuidePanel
+          title="Active crisis alerts"
+          bodyClassName={portalLayout.panelBodyStack}
+          action={
+            <Link href="/guide/crisis" className="text-[10px] font-black uppercase text-blue-600 hover:underline">
               Crisis Hub
             </Link>
-          </div>
-          <div className="space-y-3">
-            {activeAlerts.slice(0, 2).map((alert) => (
-              <div key={alert.id} className="p-3 bg-zinc-50 rounded-xl border border-zinc-100">
-                <p className="text-[10px] font-black uppercase text-zinc-400">{alert.severity}</p>
+          }
+        >
+          <PublicCategorizedCardList
+            items={activeAlerts}
+            getCategory={(alert) => alert.type}
+            getSeverity={(alert) => alert.severity}
+            listPaneClassName={portalLayout.listScrollPane}
+            modalTitle="Active crisis alerts"
+            renderItem={(alert) => (
+              <div className="p-3 bg-zinc-50 rounded-xl border border-zinc-100">
+                <p className="text-[10px] font-black uppercase text-zinc-400">
+                  {alert.severity} · {alert.type}
+                </p>
                 <p className="font-bold text-zinc-900 text-sm">{alert.title}</p>
               </div>
-            ))}
-          </div>
-        </Card>
+            )}
+          />
+        </GuidePanel>
       )}
 
-      <div>
-        <div className="flex items-center justify-between mb-4">
-          <h2 className={typography.sectionTitle}>Active Tour Groups</h2>
+      <GuidePanel
+        title="Active tour groups"
+        bodyClassName={portalLayout.panelBodyStack}
+        action={
           <Link href="/guide/groups" className="text-[10px] font-black uppercase tracking-widest text-blue-600 hover:underline">
             View all
           </Link>
-        </div>
+        }
+      >
         {activeGroups.length > 0 ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {activeGroups.slice(0, 4).map((group) => (
+          <PublicCardListPreview
+            items={activeGroups}
+            modalTitle="Active tour groups"
+            listClassName="grid grid-cols-1 md:grid-cols-2 gap-4"
+            scrollPaneClassName={portalLayout.listScrollPane}
+            renderItem={(group) => (
               <TourGroupCard
-                key={group.id}
                 group={group}
                 guideId={user?.id}
                 compact
                 onOpenDestination={openDestination}
                 onCompleted={() => user?.id && fetchTourGroups(user.id)}
               />
-            ))}
-          </div>
+            )}
+          />
         ) : (
-          <Card className="p-10 text-center border-zinc-100">
+          <div className="py-10 text-center rounded-xl border border-dashed border-zinc-200 bg-zinc-50/50">
             <Compass size={40} className="mx-auto text-zinc-200 mb-3" />
             <p className="text-zinc-400 font-black uppercase text-xs">No active tour groups</p>
             <Link href="/guide/groups" className="inline-block mt-3 text-[10px] font-black uppercase text-blue-600 hover:underline">
               Create your first tour group
             </Link>
-          </Card>
+          </div>
         )}
-      </div>
+      </GuidePanel>
 
       {completedGroups.length > 0 && (
-        <div>
-          <div className="flex items-center justify-between mb-4">
-            <h2 className={typography.sectionTitle}>Completed Tours</h2>
-            <Link href="/guide/completed" className="text-[10px] font-black uppercase tracking-widest text-green-600 hover:underline">
+        <GuidePanel
+          title="Completed tours"
+          action={
+            <Link href="/guide/completed" className={`${guideShell.btnGhost} no-underline text-[10px] py-2`}>
               View all
             </Link>
-          </div>
+          }
+        >
           <CompletedToursPanel groups={completedGroups} guideId={user?.id} compact limit={2} />
-        </div>
+        </GuidePanel>
       )}
+
+      <GuidePanel title="History & records" subtitle="Completed work and closed reports">
+        <div className="flex flex-wrap gap-3">
+          <Link href="/guide/history" className={`${guideShell.btnGuide} no-underline`}>
+            Open history
+          </Link>
+          <Link href="/guide/completed" className={`${guideShell.btnGhost} no-underline`}>
+            Completed tours
+          </Link>
+          <Link href="/guide/reports" className={`${guideShell.btnGhost} no-underline`}>
+            Group reports
+          </Link>
+        </div>
+      </GuidePanel>
 
       <GuideDashboardQuickActions showCompleted={false} />
 
       {openIncidents.length > 0 && (
-        <div>
-          <div className="flex items-center justify-between mb-4">
-            <h2 className={typography.sectionTitle}>Group Reports</h2>
-            <Link href="/guide/reports" className="text-[10px] font-black uppercase tracking-widest text-blue-600 hover:underline">
+        <GuidePanel
+          title="Group reports"
+          bodyClassName={portalLayout.panelBodyStack}
+          action={
+            <Link href="/guide/reports" className={`${guideShell.btnGhost} no-underline text-[10px] py-2`}>
               View all
             </Link>
-          </div>
-          <div className="space-y-3">
-            {openIncidents.slice(0, 5).map((inc) => (
-              <Link key={inc.id} href={`/guide/reports/${inc.id}`} className="block no-underline">
-                <Card className="p-5 border-zinc-100 hover:shadow-md transition-all">
+          }
+        >
+          <PublicCategorizedCardList
+            items={openIncidents}
+            getCategory={(inc) => inc.category}
+            getSeverity={(inc) => inc.severity}
+            categoryLabel="Report category"
+            severityOrder={[...INCIDENT_SEVERITIES].reverse()}
+            listPaneClassName={portalLayout.listScrollPane}
+            modalTitle="Group reports"
+            renderItem={(inc) => (
+              <Link href={`/guide/reports/${inc.id}`} className="block no-underline">
+                <div className="rounded-xl border border-zinc-200 p-4 hover:border-zinc-300 transition-colors">
                   <div className="flex items-center justify-between gap-4">
                     <div>
                       <p className="font-mono text-xs text-blue-600 font-black">{inc.reference_number}</p>
@@ -258,11 +283,11 @@ export default function GuideDashboard() {
                     </div>
                     <ArrowRight size={18} className="text-zinc-400 shrink-0" />
                   </div>
-                </Card>
+                </div>
               </Link>
-            ))}
-          </div>
-        </div>
+            )}
+          />
+        </GuidePanel>
       )}
       <DestinationModal
         open={!!modalGroup}
@@ -286,7 +311,7 @@ export default function GuideDashboard() {
         onClose={() => setSelectedRoute(null)}
         onSelectRoute={setSelectedRoute}
       />
-    </div>
+    </>
   );
 }
 

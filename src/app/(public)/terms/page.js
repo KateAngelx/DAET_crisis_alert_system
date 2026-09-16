@@ -15,7 +15,7 @@ export default function TermsPage() {
       />
 
       <PublicPageContent>
-        <p className="text-xs text-zinc-400 font-bold uppercase tracking-widest mb-10">Last updated: September 2026</p>
+        <p className="text-xs text-zinc-400 font-bold uppercase tracking-widest">Last updated: September 2026</p>
 
         <InfoSection title="Acceptance of Terms">
           <p>
@@ -47,7 +47,7 @@ export default function TermsPage() {
 
         <InfoSection title="Alert Accuracy & Availability">
           <p>
-            While we strive for timely and accurate alerts, the system depends on internet connectivity, third-party services, and human input. The municipal government is not liable for delays, omissions, or service interruptions beyond reasonable control.
+            While we strive for timely and accurate alerts, the system depends on internet connectivity, third-party services, and human input. The {siteInfo.officeName} is not liable for delays, omissions, or service interruptions beyond reasonable control.
           </p>
         </InfoSection>
 

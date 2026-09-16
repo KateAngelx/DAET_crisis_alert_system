@@ -1,4 +1,4 @@
-/** LGU-wide notification audience — which roles receive broadcast SMS/email/in-app */
+/** Office-wide notification audience — which roles receive broadcast SMS/email/in-app */
 
 export const DEFAULT_NOTIFICATION_AUDIENCE = {
   tourists: true,
@@ -38,5 +38,5 @@ export function isProfileInAudience(profile, audience) {
 export const AUDIENCE_ROLE_OPTIONS = [
   { key: "tourists", label: "Tourists", description: "All registered tourists — crisis emails go to every profile with an email when Email is enabled on the broadcast." },
   { key: "guides", label: "Tourism Guides", description: "Assigned guides monitoring tour groups." },
-  { key: "admins", label: "Administrators", description: "LGU staff with Command Center access." },
+  { key: "admins", label: "Administrators", description: "Tourism office staff with Command Center access." },
 ];

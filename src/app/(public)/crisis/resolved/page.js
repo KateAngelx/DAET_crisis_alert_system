@@ -1,8 +1,8 @@
 "use client";
 
-import React, { useEffect, useState, useRef } from "react";
+import React, { useEffect, useState } from "react";
 import Link from "next/link";
-import { Bell, CheckCircle, Clock, MapPin, Info } from "lucide-react";
+import { Bell, CheckCircle, Info } from "lucide-react";
 import { useCrisisStore } from "@/app/store/crisisStore";
 import {
   InfoPageHero,
@@ -10,14 +10,21 @@ import {
   PublicPageContent,
   publicLayout,
   PublicInfoCallout,
+  PublicPanel,
 } from "@/app/components/InfoPageHero";
 import { AsyncState, ErrorState } from "@/app/components/ui/AsyncState";
-import { AlertCardSkeletonList } from "@/app/components/ui/Skeletons";
+import { AlertCardSkeletonList, PublicStatCardSkeleton } from "@/app/components/ui/Skeletons";
 import { PublicStatCard } from "@/app/components/dashboard/PublicStatCard";
-import { OutlinedCard } from "@/app/components/ui/OutlinedCard";
-import { typography, iconSize, statGrid, getSeverityOutline, outlinedCard } from "@/lib/designSystem";
+import { iconSize, statGrid, portalLayout } from "@/lib/designSystem";
+import {
+  PublicCategorizedCardFilters,
+  DEFAULT_SEVERITY_ORDER,
+  DEFAULT_CRISIS_TYPE_OPTIONS,
+} from "@/app/components/shell/PublicCategorizedCardFilters";
+import { CrisisAlertListCard } from "@/app/components/crisis/CrisisAlertListCard";
 import { ROLE_INTERFACE } from "@/lib/roleInterfaceCopy";
 import { RoleContextBanner } from "@/app/components/dashboard/RoleContextBanner";
+import { PublicCategorizedCardList } from "@/app/components/shell/PublicCategorizedCardList";
 
 function formatResolvedAt(alert) {
   const date = alert.updated_at || alert.created_at;
@@ -27,8 +34,8 @@ function formatResolvedAt(alert) {
 export default function ResolvedAlertsPage() {
   const { alerts, fetchAlerts, loading, error } = useCrisisStore();
   const [mounted, setMounted] = useState(false);
-  const contentRef = useRef(null);
-
+  const [categoryFilter, setCategoryFilter] = useState("all");
+  const [severityFilter, setSeverityFilter] = useState("all");
   useEffect(() => {
     setMounted(true);
     const init = async () => {
@@ -46,23 +53,30 @@ export default function ResolvedAlertsPage() {
 
   useEffect(() => {
     if (!mounted || typeof window === "undefined") return;
-    const el = contentRef.current;
-    const rect = el?.getBoundingClientRect();
     const resolved = alerts.filter((a) => a.status === "Resolved" && a.is_public);
+    const weekCount = resolved.filter((a) => {
+      const t = new Date(a.updated_at || a.created_at).getTime();
+      return Date.now() - t < 7 * 24 * 60 * 60 * 1000;
+    }).length;
+    const monthCount = resolved.filter((a) => {
+      const t = new Date(a.updated_at || a.created_at).getTime();
+      return Date.now() - t < 30 * 24 * 60 * 60 * 1000;
+    }).length;
     // #region agent log
     fetch("http://127.0.0.1:7540/ingest/3142bff0-53ba-4c2c-9606-b4d021977f0c", {
       method: "POST",
-      headers: { "Content-Type": "application/json", "X-Debug-Session-Id": "ee1adc" },
+      headers: { "Content-Type": "application/json", "X-Debug-Session-Id": "197cec" },
       body: JSON.stringify({
-        sessionId: "ee1adc",
-        runId: "resolved-layout-fix",
-        hypothesisId: "H1",
-        location: "crisis/resolved/page.js:layout",
-        message: "Resolved page content width",
+        sessionId: "197cec",
+        runId: "resolved-stat-cards",
+        hypothesisId: "A",
+        location: "crisis/resolved/page.js:stats",
+        message: "Resolved page stat cards rendered",
         data: {
-          contentWidth: rect?.width ?? null,
-          viewportWidth: window.innerWidth,
-          resolvedCount: resolved.length,
+          overallSolved: resolved.length,
+          resolvedThisWeek: weekCount,
+          resolvedThisMonth: monthCount,
+          statCardCount: 3,
         },
         timestamp: Date.now(),
       }),
@@ -83,6 +97,11 @@ export default function ResolvedAlertsPage() {
     return Date.now() - t < 7 * 24 * 60 * 60 * 1000;
   }).length;
 
+  const monthCount = resolvedAlerts.filter((a) => {
+    const t = new Date(a.updated_at || a.created_at).getTime();
+    return Date.now() - t < 30 * 24 * 60 * 60 * 1000;
+  }).length;
+
   return (
     <PublicPageShell>
       <InfoPageHero
@@ -91,24 +110,34 @@ export default function ResolvedAlertsPage() {
       />
 
       <PublicPageContent>
-        <div ref={contentRef}>
-          <section className={publicLayout.section}>
-            <RoleContextBanner helper={ROLE_INTERFACE.public.resolvedAlerts.helper} tone="info" />
-          </section>
+          <RoleContextBanner helper={ROLE_INTERFACE.public.resolvedAlerts.helper} tone="info" />
 
-          <section className={publicLayout.section}>
-            <div className={`${statGrid.crisisHub} grid-cols-2`}>
-              <PublicStatCard compact value={resolvedAlerts.length} label="Resolved Alerts" accent="green" />
-              <PublicStatCard compact value={recentCount} label="Resolved This Week" accent="blue" />
-            </div>
-          </section>
+          <PublicPanel title="Overview & filters" subtitle="Counts and category filters">
+            {loading ? (
+              <PublicStatCardSkeleton count={3} className={`${statGrid.crisisHub} mb-4`} compact />
+            ) : (
+              <div className={`${statGrid.crisisHub} mb-4`}>
+                <PublicStatCard compact value={resolvedAlerts.length} label="Overall Solved" accent="orange" />
+                <PublicStatCard compact value={recentCount} label="Resolved This Week" accent="blue" />
+                <PublicStatCard compact value={monthCount} label="Resolved This Month" accent="green" />
+              </div>
+            )}
+            <PublicCategorizedCardFilters
+              items={resolvedAlerts}
+              getCategory={(alert) => alert.type}
+              getSeverity={(alert) => alert.severity}
+              categoryLabel="Crisis type"
+              severityLabel="Severity"
+              categoryOptions={DEFAULT_CRISIS_TYPE_OPTIONS}
+              severityOptions={DEFAULT_SEVERITY_ORDER}
+              categoryFilter={categoryFilter}
+              severityFilter={severityFilter}
+              onCategoryFilterChange={setCategoryFilter}
+              onSeverityFilterChange={setSeverityFilter}
+            />
+          </PublicPanel>
 
-          <section className={publicLayout.section}>
-            <h2 className={`${publicLayout.sectionTitle} flex items-center gap-2 mb-4`}>
-              <CheckCircle className="text-green-600" size={iconSize.section} />
-              Resolved Incidents & Alerts
-            </h2>
-
+          <PublicPanel title="Resolved incidents & alerts" bodyClassName={portalLayout.panelBodyStack}>
             <AsyncState
               loading={loading}
               error={error}
@@ -119,58 +148,39 @@ export default function ResolvedAlertsPage() {
                 <ErrorState message={error} onRetry={fetchAlerts} title="Could not load resolved alerts" />
               }
               emptyFallback={
-                <div className="text-center py-16 bg-zinc-50 rounded-3xl border-2 border-dashed border-zinc-200">
+                <div className="text-center py-8 bg-zinc-50 rounded-2xl border-2 border-dashed border-zinc-200">
                   <Info size={iconSize.emptyLg} className="mx-auto text-zinc-300 mb-4" />
                   <p className="font-bold text-zinc-400 uppercase tracking-widest text-xs">No Resolved Alerts Yet</p>
                   <p className="text-zinc-400 text-sm mt-2 font-medium max-w-md mx-auto">
-                    When Daet LGU marks an emergency alert as resolved, it will appear here for reference. Use Crisis Hub in the menu for active alerts.
+                    When the Daet Municipal Tourism Office marks an emergency alert as resolved, it will appear here for reference. Use Crisis Hub in the menu for active alerts.
                   </p>
                 </div>
               }
             >
-              <div className={publicLayout.stack}>
-                {resolvedAlerts.map((alert) => {
-                  const styles = getSeverityOutline(alert.severity);
-                  return (
-                    <OutlinedCard
-                      key={alert.id}
-                      variant="severity"
-                      severity={alert.severity}
-                      padding={outlinedCard.alertPadding}
-                      className="text-left opacity-95"
-                    >
-                      <div className={publicLayout.stackTight}>
-                        <div className="flex gap-2 flex-wrap items-center">
-                          <span className="text-[9px] font-black uppercase px-2 py-1 rounded bg-green-100 text-green-700">
-                            Resolved
-                          </span>
-                          <span className={`text-[9px] font-black uppercase px-2 py-1 rounded ${styles.badge}`}>
-                            {alert.severity}
-                          </span>
-                          <span className="text-[9px] font-black uppercase px-2 py-1 bg-zinc-100 rounded">
-                            {alert.type}
-                          </span>
-                        </div>
-                        <h3 className={typography.cardTitle}>{alert.title}</h3>
-                        <p className="text-zinc-500 text-sm leading-relaxed line-clamp-3">{alert.message}</p>
-                        <div className="flex flex-wrap items-center gap-4 text-[10px] font-bold text-zinc-400">
-                          <span className="flex items-center gap-1.5 uppercase">
-                            <MapPin size={iconSize.inlineSm} className="text-blue-600" /> {alert.location}
-                          </span>
-                          <span className="flex items-center gap-1.5 uppercase">
-                            <Clock size={iconSize.inlineSm} /> Resolved {formatResolvedAt(alert)}
-                          </span>
-                        </div>
-                      </div>
-                    </OutlinedCard>
-                  );
-                })}
-              </div>
+              <PublicCategorizedCardList
+                items={resolvedAlerts}
+                getCategory={(alert) => alert.type}
+                getSeverity={(alert) => alert.severity}
+                hideFilters
+                categoryFilter={categoryFilter}
+                severityFilter={severityFilter}
+                listPaneClassName={portalLayout.listScrollPane}
+                modalTitle="Resolved incidents & alerts"
+                modalSubtitle={`${resolvedAlerts.length} resolved`}
+                renderItem={(alert) => (
+                  <CrisisAlertListCard
+                    alert={alert}
+                    resolved
+                    timeLabel={`Resolved ${formatResolvedAt(alert)}`}
+                    className="opacity-95"
+                  />
+                )}
+              />
             </AsyncState>
-          </section>
+          </PublicPanel>
 
-          <section className={publicLayout.section}>
-            <PublicInfoCallout variant="zinc" label="Your incident reports">
+          <PublicPanel title="Your incident reports">
+            <PublicInfoCallout variant="zinc" className="border-0 bg-transparent p-0">
               <div className="flex items-start gap-3">
                 <Bell className="text-blue-600 shrink-0 mt-0.5" size={20} />
                 <p className="text-sm text-zinc-600 font-medium leading-relaxed">
@@ -182,8 +192,7 @@ export default function ResolvedAlertsPage() {
                 </p>
               </div>
             </PublicInfoCallout>
-          </section>
-        </div>
+          </PublicPanel>
       </PublicPageContent>
     </PublicPageShell>
   );

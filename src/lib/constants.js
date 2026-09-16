@@ -21,7 +21,7 @@ export const INCIDENT_SEVERITIES = ['Low', 'Medium', 'High', 'Critical'];
 
 export const INCIDENT_STATUSES = [
   'Submitted',
-  'Received',
+  'Approved',
   'Under Review',
   'Assigned',
   'Responding',
@@ -29,6 +29,9 @@ export const INCIDENT_STATUSES = [
   'Closed',
   'Rejected',
 ];
+
+/** Legacy DB value — treated as Approved in UI */
+export const INCIDENT_STATUS_LEGACY_RECEIVED = 'Received';
 
 export const NOTIFICATION_PRIORITIES = {
   LOW: 'LOW',
@@ -78,6 +81,7 @@ export function severityToPriority(severity) {
 export function getStatusColor(status) {
   const colors = {
     Submitted: 'bg-blue-100 text-blue-700',
+    Approved: 'bg-indigo-100 text-indigo-700',
     Received: 'bg-indigo-100 text-indigo-700',
     'Under Review': 'bg-yellow-100 text-yellow-700',
     Assigned: 'bg-purple-100 text-purple-700',

@@ -6,15 +6,24 @@ import { Bell } from "lucide-react";
 import { useAuthStore } from "@/app/store/crisisStore";
 import { useNotificationStore } from "@/app/store/notificationStore";
 import { NotificationItemCard } from "@/app/components/NotificationItemCard";
-import { InfoPageHero, PublicPageShell, PublicPageContent, publicLayout } from "@/app/components/InfoPageHero";
+import {
+  InfoPageHero,
+  PublicPageShell,
+  PublicPageContent,
+  PublicPanel,
+  publicLayout,
+} from "@/app/components/InfoPageHero";
 import { AsyncState, EmptyState } from "@/app/components/ui/AsyncState";
 import { NotificationItemSkeleton } from "@/app/components/ui/Skeletons";
 import { getActiveSession } from "@/lib/authSession";
 import { getAreaHazardNotificationLink } from "@/lib/travelLinks";
+import { portalShell, portalLayout } from "@/lib/designSystem";
+import { PublicCardListPreview } from "@/app/components/shell/PublicCardListPreview";
 
 export default function NotificationsPage() {
   const { user, isAuthenticated } = useAuthStore();
-  const { notifications, fetchNotifications, markAsRead, markAllAsRead, loading, error, clearNotifications } = useNotificationStore();
+  const { notifications, fetchNotifications, markAsRead, markAllAsRead, loading, error, clearNotifications } =
+    useNotificationStore();
   const [sessionChecked, setSessionChecked] = useState(false);
 
   useEffect(() => {
@@ -44,7 +53,8 @@ export default function NotificationsPage() {
   if (!sessionChecked) {
     return (
       <PublicPageShell>
-        <PublicPageContent className="py-16 text-center text-xs font-bold uppercase text-zinc-400">
+        <InfoPageHero title="Notifications" description="Loading your inbox…" />
+        <PublicPageContent className="text-center text-xs font-bold uppercase text-zinc-400 py-8">
           Verifying session...
         </PublicPageContent>
       </PublicPageShell>
@@ -54,15 +64,20 @@ export default function NotificationsPage() {
   if (!isAuthenticated || !user?.id) {
     return (
       <PublicPageShell>
-        <PublicPageContent className="text-center py-16">
-          <Bell size={40} className="mx-auto mb-4 text-zinc-300" />
-          <h1 className="text-xl font-black uppercase text-zinc-900 mb-2">Sign In Required</h1>
-          <p className="text-sm text-zinc-500 mb-6 max-w-md mx-auto">
-            Private in-app notifications are only available to registered, signed-in users. Public crisis alerts remain available on the Crisis Hub.
-          </p>
-          <Link href="/login" className="inline-flex text-blue-600 font-black uppercase text-xs px-6 py-3 rounded-full bg-blue-50 border border-blue-100">
-            Sign In
-          </Link>
+        <InfoPageHero
+          title="Notifications"
+          description="Private updates on alerts, reports, and account activity."
+        />
+        <PublicPageContent>
+          <PublicPanel title="Sign in required">
+            <Bell size={32} className="mb-3 text-zinc-300" />
+            <p className="text-sm text-zinc-600 font-medium mb-4 max-w-md">
+              In-app notifications are only available to registered, signed-in users. Public crisis alerts remain on the Crisis Hub.
+            </p>
+            <Link href="/login" className={portalShell.btnPrimary}>
+              Sign in
+            </Link>
+          </PublicPanel>
         </PublicPageContent>
       </PublicPageShell>
     );
@@ -85,43 +100,56 @@ export default function NotificationsPage() {
       />
 
       <PublicPageContent>
-        <div className="flex items-center justify-end mb-6">
-          <button
-            type="button"
-            onClick={() => markAllAsRead(user.id)}
-            className="text-[10px] font-black text-blue-600 uppercase hover:underline"
-          >
-            Mark all read
-          </button>
-        </div>
-
-        <AsyncState
-          loading={loading}
-          error={error}
-          isEmpty={!loading && !error && notifications.length === 0}
-          onRetry={() => fetchNotifications(user.id)}
-          loadingFallback={
-            <div className={publicLayout.stackTight}>
-              {Array.from({ length: 4 }).map((_, i) => (
-                <NotificationItemSkeleton key={i} />
-              ))}
-            </div>
-          }
-          emptyFallback={
-            <EmptyState icon={Bell} title="No notifications" description="You'll see private updates here when LGU issues crisis alerts or responds to your reports." />
+        <PublicPanel
+          title="Inbox"
+          subtitle={`${notifications.length} notification${notifications.length === 1 ? "" : "s"}`}
+          bodyClassName={portalLayout.panelBodyStack}
+          action={
+            <button
+              type="button"
+              onClick={() => markAllAsRead(user.id)}
+              className="text-[10px] font-black text-blue-600 uppercase hover:underline"
+            >
+              Mark all read
+            </button>
           }
         >
-          <div className={publicLayout.stackTight}>
-            {notifications.map((n) => (
-              <NotificationItemCard
-                key={n.id}
-                notification={n}
-                relatedLink={getRelatedLink(n)}
-                onMarkRead={markAsRead}
+          <AsyncState
+            loading={loading}
+            error={error}
+            isEmpty={!loading && !error && notifications.length === 0}
+            onRetry={() => fetchNotifications(user.id)}
+            loadingFallback={
+              <div className={publicLayout.stackTight}>
+                {Array.from({ length: 4 }).map((_, i) => (
+                  <NotificationItemSkeleton key={i} />
+                ))}
+              </div>
+            }
+            emptyFallback={
+              <EmptyState
+                icon={Bell}
+                title="No notifications"
+                description="You'll see private updates here when the tourism office issues crisis alerts or responds to your reports."
               />
-            ))}
-          </div>
-        </AsyncState>
+            }
+          >
+            <PublicCardListPreview
+              items={notifications}
+              modalTitle="Notifications"
+              modalSubtitle={`${notifications.length} total`}
+              scrollPaneClassName={portalLayout.listScrollPane}
+              renderItem={(n) => (
+                <NotificationItemCard
+                  notification={n}
+                  variant="list"
+                  relatedLink={getRelatedLink(n)}
+                  onMarkRead={markAsRead}
+                />
+              )}
+            />
+          </AsyncState>
+        </PublicPanel>
       </PublicPageContent>
     </PublicPageShell>
   );

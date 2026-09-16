@@ -5,13 +5,16 @@ import Link from "next/link";
 import { Bell } from "lucide-react";
 import { NotificationItemCard } from "@/app/components/NotificationItemCard";
 import { getAreaHazardNotificationLink } from "@/lib/travelLinks";
-import { DashboardPageHeader } from "@/app/components/dashboard/DashboardPageHeader";
+import { GuidePageHeader } from "@/app/components/guide/GuidePageHeader";
 import { AsyncState, EmptyState } from "@/app/components/ui/AsyncState";
 import { NotificationItemSkeleton } from "@/app/components/ui/Skeletons";
 import { useAuthStore } from "@/app/store/crisisStore";
 import { useNotificationStore } from "@/app/store/notificationStore";
 import { getActiveSession } from "@/lib/authSession";
 import { GuideDashboardQuickActions } from "@/app/components/guide/GuideDashboardQuickActions";
+import { PublicCardListPreview } from "@/app/components/shell/PublicCardListPreview";
+import { GuidePanel } from "@/app/components/guide/GuidePanel";
+import { portalLayout } from "@/lib/designSystem";
 
 export default function GuideNotificationsPage() {
   const { user } = useAuthStore();
@@ -69,8 +72,8 @@ export default function GuideNotificationsPage() {
   }
 
   return (
-    <div className="space-y-6 text-left">
-      <DashboardPageHeader
+    <>
+      <GuidePageHeader
         title="Notifications"
         description="Private updates on alerts, tour group activity, and incident reports for your guide account."
         action={
@@ -84,6 +87,7 @@ export default function GuideNotificationsPage() {
         }
       />
 
+      <GuidePanel title="Inbox" bodyClassName={portalLayout.panelBodyStack}>
       <AsyncState
         loading={loading}
         error={error}
@@ -104,19 +108,24 @@ export default function GuideNotificationsPage() {
           />
         }
       >
-        <div className="space-y-3">
-          {notifications.map((n) => (
+        <PublicCardListPreview
+          items={notifications}
+          modalTitle="Guide notifications"
+          listClassName="space-y-3"
+          scrollPaneClassName={portalLayout.listScrollPane}
+          renderItem={(n) => (
             <NotificationItemCard
-              key={n.id}
               notification={n}
+              variant="list"
               relatedLink={getRelatedLink(n)}
               onMarkRead={markAsRead}
             />
-          ))}
-        </div>
+          )}
+        />
       </AsyncState>
+      </GuidePanel>
 
-      <GuideDashboardQuickActions className="mt-6" />
-    </div>
+      <GuideDashboardQuickActions />
+    </>
   );
 }

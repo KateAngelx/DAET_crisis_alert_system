@@ -44,7 +44,7 @@ export function GuideReportActions({ className = "", showViewLink = true, compac
             <div className="min-w-0">
               <p className="text-[10px] font-black uppercase text-orange-700 tracking-widest">Report an Incident</p>
               <p className={`${descClass} text-zinc-600 font-medium mt-0.5`}>
-                Submit a field or group report for LGU review.
+                Submit a field or group report for tourism office review.
                 {openCount > 0 && !compact ? ` ${openCount} open case${openCount !== 1 ? "s" : ""}.` : ""}
               </p>
               {successRef && (

@@ -5,9 +5,6 @@ import { useRouter } from "next/navigation";
 import {
   User,
   Shield,
-  Phone,
-  Globe,
-  Hash,
   Loader2,
   CheckCircle,
   AlertCircle,
@@ -29,7 +26,8 @@ import { StatCardSkeletonGrid, UserCardSkeletonList } from "@/app/components/ui/
 import { AsyncState, EmptyState } from "@/app/components/ui/AsyncState";
 import { getRedirectForRole } from "@/lib/authGuard";
 import { useConfirm } from "@/app/components/ui/ConfirmDialogProvider";
-import { iconSize, statGrid } from "@/lib/designSystem";
+import { AdminPanel } from "@/app/components/admin/AdminPanel";
+import { adminShell, iconSize, statGrid } from "@/lib/designSystem";
 import {
   getInactiveDays,
   isUserOnline,
@@ -141,7 +139,7 @@ function CreateUserModal({ open, onClose, onCreated }) {
             <select
               value={form.nationality}
               onChange={(e) => setForm({ ...form, nationality: e.target.value })}
-              className="p-3 bg-zinc-50 border border-zinc-200 rounded-xl text-sm font-bold"
+              className={adminShell.select}
             >
               <option value="Filipino">Filipino</option>
               <option value="Foreigner">Foreigner</option>
@@ -149,7 +147,7 @@ function CreateUserModal({ open, onClose, onCreated }) {
             <select
               value={form.user_type}
               onChange={(e) => setForm({ ...form, user_type: e.target.value })}
-              className="p-3 bg-zinc-50 border border-zinc-200 rounded-xl text-sm font-bold"
+              className={adminShell.select}
             >
               {ROLE_OPTIONS.map((opt) => (
                 <option key={opt.value} value={opt.value}>{opt.label}</option>
@@ -245,102 +243,66 @@ function UserAdminCard({ user, currentUserId, onChanged }) {
   };
 
   return (
-    <Card className={`p-6 hover:shadow-md transition-all border-zinc-100 ${!user.is_active ? "opacity-70" : ""}`}>
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-        <div className="flex items-center gap-5">
-          <div className={`p-4 rounded-2xl ${role.className}`}>
-            <User size={28} />
-          </div>
-          <div>
-            <div className="flex flex-wrap items-center gap-2 mb-2">
-              <h3 className="font-black text-xl text-zinc-900 uppercase tracking-tight leading-none">
-                {user.full_name}
-              </h3>
-              {online ? (
-                <span className="inline-flex items-center gap-1 text-[10px] font-black uppercase text-green-700 bg-green-100 px-2 py-0.5 rounded-full">
-                  <Wifi size={10} /> Online
-                </span>
-              ) : null}
-              {isInactive ? (
-                <span className="inline-flex items-center gap-1 text-[10px] font-black uppercase text-amber-700 bg-amber-100 px-2 py-0.5 rounded-full">
-                  <UserX size={10} /> {inactiveDays}d inactive
-                </span>
-              ) : null}
-              {user.sms_suspended_at ? (
-                <span className="text-[10px] font-black uppercase text-zinc-500 bg-zinc-100 px-2 py-0.5 rounded-full">
-                  SMS paused
-                </span>
-              ) : null}
-            </div>
-            <div className="flex flex-wrap gap-4">
-              <span className="flex items-center gap-1.5 text-xs font-black uppercase text-zinc-400 tracking-widest">
-                <Shield size={14} className="text-blue-500" />
-                {role.label}
-              </span>
-              <span className="flex items-center gap-1.5 text-xs font-bold text-zinc-500">
-                <Phone size={14} className="text-zinc-400" /> {user.phone || "No Contact"}
-              </span>
-              <span className="flex items-center gap-1.5 text-xs font-bold text-zinc-500">
-                <Globe size={14} className="text-zinc-400" /> {user.nationality || "—"}
-              </span>
-              <span className="flex items-center gap-1.5 text-xs font-bold text-zinc-500">
-                <Clock size={14} className="text-zinc-400" /> Last seen {formatLastSeen(user.last_seen_at)}
-              </span>
-            </div>
-          </div>
+    <div className={!user.is_active ? "opacity-60" : undefined}>
+      <div className="flex items-center gap-2 px-2 py-1.5 hover:bg-zinc-50/90 transition-colors">
+        <div className={`size-6 rounded-md flex items-center justify-center shrink-0 ${role.className}`}>
+          <User size={12} />
         </div>
-        <div className="flex gap-2">
+        <div className="flex-1 min-w-0 leading-tight">
+          <div className="flex items-center gap-1 min-w-0">
+            <span className="font-black text-[10px] text-zinc-900 uppercase truncate">{user.full_name}</span>
+            {online ? <span className="size-1.5 rounded-full bg-green-500 shrink-0" title="Online" /> : null}
+            {isInactive ? (
+              <span className="text-[8px] font-black uppercase text-amber-700 shrink-0">{inactiveDays}d</span>
+            ) : null}
+          </div>
+          <p className="text-[9px] text-zinc-500 font-medium truncate">{user.email}</p>
+        </div>
+        <span className="hidden lg:block text-[8px] text-zinc-400 font-medium truncate max-w-[72px] shrink-0">
+          {formatLastSeen(user.last_seen_at)}
+        </span>
+        <div className="flex shrink-0 gap-0.5">
           <button
             type="button"
             onClick={() => setEditing((v) => !v)}
-            className="px-4 py-2 bg-zinc-100 text-zinc-700 rounded-xl font-black uppercase text-[10px] tracking-widest flex items-center gap-1"
+            className={`${adminShell.btnIcon} !p-1.5 !min-h-0`}
+            aria-label={editing ? "Cancel edit" : "Edit user"}
           >
-            <Pencil size={12} /> {editing ? "Cancel" : "Edit"}
+            <Pencil size={12} />
           </button>
           {!isSelf ? (
             <button
               type="button"
               onClick={handleDelete}
               disabled={saving}
-              className="px-4 py-2 bg-red-50 text-red-600 rounded-xl font-black uppercase text-[10px] tracking-widest flex items-center gap-1 disabled:opacity-50"
+              className={`${adminShell.btnIcon} !p-1.5 !min-h-0 text-red-600 hover:bg-red-50 disabled:opacity-50`}
+              aria-label="Delete user"
             >
-              <Trash2 size={12} /> Delete
+              <Trash2 size={12} />
             </button>
           ) : null}
         </div>
       </div>
 
-      <div className="mt-4 bg-zinc-50 p-4 rounded-2xl border border-zinc-100">
-        <div className="flex items-center gap-2">
-          <Hash size={12} className="text-zinc-400" />
-          <p className="text-[10px] font-black text-zinc-400 uppercase tracking-widest">{user.email}</p>
-        </div>
-        <p className="text-[10px] text-zinc-400 mt-2 font-medium">
-          Joined {user.created_at ? new Date(user.created_at).toLocaleDateString() : "—"}
-          {user.last_login_at ? ` · Last login ${formatLastSeen(user.last_login_at)}` : ""}
-          {inactiveDays !== null ? ` · ${inactiveDays} days since activity` : ""}
-        </p>
-      </div>
-
       {editing ? (
-        <div className="mt-4 pt-4 border-t border-zinc-100 space-y-3">
+        <div className="px-2 pb-2 pt-1 space-y-1.5 bg-zinc-50/80 border-t border-zinc-100">
           <input
             value={form.full_name}
             onChange={(e) => setForm({ ...form, full_name: e.target.value })}
-            className="w-full p-3 bg-zinc-50 border border-zinc-200 rounded-xl text-sm font-bold"
+            className={`${adminShell.input} !py-2 !text-xs`}
             placeholder="Full name"
           />
           <input
             value={form.phone}
             onChange={(e) => setForm({ ...form, phone: e.target.value })}
-            className="w-full p-3 bg-zinc-50 border border-zinc-200 rounded-xl text-sm font-bold"
+            className={`${adminShell.input} !py-2 !text-xs`}
             placeholder="Phone"
           />
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <div className="grid grid-cols-2 gap-1.5">
             <select
               value={form.nationality}
               onChange={(e) => setForm({ ...form, nationality: e.target.value })}
-              className="p-3 bg-zinc-50 border border-zinc-200 rounded-xl text-sm font-bold"
+              className={`${adminShell.select} !py-2 !text-xs`}
             >
               <option value="Filipino">Filipino</option>
               <option value="Foreigner">Foreigner</option>
@@ -348,43 +310,45 @@ function UserAdminCard({ user, currentUserId, onChanged }) {
             <select
               value={form.user_type}
               onChange={(e) => setForm({ ...form, user_type: e.target.value })}
-              className="p-3 bg-zinc-50 border border-zinc-200 rounded-xl text-sm font-bold"
+              className={`${adminShell.select} !py-2 !text-xs`}
             >
               {ROLE_OPTIONS.map((opt) => (
                 <option key={opt.value} value={opt.value}>{opt.label}</option>
               ))}
             </select>
           </div>
-          <label className="flex items-center gap-2 text-sm font-bold text-zinc-600">
+          <label className="flex items-center gap-2 text-[10px] font-bold text-zinc-600">
             <input
               type="checkbox"
               checked={form.is_active}
               disabled={isSelf}
               onChange={(e) => setForm({ ...form, is_active: e.target.checked })}
             />
-            Account active (can receive broadcasts)
+            Active
           </label>
-          {isSelf && (
-            <p className="text-[10px] text-amber-600 font-medium">You cannot deactivate your own account.</p>
-          )}
+          {isSelf ? (
+            <p className="text-[9px] text-amber-600 font-medium">You cannot deactivate your own account.</p>
+          ) : null}
           <button
             type="button"
             onClick={handleSave}
             disabled={saving}
-            className="px-5 py-2.5 bg-blue-600 text-white rounded-xl font-black uppercase text-[10px] tracking-widest disabled:opacity-50"
+            className={`${adminShell.btnPrimary} !py-2 !text-[9px] w-full justify-center disabled:opacity-50`}
           >
-            {saving ? "Saving..." : "Save Changes"}
+            {saving ? "Saving..." : "Save"}
           </button>
         </div>
       ) : null}
 
-      {feedback && (
-        <div className={`mt-3 flex items-center gap-2 text-xs font-medium ${feedback.type === "success" ? "text-green-700" : "text-red-600"}`}>
-          {feedback.type === "success" ? <CheckCircle size={14} /> : <AlertCircle size={14} />}
+      {feedback ? (
+        <div
+          className={`px-2 pb-1 flex items-center gap-1 text-[9px] font-medium ${feedback.type === "success" ? "text-green-700" : "text-red-600"}`}
+        >
+          {feedback.type === "success" ? <CheckCircle size={10} /> : <AlertCircle size={10} />}
           {feedback.text}
         </div>
-      )}
-    </Card>
+      ) : null}
+    </div>
   );
 }
 
@@ -410,8 +374,38 @@ export default function AdminUsersPage() {
     }, {});
   }, [allUsers]);
 
+  const usersByRole = useMemo(() => ({
+    admin: allUsers.filter((u) => u.user_type === "admin"),
+    guide: allUsers.filter((u) => u.user_type === "guide"),
+    tourist: allUsers.filter((u) => !u.user_type || u.user_type === "tourist"),
+  }), [allUsers]);
+
+  useEffect(() => {
+    if (loading) return;
+    // #region agent log
+    fetch("http://127.0.0.1:7540/ingest/3142bff0-53ba-4c2c-9606-b4d021977f0c", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "X-Debug-Session-Id": "197cec" },
+      body: JSON.stringify({
+        sessionId: "197cec",
+        runId: "admin-users-compact",
+        hypothesisId: "H-compact",
+        location: "admin/users/page.js:list",
+        message: "Compact user column lists rendered",
+        data: {
+          layout: "compact-divider-rows",
+          admin: usersByRole.admin.length,
+          guide: usersByRole.guide.length,
+          tourist: usersByRole.tourist.length,
+        },
+        timestamp: Date.now(),
+      }),
+    }).catch(() => {});
+    // #endregion
+  }, [loading, usersByRole.admin.length, usersByRole.guide.length, usersByRole.tourist.length]);
+
   return (
-    <div className="space-y-6 text-left">
+    <>
       <DashboardPageHeader
         title={ROLE_INTERFACE.admin.users.title}
         description={ROLE_INTERFACE.admin.users.description}
@@ -420,13 +414,13 @@ export default function AdminUsersPage() {
             <button
               type="button"
               onClick={() => setShowCreate(true)}
-              className="bg-blue-600 text-white px-4 py-2 rounded-2xl text-xs font-black uppercase tracking-widest flex items-center gap-2"
+              className={adminShell.btnPrimary}
             >
               <Plus size={14} /> Create User
             </button>
-            <div className="bg-zinc-900 text-white px-4 py-2 rounded-2xl text-xs font-black uppercase tracking-widest">
+            <span className={`${adminShell.btnGhost} pointer-events-none`}>
               Total: {allUsers.length}
-            </div>
+            </span>
           </div>
         }
       />
@@ -453,19 +447,40 @@ export default function AdminUsersPage() {
           <EmptyState icon={User} title="No users found" description="Registered users will appear here." />
         }
       >
-        <div className="grid grid-cols-1 gap-4">
-          {allUsers.map((user) => (
-            <UserAdminCard
-              key={user.id}
-              user={user}
-              currentUserId={currentUser?.id}
-              onChanged={refresh}
-            />
+        <div className="grid grid-cols-1 xl:grid-cols-3 gap-6 items-start">
+          {[
+            { key: "admin", title: "Admin accounts", users: usersByRole.admin },
+            { key: "guide", title: "Guide accounts", users: usersByRole.guide },
+            { key: "tourist", title: "Tourist accounts", users: usersByRole.tourist },
+          ].map(({ key, title, users }) => (
+            <AdminPanel
+              key={key}
+              title={title}
+              subtitle={`${users.length} profile${users.length === 1 ? "" : "s"}`}
+              noPadding
+              bodyClassName="max-h-[min(720px,70vh)] overflow-y-auto overscroll-contain py-1"
+            >
+              {users.length === 0 ? (
+                <p className="text-[10px] text-zinc-500 font-medium py-4 text-center px-3">No accounts in this column.</p>
+              ) : (
+                <ul className="divide-y divide-zinc-100/80">
+                  {users.map((user) => (
+                    <li key={user.id}>
+                      <UserAdminCard
+                        user={user}
+                        currentUserId={currentUser?.id}
+                        onChanged={refresh}
+                      />
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </AdminPanel>
           ))}
         </div>
       </AsyncState>
 
       <CreateUserModal open={showCreate} onClose={() => setShowCreate(false)} onCreated={refresh} />
-    </div>
+    </>
   );
 }

@@ -8,6 +8,7 @@ import {
   getPageLabel,
   startOfDayIso,
 } from "@/lib/publicAnalytics";
+import { getLastNDays } from "@/lib/dashboardTrends";
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
@@ -52,8 +53,8 @@ export async function GET(request) {
       { data: recentViews },
       { count: registeredOnline },
     ] = await Promise.all([
-      admin.from("page_views").select("path, session_id, viewer_type").gte("created_at", todayStart),
-      admin.from("page_views").select("path, session_id, viewer_type").gte("created_at", weekStart),
+      admin.from("page_views").select("path, session_id, viewer_type, created_at").gte("created_at", todayStart),
+      admin.from("page_views").select("path, session_id, viewer_type, created_at").gte("created_at", weekStart),
       admin
         .from("page_views")
         .select("id, path, page_title, viewer_type, user_id, created_at, profiles(full_name, user_type)")
@@ -64,6 +65,19 @@ export async function GET(request) {
 
     const guestToday = (todayViews || []).filter((v) => v.viewer_type === "guest").length;
     const signedInToday = (todayViews || []).filter((v) => v.viewer_type !== "guest").length;
+
+    const dayBuckets = getLastNDays(7);
+    const dailyPageViews = dayBuckets.map((day) => ({
+      ...day,
+      value: (weekViews || []).filter((v) => v.created_at?.slice(0, 10) === day.key).length,
+    }));
+    const dailyUniqueVisitors = dayBuckets.map((day) => {
+      const dayRows = (weekViews || []).filter((v) => v.created_at?.slice(0, 10) === day.key);
+      return {
+        ...day,
+        value: countUniqueSessions(dayRows),
+      };
+    });
 
     const recentViewers = (recentViews || []).map((row) => {
       const profile = row.profiles;
@@ -87,6 +101,8 @@ export async function GET(request) {
         signedInViewsToday: signedInToday,
         registeredOnline: registeredOnline || 0,
         topPages: aggregatePageViews(weekViews || []).slice(0, 8),
+        dailyPageViews,
+        dailyUniqueVisitors,
         recentViewers,
       },
     });

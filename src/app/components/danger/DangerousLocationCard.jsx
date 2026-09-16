@@ -1,7 +1,9 @@
 "use client";
 
 import React from "react";
-import { AlertOctagon, Clock, MapPin, ShieldAlert } from "lucide-react";
+import { Clock, MapPin, ShieldAlert } from "lucide-react";
+import { CardIconBox } from "@/app/components/ui/CardIconBox";
+import { DangerSeverityIcon } from "@/app/components/ui/cardTypeIcons";
 import { OutlinedCard } from "@/app/components/ui/OutlinedCard";
 import { AlternativeRouteDisplay } from "@/app/components/danger/AlternativeRouteDisplay";
 import {
@@ -19,14 +21,15 @@ export function DangerousLocationCard({ warning, affectsRoute = false, onClick, 
     <OutlinedCard
       padding={outlinedCard.alertPadding}
       onClick={onClick}
-      className={`text-left ${onClick ? "cursor-pointer hover:scale-[1.01]" : ""} border-2 ${styles.border}`}
+      interactive={Boolean(onClick)}
+      className={`text-left ${onClick ? "cursor-pointer" : ""} border-2 ${styles.border}`}
     >
       <div className="space-y-4">
         <div className="flex flex-wrap items-start gap-3 justify-between">
           <div className="flex items-start gap-3 min-w-0">
-            <div className={`p-2.5 rounded-2xl shrink-0 ${styles.icon}`}>
-              {isDanger ? <AlertOctagon size={iconSize.button} /> : <ShieldAlert size={iconSize.button} />}
-            </div>
+            <CardIconBox boxClass={styles.icon}>
+              <DangerSeverityIcon severity={warning.severity} size={iconSize.stat} />
+            </CardIconBox>
             <div className="min-w-0">
               <div className="flex flex-wrap gap-2 mb-2">
                 <span className={`text-[9px] font-black uppercase px-2 py-1 rounded ${styles.badge}`}>
@@ -41,7 +44,7 @@ export function DangerousLocationCard({ warning, affectsRoute = false, onClick, 
                   {warning.danger_type}
                 </span>
               </div>
-              <h3 className={typography.cardTitle}>{warning.dangerous_location}</h3>
+              <h3 className={`${typography.cardTitleBase} ${onClick ? styles.title : styles.titleStatic}`}>{warning.dangerous_location}</h3>
               <p className="text-sm text-zinc-600 mt-1 font-medium">
                 {isDanger
                   ? "Avoid this location. Follow the recommended alternative route below."

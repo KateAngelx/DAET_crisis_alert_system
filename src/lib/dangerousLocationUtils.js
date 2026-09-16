@@ -15,27 +15,33 @@ export function getDangerSeverityStyles(severity) {
   const map = {
     Critical: {
       border: "border-red-600",
-      badge: "bg-red-600 text-white",
+      badge: "bg-red-100 text-red-700",
       text: "text-red-700",
       bg: "bg-red-50",
-      icon: "bg-red-600 text-white",
+      icon: "border-red-200 bg-red-50 text-red-700",
       label: "Dangerous Location",
+      title: "text-zinc-900 group-hover:text-red-700 group-active:text-red-700 transition-colors",
+      titleStatic: "text-red-700",
     },
     Dangerous: {
       border: "border-red-600",
-      badge: "bg-red-600 text-white",
+      badge: "bg-red-100 text-red-700",
       text: "text-red-700",
       bg: "bg-red-50",
-      icon: "bg-red-600 text-white",
+      icon: "border-red-200 bg-red-50 text-red-700",
       label: "Unsafe Route",
+      title: "text-zinc-900 group-hover:text-red-700 group-active:text-red-700 transition-colors",
+      titleStatic: "text-red-700",
     },
     Caution: {
       border: "border-orange-500",
-      badge: "bg-orange-500 text-white",
+      badge: "bg-orange-100 text-orange-700",
       text: "text-orange-700",
       bg: "bg-orange-50",
-      icon: "bg-orange-500 text-white",
+      icon: "border-orange-200 bg-orange-50 text-orange-700",
       label: "Potential Risk",
+      title: "text-zinc-900 group-hover:text-orange-700 group-active:text-orange-700 transition-colors",
+      titleStatic: "text-orange-700",
     },
   };
   return map[severity] || map.Caution;
@@ -78,7 +84,7 @@ export function formatRouteUpdatedAt(warning) {
 export function formatRouteExpiry(warning) {
   if (!warning?.warning_ends_at) {
     return {
-      text: "No end time set — check with LGU before you travel.",
+      text: "No end time set — check with the tourism office before you travel.",
       tone: "neutral",
     };
   }
@@ -90,7 +96,7 @@ export function formatRouteExpiry(warning) {
 
   if (end.getTime() < Date.now()) {
     return {
-      text: `This advisory expired on ${end.toLocaleString()}. Confirm the latest status with LGU before traveling.`,
+      text: `This advisory expired on ${end.toLocaleString()}. Confirm the latest status with the tourism office before traveling.`,
       tone: "expired",
     };
   }

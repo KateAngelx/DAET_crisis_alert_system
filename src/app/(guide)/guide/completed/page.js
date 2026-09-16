@@ -3,7 +3,7 @@
 import React, { useEffect, useMemo } from "react";
 import Link from "next/link";
 import { CheckCircle, Compass } from "lucide-react";
-import { DashboardPageHeader } from "@/app/components/dashboard/DashboardPageHeader";
+import { GuidePageHeader } from "@/app/components/guide/GuidePageHeader";
 import { DashboardStatCard } from "@/app/components/dashboard/DashboardStatCard";
 import { CompletedToursPanel } from "@/app/components/tour/CompletedToursPanel";
 import { useAuthStore } from "@/app/store/crisisStore";
@@ -29,8 +29,8 @@ export default function GuideCompletedToursPage() {
   );
 
   return (
-    <div className="space-y-6 text-left">
-      <DashboardPageHeader
+    <>
+      <GuidePageHeader
         title="Completed Tours"
         description="Review finished tour groups, routes, and dates for your records."
         action={
@@ -67,6 +67,6 @@ export default function GuideCompletedToursPage() {
       )}
 
       <CompletedToursPanel groups={completedGroups} guideId={user?.id} loading={loading} />
-    </div>
+    </>
   );
 }

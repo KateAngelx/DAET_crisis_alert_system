@@ -15,7 +15,7 @@ export default function PrivacyPage() {
       />
 
       <PublicPageContent>
-        <p className="text-xs text-zinc-400 font-bold uppercase tracking-widest mb-10">Last updated: September 2026</p>
+        <p className="text-xs text-zinc-400 font-bold uppercase tracking-widest">Last updated: September 2026</p>
 
         <InfoSection title="Information We Collect">
           <p>When you register or use {siteInfo.brandName}, we may collect:</p>

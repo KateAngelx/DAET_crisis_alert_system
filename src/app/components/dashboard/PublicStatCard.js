@@ -8,8 +8,8 @@ export function PublicStatCard({ value, label, accent = "blue", compact = false,
     ? `${typography.statLabel} text-[9px] sm:text-[10px] leading-tight tracking-wide`
     : typography.statLabel;
   const valueClass = compact
-    ? "text-xl sm:text-2xl font-black leading-none"
-    : typography.statValue;
+    ? "text-xl sm:text-2xl font-bold leading-none tabular-nums"
+    : `${typography.statValue} tabular-nums`;
 
   return (
     <OutlinedCard accent={accent} compact={compact} className={className}>

@@ -1,12 +1,12 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
-import { BarChart3, Eye, Users, Wifi, TrendingUp, Activity, Sparkles } from "lucide-react";
+import { BarChart3, Eye, Users, Wifi, TrendingUp, Activity } from "lucide-react";
 import { DashboardStatCard } from "@/app/components/dashboard/DashboardStatCard";
 import { PublicStatCard } from "@/app/components/dashboard/PublicStatCard";
 import { StatCardSkeletonGrid } from "@/app/components/ui/Skeletons";
 import { Card } from "@/app/components/ui/Card";
-import { iconSize, statGrid, typography, getStatCardAccent } from "@/lib/designSystem";
+import { iconSize, statGrid, typography } from "@/lib/designSystem";
 
 const LIVE_KPIS = [
   { key: "viewsToday", label: "Page Views Today", icon: Eye, accent: "blue" },
@@ -14,23 +14,6 @@ const LIVE_KPIS = [
   { key: "registeredOnline", label: "Registered Online", icon: Wifi, accent: "green" },
   { key: "viewsThisWeek", label: "Views This Week", icon: TrendingUp, accent: "orange" },
 ];
-
-function LiveStatTile({ label, value, icon: Icon, accent }) {
-  const styles = getStatCardAccent(accent);
-  return (
-    <div className="group relative flex flex-col items-center justify-center text-center rounded-[28px] border border-white/10 bg-white/5 backdrop-blur-md px-4 py-6 sm:py-8 shadow-[0_8px_32px_rgba(0,0,0,0.25)] hover:bg-white/10 hover:border-white/20 transition-all duration-300 hover:-translate-y-1">
-      <div className={`mb-3 p-3 rounded-2xl ${styles.icon} shadow-lg`}>
-        <Icon size={22} strokeWidth={2.5} />
-      </div>
-      <p className="text-3xl sm:text-4xl font-black tabular-nums leading-none mb-2 text-white">
-        {value}
-      </p>
-      <p className="text-[10px] sm:text-[11px] font-black uppercase tracking-[0.18em] text-zinc-300 leading-snug max-w-[9rem]">
-        {label}
-      </p>
-    </div>
-  );
-}
 
 function formatRelativeTime(iso) {
   if (!iso) return "—";
@@ -265,6 +248,25 @@ export function PublicLiveAnalyticsSection({ className = "" }) {
     };
   }, []);
 
+  useEffect(() => {
+    if (loading || !stats) return;
+    // #region agent log
+    fetch("http://127.0.0.1:7540/ingest/3142bff0-53ba-4c2c-9606-b4d021977f0c", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "X-Debug-Session-Id": "197cec" },
+      body: JSON.stringify({
+        sessionId: "197cec",
+        runId: "platform-pulse-dark-cards",
+        hypothesisId: "D1",
+        location: "PublicAnalyticsOverview.jsx:PublicLiveAnalyticsSection",
+        message: "Platform Pulse dark stat cards rendered",
+        data: { tone: "dark", kpiCount: LIVE_KPIS.length },
+        timestamp: Date.now(),
+      }),
+    }).catch(() => {});
+    // #endregion
+  }, [loading, stats]);
+
   const topPages = stats?.topPages?.slice(0, 4) ?? [];
   const maxPageViews = topPages.reduce((max, page) => Math.max(max, page.count), 0);
 
@@ -285,7 +287,6 @@ export function PublicLiveAnalyticsSection({ className = "" }) {
               <span className="relative inline-flex rounded-full h-2 w-2 bg-green-400" />
             </span>
             <span className="text-[10px] font-black uppercase tracking-[0.2em] text-zinc-200">Live Activity</span>
-            <Sparkles size={12} className="text-blue-300" />
           </div>
           <h2 className="text-2xl sm:text-3xl font-black uppercase tracking-tight text-white mb-2">
             Platform Pulse
@@ -296,20 +297,25 @@ export function PublicLiveAnalyticsSection({ className = "" }) {
         </div>
 
         {loading ? (
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 max-w-4xl mx-auto">
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 max-w-4xl mx-auto" aria-hidden>
             {[0, 1, 2, 3].map((i) => (
-              <div key={i} className="h-36 sm:h-40 rounded-[28px] bg-white/5 border border-white/10 animate-pulse" />
+              <div
+                key={i}
+                className="h-[88px] sm:h-[96px] rounded-xl border border-white/10 bg-white/5 animate-pulse"
+              />
             ))}
           </div>
         ) : stats ? (
           <>
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 max-w-4xl mx-auto">
-              {LIVE_KPIS.map(({ key, label, icon, accent }) => (
-                <LiveStatTile
+              {LIVE_KPIS.map(({ key, label, icon: Icon, accent }) => (
+                <DashboardStatCard
                   key={key}
+                  compact
+                  tone="dark"
                   label={label}
                   value={stats[key] ?? 0}
-                  icon={icon}
+                  icon={<Icon size={iconSize.stat} />}
                   accent={accent}
                 />
               ))}

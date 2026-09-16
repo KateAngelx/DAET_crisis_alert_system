@@ -9,8 +9,8 @@ import { useCrisisStore, useAuthStore } from "@/app/store/crisisStore";
 import { useNotificationStore } from "@/app/store/notificationStore";
 import { HeroStatSkeleton } from "@/app/components/ui/Skeletons";
 import { DashboardStatCard } from "@/app/components/dashboard/DashboardStatCard";
-import { OutlinedCard } from "@/app/components/ui/OutlinedCard";
-import { typography, iconSize, statGrid } from "@/lib/designSystem";
+import { InfoOutlineCard } from "@/app/components/ui/InfoOutlineCard";
+import { typography, iconSize, statGrid, getInfoCardAccent } from "@/lib/designSystem";
 import { CommunicationChannelsOverview } from "@/app/components/CommunicationChannelsOverview";
 import { PublicLiveAnalyticsSection } from "@/app/components/analytics/PublicAnalyticsOverview";
 import { PublicFeedbackSection } from "@/app/components/feedback/PublicFeedbackSection";
@@ -100,6 +100,53 @@ export default function Home() {
     return () => window.removeEventListener("resize", logHeroLayout);
   }, [mounted]);
 
+  useEffect(() => {
+    if (!mounted || typeof document === "undefined") return;
+    const id = requestAnimationFrame(() => {
+      const pageRoot = document.querySelector(".flex.flex-col.bg-white.font-sans");
+      const blocks = pageRoot ? Array.from(pageRoot.children) : [];
+      const order = blocks.map((el, index) => ({
+        index,
+        key:
+          el.getAttribute("data-landing-section") ||
+          el.getAttribute("aria-label") ||
+          el.querySelector("h2, h3")?.textContent?.trim()?.slice(0, 40) ||
+          el.tagName.toLowerCase(),
+      }));
+      const pulseEl = document.querySelector("section[aria-label='Live platform activity']");
+      const footerEl = document.querySelector("footer");
+      const pulseRect = pulseEl?.getBoundingClientRect();
+      const footerRect = footerEl?.getBoundingClientRect();
+      const gapToFooter =
+        pulseRect && footerRect ? Math.round(footerRect.top - pulseRect.bottom) : null;
+      // #region agent log
+      fetch("http://127.0.0.1:7540/ingest/3142bff0-53ba-4c2c-9606-b4d021977f0c", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "X-Debug-Session-Id": "197cec" },
+        body: JSON.stringify({
+          sessionId: "197cec",
+          runId: "post-fix-overlap",
+          hypothesisId: "L1-L2",
+          location: "public/page.js:sectionOrder",
+          message: "Landing DOM section order and pulse-to-footer gap",
+          data: {
+            role: user?.role ?? "guest",
+            order,
+            alertStatusIsSecond:
+              !isAuthenticated || user?.role !== "tourist"
+                ? order[1]?.key !== "alert-status"
+                : order[1]?.key === "alert-status",
+            pulseIsLast: order[order.length - 1]?.key === "Live platform activity",
+            gapToFooterPx: gapToFooter,
+          },
+          timestamp: Date.now(),
+        }),
+      }).catch(() => {});
+      // #endregion
+    });
+    return () => cancelAnimationFrame(id);
+  }, [mounted, isAuthenticated, user?.role]);
+
   if (!mounted || (isAuthenticated && (user?.role === 'admin' || user?.role === 'guide'))) return null;
 
   const activeAlerts = alerts.filter((a) => a.status === "Active" && a.is_public);
@@ -111,6 +158,7 @@ export default function Home() {
       {/* HERO SECTION */}
       <section
         ref={heroRef}
+        data-landing-section="hero"
         className="relative pt-10 pb-12 sm:pt-12 sm:pb-14 lg:pb-16 min-h-[calc(100dvh-4rem)] sm:min-h-0 overflow-hidden bg-zinc-50 border-b border-zinc-200 flex flex-col justify-center"
       >
         <div className="absolute inset-0 w-full h-full bg-[linear-gradient(to_right,#80808012_1px,transparent_1px),linear-gradient(to_bottom,#80808012_1px,transparent_1px)] bg-[size:24px_24px]"></div>
@@ -188,7 +236,7 @@ export default function Home() {
                 <p className="text-[9px] sm:text-[10px] font-bold text-zinc-500 uppercase tracking-widest leading-tight">Active Alerts</p>
               </div>
               <div className="text-center min-w-0">
-                <p className="text-xl sm:text-2xl font-black text-red-600 leading-none mb-1">{criticalCount}</p>
+                <p className="text-xl sm:text-2xl font-black text-red-600 tabular-nums leading-none mb-1">{criticalCount}</p>
                 <p className="text-[9px] sm:text-[10px] font-bold text-zinc-500 uppercase tracking-widest leading-tight">Critical</p>
               </div>
               <div className="text-center min-w-0">
@@ -275,6 +323,24 @@ export default function Home() {
         </div>
       </section>
 
+      {isAuthenticated && user?.role === "tourist" && (
+        <section data-landing-section="alert-status" className="py-8 sm:py-10 bg-white border-b border-zinc-100">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6">
+            <h3 className={`${typography.cardTitle} mb-4`}>Your Current Alert Status</h3>
+            <div className={statGrid.dashboardThree}>
+              <DashboardStatCard compact label="Active Alerts" value={activeAlerts.length} accent="red" />
+              <DashboardStatCard compact label="My Reports" value="Track" accent="blue" />
+              <DashboardStatCard
+                compact
+                label="My Notifications"
+                value={unreadCount > 0 ? unreadCount : "—"}
+                accent="purple"
+              />
+            </div>
+          </div>
+        </section>
+      )}
+
       <section className="py-8 sm:py-10 bg-white border-b border-zinc-100">
         <div className="max-w-7xl mx-auto px-4 sm:px-6">
           <CommunicationChannelsOverview showRegisterCta={!isAuthenticated} />
@@ -283,21 +349,6 @@ export default function Home() {
           </p>
         </div>
       </section>
-
-      <PublicLiveAnalyticsSection />
-
-      {isAuthenticated && user?.role === 'tourist' && (
-        <section className="py-8 sm:py-10 bg-white border-b border-zinc-100">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6">
-            <h3 className={`${typography.cardTitle} mb-4`}>Your Current Alert Status</h3>
-            <div className={statGrid.dashboardThree}>
-              <DashboardStatCard compact label="Active Alerts" value={activeAlerts.length} accent="red" />
-              <DashboardStatCard compact label="My Reports" value="Track" accent="blue" />
-              <DashboardStatCard compact label="My Notifications" value={unreadCount > 0 ? unreadCount : "—"} accent="purple" />
-            </div>
-          </div>
-        </section>
-      )}
 
       {/* SERVICES SECTION — guests only; signed-in tourists use Crisis Hub directly */}
       {!isAuthenticated && (
@@ -321,38 +372,44 @@ export default function Home() {
             </Link>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 max-w-5xl mx-auto justify-items-center">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-5 max-w-5xl mx-auto">
             <ServiceCard
               title="Crisis Hub"
-              icon={<ShieldCheck size={28} />}
+              icon={ShieldCheck}
+              accent="blue"
               desc="Active emergency alerts, affected-area map, safety instructions, and official announcements from the Daet Municipal Tourism Office."
               href="/crisis"
             />
             <ServiceCard
               title="Roads & Travel"
-              icon={<Navigation size={28} />}
+              icon={Navigation}
+              accent="green"
               desc="Route status, detours, area hazards, and tourism-office recommended paths on one map."
               href="/routes"
             />
             <ServiceCard
               title="Incident Reporting"
-              icon={<FileText size={28} />}
+              icon={FileText}
+              accent="orange"
               desc="Report a hazard or emergency with location details and track response status from the tourism office."
               href="/crisis/reports"
             />
             <ServiceCard
               title="Alert Notifications"
-              icon={<Radio size={28} />}
+              icon={Radio}
+              accent="purple"
               desc="Sign in to receive private in-app updates when the tourism office responds to your reports or account activity occurs."
               href={isAuthenticated ? "/notifications" : "/login"}
             />
           </div>
 
-          <div className="mt-12 p-8 bg-blue-50 border border-blue-100 rounded-3xl flex items-start gap-6">
-             <ShieldCheck className="text-blue-600 shrink-0" size={24} />
+          <div className="mt-12 p-5 sm:p-6 rounded-xl border border-blue-600 bg-white flex items-start gap-4">
+             <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border border-blue-200 bg-blue-50 text-blue-700">
+               <ShieldCheck size={20} strokeWidth={2.25} />
+             </div>
              <div>
-                <p className="text-xs font-black uppercase text-blue-600 tracking-widest mb-1">Emergency Contacts</p>
-                <p className="text-sm text-blue-800 font-medium leading-relaxed">
+                <p className="text-xs font-black uppercase text-blue-700 tracking-widest mb-1">Emergency Contacts</p>
+                <p className="text-sm text-zinc-600 font-medium leading-relaxed">
                   For immediate danger, call <strong>911</strong> or <strong>117 (PNP)</strong>. This system provides official crisis updates and report tracking — it does not dispatch emergency responders.
                 </p>
              </div>
@@ -364,33 +421,24 @@ export default function Home() {
 
       <PublicFeedbackSection />
 
+      <PublicLiveAnalyticsSection className="-mx-4 md:-mx-6 lg:-mx-8 mt-0 z-0" />
+
     </div>
   );
 }
 
-function ServiceCard({ title, desc, icon, href = "#" }) {
+function ServiceCard({ title, desc, icon: Icon, accent = "blue", href = "#" }) {
+  const styles = getInfoCardAccent(accent);
   return (
-    <Link
+    <InfoOutlineCard
       href={href}
-      className="block no-underline min-w-0 w-full max-w-xs group transition-all hover:-translate-y-2"
-    >
-      <OutlinedCard accent="blue" padding="p-8" className="flex flex-col h-full items-center text-center group-hover:shadow-2xl">
-        <div className="p-4 rounded-2xl mb-6 bg-blue-600 text-white transition-colors">
-          {icon}
-        </div>
-        <h4 className="text-xl font-black uppercase mb-2 tracking-tight leading-none group-hover:text-blue-600 transition-colors">
-          {title}
-        </h4>
-        <p className="text-zinc-500 text-xs font-medium leading-relaxed mb-8 flex-1">
-          {desc}
-        </p>
-        <div className="flex items-center justify-center gap-2 mt-auto">
-          <span className="text-[9px] font-black uppercase tracking-widest text-blue-600">
-            Open
-          </span>
-          <div className="size-2 bg-blue-600 rounded-full animate-pulse" />
-        </div>
-      </OutlinedCard>
-    </Link>
+      accent={accent}
+      icon={Icon}
+      label={title}
+      description={desc}
+      footer={
+        <span className={`text-[9px] font-black uppercase tracking-widest transition-colors ${styles.label}`}>Open</span>
+      }
+    />
   );
 }

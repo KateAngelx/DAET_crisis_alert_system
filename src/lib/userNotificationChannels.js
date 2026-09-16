@@ -36,7 +36,7 @@ export function isChannelsConfigured(profile) {
   return Boolean(profile?.notification_channels_configured);
 }
 
-/** Intersect LGU alert channels with user preferences */
+/** Intersect office alert channels with user preferences */
 export function getEffectiveAlertChannels(alertChannels, userChannels) {
   return {
     email: Boolean(alertChannels?.email && userChannels.email),
@@ -46,7 +46,7 @@ export function getEffectiveAlertChannels(alertChannels, userChannels) {
 }
 
 /**
- * LGU emergency broadcasts (crisis alerts, area hazards).
+ * Tourism office emergency broadcasts (crisis alerts, area hazards).
  * Email goes to every audience member with a profile email when the alert includes email.
  * SMS and in-app still respect user communication preferences.
  */
@@ -71,7 +71,7 @@ export function getEffectiveUserChannels(userChannels, requested = ["web", "emai
   };
 }
 
-/** Single-user dispatch — respects LGU audience settings + user channel prefs */
+/** Single-user dispatch — respects office audience settings + user channel prefs */
 export function getDispatchChannelsForProfile(
   profile,
   requestedChannels = [],

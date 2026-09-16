@@ -6,11 +6,14 @@ import {
   notifyUserOfStatusChange,
 } from '@/lib/notificationService';
 import { severityToPriority } from '@/lib/constants';
+import { INCIDENT_QUEUE_EXCLUDED_STATUSES } from '@/lib/incidentAuditUtils';
 
 export const useIncidentStore = create((set, get) => ({
   incidents: [],
   currentIncident: null,
   history: [],
+  auditLog: [],
+  auditLogLoading: false,
   loading: false,
   error: null,
   filters: { status: 'All', category: 'All', severity: 'All', search: '' },
@@ -128,20 +131,9 @@ export const useIncidentStore = create((set, get) => ({
         }
       }
 
-      const updatedIncident = { ...incident, status: 'Received' };
-      await supabase.from('incident_reports').update({ status: 'Received' }).eq('id', incident.id);
-
-      await supabase.from('incident_history').insert({
-        incident_id: incident.id,
-        action: 'auto_received',
-        old_status: 'Submitted',
-        new_status: 'Received',
-        notes: 'System automatically marked as received',
-      });
-
       const { data: admins } = await supabase.from('profiles').select('*').eq('user_type', 'admin');
       if (admins?.length) {
-        await notifyAdminsOfIncident({ ...updatedIncident, reference_number: referenceNumber }, admins);
+        await notifyAdminsOfIncident({ ...incident, reference_number: referenceNumber }, admins);
       }
 
       await dispatchNotification({
@@ -156,7 +148,7 @@ export const useIncidentStore = create((set, get) => ({
       });
 
       set({ loading: false });
-      return { success: true, incident: { ...updatedIncident, reference_number: referenceNumber } };
+      return { success: true, incident: { ...incident, reference_number: referenceNumber } };
     } catch (err) {
       set({ loading: false, error: err.message });
       return { success: false, error: 'We could not process your request right now. Please try again.' };
@@ -216,9 +208,39 @@ export const useIncidentStore = create((set, get) => ({
     }
   },
 
+  fetchIncidentAuditLog: async (limit = 40) => {
+    set({ auditLogLoading: true });
+    try {
+      const { data, error } = await supabase
+        .from('incident_history')
+        .select(`
+          id,
+          action,
+          old_status,
+          new_status,
+          notes,
+          created_at,
+          changer:profiles!incident_history_changed_by_fkey(full_name),
+          incident_reports(reference_number, category)
+        `)
+        .order('created_at', { ascending: false })
+        .limit(limit);
+
+      if (error) throw error;
+      set({ auditLog: data || [], auditLogLoading: false });
+      return data;
+    } catch (err) {
+      set({ auditLogLoading: false, error: err.message });
+      return [];
+    }
+  },
+
   getFilteredIncidents: () => {
     const { incidents, filters } = get();
     return incidents.filter((inc) => {
+      if (filters.status === 'All' && INCIDENT_QUEUE_EXCLUDED_STATUSES.includes(inc.status)) {
+        return false;
+      }
       if (filters.status !== 'All' && inc.status !== filters.status) return false;
       if (filters.category !== 'All' && inc.category !== filters.category) return false;
       if (filters.severity !== 'All' && inc.severity !== filters.severity) return false;
@@ -244,8 +266,9 @@ export const useIncidentStore = create((set, get) => ({
       critical: incidents.filter((i) => i.severity === 'Critical' && !['Resolved', 'Closed'].includes(i.status)).length,
       high: incidents.filter((i) => i.severity === 'High' && !['Resolved', 'Closed'].includes(i.status)).length,
       pending: incidents.filter((i) => ['Submitted', 'Received', 'Under Review'].includes(i.status)).length,
+      approved: incidents.filter((i) => ['Approved', 'Received'].includes(i.status)).length,
       responding: incidents.filter((i) => ['Assigned', 'Responding'].includes(i.status)).length,
-      resolved: incidents.filter((i) => ['Resolved', 'Closed'].includes(i.status)).length,
+      resolved: incidents.filter((i) => ['Resolved', 'Closed', 'Rejected'].includes(i.status)).length,
       byCategory: INCIDENT_CATEGORIES.reduce((acc, cat) => {
         acc[cat] = incidents.filter((i) => i.category === cat).length;
         return acc;

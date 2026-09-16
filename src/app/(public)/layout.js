@@ -3,6 +3,7 @@ import { PublicHeader } from "@/app/components/PublicHeader";
 import { PublicFooter } from "@/app/components/PublicFooter";
 import { FloatingFaqButton } from "@/app/components/FloatingFaqButton";
 import { PublicPageTracker } from "@/app/components/analytics/PublicPageTracker";
+import { PublicMain } from "@/app/components/shell/PublicMain";
 
 export default function PublicLayout({ children }) {
   return (
@@ -10,9 +11,7 @@ export default function PublicLayout({ children }) {
       <PublicPageTracker />
       <PublicHeader />
 
-      <main className="flex-1 scrollbar-none pb-20 sm:pb-24">
-        {children}
-      </main>
+      <PublicMain>{children}</PublicMain>
 
       <PublicFooter />
       <FloatingFaqButton />

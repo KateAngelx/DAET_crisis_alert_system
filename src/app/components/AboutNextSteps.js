@@ -1,28 +1,26 @@
 "use client";
 
 import { useAuthStore } from "@/app/store/crisisStore";
-import { publicLayout } from "@/app/components/InfoPageHero";
+import { PublicPanel } from "@/app/components/InfoPageHero";
 
 export function AboutNextSteps() {
   const { isAuthenticated } = useAuthStore();
 
   if (isAuthenticated) {
     return (
-      <div className={publicLayout.ctaCard}>
-        <p className="text-xs font-black uppercase text-blue-600 tracking-widest mb-1">Quick Access</p>
-        <p className="text-sm text-blue-900 font-medium">
+      <PublicPanel title="Quick access" subtitle="Signed-in shortcuts">
+        <p className="text-sm text-zinc-600 font-medium">
           Use the menu above to open Crisis Hub, My Reports, or Notifications.
         </p>
-      </div>
+      </PublicPanel>
     );
   }
 
   return (
-    <div className={publicLayout.ctaCard}>
-      <p className="text-xs font-black uppercase text-blue-600 tracking-widest mb-1">Next Steps</p>
-      <p className="text-sm text-blue-900 font-medium">
+    <PublicPanel title="Next steps" subtitle="Get started with CONNECT-DAET">
+      <p className="text-sm text-zinc-600 font-medium">
         Register to receive alert notifications, or open Crisis Hub from the menu to check current alerts.
       </p>
-    </div>
+    </PublicPanel>
   );
 }

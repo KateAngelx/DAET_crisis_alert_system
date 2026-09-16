@@ -23,16 +23,25 @@ export function getRouteAdvisoryStatusStyles(routeStatus) {
       border: "border-green-600",
       badge: "bg-green-100 text-green-700",
       label: "Safe",
+      title: "text-zinc-900 group-hover:text-green-700 group-active:text-green-700 transition-colors",
+      titleStatic: "text-green-700",
+      icon: "border-green-200 bg-green-50 text-green-700",
     },
     Caution: {
       border: "border-orange-500",
       badge: "bg-orange-100 text-orange-800",
       label: "Caution",
+      title: "text-zinc-900 group-hover:text-orange-700 group-active:text-orange-700 transition-colors",
+      titleStatic: "text-orange-700",
+      icon: "border-orange-200 bg-orange-50 text-orange-700",
     },
     Closed: {
       border: "border-red-600",
       badge: "bg-red-100 text-red-800",
       label: "Closed",
+      title: "text-zinc-900 group-hover:text-red-700 group-active:text-red-700 transition-colors",
+      titleStatic: "text-red-700",
+      icon: "border-red-200 bg-red-50 text-red-700",
     },
   };
   return map[routeStatus] || map.Caution;

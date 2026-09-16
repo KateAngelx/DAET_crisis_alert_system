@@ -2,7 +2,8 @@
 
 import React, { useEffect, useMemo, useState } from "react";
 import { Compass, MapPin, Users, Phone, Mail } from "lucide-react";
-import { Card } from "@/app/components/ui/Card";
+import { AdminPanel } from "@/app/components/admin/AdminPanel";
+import { AdminTablePanel, adminTableClasses } from "@/app/components/admin/AdminTablePanel";
 import { DashboardPageHeader } from "@/app/components/dashboard/DashboardPageHeader";
 import { DashboardStatCard } from "@/app/components/dashboard/DashboardStatCard";
 import { DestinationButton, DestinationModal } from "@/app/components/tour/DestinationModal";
@@ -83,7 +84,7 @@ export default function AdminGuideMonitoringPage() {
   const openDestination = (group) => setModalGroup(group);
 
   return (
-    <div className="space-y-6 text-left">
+    <>
       <DashboardPageHeader
         title="Tour Group Management"
         description="Administrative oversight of tour groups, routes, guides, and tourist assignments."
@@ -100,21 +101,20 @@ export default function AdminGuideMonitoringPage() {
       )}
 
       {loading ? (
-        <Card className="p-6 h-48 animate-pulse bg-zinc-50" />
+        <div className="rounded-2xl border border-zinc-200 h-48 animate-pulse bg-zinc-50" />
       ) : tourGroups.length === 0 ? (
         <EmptyState icon={Compass} title="No tour groups" description="Tour groups created by guides will appear here for monitoring." />
       ) : (
         <>
-          <Card className="border-zinc-100 overflow-hidden mb-6">
-            <div className="p-4 border-b border-zinc-100 bg-zinc-50/50">
-              <h2 className="text-sm font-black uppercase tracking-widest text-zinc-400">Assignment Relationships</h2>
-              <p className="text-xs text-zinc-500 mt-1">Tourist → Guide → Tour Group → Destination</p>
-            </div>
-            <div className="overflow-x-auto">
-              <table className="w-full text-sm text-left">
+          <AdminTablePanel
+            className="mb-6"
+            title="Assignment relationships"
+            subtitle="Tourist → Guide → Tour Group → Destination"
+          >
+              <table className={adminTableClasses.table}>
                 <thead>
-                  <tr className="border-b border-zinc-100 text-[10px] font-black uppercase tracking-widest text-zinc-400">
-                    <th className="p-4">Tourist</th>
+                  <tr className={adminTableClasses.headRow}>
+                    <th className={adminTableClasses.headCell}>Tourist</th>
                     <th className="p-4">Guide</th>
                     <th className="p-4">Tour Group</th>
                     <th className="p-4">Route</th>
@@ -130,8 +130,8 @@ export default function AdminGuideMonitoringPage() {
                     </tr>
                   ) : (
                     assignments.slice(0, 50).map((a) => (
-                      <tr key={a.id} className="border-b border-zinc-50 hover:bg-zinc-50/50">
-                        <td className="p-4 font-medium text-zinc-900">{a.tourist?.full_name || "—"}</td>
+                      <tr key={a.id} className={adminTableClasses.bodyRow}>
+                        <td className={`${adminTableClasses.bodyCell} font-medium text-zinc-900`}>{a.tourist?.full_name || "—"}</td>
                         <td className="p-4 text-zinc-700">{a.guide?.full_name || "—"}</td>
                         <td className="p-4 text-zinc-700">{a.tour_group?.name || "—"}</td>
                         <td className="p-4 text-blue-600 text-xs font-medium">{formatTourRoute(a.tour_group)}</td>
@@ -163,18 +163,13 @@ export default function AdminGuideMonitoringPage() {
                   )}
                 </tbody>
               </table>
-            </div>
-          </Card>
+          </AdminTablePanel>
 
-          <Card className="border-zinc-100 overflow-hidden">
-            <div className="p-4 border-b border-zinc-100 bg-zinc-50/50">
-              <h2 className="text-sm font-black uppercase tracking-widest text-zinc-400">All Tour Groups</h2>
-            </div>
-            <div className="overflow-x-auto">
-              <table className="w-full text-sm text-left">
+          <AdminTablePanel title="All tour groups">
+              <table className={adminTableClasses.table}>
                 <thead>
-                  <tr className="border-b border-zinc-100 text-[10px] font-black uppercase tracking-widest text-zinc-400">
-                    <th className="p-4">Tour Group</th>
+                  <tr className={adminTableClasses.headRow}>
+                    <th className={adminTableClasses.headCell}>Tour Group</th>
                     <th className="p-4">Guide</th>
                     <th className="p-4">From</th>
                     <th className="p-4">Destination</th>
@@ -186,8 +181,8 @@ export default function AdminGuideMonitoringPage() {
                 </thead>
                 <tbody>
                   {tableRows.map((group) => (
-                    <tr key={group.id} className="border-b border-zinc-50 hover:bg-zinc-50/50">
-                      <td className="p-4 font-bold text-zinc-900">{group.name}</td>
+                    <tr key={group.id} className={adminTableClasses.bodyRow}>
+                      <td className={`${adminTableClasses.bodyCell} font-bold text-zinc-900`}>{group.name}</td>
                       <td className="p-4 text-zinc-700">{group.guide?.full_name || "—"}</td>
                       <td className="p-4 text-zinc-600">{group.starting_location || "—"}</td>
                       <td className="p-4 text-zinc-600">{group.destination}</td>
@@ -217,13 +212,12 @@ export default function AdminGuideMonitoringPage() {
                   ))}
                 </tbody>
               </table>
-            </div>
-          </Card>
+          </AdminTablePanel>
 
-          <div className="space-y-6">
-            <h2 className="text-sm font-black uppercase tracking-widest text-zinc-400">By Guide</h2>
+          <AdminPanel title="By guide">
+            <div className="space-y-4">
             {stats.guides.map(({ guide, groups, touristCount }) => (
-              <Card key={guide.id} className="p-6 border-zinc-100">
+              <div key={guide.id} className="rounded-xl border border-zinc-200 p-5 sm:p-6">
                 <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-4 pb-4 border-b border-zinc-100">
                   <div>
                     <h3 className="font-black text-lg text-zinc-900 uppercase tracking-tight">{guide.full_name}</h3>
@@ -248,9 +242,10 @@ export default function AdminGuideMonitoringPage() {
                     </div>
                   ))}
                 </div>
-              </Card>
+              </div>
             ))}
-          </div>
+            </div>
+          </AdminPanel>
         </>
       )}
 
@@ -266,6 +261,6 @@ export default function AdminGuideMonitoringPage() {
         routeAdvisories={advisories}
         editable={false}
       />
-    </div>
+    </>
   );
 }

@@ -12,13 +12,13 @@ export default function AboutPage() {
     <PublicPageShell>
       <InfoPageHero
         title={siteInfo.systemName}
-        description={`A municipal alert and reporting platform operated by the ${siteInfo.officeName}. It publishes official crisis information and lets tourists and staff submit incident reports.`}
+        description={`An official alert and reporting platform operated by the ${siteInfo.officeName}. It publishes official crisis information and lets tourists and staff submit incident reports.`}
       />
 
       <PublicPageContent>
         <InfoSection title="Purpose">
           <p>
-            {siteInfo.brandName} helps tourists and tourism staff in Daet understand what is happening during a crisis — what the alert is, where it is occurring, how severe it is, and what actions to take. Authorized municipal personnel use the admin portal to issue alerts, review reports, and update response status.
+            {siteInfo.brandName} helps tourists and tourism staff in Daet understand what is happening during a crisis — what the alert is, where it is occurring, how severe it is, and what actions to take. Authorized tourism office staff use the admin portal to issue alerts, review reports, and update response status.
           </p>
         </InfoSection>
 
@@ -37,7 +37,7 @@ export default function AboutPage() {
           <p>
             <strong>Tourists</strong> — view alerts, receive notifications, and submit incident reports.<br />
             <strong>Tourism guides</strong> — monitor alerts and assigned tourists during an incident.<br />
-            <strong>Municipal administrators</strong> — issue broadcasts, manage reports, and update response status through the admin portal.
+            <strong>Tourism office administrators</strong> — issue broadcasts, manage reports, and update response status through the admin portal.
           </p>
         </InfoSection>
 

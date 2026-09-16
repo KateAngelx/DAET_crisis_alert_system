@@ -4,24 +4,28 @@ import React, { useEffect, useState } from "react";
 import { Mail, MessageSquare, Smartphone, Bell, Loader2, Info } from "lucide-react";
 import { Card } from "@/app/components/ui/Card";
 import { useAuthStore } from "@/app/store/crisisStore";
+import { cardTouchShadow, getInfoCardAccent } from "@/lib/designSystem";
 import { siteInfo } from "@/lib/siteInfo";
 
 const CHANNEL_OPTIONS = [
   {
     key: "email",
     label: "Email",
+    accent: "blue",
     description: `Official crisis alerts are always sent to your registered email. This toggle controls other updates from the ${siteInfo.officeName}.`,
     icon: Mail,
   },
   {
     key: "sms",
     label: "SMS",
+    accent: "green",
     description: "Get text messages for emergencies (requires valid PH mobile number).",
     icon: MessageSquare,
   },
   {
     key: "app",
     label: "In-App",
+    accent: "purple",
     description: `Show notifications inside ${siteInfo.brandName} when you are signed in.`,
     icon: Smartphone,
   },
@@ -60,8 +64,10 @@ export function CommunicationChannelForm({
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
       {showProfileHint && (
-        <div className="flex items-start gap-3 p-4 rounded-2xl bg-blue-50 border border-blue-100 text-sm text-blue-900 font-medium">
-          <Info className="shrink-0 mt-0.5 opacity-80" size={18} />
+        <div className="flex items-start gap-3 p-4 rounded-xl bg-blue-50 border border-blue-200 text-sm text-blue-900 font-medium">
+          <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-blue-200 bg-white text-blue-700">
+            <Info size={16} />
+          </div>
           <p>
             Choose how the {siteInfo.officeName} can reach you for crisis alerts and important updates.
             You can change these anytime under <strong>Profile → Communication Preferences</strong>.
@@ -83,36 +89,40 @@ export function CommunicationChannelForm({
       )}
 
       <div className="grid gap-3">
-        {CHANNEL_OPTIONS.map(({ key, label, description, icon: Icon }) => (
-          <button
-            key={key}
-            type="button"
-            onClick={() => toggle(key)}
-            className={`flex items-start gap-4 p-4 rounded-2xl border text-left transition-all ${
-              channels[key]
-                ? "bg-blue-50 border-blue-200 ring-1 ring-blue-100"
-                : "bg-zinc-50 border-zinc-100 opacity-70"
-            }`}
-          >
-            <div className={`p-2 rounded-xl shrink-0 ${channels[key] ? "bg-blue-600 text-white" : "bg-zinc-200 text-zinc-500"}`}>
-              <Icon size={18} />
-            </div>
-            <div className="flex-1 min-w-0">
-              <p className="font-black text-sm uppercase tracking-wide text-zinc-900">{label}</p>
-              <p className="text-xs text-zinc-500 mt-1 font-medium">{description}</p>
-            </div>
-            <span className={`text-[10px] font-black uppercase tracking-widest shrink-0 mt-1 ${channels[key] ? "text-blue-600" : "text-zinc-400"}`}>
-              {channels[key] ? "On" : "Off"}
-            </span>
-          </button>
-        ))}
+        {CHANNEL_OPTIONS.map(({ key, label, description, icon: Icon, accent }) => {
+          const active = channels[key];
+          const styles = getInfoCardAccent(active ? accent : "zinc");
+          return (
+            <button
+              key={key}
+              type="button"
+              onClick={() => toggle(key)}
+              className={`group flex items-start gap-4 p-4 rounded-xl border text-left ${cardTouchShadow} ${
+                active ? `${styles.border} ${styles.activeBg}` : "border-zinc-200 bg-white opacity-80"
+              }`}
+            >
+              <div className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border ${styles.iconBox}`}>
+                <Icon size={18} strokeWidth={2.25} />
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className={`font-black text-sm uppercase tracking-wide transition-colors ${active ? styles.label : "text-zinc-500 group-hover:text-zinc-700 group-active:text-zinc-700"}`}>
+                  {label}
+                </p>
+                <p className="text-xs text-zinc-500 mt-1 font-medium">{description}</p>
+              </div>
+              <span className={`text-[10px] font-black uppercase tracking-widest shrink-0 mt-1 ${active ? styles.label : "text-zinc-400"}`}>
+                {active ? "On" : "Off"}
+              </span>
+            </button>
+          );
+        })}
       </div>
 
       <div className="flex flex-col sm:flex-row gap-3">
         <button
           type="submit"
           disabled={saving}
-          className="flex-1 py-4 bg-blue-600 text-white rounded-2xl font-black uppercase text-xs tracking-widest hover:bg-blue-700 disabled:opacity-50 flex items-center justify-center gap-2"
+          className="flex-1 py-4 bg-blue-600 text-white rounded-xl font-black uppercase text-xs tracking-widest hover:bg-blue-700 disabled:opacity-50 flex items-center justify-center gap-2"
         >
           {saving ? <><Loader2 size={16} className="animate-spin" /> Saving...</> : submitLabel}
         </button>
@@ -121,7 +131,7 @@ export function CommunicationChannelForm({
             type="button"
             disabled={saving}
             onClick={onSkip}
-            className="py-4 px-6 rounded-2xl border border-zinc-200 text-zinc-600 font-black uppercase text-xs tracking-widest hover:bg-zinc-50 disabled:opacity-50"
+            className="py-4 px-6 rounded-xl border border-zinc-200 text-zinc-600 font-black uppercase text-xs tracking-widest hover:bg-zinc-50 disabled:opacity-50"
           >
             Skip for now
           </button>
@@ -177,8 +187,8 @@ export function CommunicationChannelOnboarding({ onComplete }) {
     <div className="fixed inset-0 z-[200] flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
       <Card className="w-full max-w-lg p-6 sm:p-8 rounded-3xl shadow-2xl max-h-[90vh] overflow-y-auto">
         <div className="flex items-center gap-3 mb-4">
-          <div className="p-3 bg-blue-600 text-white rounded-2xl">
-            <Bell size={22} />
+          <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-blue-200 bg-blue-50 text-blue-700">
+            <Bell size={22} strokeWidth={2.25} />
           </div>
           <div>
             <p className="text-[10px] font-black uppercase tracking-widest text-blue-600">First-time setup</p>

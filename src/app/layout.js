@@ -7,6 +7,7 @@ import { AssignmentRequestHandler } from "@/app/components/tour/AssignmentReques
 import { NotificationArrivalListener } from "@/app/components/NotificationArrivalListener";
 import { ConfirmDialogProvider } from "@/app/components/ui/ConfirmDialogProvider";
 import { InstallPwaPrompt } from "@/app/components/InstallPwaPrompt";
+import { PwaSplashScreen } from "@/app/components/PwaSplashScreen";
 import { siteInfo } from "@/lib/siteInfo";
 import "./globals.css";
 
@@ -26,7 +27,7 @@ export const metadata = {
   applicationName: siteInfo.brandName,
   appleWebApp: {
     capable: true,
-    statusBarStyle: "black-translucent",
+    statusBarStyle: "default",
     title: siteInfo.brandName,
   },
   formatDetection: {
@@ -49,6 +50,7 @@ export default function RootLayout({ children }) {
   return (
     <html lang="en" className={`${geistSans.variable} ${geistMono.variable} h-full antialiased scrollbar-none`}>
       <body className="min-h-full flex flex-col relative scrollbar-none">
+        <PwaSplashScreen />
         <AuthSessionSync />
         <PasswordRecoveryRedirect />
         <ChannelPreferencesGate />

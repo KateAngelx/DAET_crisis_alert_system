@@ -17,7 +17,7 @@ export function ReportIncidentModal({ open, onClose, onSuccess }) {
               <h2 className="text-lg font-black uppercase tracking-tight text-zinc-900">Report an Incident</h2>
             </div>
             <p className="text-sm text-zinc-500 font-medium">
-              Include location, severity, and a clear description. LGU staff will review and update the response status.
+              Include location, severity, and a clear description. Tourism office staff will review and update the response status.
             </p>
           </div>
           <button

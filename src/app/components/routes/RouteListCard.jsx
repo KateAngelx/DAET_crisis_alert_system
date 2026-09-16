@@ -4,6 +4,8 @@ import { ArrowRight, MapPin, Route } from "lucide-react";
 import { OutlinedCard } from "@/app/components/ui/OutlinedCard";
 import { getRouteStatusStyles } from "@/lib/routesUtils";
 import { iconSize, outlinedCard, typography } from "@/lib/designSystem";
+import { CardIconBox } from "@/app/components/ui/CardIconBox";
+import { RouteStatusIcon } from "@/app/components/ui/cardTypeIcons";
 
 export function RouteListCard({ route, onSelect }) {
   const styles = getRouteStatusStyles(route.status);
@@ -16,10 +18,14 @@ export function RouteListCard({ route, onSelect }) {
     >
       <OutlinedCard
         padding={outlinedCard.alertPadding}
-        className={`border-2 ${styles.border} hover:scale-[1.01] transition-transform cursor-pointer`}
+        interactive
+        className={`border-2 ${styles.border} cursor-pointer`}
       >
         <div className="flex items-start justify-between gap-3">
-          <div className="min-w-0">
+          <CardIconBox boxClass={styles.icon}>
+            <RouteStatusIcon status={route.status} size={iconSize.stat} />
+          </CardIconBox>
+          <div className="min-w-0 flex-1">
             <div className="flex flex-wrap gap-2 mb-2">
               <span className={`text-[9px] font-black uppercase px-2 py-1 rounded ${styles.badge}`}>
                 {route.statusLabel || styles.label}
@@ -30,7 +36,7 @@ export function RouteListCard({ route, onSelect }) {
                 </span>
               )}
             </div>
-            <h3 className={`${typography.cardTitle} group-hover:text-blue-600 transition-colors`}>{route.title}</h3>
+            <h3 className={`${typography.cardTitleBase} ${styles.title}`}>{route.title}</h3>
             <p className="text-xs text-zinc-500 font-medium mt-2 flex items-center gap-1.5">
               <Route size={iconSize.inlineSm} className="shrink-0" />
               {route.from} → {route.to}
@@ -41,7 +47,7 @@ export function RouteListCard({ route, onSelect }) {
               </p>
             )}
           </div>
-          <ArrowRight size={16} className="text-zinc-300 group-hover:text-blue-600 shrink-0 mt-1" />
+          <ArrowRight size={16} className={`text-zinc-300 shrink-0 mt-1 ${styles.text}`} />
         </div>
       </OutlinedCard>
     </button>

@@ -4,8 +4,9 @@ import React, { useEffect } from "react";
 import {
   ArrowRight, Zap, Database, Users, AlertTriangle, CheckCircle, Activity, ShieldCheck, RefreshCcw,
 } from "lucide-react";
-import { Card } from "@/app/components/ui/Card";
+import { AdminPanel } from "@/app/components/admin/AdminPanel";
 import { DashboardPageHeader } from "@/app/components/dashboard/DashboardPageHeader";
+import { adminShell } from "@/lib/designSystem";
 import { RoleContextBanner } from "@/app/components/dashboard/RoleContextBanner";
 import { ROLE_INTERFACE } from "@/lib/roleInterfaceCopy";
 import { useCrisisStore } from "@/app/store/crisisStore";
@@ -21,7 +22,7 @@ export default function AdminWorkflowPage() {
   const activeAlertsCount = alerts.filter((a) => a.status === "Active").length;
 
   return (
-    <div className="space-y-6 text-left pb-8">
+    <>
       <DashboardPageHeader
         title={ROLE_INTERFACE.admin.workflow.title}
         description={ROLE_INTERFACE.admin.workflow.description}
@@ -34,7 +35,7 @@ export default function AdminWorkflowPage() {
       />
       <RoleContextBanner helper={ROLE_INTERFACE.admin.workflow.helper} tone="info" />
 
-      <Card className="p-8 bg-zinc-900 text-white border-none shadow-xl overflow-hidden relative">
+      <AdminPanel className="border-zinc-800" noPadding bodyClassName="p-6 sm:p-8 bg-zinc-900 text-white overflow-hidden relative">
         <div className="absolute top-0 right-0 p-8 opacity-10">
           <Activity size={120} className={loading ? "animate-pulse" : ""} />
         </div>
@@ -67,37 +68,29 @@ export default function AdminWorkflowPage() {
             </React.Fragment>
           ))}
         </div>
-      </Card>
+      </AdminPanel>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <Card className="p-6 border-zinc-100">
-          <div className="flex items-center gap-3 mb-6">
-            <div className="p-2 bg-red-100 rounded-xl text-red-600"><AlertTriangle size={20} /></div>
-            <h3 className="font-black uppercase text-sm tracking-tight">Crisis Response Flow</h3>
-          </div>
+        <AdminPanel title="Crisis response flow">
           <div className="space-y-4">
             <WorkflowStep num="01" title="Issue Alert" desc="Admin publishes alert with type, severity, location, and safety instructions." />
             <WorkflowStep num="02" title="Public Notification" desc="Alert appears on Crisis Hub, Advisories, and registered user notifications." />
             <WorkflowStep num="03" title="Monitor & Update" desc="Staff track affected areas and update alert status as conditions change." />
             <WorkflowStep num="04" title="Resolve Alert" desc="Marking an alert Resolved removes it from the public active feed." />
           </div>
-        </Card>
+        </AdminPanel>
 
-        <Card className="p-6 border-zinc-100">
-          <div className="flex items-center gap-3 mb-6">
-            <div className="p-2 bg-blue-100 rounded-xl text-blue-600"><Users size={20} /></div>
-            <h3 className="font-black uppercase text-sm tracking-tight">User Registration Flow</h3>
-          </div>
+        <AdminPanel title="User registration flow">
           <div className="space-y-4">
             <WorkflowStep num="01" title="Tourist Registers" desc="Visitor creates an account with contact details for alert notifications." />
-            <WorkflowStep num="02" title="Profile Created" desc="Account is added to the LGU user registry as a tourist." />
-            <WorkflowStep num="03" title="Alert Delivery" desc="When LGU issues an alert, registered users receive notifications by configured channels." />
+            <WorkflowStep num="02" title="Profile Created" desc="Account is added to the tourism office user registry as a tourist." />
+            <WorkflowStep num="03" title="Alert Delivery" desc="When the tourism office issues an alert, registered users receive notifications by configured channels." />
             <WorkflowStep num="04" title="Report Submission" desc="Registered users can submit incident reports and track response status." />
           </div>
-        </Card>
+        </AdminPanel>
       </div>
 
-      <Card className="bg-zinc-50 border-zinc-200">
+      <AdminPanel title="Channel status">
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
           <div className="flex items-center gap-4">
             <div className={`size-10 ${loading ? "bg-blue-500" : "bg-green-500"} rounded-full flex items-center justify-center text-white shadow-lg`}>
@@ -109,15 +102,16 @@ export default function AdminWorkflowPage() {
             </div>
           </div>
           <button
+            type="button"
             onClick={() => { fetchTotalUsers(); fetchAlerts(); }}
-            className="px-6 py-3 bg-white border border-zinc-200 rounded-2xl text-xs font-black hover:bg-zinc-50 transition-all uppercase active:scale-95 flex items-center gap-2"
+            className={adminShell.btnGhost}
           >
             <RefreshCcw size={14} className={loading ? "animate-spin" : ""} />
             Refresh Status
           </button>
         </div>
-      </Card>
-    </div>
+      </AdminPanel>
+    </>
   );
 }
 
