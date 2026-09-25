@@ -1,3 +1,0 @@
-{"sessionId":"082309","location":"crisisStore.js:syncProfile","message":"Ensure profile API","data":{"ok":true,"status":200,"user_type":"admin"},"timestamp":1788447165927,"hypothesisId":"A"}
-{"sessionId":"082309","location":"crisisStore.js:login","message":"Login success","data":{"userId":"3932fc2b-5efc-48e9-bd9f-0a88a9fb1c2e","role":"admin"},"timestamp":1788447234170,"hypothesisId":"C"}
-{"sessionId":"082309","location":"crisisStore.js:syncProfile","message":"Ensure profile API","data":{"ok":true,"status":200,"user_type":"admin"},"timestamp":1788447234169,"hypothesisId":"A"}
