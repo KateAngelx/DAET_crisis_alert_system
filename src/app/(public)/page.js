@@ -3,7 +3,7 @@ import React, { useEffect, useState, useLayoutEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
-  ArrowRight, ShieldCheck, Bell, MapPin, PhoneCall, Radio, FileText, Users, Navigation
+  ArrowRight, ShieldCheck, PhoneCall, Radio, FileText, Users, Navigation
 } from "lucide-react";
 import { useCrisisStore, useAuthStore } from "@/app/store/crisisStore";
 import { useNotificationStore } from "@/app/store/notificationStore";
@@ -49,12 +49,12 @@ export default function Home() {
       {/* HERO SECTION */}
       <section
         data-landing-section="hero"
-        className="relative pt-10 pb-12 sm:pt-12 sm:pb-14 lg:pb-16 min-h-[calc(100dvh-4rem)] sm:min-h-0 overflow-hidden bg-zinc-50 border-b border-zinc-200 flex flex-col justify-center"
+        className="relative w-full pt-10 pb-12 sm:pt-12 sm:pb-14 lg:pb-16 min-h-[calc(100dvh-4rem)] sm:min-h-0 overflow-hidden bg-zinc-50 border-b border-zinc-200 flex flex-col justify-center"
       >
         <div className="absolute inset-0 w-full h-full bg-[linear-gradient(to_right,#80808012_1px,transparent_1px),linear-gradient(to_bottom,#80808012_1px,transparent_1px)] bg-[size:24px_24px]"></div>
         <div className="absolute top-0 right-0 -translate-y-12 translate-x-1/3 w-[800px] h-[800px] bg-blue-100 rounded-full blur-3xl opacity-60 mix-blend-multiply pointer-events-none"></div>
 
-        <div className="relative max-w-7xl mx-auto px-4 sm:px-6 grid grid-cols-1 lg:grid-cols-2 gap-10 lg:gap-16 items-center w-full">
+        <div className="relative max-w-7xl mx-auto px-4 sm:px-6 w-full">
           
           <div className="flex flex-col items-start gap-5 sm:gap-6 z-10 min-w-0">
             {isAuthenticated && (
@@ -138,77 +138,6 @@ export default function Home() {
             {error && (
               <p className="text-xs font-bold text-red-500 mt-2">Could not load alert counts. Showing cached data.</p>
             )}
-          </div>
-
-          {/* Mobile preview — fills hero on small screens */}
-          <div className="relative w-full max-w-sm mx-auto xl:hidden">
-            <div className="bg-zinc-900 rounded-[32px] shadow-2xl overflow-hidden border-[6px] border-white">
-              <div className="w-full bg-zinc-950 px-4 py-3 flex items-center justify-between border-b border-white/10">
-                <div className="flex items-center gap-2 min-w-0">
-                  <BrandLogo size={20} />
-                </div>
-                <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse shrink-0" />
-              </div>
-              <div className="bg-gradient-to-br from-zinc-800 to-zinc-900 p-5 space-y-3">
-                <p className="text-[9px] font-black uppercase tracking-widest text-blue-400 leading-tight">
-                  {siteInfo.brandName} · {siteInfo.officeName}
-                </p>
-                <div className="w-full h-24 bg-blue-900/30 rounded-2xl border border-blue-500/20 flex items-center justify-center">
-                  <Bell size={28} className="text-blue-400 animate-pulse" />
-                </div>
-                <div className="w-full py-3 bg-blue-600/20 text-blue-400 rounded-xl border border-blue-500/20 text-center text-[9px] font-black uppercase tracking-widest">
-                  Emergency Alert System
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* Desktop visual */}
-          <div className="relative h-[550px] w-full hidden xl:block perspective-1000">
-            
-            <div className="absolute top-12 right-4 bg-white p-6 rounded-[32px] shadow-2xl border border-zinc-100 w-72 animate-in slide-in-from-right-8 duration-700 delay-100 z-30 hover:-translate-y-2 transition-transform">
-              <div className="flex items-center gap-3 mb-3">
-                <div className="bg-red-100 p-2.5 rounded-xl text-red-600">
-                  <Bell size={20} className="animate-pulse" />
-                </div>
-                <div>
-                  <p className="text-[10px] font-black uppercase tracking-widest text-red-600">Critical Alert</p>
-                  <p className="text-sm font-bold text-zinc-900">Official weather advisory</p>
-                </div>
-              </div>
-              <p className="text-xs text-zinc-500 font-medium">Shows alert type, severity, affected area, and safety instructions from {siteInfo.officeName}.</p>
-            </div>
-
-            <div className="absolute bottom-16 left-0 bg-white p-6 rounded-[32px] shadow-2xl border border-zinc-100 w-72 animate-in slide-in-from-bottom-8 duration-700 delay-300 z-30 hover:-translate-y-2 transition-transform">
-              <div className="flex items-center gap-3 mb-3">
-                <div className="bg-blue-100 p-2.5 rounded-xl text-blue-600">
-                  <MapPin size={20} />
-                </div>
-                <div>
-                  <p className="text-[10px] font-black uppercase tracking-widest text-blue-600">Affected Area</p>
-                  <p className="text-sm font-bold text-zinc-900">Location & travel guidance</p>
-                </div>
-              </div>
-              <p className="text-xs text-zinc-500 font-medium">Restricted zones, route status, and tourist safety guidance published by {siteInfo.officeName}.</p>
-            </div>
-
-            <div className="absolute inset-0 m-auto w-[320px] h-[450px] bg-zinc-900 rounded-[48px] shadow-2xl overflow-hidden z-20 border-[8px] border-white flex flex-col">
-              <div className="w-full bg-zinc-950 p-4 flex items-center justify-between border-b border-white/10">
-                <BrandLogo size={22} />
-                <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse" />
-              </div>
-              <div className="flex-1 bg-gradient-to-br from-zinc-800 to-zinc-900 p-6 flex flex-col gap-4">
-                <div className="w-full h-32 bg-blue-900/30 rounded-2xl border border-blue-500/20 flex items-center justify-center">
-                  <Bell size={32} className="text-blue-400 animate-pulse" />
-                </div>
-                <div className="w-3/4 h-8 bg-zinc-800/50 rounded-lg border border-white/5" />
-                <div className="w-full h-8 bg-zinc-800/50 rounded-lg border border-white/5" />
-                <div data-mockup-footer className="mt-auto w-full py-4 bg-blue-600/20 text-blue-400 rounded-2xl border border-blue-500/20 text-center text-[10px] font-black uppercase tracking-widest">
-                  Emergency Alert System
-                </div>
-              </div>
-            </div>
-            
           </div>
         </div>
       </section>
@@ -311,7 +240,7 @@ export default function Home() {
 
       <PublicFeedbackSection />
 
-      <PublicLiveAnalyticsSection className="-mx-4 md:-mx-6 lg:-mx-8 mt-0 z-0" />
+      <PublicLiveAnalyticsSection className="mt-0 z-0 w-full" />
 
     </div>
   );
