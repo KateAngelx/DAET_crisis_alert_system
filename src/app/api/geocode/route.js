@@ -1,7 +1,13 @@
 import { NextResponse } from "next/server";
+import { API_RATE_LIMITS, enforceRateLimit } from "@/lib/apiRateLimit";
+
+const MAX_QUERY_LEN = 200;
 
 export async function GET(request) {
-  const query = request.nextUrl.searchParams.get("q")?.trim();
+  const limited = enforceRateLimit(request, { name: "geocode", ...API_RATE_LIMITS.geocode });
+  if (limited) return limited;
+
+  const query = request.nextUrl.searchParams.get("q")?.trim().slice(0, MAX_QUERY_LEN);
   if (!query) {
     return NextResponse.json({ error: "Missing query" }, { status: 400 });
   }

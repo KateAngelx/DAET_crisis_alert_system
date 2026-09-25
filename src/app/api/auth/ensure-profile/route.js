@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import { getSupabaseAdmin } from '@/lib/supabaseAdmin';
 import { normalizePhilippinePhone } from '@/lib/phoneUtils';
+import { API_RATE_LIMITS, enforceRateLimitByKey } from '@/lib/apiRateLimit';
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
@@ -22,6 +23,12 @@ export async function POST(request) {
     if (authError || !user) {
       return NextResponse.json({ error: 'Invalid session' }, { status: 401 });
     }
+
+    const limited = enforceRateLimitByKey(user.id, {
+      name: 'ensure-profile',
+      ...API_RATE_LIMITS.ensureProfile,
+    });
+    if (limited) return limited;
 
     const admin = getSupabaseAdmin();
     if (!admin) {

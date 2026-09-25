@@ -196,26 +196,6 @@ export default function RoutesPageContent() {
   const mapBlocked = !!selectedRoute;
 
   useEffect(() => {
-    // #region agent log
-    fetch("http://127.0.0.1:7540/ingest/3142bff0-53ba-4c2c-9606-b4d021977f0c", {
-      method: "POST",
-      headers: { "Content-Type": "application/json", "X-Debug-Session-Id": "197cec" },
-      body: JSON.stringify({
-        sessionId: "197cec",
-        runId: "routes-layout",
-        hypothesisId: "L1",
-        location: "RoutesPageContent.js:mount",
-        message: "Public routes shell width",
-        data: {
-          shell: "narrow",
-          defaultFilter: "urgent",
-          layout: "compact-public",
-          scrollPane: true,
-        },
-        timestamp: Date.now(),
-      }),
-    }).catch(() => {});
-    // #endregion
   }, []);
 
   return (

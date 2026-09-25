@@ -118,26 +118,6 @@ export default function CrisisAdminPage() {
 
   useEffect(() => {
     if (!mounted) return;
-    // #region agent log
-    fetch("http://127.0.0.1:7540/ingest/3142bff0-53ba-4c2c-9606-b4d021977f0c", {
-      method: "POST",
-      headers: { "Content-Type": "application/json", "X-Debug-Session-Id": "197cec" },
-      body: JSON.stringify({
-        sessionId: "197cec",
-        runId: "command-center-stats",
-        hypothesisId: "H3",
-        location: "crisis/admin/page.jsx:registeredTourists",
-        message: "Command Center registered tourists stat",
-        data: {
-          registeredTourists: userStats?.touristCount ?? null,
-          compactCommandLayout: true,
-          roadsArchivePanelsRemoved: true,
-          inlineQuickLinks: true,
-        },
-        timestamp: Date.now(),
-      }),
-    }).catch(() => {});
-    // #endregion
   }, [mounted, userStats?.touristCount]);
 
   const findLocationOnMap = async () => {

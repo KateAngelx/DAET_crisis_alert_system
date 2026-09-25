@@ -11,21 +11,6 @@ export function FloatingFaqButton() {
 
   useEffect(() => {
     if (hidden || typeof window === "undefined") return;
-    // #region agent log
-    fetch("http://127.0.0.1:7540/ingest/3142bff0-53ba-4c2c-9606-b4d021977f0c", {
-      method: "POST",
-      headers: { "Content-Type": "application/json", "X-Debug-Session-Id": "ee1adc" },
-      body: JSON.stringify({
-        sessionId: "ee1adc",
-        runId: "floating-faq",
-        hypothesisId: "H3",
-        location: "FloatingFaqButton.jsx:mount",
-        message: "Floating FAQ button rendered",
-        data: { pathname, innerWidth: window.innerWidth },
-        timestamp: Date.now(),
-      }),
-    }).catch(() => {});
-    // #endregion
   }, [hidden, pathname]);
 
   if (hidden) return null;

@@ -382,26 +382,6 @@ export default function AdminUsersPage() {
 
   useEffect(() => {
     if (loading) return;
-    // #region agent log
-    fetch("http://127.0.0.1:7540/ingest/3142bff0-53ba-4c2c-9606-b4d021977f0c", {
-      method: "POST",
-      headers: { "Content-Type": "application/json", "X-Debug-Session-Id": "197cec" },
-      body: JSON.stringify({
-        sessionId: "197cec",
-        runId: "admin-users-compact",
-        hypothesisId: "H-compact",
-        location: "admin/users/page.js:list",
-        message: "Compact user column lists rendered",
-        data: {
-          layout: "compact-divider-rows",
-          admin: usersByRole.admin.length,
-          guide: usersByRole.guide.length,
-          tourist: usersByRole.tourist.length,
-        },
-        timestamp: Date.now(),
-      }),
-    }).catch(() => {});
-    // #endregion
   }, [loading, usersByRole.admin.length, usersByRole.guide.length, usersByRole.tourist.length]);
 
   return (

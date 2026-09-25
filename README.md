@@ -2,6 +2,8 @@
 
 Official emergency communication platform for Daet, Camarines Norte. Provides real-time crisis alerts, safety advisories, incident reporting, and coordination between tourists, tourism personnel, and authorized responders.
 
+This repository is the **complete production system** (public site, admin Command Center, guide portal, APIs, and Supabase schema)—not a submodule or partial “subsystem.” The npm package name is `daet-crisis-alert-system`; use a matching folder name locally (e.g. `DAET_crisis_alert_system` or `connect-daet-system`).
+
 ## Features
 
 - **Crisis Hub** — Official tourism office emergency alerts with affected-area maps and safety instructions
@@ -17,6 +19,20 @@ Official emergency communication platform for Daet, Camarines Norte. Provides re
 - **Frontend:** Next.js 16, React 19, Tailwind CSS 4
 - **Backend:** Next.js API Routes, Supabase (PostgreSQL, Auth, Realtime, Storage)
 - **State:** Zustand
+
+## Repository layout
+
+| Path | Purpose |
+|------|---------|
+| `src/app/(public)/` | Tourist-facing Crisis Hub, routes map, profile |
+| `src/app/(admin)/` | Admin dashboard, incidents, users, activity log |
+| `src/app/(admin)/crisis/admin/` | Crisis Command Center & Roads & Hazards |
+| `src/app/(guide)/` | Guide dashboard and operations |
+| `src/app/api/` | Server routes (auth, notifications, analytics, cron) |
+| `src/lib/` | Shared services (SMS, email, rate limits, design tokens) |
+| `supabase/migrations/` | Database schema (apply in order) |
+
+Legacy URL-only folders (redirects only, kept for bookmarks): `crisis/dangerous-locations`, `crisis/admin/dangerous-locations`, `guide/alerts`.
 
 ## Getting Started
 

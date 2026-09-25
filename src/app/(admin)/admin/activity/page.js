@@ -9,7 +9,7 @@ import { AdminPanel } from "@/app/components/admin/AdminPanel";
 import { AdminDashboardKpiSection } from "@/app/components/admin/AdminDashboardKpiSection";
 import { AdminActivityDetailModal } from "@/app/components/admin/AdminActivityDetailModal";
 import { RoleContextBanner } from "@/app/components/dashboard/RoleContextBanner";
-import { StatCardSkeletonGrid } from "@/app/components/ui/Skeletons";
+import { AdminActivityTableSkeleton, StatCardSkeletonGrid } from "@/app/components/ui/Skeletons";
 import { adminShell, iconSize, portalLayout, statGrid } from "@/lib/designSystem";
 import { mergeAdminActivityFeed, filterActivityFeed } from "@/lib/adminActivityFeed";
 import { supabase } from "@/lib/supabaseClient";
@@ -95,26 +95,6 @@ export default function AdminActivityLogPage() {
 
   useEffect(() => {
     if (loading) return;
-    // #region agent log
-    fetch("http://127.0.0.1:7540/ingest/3142bff0-53ba-4c2c-9606-b4d021977f0c", {
-      method: "POST",
-      headers: { "Content-Type": "application/json", "X-Debug-Session-Id": "197cec" },
-      body: JSON.stringify({
-        sessionId: "197cec",
-        runId: "admin-activity-page",
-        hypothesisId: "H-activity-feed",
-        location: "admin/activity/page.js:feed",
-        message: "Admin activity feed loaded",
-        data: {
-          feedTotal: feed.length,
-          filtered: filtered.length,
-          incidentHistoryRows: incidentHistory.length,
-          alerts: alerts.length,
-        },
-        timestamp: Date.now(),
-      }),
-    }).catch(() => {});
-    // #endregion
   }, [loading, feed.length, filtered.length, incidentHistory.length, alerts.length]);
 
   useEffect(() => {
@@ -207,7 +187,7 @@ export default function AdminActivityLogPage() {
         bodyClassName={portalLayout.panelBodyStack}
       >
         {loading ? (
-          <p className="text-xs text-zinc-500 font-medium py-10 text-center">Loading activity…</p>
+          <AdminActivityTableSkeleton rows={8} />
         ) : paginated.length === 0 ? (
           <p className="text-xs text-zinc-500 font-medium py-10 text-center">No activity matches your filters.</p>
         ) : (

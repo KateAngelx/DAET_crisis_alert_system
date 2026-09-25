@@ -24,22 +24,6 @@ export function PwaSplashScreen() {
     setPhase("visible");
     sessionStorage.setItem(SPLASH_KEY, "1");
 
-    // #region agent log
-    fetch("http://127.0.0.1:7540/ingest/3142bff0-53ba-4c2c-9606-b4d021977f0c", {
-      method: "POST",
-      headers: { "Content-Type": "application/json", "X-Debug-Session-Id": "197cec" },
-      body: JSON.stringify({
-        sessionId: "197cec",
-        runId: "pwa-splash",
-        hypothesisId: "H3",
-        location: "PwaSplashScreen.jsx:standalone",
-        message: "PWA splash shown in standalone mode",
-        data: { standalone: true },
-        timestamp: Date.now(),
-      }),
-    }).catch(() => {});
-    // #endregion
-
     const fadeTimer = setTimeout(() => setPhase("fading"), 1400);
     const hideTimer = setTimeout(() => setPhase("hidden"), 1900);
 

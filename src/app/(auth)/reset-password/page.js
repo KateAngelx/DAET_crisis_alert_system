@@ -80,28 +80,6 @@ export default function ResetPasswordPage() {
       const result = await establishRecoverySession();
       if (cancelled) return;
 
-      // #region agent log
-      fetch("http://127.0.0.1:7540/ingest/3142bff0-53ba-4c2c-9606-b4d021977f0c", {
-        method: "POST",
-        headers: { "Content-Type": "application/json", "X-Debug-Session-Id": "197cec" },
-        body: JSON.stringify({
-          sessionId: "197cec",
-          runId: "password-reset",
-          hypothesisId: "H4",
-          location: "reset-password/page:establishRecoverySession",
-          message: "Recovery session establishment",
-          data: {
-            ok: result.ok,
-            method: result.method || null,
-            hasCodeParam: typeof window !== "undefined" && Boolean(new URL(window.location.href).searchParams.get("code")),
-            hasTokenHash: typeof window !== "undefined" && Boolean(new URL(window.location.href).searchParams.get("token_hash")),
-            error: result.error || null,
-          },
-          timestamp: Date.now(),
-        }),
-      }).catch(() => {});
-      // #endregion
-
       if (result.ok) {
         setReady(true);
         setChecking(false);

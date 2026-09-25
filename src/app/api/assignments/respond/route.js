@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { requireTourist } from '@/lib/touristAuth';
+import { API_RATE_LIMITS, enforceRateLimitByKey } from '@/lib/apiRateLimit';
 
 const ASSIGNMENT_SELECT = `
   *,
@@ -14,7 +15,14 @@ export async function POST(request) {
     if (auth.error) return auth.error;
 
     const { admin, user } = auth;
-    const body = await request.json();
+
+    const limited = enforceRateLimitByKey(user.id, {
+      name: 'assignment-respond',
+      ...API_RATE_LIMITS.assignmentRespond,
+    });
+    if (limited) return limited;
+
+    const body = await request.json().catch(() => ({}));
     const { assignmentId, action } = body;
 
     if (!assignmentId || !['accept', 'decline'].includes(action)) {

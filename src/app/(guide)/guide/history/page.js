@@ -45,25 +45,6 @@ export default function GuideHistoryPage() {
 
   useEffect(() => {
     if (!mounted) return;
-    // #region agent log
-    fetch("http://127.0.0.1:7540/ingest/3142bff0-53ba-4c2c-9606-b4d021977f0c", {
-      method: "POST",
-      headers: { "Content-Type": "application/json", "X-Debug-Session-Id": "197cec" },
-      body: JSON.stringify({
-        sessionId: "197cec",
-        runId: "guide-history",
-        hypothesisId: "H2",
-        location: "guide/history/page.js:counts",
-        message: "Guide history section counts",
-        data: {
-          completedTours: completedGroups.length,
-          closedReports: closedReports.length,
-          resolvedAlerts: resolvedAlerts.length,
-        },
-        timestamp: Date.now(),
-      }),
-    }).catch(() => {});
-    // #endregion
   }, [mounted, completedGroups.length, closedReports.length, resolvedAlerts.length]);
 
   const loading = alertsLoading || guideLoading;
@@ -92,7 +73,7 @@ export default function GuideHistoryPage() {
 
       <GuidePanel title="Completed tours" subtitle="Finished tour groups">
         {loading ? (
-          <div className="py-8 text-center text-zinc-400 text-xs font-bold uppercase">Loading…</div>
+          <AlertCardSkeletonList count={2} />
         ) : completedGroups.length === 0 ? (
           <p className="text-sm text-zinc-500 font-medium py-6">No completed tours yet.</p>
         ) : (

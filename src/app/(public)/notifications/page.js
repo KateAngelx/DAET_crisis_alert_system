@@ -14,7 +14,7 @@ import {
   publicLayout,
 } from "@/app/components/InfoPageHero";
 import { AsyncState, EmptyState } from "@/app/components/ui/AsyncState";
-import { NotificationItemSkeleton } from "@/app/components/ui/Skeletons";
+import { NotificationItemSkeleton, SessionInboxSkeleton } from "@/app/components/ui/Skeletons";
 import { getActiveSession } from "@/lib/authSession";
 import { getAreaHazardNotificationLink } from "@/lib/travelLinks";
 import { portalShell, portalLayout } from "@/lib/designSystem";
@@ -54,8 +54,10 @@ export default function NotificationsPage() {
     return (
       <PublicPageShell>
         <InfoPageHero title="Notifications" description="Loading your inbox…" />
-        <PublicPageContent className="text-center text-xs font-bold uppercase text-zinc-400 py-8">
-          Verifying session...
+        <PublicPageContent>
+          <PublicPanel title="Inbox" bodyClassName={portalLayout.panelBodyStack}>
+            <SessionInboxSkeleton count={4} />
+          </PublicPanel>
         </PublicPageContent>
       </PublicPageShell>
     );

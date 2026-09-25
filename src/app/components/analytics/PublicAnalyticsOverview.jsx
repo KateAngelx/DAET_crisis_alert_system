@@ -7,6 +7,7 @@ import { PublicStatCard } from "@/app/components/dashboard/PublicStatCard";
 import { StatCardSkeletonGrid } from "@/app/components/ui/Skeletons";
 import { Card } from "@/app/components/ui/Card";
 import { iconSize, statGrid, typography } from "@/lib/designSystem";
+import { fetchPublicStatsCached } from "@/lib/publicStatsClient";
 
 const LIVE_KPIS = [
   { key: "viewsToday", label: "Page Views Today", icon: Eye, accent: "blue" },
@@ -34,9 +35,8 @@ export function PublicAnalyticsOverview({ compact = false, showTopPages = true, 
     let cancelled = false;
     (async () => {
       try {
-        const res = await fetch("/api/analytics/public-stats");
-        const data = await res.json();
-        if (!cancelled) setStats(data.stats || null);
+        const data = await fetchPublicStatsCached();
+        if (!cancelled) setStats(data || null);
       } catch {
         if (!cancelled) setStats(null);
       } finally {
@@ -141,9 +141,8 @@ export function PublicAnalyticsFooterKPI({ className = "" }) {
     let cancelled = false;
     (async () => {
       try {
-        const res = await fetch("/api/analytics/public-stats");
-        const data = await res.json();
-        if (!cancelled) setStats(data.stats || null);
+        const data = await fetchPublicStatsCached();
+        if (!cancelled) setStats(data || null);
       } catch {
         if (!cancelled) setStats(null);
       } finally {
@@ -154,30 +153,6 @@ export function PublicAnalyticsFooterKPI({ className = "" }) {
       cancelled = true;
     };
   }, []);
-
-  useEffect(() => {
-    if (loading || !stats) return;
-    // #region agent log
-    fetch("http://127.0.0.1:7540/ingest/3142bff0-53ba-4c2c-9606-b4d021977f0c", {
-      method: "POST",
-      headers: { "Content-Type": "application/json", "X-Debug-Session-Id": "ee1adc" },
-      body: JSON.stringify({
-        sessionId: "ee1adc",
-        runId: "footer-kpi-ui",
-        hypothesisId: "KPI1",
-        location: "PublicAnalyticsOverview.jsx:PublicAnalyticsFooterKPI",
-        message: "Footer KPI analytics rendered",
-        data: {
-          viewsToday: stats.viewsToday ?? 0,
-          uniqueVisitorsToday: stats.uniqueVisitorsToday ?? 0,
-          registeredOnline: stats.registeredOnline ?? 0,
-          viewsThisWeek: stats.viewsThisWeek ?? 0,
-        },
-        timestamp: Date.now(),
-      }),
-    }).catch(() => {});
-    // #endregion
-  }, [loading, stats]);
 
   if (loading) {
     return (
@@ -234,9 +209,8 @@ export function PublicLiveAnalyticsSection({ className = "" }) {
     let cancelled = false;
     (async () => {
       try {
-        const res = await fetch("/api/analytics/public-stats");
-        const data = await res.json();
-        if (!cancelled) setStats(data.stats || null);
+        const data = await fetchPublicStatsCached();
+        if (!cancelled) setStats(data || null);
       } catch {
         if (!cancelled) setStats(null);
       } finally {
@@ -247,25 +221,6 @@ export function PublicLiveAnalyticsSection({ className = "" }) {
       cancelled = true;
     };
   }, []);
-
-  useEffect(() => {
-    if (loading || !stats) return;
-    // #region agent log
-    fetch("http://127.0.0.1:7540/ingest/3142bff0-53ba-4c2c-9606-b4d021977f0c", {
-      method: "POST",
-      headers: { "Content-Type": "application/json", "X-Debug-Session-Id": "197cec" },
-      body: JSON.stringify({
-        sessionId: "197cec",
-        runId: "platform-pulse-dark-cards",
-        hypothesisId: "D1",
-        location: "PublicAnalyticsOverview.jsx:PublicLiveAnalyticsSection",
-        message: "Platform Pulse dark stat cards rendered",
-        data: { tone: "dark", kpiCount: LIVE_KPIS.length },
-        timestamp: Date.now(),
-      }),
-    }).catch(() => {});
-    // #endregion
-  }, [loading, stats]);
 
   const topPages = stats?.topPages?.slice(0, 4) ?? [];
   const maxPageViews = topPages.reduce((max, page) => Math.max(max, page.count), 0);

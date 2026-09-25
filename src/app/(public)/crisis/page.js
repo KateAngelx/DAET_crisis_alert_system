@@ -62,36 +62,6 @@ export default function CrisisPublicPage() {
 
     setMounted(true);
 
-    // #region agent log
-
-    fetch("http://127.0.0.1:7540/ingest/3142bff0-53ba-4c2c-9606-b4d021977f0c", {
-
-      method: "POST",
-
-      headers: { "Content-Type": "application/json", "X-Debug-Session-Id": "ee1adc" },
-
-      body: JSON.stringify({
-
-        sessionId: "ee1adc",
-
-        runId: "remove-dup-nav",
-
-        hypothesisId: "NAV1",
-
-        location: "crisis/page.js:mount",
-
-        message: "Crisis hub loaded without inline analytics or cross-page nav links",
-
-        data: { hasAnalyticsSection: false, hasResolvedLink: false, hasRoutesLink: false },
-
-        timestamp: Date.now(),
-
-      }),
-
-    }).catch(() => {});
-
-    // #endregion
-
 
 
     const initRealtime = async () => {
@@ -147,26 +117,6 @@ export default function CrisisPublicPage() {
     const ann = announcementsPanelRef.current;
     const map = mapPanelRef.current;
     if (!ann || !map) return;
-    // #region agent log
-    fetch("http://127.0.0.1:7540/ingest/3142bff0-53ba-4c2c-9606-b4d021977f0c", {
-      method: "POST",
-      headers: { "Content-Type": "application/json", "X-Debug-Session-Id": "197cec" },
-      body: JSON.stringify({
-        sessionId: "197cec",
-        runId: "crisis-split-layout",
-        hypothesisId: "L1",
-        location: "crisis/page.js:layoutMeasure",
-        message: "Active announcements vs map panel heights",
-        data: {
-          announcementsPanelHeight: ann.offsetHeight,
-          mapPanelHeight: map.offsetHeight,
-          activeAlertCount: activeAlerts.length,
-          listScrollEnabled: true,
-        },
-        timestamp: Date.now(),
-      }),
-    }).catch(() => {});
-    // #endregion
   }, [loading, mounted, activeAlerts.length]);
 
   return (

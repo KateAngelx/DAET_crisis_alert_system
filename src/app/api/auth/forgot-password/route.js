@@ -4,6 +4,7 @@ import { sendEmail, getEmailDiagnostics } from "@/lib/emailService";
 import { buildPasswordResetEmail } from "@/lib/passwordResetEmail";
 import { getSiteUrl } from "@/lib/siteUrl";
 import { resolvePasswordResetLink } from "@/lib/passwordResetLink";
+import { API_RATE_LIMITS, enforceRateLimit } from "@/lib/apiRateLimit";
 
 const GENERIC_SUCCESS = {
   success: true,
@@ -12,15 +13,27 @@ const GENERIC_SUCCESS = {
 };
 
 export async function POST(request) {
+  const limited = enforceRateLimit(request, { name: "forgot-password", ...API_RATE_LIMITS.forgotPassword });
+  if (limited) return limited;
+
   try {
     const body = await request.json().catch(() => ({}));
     const email = String(body?.email || "")
       .trim()
-      .toLowerCase();
+      .toLowerCase()
+      .slice(0, 254);
 
     if (!email || !email.includes("@")) {
       return NextResponse.json({ error: "Please enter a valid email address." }, { status: 400 });
     }
+
+    const emailLimited = enforceRateLimit(request, {
+      name: "forgot-password-email",
+      limit: 3,
+      windowMs: 60 * 60_000,
+      keyPart: email,
+    });
+    if (emailLimited) return emailLimited;
 
     const admin = getSupabaseAdmin();
     if (!admin) {
@@ -49,31 +62,6 @@ export async function POST(request) {
     });
 
     const linkResolution = resolvePasswordResetLink({ siteUrl, linkData, request });
-
-    // #region agent log
-    fetch("http://127.0.0.1:7540/ingest/3142bff0-53ba-4c2c-9606-b4d021977f0c", {
-      method: "POST",
-      headers: { "Content-Type": "application/json", "X-Debug-Session-Id": "197cec" },
-      body: JSON.stringify({
-        sessionId: "197cec",
-        runId: "password-reset-fix",
-        hypothesisId: "H1-H2",
-        location: "api/auth/forgot-password:generateLink",
-        message: "Password reset link generation",
-        data: {
-          emailDomain: email.split("@")[1] || null,
-          requestedRedirectTo: redirectTo,
-          actionLinkRedirectTo: linkResolution.actionLinkRedirectTo,
-          usedAppLink: linkResolution.usedAppLink,
-          hasHashedToken: Boolean(linkData?.properties?.hashed_token),
-          resetLinkHost: linkResolution.resetLink ? new URL(linkResolution.resetLink).host : null,
-          linkError: linkError?.message || null,
-          emailProvider: emailDiagnostics.provider,
-        },
-        timestamp: Date.now(),
-      }),
-    }).catch(() => {});
-    // #endregion
 
     if (linkError) {
       const notFound =
@@ -107,27 +95,6 @@ export async function POST(request) {
       body: mail.body,
       html: mail.html,
     });
-
-    // #region agent log
-    fetch("http://127.0.0.1:7540/ingest/3142bff0-53ba-4c2c-9606-b4d021977f0c", {
-      method: "POST",
-      headers: { "Content-Type": "application/json", "X-Debug-Session-Id": "197cec" },
-      body: JSON.stringify({
-        sessionId: "197cec",
-        runId: "password-reset",
-        hypothesisId: "H3",
-        location: "api/auth/forgot-password:sendEmail",
-        message: "Password reset email send result",
-        data: {
-          success: sendResult.success,
-          provider: sendResult.provider || null,
-          error: sendResult.error || null,
-          hasMessageId: Boolean(sendResult.messageId),
-        },
-        timestamp: Date.now(),
-      }),
-    }).catch(() => {});
-    // #endregion
 
     if (!sendResult.success) {
       return NextResponse.json(

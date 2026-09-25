@@ -143,54 +143,6 @@ export default function AdminIncidentsPage() {
 
     const cs = window.getComputedStyle(el);
 
-    // #region agent log
-
-    fetch("http://127.0.0.1:7540/ingest/3142bff0-53ba-4c2c-9606-b4d021977f0c", {
-
-      method: "POST",
-
-      headers: { "Content-Type": "application/json", "X-Debug-Session-Id": "197cec" },
-
-      body: JSON.stringify({
-
-        sessionId: "197cec",
-
-        runId: "admin-incidents-stats-row",
-
-        hypothesisId: "H1",
-
-        location: "admin/incidents/page.js:layout",
-
-        message: "Incident stats row layout measured",
-
-        data: {
-
-          total: stats.total,
-
-          pending: stats.pending,
-
-          statsLayout: "single-row",
-
-          childCount: el.children.length,
-
-          display: cs.display,
-
-          gridAutoFlow: cs.gridAutoFlow,
-
-          gridTemplateColumns: cs.gridTemplateColumns,
-
-          containerWidth: Math.round(el.getBoundingClientRect().width),
-
-        },
-
-        timestamp: Date.now(),
-
-      }),
-
-    }).catch(() => {});
-
-    // #endregion
-
   }, [loading, stats.total, stats.pending]);
 
 
@@ -293,48 +245,6 @@ export default function AdminIncidentsPage() {
 
       }
 
-      // #region agent log
-
-      fetch("http://127.0.0.1:7540/ingest/3142bff0-53ba-4c2c-9606-b4d021977f0c", {
-
-        method: "POST",
-
-        headers: { "Content-Type": "application/json", "X-Debug-Session-Id": "197cec" },
-
-        body: JSON.stringify({
-
-          sessionId: "197cec",
-
-          runId: "incident-approve-queue",
-
-          hypothesisId: "H-queue-audit",
-
-          location: "admin/incidents/page.js:applyStatusUpdate",
-
-          message: "Status update applied",
-
-          data: {
-
-            ref: inc.reference_number,
-
-            from: inc.status,
-
-            to: nextStatus,
-
-            action: extra.action,
-
-            queueVisible: !["Approved", "Received", "Rejected", "Resolved", "Closed"].includes(nextStatus),
-
-          },
-
-          timestamp: Date.now(),
-
-        }),
-
-      }).catch(() => {});
-
-      // #endregion
-
     }
 
     return result;
@@ -378,36 +288,6 @@ export default function AdminIncidentsPage() {
       if (!ok) return;
 
     }
-
-    // #region agent log
-
-    fetch("http://127.0.0.1:7540/ingest/3142bff0-53ba-4c2c-9606-b4d021977f0c", {
-
-      method: "POST",
-
-      headers: { "Content-Type": "application/json", "X-Debug-Session-Id": "197cec" },
-
-      body: JSON.stringify({
-
-        sessionId: "197cec",
-
-        runId: "admin-incidents-v3",
-
-        hypothesisId: "H2",
-
-        location: "admin/incidents/page.js:quickAction",
-
-        message: "Incident quick action",
-
-        data: { actionId: action.id, from: inc.status, to: action.nextStatus, ref: inc.reference_number },
-
-        timestamp: Date.now(),
-
-      }),
-
-    }).catch(() => {});
-
-    // #endregion
 
     await applyStatusUpdate(inc, action.nextStatus, { action: action.action, notes: `${action.label} via quick action` });
 

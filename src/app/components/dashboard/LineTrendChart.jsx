@@ -110,21 +110,6 @@ export function LineTrendChart({
       }
       return next;
     });
-    // #region agent log
-    fetch("http://127.0.0.1:7540/ingest/3142bff0-53ba-4c2c-9606-b4d021977f0c", {
-      method: "POST",
-      headers: { "Content-Type": "application/json", "X-Debug-Session-Id": "197cec" },
-      body: JSON.stringify({
-        sessionId: "197cec",
-        runId: "chart-interaction",
-        hypothesisId: "UI",
-        location: "LineTrendChart.jsx:legend",
-        message: "Chart series legend toggled",
-        data: { seriesId: id },
-        timestamp: Date.now(),
-      }),
-    }).catch(() => {});
-    // #endregion
   }, [series.length]);
 
   const handlePointer = useCallback(
@@ -143,21 +128,6 @@ export function LineTrendChart({
 
   useEffect(() => {
     if (activeIndex == null) return;
-    // #region agent log
-    fetch("http://127.0.0.1:7540/ingest/3142bff0-53ba-4c2c-9606-b4d021977f0c", {
-      method: "POST",
-      headers: { "Content-Type": "application/json", "X-Debug-Session-Id": "197cec" },
-      body: JSON.stringify({
-        sessionId: "197cec",
-        runId: "chart-interaction",
-        hypothesisId: "UI",
-        location: "LineTrendChart.jsx:hover",
-        message: "Chart day hovered",
-        data: { activeIndex, dayKey: xLabels[activeIndex]?.key },
-        timestamp: Date.now(),
-      }),
-    }).catch(() => {});
-    // #endregion
   }, [activeIndex, xLabels]);
 
   const activeDay = activeIndex != null ? xLabels[activeIndex] : null;

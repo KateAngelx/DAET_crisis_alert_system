@@ -7,11 +7,18 @@ import {
   sendSms,
 } from "@/lib/smsService";
 import { formatIProgSmsErrorForAdmin } from "@/lib/iprogSmsErrors";
+import { API_RATE_LIMITS, enforceRateLimitByKey } from "@/lib/apiRateLimit";
 
 /** Diagnose a tourist (or any) PH mobile: network detect + optional test send */
 export async function POST(request) {
   const auth = await requireAdmin(request);
   if (auth.error) return auth.error;
+
+  const limited = enforceRateLimitByKey(auth.user.id, {
+    name: "admin-sms-diagnose",
+    ...API_RATE_LIMITS.adminSmsTest,
+  });
+  if (limited) return limited;
 
   const body = await request.json().catch(() => ({}));
   const rawPhone = body.phone;

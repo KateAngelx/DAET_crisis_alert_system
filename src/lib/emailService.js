@@ -212,29 +212,6 @@ export async function sendEmail({ to, subject, body, html }) {
     else if (provider === "resend") result = await sendViaResend(payload);
     else result = await sendViaGenericApi(payload);
 
-    // #region agent log
-    fetch("http://127.0.0.1:7540/ingest/3142bff0-53ba-4c2c-9606-b4d021977f0c", {
-      method: "POST",
-      headers: { "Content-Type": "application/json", "X-Debug-Session-Id": "ee1adc" },
-      body: JSON.stringify({
-        sessionId: "ee1adc",
-        location: "emailService.js:sendEmail",
-        message: "Email send attempt",
-        data: {
-          provider: result.provider,
-          success: result.success,
-          skipped: Boolean(result.skipped),
-          hasMessageId: Boolean(result.messageId),
-          errorCode: result.errorCode || null,
-          missingEnvVars: getEmailDiagnostics().missingEnvVars,
-        },
-        timestamp: Date.now(),
-        runId: "email-fix",
-        hypothesisId: "email-config",
-      }),
-    }).catch(() => {});
-    // #endregion
-
     return result;
   } catch (err) {
     return { success: false, error: err.message, provider };

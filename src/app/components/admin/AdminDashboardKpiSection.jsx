@@ -14,27 +14,6 @@ export function AdminDashboardKpiSection({ children, footer, pageId = "unknown" 
     const el = rootRef.current;
     if (!el) return;
     const cs = getComputedStyle(el);
-    // #region agent log
-    fetch("http://127.0.0.1:7540/ingest/3142bff0-53ba-4c2c-9606-b4d021977f0c", {
-      method: "POST",
-      headers: { "Content-Type": "application/json", "X-Debug-Session-Id": "197cec" },
-      body: JSON.stringify({
-        sessionId: "197cec",
-        runId: "kpi-spacing-v1",
-        hypothesisId: "H-kpi-gap",
-        location: "AdminDashboardKpiSection.jsx:layout",
-        message: "KPI section spacing measured",
-        data: {
-          pageId,
-          flexGap: cs.gap,
-          childCount: el.childElementCount,
-          hasFooter: Boolean(footer),
-          sectionWidth: Math.round(el.getBoundingClientRect().width),
-        },
-        timestamp: Date.now(),
-      }),
-    }).catch(() => {});
-    // #endregion
   }, [footer, pageId]);
 
   return (

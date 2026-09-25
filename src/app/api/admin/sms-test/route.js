@@ -8,10 +8,17 @@ import {
   normalizePhilippinePhone,
   sendSms,
 } from "@/lib/smsService";
+import { API_RATE_LIMITS, enforceRateLimitByKey } from "@/lib/apiRateLimit";
 
 export async function POST(request) {
   const auth = await requireAdmin(request);
   if (auth.error) return auth.error;
+
+  const limited = enforceRateLimitByKey(auth.user.id, {
+    name: "admin-sms-test",
+    ...API_RATE_LIMITS.adminSmsTest,
+  });
+  if (limited) return limited;
 
   const body = await request.json().catch(() => ({}));
   const { data: profile } = await auth.admin

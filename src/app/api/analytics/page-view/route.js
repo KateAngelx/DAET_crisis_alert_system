@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import { getSupabaseAdmin } from "@/lib/supabaseAdmin";
 import { getPageLabel } from "@/lib/publicAnalytics";
+import { API_RATE_LIMITS, enforceRateLimit } from "@/lib/apiRateLimit";
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
@@ -10,8 +11,11 @@ const MAX_PATH_LENGTH = 512;
 const MAX_SESSION_LENGTH = 64;
 
 export async function POST(request) {
+  const limited = enforceRateLimit(request, { name: "page-view", ...API_RATE_LIMITS.pageView });
+  if (limited) return limited;
+
   try {
-    const body = await request.json();
+    const body = await request.json().catch(() => ({}));
     const path = String(body?.path || "/").slice(0, MAX_PATH_LENGTH);
     const sessionId = String(body?.sessionId || "").slice(0, MAX_SESSION_LENGTH);
     const referrer = body?.referrer ? String(body.referrer).slice(0, 512) : null;

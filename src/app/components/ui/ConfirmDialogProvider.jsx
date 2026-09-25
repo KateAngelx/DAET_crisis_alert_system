@@ -16,25 +16,6 @@ export function ConfirmDialogProvider({ children }) {
   }, []);
 
   const confirm = useCallback((options) => {
-    // #region agent log
-    fetch("http://127.0.0.1:7540/ingest/3142bff0-53ba-4c2c-9606-b4d021977f0c", {
-      method: "POST",
-      headers: { "Content-Type": "application/json", "X-Debug-Session-Id": "ee1adc" },
-      body: JSON.stringify({
-        sessionId: "ee1adc",
-        runId: "confirm-dialog",
-        hypothesisId: "H1",
-        location: "ConfirmDialogProvider.jsx:confirm",
-        message: "Styled confirm dialog requested",
-        data: {
-          title: options.title,
-          hasDescription: Boolean(options.description),
-          descriptionLength: options.description?.length || 0,
-        },
-        timestamp: Date.now(),
-      }),
-    }).catch(() => {});
-    // #endregion
     return new Promise((resolve) => {
       resolveRef.current = resolve;
       setDialog({ mode: "confirm", ...options });
@@ -42,24 +23,6 @@ export function ConfirmDialogProvider({ children }) {
   }, []);
 
   const alert = useCallback((options) => {
-    // #region agent log
-    fetch("http://127.0.0.1:7540/ingest/3142bff0-53ba-4c2c-9606-b4d021977f0c", {
-      method: "POST",
-      headers: { "Content-Type": "application/json", "X-Debug-Session-Id": "ee1adc" },
-      body: JSON.stringify({
-        sessionId: "ee1adc",
-        runId: "confirm-dialog",
-        hypothesisId: "H2",
-        location: "ConfirmDialogProvider.jsx:alert",
-        message: "Styled alert dialog requested",
-        data: {
-          title: options.title,
-          hasDescription: Boolean(options.description),
-        },
-        timestamp: Date.now(),
-      }),
-    }).catch(() => {});
-    // #endregion
     return new Promise((resolve) => {
       resolveRef.current = resolve;
       setDialog({

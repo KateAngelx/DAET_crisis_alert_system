@@ -26,21 +26,6 @@ export function PublicCardListPreview({
   const extra = safeItems.length - limit;
 
   const openModal = () => {
-    // #region agent log
-    fetch("http://127.0.0.1:7540/ingest/3142bff0-53ba-4c2c-9606-b4d021977f0c", {
-      method: "POST",
-      headers: { "Content-Type": "application/json", "X-Debug-Session-Id": "197cec" },
-      body: JSON.stringify({
-        sessionId: "197cec",
-        runId: "card-list-preview",
-        hypothesisId: "P1",
-        location: "PublicCardListPreview.jsx:openModal",
-        message: "View more opened for public card list",
-        data: { total: safeItems.length, preview: preview.length, limit, modalTitle },
-        timestamp: Date.now(),
-      }),
-    }).catch(() => {});
-    // #endregion
     setModalOpen(true);
   };
 

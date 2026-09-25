@@ -7,7 +7,7 @@ import { NotificationItemCard } from "@/app/components/NotificationItemCard";
 import { getAreaHazardNotificationLink } from "@/lib/travelLinks";
 import { GuidePageHeader } from "@/app/components/guide/GuidePageHeader";
 import { AsyncState, EmptyState } from "@/app/components/ui/AsyncState";
-import { NotificationItemSkeleton } from "@/app/components/ui/Skeletons";
+import { NotificationItemSkeleton, SessionInboxSkeleton } from "@/app/components/ui/Skeletons";
 import { useAuthStore } from "@/app/store/crisisStore";
 import { useNotificationStore } from "@/app/store/notificationStore";
 import { getActiveSession } from "@/lib/authSession";
@@ -56,9 +56,12 @@ export default function GuideNotificationsPage() {
 
   if (!sessionChecked) {
     return (
-      <div className="py-16 text-center text-xs font-bold uppercase text-zinc-400">
-        Verifying session...
-      </div>
+      <>
+        <GuidePageHeader title="Notifications" description="Private updates on alerts, tour group activity, and incident reports." />
+        <GuidePanel title="Inbox" bodyClassName={portalLayout.panelBodyStack}>
+          <SessionInboxSkeleton count={4} />
+        </GuidePanel>
+      </>
     );
   }
 

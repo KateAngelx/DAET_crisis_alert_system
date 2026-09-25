@@ -62,26 +62,6 @@ export default function ResolvedAlertsPage() {
       const t = new Date(a.updated_at || a.created_at).getTime();
       return Date.now() - t < 30 * 24 * 60 * 60 * 1000;
     }).length;
-    // #region agent log
-    fetch("http://127.0.0.1:7540/ingest/3142bff0-53ba-4c2c-9606-b4d021977f0c", {
-      method: "POST",
-      headers: { "Content-Type": "application/json", "X-Debug-Session-Id": "197cec" },
-      body: JSON.stringify({
-        sessionId: "197cec",
-        runId: "resolved-stat-cards",
-        hypothesisId: "A",
-        location: "crisis/resolved/page.js:stats",
-        message: "Resolved page stat cards rendered",
-        data: {
-          overallSolved: resolved.length,
-          resolvedThisWeek: weekCount,
-          resolvedThisMonth: monthCount,
-          statCardCount: 3,
-        },
-        timestamp: Date.now(),
-      }),
-    }).catch(() => {});
-    // #endregion
   }, [mounted, alerts]);
 
   const resolvedAlerts = alerts

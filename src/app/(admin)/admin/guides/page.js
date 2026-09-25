@@ -10,7 +10,7 @@ import { DestinationButton, DestinationModal } from "@/app/components/tour/Desti
 import { useGuideStore } from "@/app/store/guideStore";
 import { useCrisisStore } from "@/app/store/crisisStore";
 import { useRouteAdvisoryStore } from "@/app/store/routeAdvisoryStore";
-import { StatCardSkeletonGrid } from "@/app/components/ui/Skeletons";
+import { AdminTablePlaceholderSkeleton, StatCardSkeletonGrid } from "@/app/components/ui/Skeletons";
 import { EmptyState } from "@/app/components/ui/AsyncState";
 import { formatTourRoute, getRelevantRouteAdvisoriesForGroup } from "@/lib/tourGroupRoute";
 import { ASSIGNMENT_STATUS_LABELS } from "@/lib/assignmentStatus";
@@ -101,7 +101,7 @@ export default function AdminGuideMonitoringPage() {
       )}
 
       {loading ? (
-        <div className="rounded-2xl border border-zinc-200 h-48 animate-pulse bg-zinc-50" />
+        <AdminTablePlaceholderSkeleton rows={6} columns={5} />
       ) : tourGroups.length === 0 ? (
         <EmptyState icon={Compass} title="No tour groups" description="Tour groups created by guides will appear here for monitoring." />
       ) : (

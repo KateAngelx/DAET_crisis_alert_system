@@ -6,10 +6,14 @@ import {
   countUniqueSessions,
   startOfDayIso,
 } from "@/lib/publicAnalytics";
+import { API_RATE_LIMITS, enforceRateLimit } from "@/lib/apiRateLimit";
 
 export const revalidate = 60;
 
-export async function GET() {
+export async function GET(request) {
+  const limited = enforceRateLimit(request, { name: "public-stats", ...API_RATE_LIMITS.publicStats });
+  if (limited) return limited;
+
   try {
     const admin = getSupabaseAdmin();
     if (!admin) {

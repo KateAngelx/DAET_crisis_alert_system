@@ -15,40 +15,10 @@ export function PublicFooter() {
 
   useEffect(() => {
     setMounted(true);
-    // #region agent log
-    fetch("http://127.0.0.1:7540/ingest/3142bff0-53ba-4c2c-9606-b4d021977f0c", {
-      method: "POST",
-      headers: { "Content-Type": "application/json", "X-Debug-Session-Id": "197cec" },
-      body: JSON.stringify({
-        sessionId: "197cec",
-        runId: "footer-verify",
-        hypothesisId: "H1",
-        location: "PublicFooter.js:mount",
-        message: "Footer rendered — unified layout",
-        data: { variant: "full", mounted: true, hasUser: Boolean(user), userRole: user?.role ?? null },
-        timestamp: Date.now(),
-      }),
-    }).catch(() => {});
-    // #endregion
   }, []);
 
   useEffect(() => {
     if (!mounted) return;
-    // #region agent log
-    fetch("http://127.0.0.1:7540/ingest/3142bff0-53ba-4c2c-9606-b4d021977f0c", {
-      method: "POST",
-      headers: { "Content-Type": "application/json", "X-Debug-Session-Id": "197cec" },
-      body: JSON.stringify({
-        sessionId: "197cec",
-        runId: "footer-verify",
-        hypothesisId: "H2",
-        location: "PublicFooter.js:auth-change",
-        message: "Footer auth state after mount",
-        data: { variant: "full", hasUser: Boolean(user), userRole: user?.role ?? null, showResponderPortal: user?.role === "admin" },
-        timestamp: Date.now(),
-      }),
-    }).catch(() => {});
-    // #endregion
   }, [mounted, user]);
 
   useEffect(() => {
@@ -62,29 +32,6 @@ export function PublicFooter() {
       const footerRect = footer?.getBoundingClientRect();
       const overlapPx =
         pulseRect && footerRect ? Math.round(pulseRect.bottom - footerRect.top) : null;
-      // #region agent log
-      fetch("http://127.0.0.1:7540/ingest/3142bff0-53ba-4c2c-9606-b4d021977f0c", {
-        method: "POST",
-        headers: { "Content-Type": "application/json", "X-Debug-Session-Id": "197cec" },
-        body: JSON.stringify({
-          sessionId: "197cec",
-          runId: "post-fix-overlap",
-          hypothesisId: "H1-H3",
-          location: "PublicFooter.js:overlapMetrics",
-          message: "Pulse vs footer geometry and stacking",
-          data: {
-            overlapPx,
-            gapPx: pulseRect && footerRect ? Math.round(footerRect.top - pulseRect.bottom) : null,
-            pulseMarginBottom: pulseStyle?.marginBottom ?? null,
-            pulseZIndex: pulseStyle?.zIndex ?? null,
-            footerZIndex: footerStyle?.zIndex ?? null,
-            mainPaddingBottom: document.querySelector("[data-public-main]") &&
-              getComputedStyle(document.querySelector("[data-public-main]")).paddingBottom,
-          },
-          timestamp: Date.now(),
-        }),
-      }).catch(() => {});
-      // #endregion
     });
     return () => cancelAnimationFrame(id);
   }, [mounted]);

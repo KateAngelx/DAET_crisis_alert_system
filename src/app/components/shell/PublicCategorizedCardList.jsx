@@ -94,29 +94,6 @@ export function PublicCategorizedCardList({
   useEffect(() => {
     if (!listPaneClassName || !filtersRef.current) return;
     const el = filtersRef.current;
-    // #region agent log
-    fetch("http://127.0.0.1:7540/ingest/3142bff0-53ba-4c2c-9606-b4d021977f0c", {
-      method: "POST",
-      headers: { "Content-Type": "application/json", "X-Debug-Session-Id": "197cec" },
-      body: JSON.stringify({
-        sessionId: "197cec",
-        runId: "crisis-filter-visibility",
-        hypothesisId: "F1",
-        location: "PublicCategorizedCardList.jsx:filtersMeasure",
-        message: "Crisis type/severity filter region dimensions",
-        data: {
-          categoryCount: categoryChoices.length,
-          severityCount: availableSeverities.length,
-          categories: categoryChoices,
-          severities: availableSeverities,
-          filtersScrollHeight: el.scrollHeight,
-          filtersClientHeight: el.clientHeight,
-          filtersClipped: el.scrollHeight > el.clientHeight + 1,
-        },
-        timestamp: Date.now(),
-      }),
-    }).catch(() => {});
-    // #endregion
   }, [listPaneClassName, categoryChoices, availableSeverities]);
 
   const filteredItems = useMemo(() => {
@@ -139,27 +116,6 @@ export function PublicCategorizedCardList({
       if (nextSeverity !== "all" && sev !== nextSeverity) return false;
       return true;
     }).length;
-    // #region agent log
-    fetch("http://127.0.0.1:7540/ingest/3142bff0-53ba-4c2c-9606-b4d021977f0c", {
-      method: "POST",
-      headers: { "Content-Type": "application/json", "X-Debug-Session-Id": "197cec" },
-      body: JSON.stringify({
-        sessionId: "197cec",
-        runId: "categorized-list",
-        hypothesisId: "C1",
-        location: "PublicCategorizedCardList.jsx:filter",
-        message: "Public list category/severity filter",
-        data: {
-          kind,
-          value,
-          categoryFilter: nextCategory,
-          severityFilter: nextSeverity,
-          resultCount: nextCount,
-        },
-        timestamp: Date.now(),
-      }),
-    }).catch(() => {});
-    // #endregion
     if (kind === "category") {
       if (onCategoryFilterChange) onCategoryFilterChange(value);
       else setInternalCategoryFilter(value);

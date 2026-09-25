@@ -67,32 +67,6 @@ export default function Home() {
       });
       const mockupFooter = (mobileEl || desktopEl)?.querySelector("[data-mockup-footer]");
       const mockupFooterRect = mockupFooter?.getBoundingClientRect();
-      // #region agent log
-      fetch("http://127.0.0.1:7540/ingest/3142bff0-53ba-4c2c-9606-b4d021977f0c", {
-        method: "POST",
-        headers: { "Content-Type": "application/json", "X-Debug-Session-Id": "197cec" },
-        body: JSON.stringify({
-          sessionId: "197cec",
-          runId: "pre-fix",
-          hypothesisId: "H1-H2-H4",
-          location: "public/page.js:heroLayout",
-          message: "Hero section visibility and floating card metrics",
-          data: {
-            innerWidth: window.innerWidth,
-            innerHeight: window.innerHeight,
-            heroHeight: Math.round(heroEl?.getBoundingClientRect().height ?? 0),
-            mobilePreviewDisplay: mobileStyle?.display ?? "missing",
-            desktopVisualDisplay: desktopStyle?.display ?? "missing",
-            floatingCardCount: floatingCards.length,
-            cardVisibility,
-            mockupFooterText: mockupFooter?.textContent?.trim() ?? null,
-            mockupFooterWidth: Math.round(mockupFooterRect?.width ?? 0),
-            mockupFooterHeight: Math.round(mockupFooterRect?.height ?? 0),
-          },
-          timestamp: Date.now(),
-        }),
-      }).catch(() => {});
-      // #endregion
     };
 
     logHeroLayout();
@@ -119,30 +93,6 @@ export default function Home() {
       const footerRect = footerEl?.getBoundingClientRect();
       const gapToFooter =
         pulseRect && footerRect ? Math.round(footerRect.top - pulseRect.bottom) : null;
-      // #region agent log
-      fetch("http://127.0.0.1:7540/ingest/3142bff0-53ba-4c2c-9606-b4d021977f0c", {
-        method: "POST",
-        headers: { "Content-Type": "application/json", "X-Debug-Session-Id": "197cec" },
-        body: JSON.stringify({
-          sessionId: "197cec",
-          runId: "post-fix-overlap",
-          hypothesisId: "L1-L2",
-          location: "public/page.js:sectionOrder",
-          message: "Landing DOM section order and pulse-to-footer gap",
-          data: {
-            role: user?.role ?? "guest",
-            order,
-            alertStatusIsSecond:
-              !isAuthenticated || user?.role !== "tourist"
-                ? order[1]?.key !== "alert-status"
-                : order[1]?.key === "alert-status",
-            pulseIsLast: order[order.length - 1]?.key === "Live platform activity",
-            gapToFooterPx: gapToFooter,
-          },
-          timestamp: Date.now(),
-        }),
-      }).catch(() => {});
-      // #endregion
     });
     return () => cancelAnimationFrame(id);
   }, [mounted, isAuthenticated, user?.role]);

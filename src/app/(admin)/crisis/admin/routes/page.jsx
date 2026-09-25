@@ -296,21 +296,6 @@ function RouteAdvisoriesAdminPanel({
       confirmLabel: "Deactivate",
       variant: "warning",
     });
-    // #region agent log
-    fetch("http://127.0.0.1:7540/ingest/3142bff0-53ba-4c2c-9606-b4d021977f0c", {
-      method: "POST",
-      headers: { "Content-Type": "application/json", "X-Debug-Session-Id": "197cec" },
-      body: JSON.stringify({
-        sessionId: "197cec",
-        runId: "roads-hazards-confirm",
-        hypothesisId: "H1",
-        location: "routes/page.jsx:handleDeactivate",
-        message: "Route deactivate confirmation result",
-        data: { ok, advisoryId: advisory.id },
-        timestamp: Date.now(),
-      }),
-    }).catch(() => {});
-    // #endregion
     if (!ok) return;
     const result = await setAdvisoryStatus(advisory.id, "Inactive");
     setToast(result.success ? "Route advisory deactivated." : result.error);
@@ -443,21 +428,6 @@ function RouteAdvisoriesAdminPanel({
               activeSection={activeSection}
               onSectionChange={(id) => {
                 onSectionChange(id);
-                // #region agent log
-                fetch("http://127.0.0.1:7540/ingest/3142bff0-53ba-4c2c-9606-b4d021977f0c", {
-                  method: "POST",
-                  headers: { "Content-Type": "application/json", "X-Debug-Session-Id": "197cec" },
-                  body: JSON.stringify({
-                    sessionId: "197cec",
-                    runId: "roads-section-filter",
-                    hypothesisId: "H-section",
-                    location: "crisis/admin/routes:sectionFilter",
-                    message: "Section filter inside active panel",
-                    data: { section: id, insideListPanel: true },
-                    timestamp: Date.now(),
-                  }),
-                }).catch(() => {});
-                // #endregion
               }}
             />
           ) : null}
@@ -837,21 +807,6 @@ function RoadsAndHazardsAdminPage() {
   };
 
   useEffect(() => {
-    // #region agent log
-    fetch("http://127.0.0.1:7540/ingest/3142bff0-53ba-4c2c-9606-b4d021977f0c", {
-      method: "POST",
-      headers: { "Content-Type": "application/json", "X-Debug-Session-Id": "197cec" },
-      body: JSON.stringify({
-        sessionId: "197cec",
-        runId: "roads-hazards-cc-layout",
-        hypothesisId: "H-cc-parity",
-        location: "crisis/admin/routes/page.jsx:shell",
-        message: "Command Center link below stats row",
-        data: { tab, commandCenterBelowStats: true },
-        timestamp: Date.now(),
-      }),
-    }).catch(() => {});
-    // #endregion
   }, [tab]);
 
   return (
@@ -866,21 +821,6 @@ function RoadsAndHazardsAdminPage() {
                 type="button"
                 onClick={() => {
                   setRouteCreateIntent("primary");
-                  // #region agent log
-                  fetch("http://127.0.0.1:7540/ingest/3142bff0-53ba-4c2c-9606-b4d021977f0c", {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json", "X-Debug-Session-Id": "197cec" },
-                    body: JSON.stringify({
-                      sessionId: "197cec",
-                      runId: "roads-header-actions",
-                      hypothesisId: "H-header",
-                      location: "crisis/admin/routes/page.jsx:header",
-                      message: "New route from page header",
-                      data: { action: "primary" },
-                      timestamp: Date.now(),
-                    }),
-                  }).catch(() => {});
-                  // #endregion
                 }}
                 className={adminShell.btnPrimary}
               >

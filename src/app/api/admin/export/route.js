@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { requireAdmin } from "@/lib/adminAuth";
+import { API_RATE_LIMITS, enforceRateLimitByKey } from "@/lib/apiRateLimit";
 
 function escapeCsv(value) {
   const str = value == null ? "" : String(value);
@@ -20,6 +21,12 @@ function toCsv(headers, rows) {
 export async function GET(request) {
   const auth = await requireAdmin(request);
   if (auth.error) return auth.error;
+
+  const limited = enforceRateLimitByKey(auth.user.id, {
+    name: "admin-export",
+    ...API_RATE_LIMITS.adminExport,
+  });
+  if (limited) return limited;
 
   const { searchParams } = new URL(request.url);
   const type = searchParams.get("type") || "users";

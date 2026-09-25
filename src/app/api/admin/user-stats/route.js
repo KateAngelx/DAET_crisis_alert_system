@@ -9,6 +9,7 @@ import {
   isInactiveOverThreshold,
   isUserOnline,
 } from "@/lib/userActivity";
+import { API_RATE_LIMITS, enforceRateLimitByKey } from "@/lib/apiRateLimit";
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
@@ -49,6 +50,13 @@ export async function GET(request) {
     if (callerProfile?.user_type !== "admin") {
       return NextResponse.json({ error: "Admin access required" }, { status: 403 });
     }
+
+    const limited = enforceRateLimitByKey(user.id, {
+      name: "admin-user-stats",
+      limit: 30,
+      windowMs: 60_000,
+    });
+    if (limited) return limited;
 
     const nowMs = Date.now();
     const onlineCutoff = new Date(nowMs - ONLINE_THRESHOLD_MS).toISOString();
@@ -115,26 +123,6 @@ export async function GET(request) {
       onlineThresholdMinutes: ONLINE_THRESHOLD_MS / 60000,
       topInactiveUsers: inactiveUsers.slice(0, 10),
     };
-
-    // #region agent log
-    fetch("http://127.0.0.1:7540/ingest/3142bff0-53ba-4c2c-9606-b4d021977f0c", {
-      method: "POST",
-      headers: { "Content-Type": "application/json", "X-Debug-Session-Id": "ee1adc" },
-      body: JSON.stringify({
-        sessionId: "ee1adc",
-        location: "api/admin/user-stats/route.js:GET",
-        message: "Admin user stats computed",
-        data: {
-          touristCount: stats.touristCount,
-          onlineCount: stats.onlineCount,
-          inactiveOver30Days: stats.inactiveOver30Days,
-        },
-        timestamp: Date.now(),
-        runId: "user-stats",
-        hypothesisId: "stats",
-      }),
-    }).catch(() => {});
-    // #endregion
 
     return NextResponse.json({ stats });
   } catch (err) {

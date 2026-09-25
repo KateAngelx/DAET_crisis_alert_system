@@ -1,7 +1,7 @@
 import React from "react";
 import { Skeleton } from "@/app/components/ui/Skeleton";
 import { Card } from "@/app/components/ui/Card";
-import { statGrid, statCard, outlinedCard } from "@/lib/designSystem";
+import { statGrid, statCard, outlinedCard, portalLayout } from "@/lib/designSystem";
 import { OutlinedCard } from "@/app/components/ui/OutlinedCard";
 
 export function StatCardSkeleton() {
@@ -22,19 +22,6 @@ export function StatCardSkeletonGrid({ count = 4, className = statGrid.dashboard
     <div className={className}>
       {Array.from({ length: count }).map((_, i) => (
         <StatCardSkeleton key={i} />
-      ))}
-    </div>
-  );
-}
-
-export function MiniStatSkeleton({ count = 3 }) {
-  return (
-    <div className={`grid grid-cols-${count} gap-3`}>
-      {Array.from({ length: count }).map((_, i) => (
-        <Card key={i} className="p-4 text-center border-zinc-100">
-          <Skeleton className="h-2.5 w-12 mx-auto mb-2" />
-          <Skeleton className="h-7 w-8 mx-auto" />
-        </Card>
       ))}
     </div>
   );
@@ -108,32 +95,6 @@ export function NotificationItemSkeleton() {
         </div>
       </div>
     </OutlinedCard>
-  );
-}
-
-export function AlertDetailSkeleton() {
-  return (
-    <Card className="max-w-2xl w-full overflow-hidden border-none shadow-2xl">
-      <div className="bg-zinc-200 p-8">
-        <Skeleton className="h-12 w-12 rounded-2xl mb-6" />
-        <Skeleton className="h-8 w-3/4 mb-4" />
-        <div className="flex gap-2">
-          <Skeleton className="h-5 w-16" />
-          <Skeleton className="h-5 w-24" />
-        </div>
-      </div>
-      <div className="p-8 space-y-6 bg-white">
-        <Skeleton className="h-4 w-full" />
-        <Skeleton className="h-4 w-full" />
-        <Skeleton className="h-4 w-2/3" />
-        <div className="grid grid-cols-2 gap-4">
-          <Skeleton className="h-16 rounded-2xl" />
-          <Skeleton className="h-16 rounded-2xl" />
-        </div>
-        <Skeleton className="h-24 rounded-2xl" />
-        <Skeleton className="h-12 w-full rounded-2xl" />
-      </div>
-    </Card>
   );
 }
 
@@ -325,7 +286,11 @@ export function TouristCardSkeleton() {
 
 export function MapSkeleton({ height = "h-[480px]" }) {
   return (
-    <div className={`bg-zinc-100 rounded-3xl border border-zinc-200 ${height} flex items-center justify-center`}>
+    <div
+      className={`bg-zinc-100 dark:bg-zinc-900/40 rounded-3xl border border-zinc-200 dark:border-zinc-800 ${height} flex items-center justify-center`}
+      role="status"
+      aria-label="Loading map"
+    >
       <div className="text-center space-y-2">
         <Skeleton className="h-8 w-8 rounded-full mx-auto" />
         <Skeleton className="h-3 w-24 mx-auto" />
@@ -334,14 +299,64 @@ export function MapSkeleton({ height = "h-[480px]" }) {
   );
 }
 
-export function IncidentStatSkeleton({ count = 7 }) {
+export function SettingsPanelSkeleton({ rows = 3 }) {
   return (
-    <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-3">
+    <div className="space-y-3 py-2" role="status" aria-label="Loading settings">
+      {Array.from({ length: rows }).map((_, i) => (
+        <Skeleton key={i} className="h-16 w-full rounded-2xl" />
+      ))}
+    </div>
+  );
+}
+
+export function FeedbackWallSkeleton() {
+  return (
+    <div className="mb-10 sm:mb-12 space-y-3" role="status" aria-label="Loading community feedback">
+      <Skeleton className="h-28 w-full rounded-2xl" />
+      <Skeleton className="h-28 w-full rounded-2xl" />
+    </div>
+  );
+}
+
+export function AdminActivityTableSkeleton({ rows = 8 }) {
+  return (
+    <div className={`${portalLayout.listScrollPaneAdmin} overflow-x-auto`} role="status" aria-label="Loading activity">
+      <table className="w-full border-collapse text-xs min-w-[720px]">
+        <thead>
+          <tr className="bg-zinc-50 text-zinc-500 text-[9px] uppercase tracking-widest font-black">
+            <th className="px-4 py-3 text-left">When</th>
+            <th className="px-4 py-3 text-left">Source</th>
+            <th className="px-4 py-3 text-left">Action</th>
+            <th className="px-4 py-3 text-left">Subject</th>
+            <th className="px-4 py-3 text-left">Actor</th>
+            <th className="px-4 py-3 text-right">Details</th>
+          </tr>
+        </thead>
+        <tbody className="divide-y divide-zinc-100">
+          <TableSkeleton rows={rows} columns={6} />
+        </tbody>
+      </table>
+    </div>
+  );
+}
+
+export function AdminTablePlaceholderSkeleton({ rows = 6, columns = 5 }) {
+  return (
+    <div className="overflow-x-auto py-2" role="status" aria-label="Loading table">
+      <table className="w-full border-collapse">
+        <tbody>
+          <TableSkeleton rows={rows} columns={columns} />
+        </tbody>
+      </table>
+    </div>
+  );
+}
+
+export function SessionInboxSkeleton({ count = 4 }) {
+  return (
+    <div className="space-y-3 py-2" role="status" aria-label="Loading">
       {Array.from({ length: count }).map((_, i) => (
-        <Card key={i} className="p-4 text-center border-zinc-100">
-          <Skeleton className="h-2.5 w-12 mx-auto mb-2" />
-          <Skeleton className="h-7 w-8 mx-auto" />
-        </Card>
+        <NotificationItemSkeleton key={i} />
       ))}
     </div>
   );

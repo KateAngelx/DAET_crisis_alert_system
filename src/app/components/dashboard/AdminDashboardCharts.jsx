@@ -77,24 +77,6 @@ export function AdminDashboardCharts() {
       if (!res.ok) throw new Error(data.error || "Failed to load dashboard metrics");
 
       setMetrics(data.metrics || null);
-      // #region agent log
-      fetch("http://127.0.0.1:7540/ingest/3142bff0-53ba-4c2c-9606-b4d021977f0c", {
-        method: "POST",
-        headers: { "Content-Type": "application/json", "X-Debug-Session-Id": "197cec" },
-        body: JSON.stringify({
-          sessionId: "197cec",
-          runId: "admin-dashboard-layout",
-          hypothesisId: "UI",
-          location: "AdminDashboardCharts.jsx:fetch",
-          message: "Analytics loaded with sidebar period",
-          data: {
-            period: data.metrics?.meta?.period,
-            layout: "sidebar-list",
-          },
-          timestamp: Date.now(),
-        }),
-      }).catch(() => {});
-      // #endregion
     } catch (err) {
       setMetrics(null);
       setError(err.message || "Could not load metrics");

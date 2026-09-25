@@ -4,8 +4,28 @@ import { isPermanentSmsError, sendSms } from '@/lib/smsService';
 import { agentDebugLog } from '@/lib/agentDebugLog.server';
 
 const MAX_RETRIES = 3;
+const MAX_BATCH_SIZE = 20;
+const MAX_TOTAL_PROCESSED_PER_CALL = 40;
 
 async function processDelivery(supabase, delivery) {
+  const maxRetries = delivery.max_retries ?? MAX_RETRIES;
+  if ((delivery.retry_count || 0) >= maxRetries) {
+    await supabase
+      .from('notification_deliveries')
+      .update({
+        status: 'failed',
+        last_error: delivery.last_error || 'Max retries exceeded',
+        updated_at: new Date().toISOString(),
+      })
+      .eq('id', delivery.id);
+    return {
+      id: delivery.id,
+      channel: delivery.channel,
+      status: 'failed',
+      error: delivery.last_error || 'Max retries exceeded',
+    };
+  }
+
   await supabase
     .from('notification_deliveries')
     .update({ status: 'processing', updated_at: new Date().toISOString() })
@@ -98,23 +118,41 @@ export async function processNotificationDeliveries({ deliveryIds } = {}) {
     return { processed: 0, results: [], message: 'SUPABASE_SERVICE_ROLE_KEY required' };
   }
 
-  let query = supabase
-    .from('notification_deliveries')
-    .select('*')
-    .in('status', ['pending', 'retrying'])
-    .order('created_at', { ascending: true })
-    .limit(20);
+  const results = [];
+  let remainingBudget = MAX_TOTAL_PROCESSED_PER_CALL;
 
   if (deliveryIds?.length) {
-    query = supabase.from('notification_deliveries').select('*').in('id', deliveryIds);
+    const ids = deliveryIds.slice(0, MAX_BATCH_SIZE);
+    const { data: deliveries, error } = await supabase
+      .from('notification_deliveries')
+      .select('*')
+      .in('id', ids);
+    if (error) throw error;
+    for (const delivery of deliveries || []) {
+      if (remainingBudget <= 0) break;
+      results.push(await processDelivery(supabase, delivery));
+      remainingBudget -= 1;
+    }
+    return { processed: results.length, results, capped: (deliveries?.length || 0) > ids.length };
   }
 
-  const { data: deliveries, error } = await query;
-  if (error) throw error;
+  while (remainingBudget > 0) {
+    const batchLimit = Math.min(MAX_BATCH_SIZE, remainingBudget);
+    const { data: deliveries, error } = await supabase
+      .from('notification_deliveries')
+      .select('*')
+      .in('status', ['pending', 'retrying'])
+      .order('created_at', { ascending: true })
+      .limit(batchLimit);
+    if (error) throw error;
+    if (!deliveries?.length) break;
 
-  const results = [];
-  for (const delivery of deliveries || []) {
-    results.push(await processDelivery(supabase, delivery));
+    for (const delivery of deliveries) {
+      results.push(await processDelivery(supabase, delivery));
+      remainingBudget -= 1;
+    }
+
+    if (deliveries.length < batchLimit) break;
   }
 
   return { processed: results.length, results };

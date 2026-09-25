@@ -19,9 +19,6 @@ export function AlertDetailModal({ alert, onClose }) {
 
   useEffect(() => {
     if (!alert || !mapReady) return;
-    // #region agent log
-    fetch("http://127.0.0.1:7540/ingest/3142bff0-53ba-4c2c-9606-b4d021977f0c",{method:"POST",headers:{"Content-Type":"application/json","X-Debug-Session-Id":"197cec"},body:JSON.stringify({sessionId:"197cec",runId:"alert-modal-map",hypothesisId:"C",location:"AlertDetailModal.jsx:mapRender",message:"Rendering CrisisHubMap in alert modal",data:{alertId:alert.id,center:mapCenter,alertCount:1},timestamp:Date.now()})}).catch(()=>{});
-    // #endregion
   }, [alert, mapReady, mapCenter]);
 
   useEffect(() => {
@@ -48,9 +45,6 @@ export function AlertDetailModal({ alert, onClose }) {
           const center = [Number(alert.latitude), Number(alert.longitude)];
           setMapCenter(center);
           setMapReady(true);
-          // #region agent log
-          fetch("http://127.0.0.1:7540/ingest/3142bff0-53ba-4c2c-9606-b4d021977f0c",{method:"POST",headers:{"Content-Type":"application/json","X-Debug-Session-Id":"197cec"},body:JSON.stringify({sessionId:"197cec",runId:"alert-modal-map",hypothesisId:"B",location:"AlertDetailModal.jsx:coords",message:"Map center from alert lat/lng",data:{alertId:alert.id,center,source:"coordinates"},timestamp:Date.now()})}).catch(()=>{});
-          // #endregion
         }
         return;
       }
@@ -59,9 +53,6 @@ export function AlertDetailModal({ alert, onClose }) {
       if (!cancelled) {
         setMapCenter(coords || DAET_CENTER);
         setMapReady(true);
-        // #region agent log
-        fetch("http://127.0.0.1:7540/ingest/3142bff0-53ba-4c2c-9606-b4d021977f0c",{method:"POST",headers:{"Content-Type":"application/json","X-Debug-Session-Id":"197cec"},body:JSON.stringify({sessionId:"197cec",runId:"alert-modal-map",hypothesisId:"B",location:"AlertDetailModal.jsx:geocode",message:"Map center from geocoded location",data:{alertId:alert.id,center:coords||DAET_CENTER,source:coords?"geocode":"fallback",location:alert.location},timestamp:Date.now()})}).catch(()=>{});
-        // #endregion
       }
     })();
 

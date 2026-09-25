@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useCallback, useEffect, useState } from "react";
+import { SettingsPanelSkeleton } from "@/app/components/ui/Skeletons";
 import {
   Users, FileText, Download, Bell, Loader2, CheckCircle, AlertCircle, Mail, MessageSquare,
 } from "lucide-react";
@@ -225,9 +226,7 @@ export default function AdminSettingsPage() {
           subtitle="Who receives crisis alerts and area hazard SMS/email/in-app notifications"
         >
           {loading ? (
-            <div className="flex items-center gap-2 text-sm text-zinc-500 py-8 justify-center">
-              <Loader2 size={16} className="animate-spin" /> Loading settings...
-            </div>
+            <SettingsPanelSkeleton rows={4} />
           ) : (
             <>
               <div className="space-y-3 mb-6">

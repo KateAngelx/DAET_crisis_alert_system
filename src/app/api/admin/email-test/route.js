@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { requireAdmin } from "@/lib/adminAuth";
 import { getEmailDiagnostics, sendEmail } from "@/lib/emailService";
+import { API_RATE_LIMITS, enforceRateLimitByKey } from "@/lib/apiRateLimit";
 
 export async function GET(request) {
   const auth = await requireAdmin(request);
@@ -12,6 +13,12 @@ export async function GET(request) {
 export async function POST(request) {
   const auth = await requireAdmin(request);
   if (auth.error) return auth.error;
+
+  const limited = enforceRateLimitByKey(auth.user.id, {
+    name: "admin-email-test",
+    ...API_RATE_LIMITS.adminSmsTest,
+  });
+  if (limited) return limited;
 
   const body = await request.json().catch(() => ({}));
   const { data: profile } = await auth.admin

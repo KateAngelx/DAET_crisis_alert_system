@@ -1,11 +1,18 @@
 import { NextResponse } from "next/server";
 import { requireAdmin } from "@/lib/adminAuth";
 import { broadcastDangerousLocationToTourists } from "@/lib/dangerousLocationBroadcast.server";
+import { API_RATE_LIMITS, enforceRateLimitByKey } from "@/lib/apiRateLimit";
 
 export async function POST(request) {
   try {
     const auth = await requireAdmin(request);
     if (auth.error) return auth.error;
+
+    const limited = enforceRateLimitByKey(auth.user.id, {
+      name: "admin-hazard-broadcast",
+      ...API_RATE_LIMITS.adminBroadcast,
+    });
+    if (limited) return limited;
 
     const body = await request.json().catch(() => ({}));
     const warningId = body.warningId;

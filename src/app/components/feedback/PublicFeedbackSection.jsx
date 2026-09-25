@@ -8,6 +8,7 @@ import {
   FEEDBACK_TYPE_LABELS,
 } from "@/lib/feedbackConstants";
 import { typography } from "@/lib/designSystem";
+import { FeedbackWallSkeleton } from "@/app/components/ui/Skeletons";
 
 const TYPE_OPTIONS = [
   { value: "feedback", label: "Feedback", icon: Heart },
@@ -162,6 +163,8 @@ export function PublicFeedbackSection() {
               : "Be the first to share feedback, a comment, or a suggestion for the Daet Municipal Tourism Office. Your message will appear here for others to read."}
           </p>
         </div>
+
+        {loadingList ? <FeedbackWallSkeleton /> : null}
 
         {!loadingList && items.length === 0 && (
           <div className="mb-8 sm:mb-10 text-center py-8 rounded-[28px] border border-dashed border-zinc-200 bg-white/60">

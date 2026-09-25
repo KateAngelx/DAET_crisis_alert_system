@@ -59,25 +59,6 @@ export function AdminDashboardActivityPanel({
   recentIncidents = [],
 }) {
   useEffect(() => {
-    // #region agent log
-    fetch("http://127.0.0.1:7540/ingest/3142bff0-53ba-4c2c-9606-b4d021977f0c", {
-      method: "POST",
-      headers: { "Content-Type": "application/json", "X-Debug-Session-Id": "197cec" },
-      body: JSON.stringify({
-        sessionId: "197cec",
-        runId: "admin-activity-panel",
-        hypothesisId: "UI",
-        location: "AdminDashboardActivityPanel.jsx:mount",
-        message: "Activity panel rendered",
-        data: {
-          areas: affectedAreas.length,
-          alerts: recentAlerts.length,
-          incidents: recentIncidents.length,
-        },
-        timestamp: Date.now(),
-      }),
-    }).catch(() => {});
-    // #endregion
   }, [affectedAreas.length, recentAlerts.length, recentIncidents.length]);
 
   return (

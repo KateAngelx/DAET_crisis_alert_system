@@ -1,5 +1,8 @@
 import { NextResponse } from "next/server";
 import { requireAuthenticatedRequest } from "@/lib/apiAuth";
+import { API_RATE_LIMITS, enforceRateLimit } from "@/lib/apiRateLimit";
+
+const MAX_WAYPOINTS = 25;
 
 const OSRM_BASE = "https://router.project-osrm.org/route/v1/driving";
 
@@ -50,7 +53,14 @@ async function fetchRoadGeometry(waypoints) {
 }
 
 export async function GET(request) {
-  const waypoints = parseWaypointsParam(request.nextUrl.searchParams.get("points"));
+  const limited = enforceRateLimit(request, { name: "route-geometry", limit: 30, windowMs: 60_000 });
+  if (limited) return limited;
+
+  const auth = await requireAuthenticatedRequest(request);
+  if (!auth.ok) return auth.response;
+
+  let waypoints = parseWaypointsParam(request.nextUrl.searchParams.get("points"));
+  waypoints = waypoints.slice(0, MAX_WAYPOINTS);
 
   if (waypoints.length < 2) {
     return NextResponse.json({ error: "At least two waypoints required" }, { status: 400 });
@@ -77,16 +87,20 @@ export async function GET(request) {
 }
 
 export async function POST(request) {
+  const limited = enforceRateLimit(request, { name: "route-geometry-post", limit: 30, windowMs: 60_000 });
+  if (limited) return limited;
+
   const auth = await requireAuthenticatedRequest(request);
   if (!auth.ok) return auth.response;
 
   try {
-    const body = await request.json();
-    const waypoints = Array.isArray(body?.waypoints)
+    const body = await request.json().catch(() => ({}));
+    let waypoints = Array.isArray(body?.waypoints)
       ? body.waypoints
           .map((p) => ({ lat: Number(p.lat), lng: Number(p.lng) }))
           .filter((p) => Number.isFinite(p.lat) && Number.isFinite(p.lng))
       : [];
+    waypoints = waypoints.slice(0, MAX_WAYPOINTS);
 
     if (waypoints.length < 2) {
       return NextResponse.json({ error: "At least two waypoints required" }, { status: 400 });

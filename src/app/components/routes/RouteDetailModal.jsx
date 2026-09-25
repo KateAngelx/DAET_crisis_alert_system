@@ -261,10 +261,6 @@ export function RouteDetailModal({ open, route, catalog, onClose, onSelectRoute 
 
   const styles = getRouteStatusStyles(route.status);
 
-  // #region agent log
-  fetch("http://127.0.0.1:7540/ingest/3142bff0-53ba-4c2c-9606-b4d021977f0c",{method:"POST",headers:{"Content-Type":"application/json","X-Debug-Session-Id":"197cec"},body:JSON.stringify({sessionId:"197cec",runId:"route-modal-header",hypothesisId:"A",location:"RouteDetailModal.jsx:open",message:"Route modal opened with fixed header layout",data:{routeId:route.advisoryId||route.id,layout:"flex-col-overflow-body"},timestamp:Date.now()})}).catch(()=>{});
-  // #endregion
-
   return (
     <div
       className="fixed inset-0 z-[2000] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm"
@@ -296,12 +292,6 @@ export function RouteDetailModal({ open, route, catalog, onClose, onSelectRoute 
           <div
             className="flex-1 overflow-y-auto p-6 bg-white"
             onScroll={(e) => {
-              // #region agent log
-              if (!scrollLoggedRef.current && e.currentTarget.scrollTop > 8) {
-                scrollLoggedRef.current = true;
-                fetch("http://127.0.0.1:7540/ingest/3142bff0-53ba-4c2c-9606-b4d021977f0c",{method:"POST",headers:{"Content-Type":"application/json","X-Debug-Session-Id":"197cec"},body:JSON.stringify({sessionId:"197cec",runId:"route-modal-header",hypothesisId:"B",location:"RouteDetailModal.jsx:scroll",message:"Body scrolled under fixed header",data:{scrollTop:e.currentTarget.scrollTop},timestamp:Date.now()})}).catch(()=>{});
-              }
-              // #endregion
             }}
           >
             <RouteDetailContent route={route} catalog={catalog} onSelectRoute={onSelectRoute} />

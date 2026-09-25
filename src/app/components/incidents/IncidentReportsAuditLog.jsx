@@ -6,6 +6,7 @@ import { AdminPanel } from "@/app/components/admin/AdminPanel";
 import { adminShell, iconSize, portalLayout } from "@/lib/designSystem";
 import { formatIncidentAuditAction } from "@/lib/incidentAuditUtils";
 import { incidentStatusBadgeClass, normalizeIncidentStatusLabel } from "@/lib/incidentStatusUtils";
+import { AdminTablePlaceholderSkeleton } from "@/app/components/ui/Skeletons";
 
 export function IncidentReportsAuditLog({ entries, loading, onRefresh }) {
   return (
@@ -31,7 +32,7 @@ export function IncidentReportsAuditLog({ entries, loading, onRefresh }) {
       bodyClassName={portalLayout.panelBodyStack}
     >
       {loading && entries.length === 0 ? (
-        <p className="text-xs text-zinc-500 font-medium py-6 text-center">Loading audit entries…</p>
+        <AdminTablePlaceholderSkeleton rows={5} columns={6} />
       ) : entries.length === 0 ? (
         <p className="text-xs text-zinc-500 font-medium py-6 text-center flex items-center justify-center gap-2">
           <ClipboardList size={iconSize.inline} className="text-zinc-400" />

@@ -1,11 +1,15 @@
 import { NextResponse } from "next/server";
 import { getSupabaseAdmin } from "@/lib/supabaseAdmin";
+import { API_RATE_LIMITS, enforceRateLimit } from "@/lib/apiRateLimit";
 
 const MAX_NAME = 80;
 const MAX_MESSAGE = 500;
 const VALID_TYPES = new Set(["feedback", "comment", "suggestion"]);
 
-export async function GET() {
+export async function GET(request) {
+  const limited = enforceRateLimit(request, { name: "feedback-get", ...API_RATE_LIMITS.feedbackGet });
+  if (limited) return limited;
+
   try {
     const admin = getSupabaseAdmin();
     if (!admin) {
@@ -31,8 +35,11 @@ export async function GET() {
 }
 
 export async function POST(request) {
+  const limited = enforceRateLimit(request, { name: "feedback-post", ...API_RATE_LIMITS.feedbackPost });
+  if (limited) return limited;
+
   try {
-    const body = await request.json();
+    const body = await request.json().catch(() => ({}));
     const message = String(body?.message || "").trim();
     const nameRaw = body?.name ? String(body.name).trim() : "";
     const feedbackType = VALID_TYPES.has(body?.feedback_type) ? body.feedback_type : "suggestion";

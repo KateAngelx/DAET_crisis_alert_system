@@ -15,26 +15,6 @@ export function CrisisAlertListCard({ alert, onSelect, resolved = false, timeLab
   useEffect(() => {
     const el = cardRef.current;
     if (!el) return;
-    // #region agent log
-    fetch("http://127.0.0.1:7540/ingest/3142bff0-53ba-4c2c-9606-b4d021977f0c", {
-      method: "POST",
-      headers: { "Content-Type": "application/json", "X-Debug-Session-Id": "197cec" },
-      body: JSON.stringify({
-        sessionId: "197cec",
-        runId: "crisis-card-compact",
-        hypothesisId: "H1",
-        location: "CrisisAlertListCard.jsx:mount",
-        message: "Compact crisis list card measured",
-        data: {
-          alertId: alert.id,
-          clientHeight: el.offsetHeight,
-          hasMessagePreview: false,
-          layout: "route-list-parity",
-        },
-        timestamp: Date.now(),
-      }),
-    }).catch(() => {});
-    // #endregion
   }, [alert.id]);
 
   const card = (

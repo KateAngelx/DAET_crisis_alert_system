@@ -113,7 +113,7 @@ export function AuthSessionSync() {
         return;
       }
 
-      if (session?.user && (event === "SIGNED_IN" || event === "TOKEN_REFRESHED" || event === "INITIAL_SESSION")) {
+      if (session?.user && (event === "SIGNED_IN" || event === "INITIAL_SESSION")) {
         try {
           const profile = await fetchAppProfile(session, { loginEvent: event === "SIGNED_IN" });
           if (!mounted) return;

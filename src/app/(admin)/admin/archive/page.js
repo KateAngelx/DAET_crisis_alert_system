@@ -93,27 +93,6 @@ export default function AdminArchivePage() {
 
   useEffect(() => {
     if (!mounted) return;
-    // #region agent log
-    fetch("http://127.0.0.1:7540/ingest/3142bff0-53ba-4c2c-9606-b4d021977f0c", {
-      method: "POST",
-      headers: { "Content-Type": "application/json", "X-Debug-Session-Id": "197cec" },
-      body: JSON.stringify({
-        sessionId: "197cec",
-        runId: "admin-archive-v3",
-        hypothesisId: "H-archive",
-        location: "admin/archive/page.js:layout",
-        message: "Archive grid counts by status",
-        data: {
-          closedIncidents: closedIncidents.length,
-          inactiveRoutes: inactiveRoutes.length,
-          inactiveHazards: inactiveHazards.length,
-          resolvedAlerts: resolvedAlerts.length,
-          incidentStatusCounts,
-        },
-        timestamp: Date.now(),
-      }),
-    }).catch(() => {});
-    // #endregion
   }, [
     mounted,
     closedIncidents.length,
