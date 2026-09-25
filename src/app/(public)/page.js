@@ -3,7 +3,7 @@ import React, { useEffect, useState, useLayoutEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
-  ArrowRight, ShieldCheck, PhoneCall, Radio, FileText, Users, Navigation
+  ArrowRight, ShieldCheck, Bell, MapPin, PhoneCall, Radio, FileText, Users, Navigation
 } from "lucide-react";
 import { useCrisisStore, useAuthStore } from "@/app/store/crisisStore";
 import { useNotificationStore } from "@/app/store/notificationStore";
@@ -38,6 +38,34 @@ export default function Home() {
     if (user?.role === 'guide') router.replace('/guide');
   }, [mounted, isAuthenticated, user, router]);
 
+  useLayoutEffect(() => {
+    if (!mounted || typeof window === "undefined") return;
+    const mock = document.querySelector("[data-hero-mockup]");
+    if (!mock) return;
+    const style = window.getComputedStyle(mock);
+    const visible = style.display !== "none" && mock.getBoundingClientRect().height > 0;
+    // #region agent log
+    fetch("http://127.0.0.1:7540/ingest/3142bff0-53ba-4c2c-9606-b4d021977f0c", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "X-Debug-Session-Id": "197cec" },
+      body: JSON.stringify({
+        sessionId: "197cec",
+        runId: "hero-mockup",
+        hypothesisId: "H-mockup-breakpoint",
+        location: "page.js:mockup-visibility",
+        message: "hero mockup responsive visibility",
+        data: {
+          innerWidth: window.innerWidth,
+          display: style.display,
+          visible,
+          xlBreakpoint: window.matchMedia("(min-width: 1280px)").matches,
+        },
+        timestamp: Date.now(),
+      }),
+    }).catch(() => {});
+    // #endregion
+  }, [mounted]);
+
   if (!mounted || (isAuthenticated && (user?.role === 'admin' || user?.role === 'guide'))) return null;
 
   const activeAlerts = alerts.filter((a) => a.status === "Active" && a.is_public);
@@ -54,7 +82,7 @@ export default function Home() {
         <div className="absolute inset-0 w-full h-full bg-[linear-gradient(to_right,#80808012_1px,transparent_1px),linear-gradient(to_bottom,#80808012_1px,transparent_1px)] bg-[size:24px_24px]"></div>
         <div className="absolute top-0 right-0 -translate-y-12 translate-x-1/3 w-[800px] h-[800px] bg-blue-100 rounded-full blur-3xl opacity-60 mix-blend-multiply pointer-events-none"></div>
 
-        <div className="relative max-w-7xl mx-auto px-4 sm:px-6 w-full">
+        <div className="relative max-w-7xl mx-auto px-4 sm:px-6 grid grid-cols-1 xl:grid-cols-2 gap-10 xl:gap-16 items-center w-full">
           
           <div className="flex flex-col items-start gap-5 sm:gap-6 z-10 min-w-0">
             {isAuthenticated && (
@@ -138,6 +166,56 @@ export default function Home() {
             {error && (
               <p className="text-xs font-bold text-red-500 mt-2">Could not load alert counts. Showing cached data.</p>
             )}
+          </div>
+
+          {/* Hero illustration — xl (desktop) only; hidden on mobile/tablet */}
+          <div
+            data-hero-mockup
+            className="relative h-[550px] w-full hidden xl:block perspective-1000"
+            aria-hidden
+          >
+            <div className="absolute top-12 right-4 bg-white p-6 rounded-[32px] shadow-2xl border border-zinc-100 w-72 animate-in slide-in-from-right-8 duration-700 delay-100 z-30 hover:-translate-y-2 transition-transform">
+              <div className="flex items-center gap-3 mb-3">
+                <div className="bg-red-100 p-2.5 rounded-xl text-red-600">
+                  <Bell size={20} className="animate-pulse" />
+                </div>
+                <div>
+                  <p className="text-[10px] font-black uppercase tracking-widest text-red-600">Critical Alert</p>
+                  <p className="text-sm font-bold text-zinc-900">Official weather advisory</p>
+                </div>
+              </div>
+              <p className="text-xs text-zinc-500 font-medium">Shows alert type, severity, affected area, and safety instructions from {siteInfo.officeName}.</p>
+            </div>
+
+            <div className="absolute bottom-16 left-0 bg-white p-6 rounded-[32px] shadow-2xl border border-zinc-100 w-72 animate-in slide-in-from-bottom-8 duration-700 delay-300 z-30 hover:-translate-y-2 transition-transform">
+              <div className="flex items-center gap-3 mb-3">
+                <div className="bg-blue-100 p-2.5 rounded-xl text-blue-600">
+                  <MapPin size={20} />
+                </div>
+                <div>
+                  <p className="text-[10px] font-black uppercase tracking-widest text-blue-600">Affected Area</p>
+                  <p className="text-sm font-bold text-zinc-900">Location & travel guidance</p>
+                </div>
+              </div>
+              <p className="text-xs text-zinc-500 font-medium">Restricted zones, route status, and tourist safety guidance published by {siteInfo.officeName}.</p>
+            </div>
+
+            <div className="absolute inset-0 m-auto w-[320px] h-[450px] bg-zinc-900 rounded-[48px] shadow-2xl overflow-hidden z-20 border-[8px] border-white flex flex-col">
+              <div className="w-full bg-zinc-950 p-4 flex items-center justify-between border-b border-white/10">
+                <BrandLogo size={22} />
+                <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse" />
+              </div>
+              <div className="flex-1 bg-gradient-to-br from-zinc-800 to-zinc-900 p-6 flex flex-col gap-4">
+                <div className="w-full h-32 bg-blue-900/30 rounded-2xl border border-blue-500/20 flex items-center justify-center">
+                  <Bell size={32} className="text-blue-400 animate-pulse" />
+                </div>
+                <div className="w-3/4 h-8 bg-zinc-800/50 rounded-lg border border-white/5" />
+                <div className="w-full h-8 bg-zinc-800/50 rounded-lg border border-white/5" />
+                <div className="mt-auto w-full py-4 bg-blue-600/20 text-blue-400 rounded-2xl border border-blue-500/20 text-center text-[10px] font-black uppercase tracking-widest">
+                  Emergency Alert System
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       </section>
