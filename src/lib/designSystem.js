@@ -63,13 +63,13 @@ export const iconSize = {
 export const statGrid = {
   /** 4 stats: 2×2 on mobile, row of 4 on large screens */
   dashboard: "grid grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-3 lg:gap-4 min-w-0",
-  /** 3 stats: 3 columns on mobile (matches Crisis Hub) */
-  dashboardThree: "grid grid-cols-3 gap-2 sm:gap-3 lg:gap-4 min-w-0",
+  /** 3 stats: stack on narrow phones, row from sm */
+  dashboardThree: "grid grid-cols-1 sm:grid-cols-3 gap-2 sm:gap-3 lg:gap-4 min-w-0",
   /** 5 stats: 2 cols mobile, 3 tablet, 5 desktop */
   dashboardFive: "grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2 sm:gap-3 lg:gap-4 min-w-0",
   public: "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6",
-  /** Crisis Hub — three stats in one row on mobile */
-  crisisHub: "grid grid-cols-3 gap-2 sm:gap-3 lg:gap-4 min-w-0",
+  /** Crisis Hub — stack on narrow viewports, three columns from sm */
+  crisisHub: "grid grid-cols-1 sm:grid-cols-3 gap-2 sm:gap-3 lg:gap-4 min-w-0",
   /** Incident reports — one horizontal row (scroll on narrow, 7 equal columns on xl) */
   incidentStatsRow:
     "grid grid-flow-col auto-cols-[minmax(8rem,1fr)] grid-rows-1 gap-2 sm:gap-3 overflow-x-auto pb-1 min-w-0 xl:grid-flow-row xl:grid-cols-7 xl:auto-cols-auto xl:overflow-x-visible",
@@ -462,7 +462,7 @@ export const portalShell = {
   input:
     "w-full px-3 py-2.5 bg-zinc-50 border border-zinc-200 rounded-xl text-sm font-medium text-zinc-900 outline-none focus:ring-2 focus:ring-blue-500/25 focus:border-blue-400 transition-shadow",
   select:
-    "px-3 py-2.5 bg-zinc-50 border border-zinc-200 rounded-xl text-sm font-bold text-zinc-800 outline-none focus:ring-2 focus:ring-blue-500/25 focus:border-blue-400",
+    "w-full min-h-11 px-3 py-2.5 bg-zinc-50 border border-zinc-200 rounded-xl text-base sm:text-sm font-bold text-zinc-800 outline-none focus:ring-2 focus:ring-blue-500/25 focus:border-blue-400 touch-manipulation",
   btnPrimary:
     "inline-flex items-center justify-center gap-2 bg-blue-600 text-white px-4 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-blue-700 transition-colors",
   btnSuccess:

@@ -144,7 +144,7 @@ export default function CrisisPublicPage() {
           ) : (
             <div className={`${statGrid.crisisHub} mb-4`}>
               <PublicStatCard compact value={activeAlerts.length} label="Active Alerts" accent="blue" />
-              <PublicStatCard compact value={criticalAlerts.length} label="Require Immediate Action" accent="red" />
+              <PublicStatCard compact value={criticalAlerts.length} label="Need immediate action" accent="red" />
               <PublicStatCard compact value={viewedAlerts.size} label="Alerts Acknowledged" accent="green" />
             </div>
           )}

@@ -1,5 +1,5 @@
 "use client";
-import React, { useEffect, useState, useLayoutEffect, useRef } from "react";
+import React, { useEffect, useState, useLayoutEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
@@ -22,10 +22,6 @@ export default function Home() {
   const { unreadCount, fetchNotifications } = useNotificationStore();
   const [mounted, setMounted] = useState(false);
   const router = useRouter();
-  const heroRef = useRef(null);
-  const mobilePreviewRef = useRef(null);
-  const desktopVisualRef = useRef(null);
-
   useEffect(() => {
     setMounted(true);
     fetchAlerts();
@@ -42,61 +38,6 @@ export default function Home() {
     if (user?.role === 'guide') router.replace('/guide');
   }, [mounted, isAuthenticated, user, router]);
 
-  useEffect(() => {
-    if (!mounted || typeof window === "undefined") return;
-
-    const logHeroLayout = () => {
-      const heroEl = heroRef.current;
-      const mobileEl = mobilePreviewRef.current;
-      const desktopEl = desktopVisualRef.current;
-      const mobileStyle = mobileEl ? getComputedStyle(mobileEl) : null;
-      const desktopStyle = desktopEl ? getComputedStyle(desktopEl) : null;
-      const floatingCards = desktopEl
-        ? Array.from(desktopEl.querySelectorAll(".absolute.bg-white"))
-        : [];
-      const cardVisibility = floatingCards.map((card, i) => {
-        const style = getComputedStyle(card);
-        const rect = card.getBoundingClientRect();
-        return {
-          index: i,
-          display: style.display,
-          visibility: style.visibility,
-          width: Math.round(rect.width),
-          height: Math.round(rect.height),
-        };
-      });
-      const mockupFooter = (mobileEl || desktopEl)?.querySelector("[data-mockup-footer]");
-      const mockupFooterRect = mockupFooter?.getBoundingClientRect();
-    };
-
-    logHeroLayout();
-    window.addEventListener("resize", logHeroLayout);
-    return () => window.removeEventListener("resize", logHeroLayout);
-  }, [mounted]);
-
-  useEffect(() => {
-    if (!mounted || typeof document === "undefined") return;
-    const id = requestAnimationFrame(() => {
-      const pageRoot = document.querySelector(".flex.flex-col.bg-white.font-sans");
-      const blocks = pageRoot ? Array.from(pageRoot.children) : [];
-      const order = blocks.map((el, index) => ({
-        index,
-        key:
-          el.getAttribute("data-landing-section") ||
-          el.getAttribute("aria-label") ||
-          el.querySelector("h2, h3")?.textContent?.trim()?.slice(0, 40) ||
-          el.tagName.toLowerCase(),
-      }));
-      const pulseEl = document.querySelector("section[aria-label='Live platform activity']");
-      const footerEl = document.querySelector("footer");
-      const pulseRect = pulseEl?.getBoundingClientRect();
-      const footerRect = footerEl?.getBoundingClientRect();
-      const gapToFooter =
-        pulseRect && footerRect ? Math.round(footerRect.top - pulseRect.bottom) : null;
-    });
-    return () => cancelAnimationFrame(id);
-  }, [mounted, isAuthenticated, user?.role]);
-
   if (!mounted || (isAuthenticated && (user?.role === 'admin' || user?.role === 'guide'))) return null;
 
   const activeAlerts = alerts.filter((a) => a.status === "Active" && a.is_public);
@@ -107,9 +48,8 @@ export default function Home() {
       
       {/* HERO SECTION */}
       <section
-        ref={heroRef}
         data-landing-section="hero"
-        className="relative pt-10 pb-12 sm:pt-12 sm:pb-14 lg:pb-16 min-h-[calc(100dvh-4rem)] sm:min-h-0 overflow-hidden bg-zinc-50 border-b border-zinc-200 flex flex-col justify-center"
+        className="relative pt-8 pb-10 sm:pt-12 sm:pb-14 lg:pb-16 overflow-hidden bg-zinc-50 border-b border-zinc-200 flex flex-col justify-center"
       >
         <div className="absolute inset-0 w-full h-full bg-[linear-gradient(to_right,#80808012_1px,transparent_1px),linear-gradient(to_bottom,#80808012_1px,transparent_1px)] bg-[size:24px_24px]"></div>
         <div className="absolute top-0 right-0 -translate-y-12 translate-x-1/3 w-[800px] h-[800px] bg-blue-100 rounded-full blur-3xl opacity-60 mix-blend-multiply pointer-events-none"></div>
@@ -180,18 +120,18 @@ export default function Home() {
             {loading ? (
               <HeroStatSkeleton />
             ) : (
-            <div className="pt-6 sm:pt-8 border-t border-zinc-200 w-full flex items-center justify-center gap-6 sm:gap-10">
-              <div className="text-center min-w-0">
-                <p className="text-xl sm:text-2xl font-black text-zinc-900 leading-none mb-1">{activeAlerts.length}</p>
-                <p className="text-[9px] sm:text-[10px] font-bold text-zinc-500 uppercase tracking-widest leading-tight">Active Alerts</p>
+            <div className="pt-6 sm:pt-8 border-t border-zinc-200 w-full grid grid-cols-3 gap-2 sm:gap-6 max-w-md">
+              <div className="text-center min-w-0 px-1">
+                <p className="text-lg sm:text-2xl font-black text-zinc-900 leading-none mb-1 tabular-nums">{activeAlerts.length}</p>
+                <p className="text-[8px] sm:text-[10px] font-bold text-zinc-500 uppercase tracking-wide leading-tight">Active Alerts</p>
               </div>
-              <div className="text-center min-w-0">
-                <p className="text-xl sm:text-2xl font-black text-red-600 tabular-nums leading-none mb-1">{criticalCount}</p>
-                <p className="text-[9px] sm:text-[10px] font-bold text-zinc-500 uppercase tracking-widest leading-tight">Critical</p>
+              <div className="text-center min-w-0 px-1">
+                <p className="text-lg sm:text-2xl font-black text-red-600 tabular-nums leading-none mb-1">{criticalCount}</p>
+                <p className="text-[8px] sm:text-[10px] font-bold text-zinc-500 uppercase tracking-wide leading-tight">Critical</p>
               </div>
-              <div className="text-center min-w-0">
-                <p className="text-xl sm:text-2xl font-black text-zinc-900 leading-none mb-1">24/7</p>
-                <p className="text-[9px] sm:text-[10px] font-bold text-zinc-500 uppercase tracking-widest leading-tight">Monitoring</p>
+              <div className="text-center min-w-0 px-1">
+                <p className="text-lg sm:text-2xl font-black text-zinc-900 leading-none mb-1">24/7</p>
+                <p className="text-[8px] sm:text-[10px] font-bold text-zinc-500 uppercase tracking-wide leading-tight">Monitoring</p>
               </div>
             </div>
             )}
@@ -200,31 +140,8 @@ export default function Home() {
             )}
           </div>
 
-          {/* Mobile preview — fills hero on small screens */}
-          <div ref={mobilePreviewRef} className="relative w-full max-w-sm mx-auto xl:hidden">
-            <div className="bg-zinc-900 rounded-[32px] shadow-2xl overflow-hidden border-[6px] border-white">
-              <div className="w-full bg-zinc-950 px-4 py-3 flex items-center justify-between border-b border-white/10">
-                <div className="flex items-center gap-2 min-w-0">
-                  <BrandLogo size={20} />
-                </div>
-                <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse shrink-0" />
-              </div>
-              <div className="bg-gradient-to-br from-zinc-800 to-zinc-900 p-5 space-y-3">
-                <p className="text-[9px] font-black uppercase tracking-widest text-blue-400 leading-tight">
-                  {siteInfo.brandName} · {siteInfo.officeName}
-                </p>
-                <div className="w-full h-24 bg-blue-900/30 rounded-2xl border border-blue-500/20 flex items-center justify-center">
-                  <Bell size={28} className="text-blue-400 animate-pulse" />
-                </div>
-                <div data-mockup-footer className="w-full py-3 bg-blue-600/20 text-blue-400 rounded-xl border border-blue-500/20 text-center text-[9px] font-black uppercase tracking-widest">
-                  Emergency Alert System
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* Desktop visual */}
-          <div ref={desktopVisualRef} className="relative h-[550px] w-full hidden xl:block perspective-1000">
+          {/* Hero illustration — large screens only (hidden on phones/tablets to avoid overlap) */}
+          <div className="relative h-[550px] w-full hidden lg:block perspective-1000" aria-hidden>
             
             <div className="absolute top-12 right-4 bg-white p-6 rounded-[32px] shadow-2xl border border-zinc-100 w-72 animate-in slide-in-from-right-8 duration-700 delay-100 z-30 hover:-translate-y-2 transition-transform">
               <div className="flex items-center gap-3 mb-3">
@@ -371,7 +288,7 @@ export default function Home() {
 
       <PublicFeedbackSection />
 
-      <PublicLiveAnalyticsSection className="-mx-4 md:-mx-6 lg:-mx-8 mt-0 z-0" />
+      <PublicLiveAnalyticsSection className="mt-0 z-0 md:-mx-6 lg:-mx-8" />
 
     </div>
   );

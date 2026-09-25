@@ -19,20 +19,24 @@ export function AdminFilterBar({
   compact = false,
 }) {
   const row = (
-    <div className="flex flex-row items-center gap-2 min-w-0">
-      <div className="relative flex-1 min-w-0">
+    <div className="flex flex-col sm:flex-row sm:items-center gap-2 min-w-0">
+      <div className="relative flex-1 min-w-0 w-full">
         <Search
           className="absolute left-2.5 top-1/2 -translate-y-1/2 text-zinc-400"
           size={compact ? iconSize.inline : iconSize.section}
         />
         <input
-          className={`${adminShell.input} ${compact ? "!py-2 !text-xs pl-8" : "pl-10"}`}
+          className={`${adminShell.input} ${compact ? "!py-2 !text-xs pl-8 min-h-11" : "pl-10 min-h-11"}`}
           placeholder={searchPlaceholder}
           value={searchValue}
           onChange={onSearchChange}
         />
       </div>
-      {children ? <div className="flex shrink-0 items-center gap-2">{children}</div> : null}
+      {children ? (
+        <div className="flex flex-col sm:flex-row w-full sm:w-auto sm:shrink-0 items-stretch sm:items-center gap-2 [&_select]:w-full [&_select]:sm:w-auto">
+          {children}
+        </div>
+      ) : null}
     </div>
   );
 
