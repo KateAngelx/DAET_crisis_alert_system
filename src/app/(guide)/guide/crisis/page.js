@@ -65,34 +65,29 @@ export default function GuideCrisisHubPage() {
     (i) => !["Resolved", "Closed", "Rejected"].includes(i.status)
   );
 
-  const guideDestinations = useMemo(
-    () => [...new Set(activeGroups.map((g) => g.destination?.toLowerCase()).filter(Boolean))],
-    [activeGroups]
-  );
-
-  const relevantAlerts = useMemo(() => {
-    if (guideDestinations.length === 0) return activeAlerts;
-    return activeAlerts.filter((alert) => {
-      const loc = (alert.location || alert.affected_area || "").toLowerCase();
-      return guideDestinations.some((dest) => loc.includes(dest) || dest.includes(loc));
-    });
-  }, [activeAlerts, guideDestinations]);
-
   const filteredAlerts = useMemo(() => {
-    return relevantAlerts.filter((alert) => {
-      const type = alert.type || alert.alert_type || "General";
-      if (categoryFilter !== "all" && type !== categoryFilter) return false;
-      if (severityFilter !== "all" && alert.severity !== severityFilter) return false;
-      return true;
-    });
-  }, [relevantAlerts, categoryFilter, severityFilter]);
+    return activeAlerts
+      .filter((alert) => {
+        const type = alert.type || "General";
+        if (categoryFilter !== "all" && type !== categoryFilter) return false;
+        if (severityFilter !== "all" && alert.severity !== severityFilter) return false;
+        return true;
+      })
+      .sort((a, b) => {
+        const rankA = DEFAULT_SEVERITY_ORDER.indexOf(a.severity);
+        const rankB = DEFAULT_SEVERITY_ORDER.indexOf(b.severity);
+        const severityDiff = (rankA === -1 ? 99 : rankA) - (rankB === -1 ? 99 : rankB);
+        if (severityDiff !== 0) return severityDiff;
+        return new Date(b.created_at || 0) - new Date(a.created_at || 0);
+      });
+  }, [activeAlerts, categoryFilter, severityFilter]);
 
   const alertRows = filteredAlerts.map((alert) => ({
     id: alert.id,
     status: alert.severity || "Low",
     statusClass: getSeverityOutline(alert.severity).badge,
-    place: alert.location || alert.affected_area || alert.title,
-    type: alert.type || alert.alert_type || "General",
+    place: alert.location || alert.title,
+    type: alert.type || "General",
     when: alert.created_at ? new Date(alert.created_at).toLocaleString() : "—",
     onSelect: () => setSelectedAlert(alert),
     ariaLabel: "View alert details",
@@ -188,21 +183,21 @@ export default function GuideCrisisHubPage() {
 
       <div className={portalLayout.splitGrid}>
         <GuidePanel
-          title="Alerts affecting your destinations"
-          subtitle="Status, place, type, and when. View opens the full details."
+          title="Active announcements"
+          subtitle="Same public alerts as Crisis Hub. Status, place, type, and when."
           className={portalLayout.panelFill}
           bodyClassName={portalLayout.panelBodyStack}
         >
           <AsyncState
             loading={alertsLoading}
             error={alertsError}
-            isEmpty={!alertsLoading && !alertsError && relevantAlerts.length === 0}
+            isEmpty={!alertsLoading && !alertsError && activeAlerts.length === 0}
             onRetry={fetchAlerts}
             emptyFallback={
               <EmptyState
                 icon={ShieldCheck}
-                title="No relevant alerts"
-                description="No active advisories match your current tour destinations."
+                title="No active alerts"
+                description="No public crisis is currently reported for Daet. New broadcasts from the tourism office appear here."
               />
             }
           >

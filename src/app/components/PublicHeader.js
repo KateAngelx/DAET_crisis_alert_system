@@ -3,7 +3,8 @@
 import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { AlertTriangle, CheckCircle2, FileText, Home, Info, Route, User } from "lucide-react";
+import { AlertTriangle, CheckCircle2, FileText, Home, Info, Menu, Route, User, X } from "lucide-react";
+import { useInstalledApp } from "@/lib/useInstalledApp";
 import { BrandLogo } from "@/app/components/BrandLogo";
 import { siteInfo } from "@/lib/siteInfo";
 import { typography } from "@/lib/designSystem";
@@ -30,13 +31,16 @@ const AUTH_NAV = [
 export function PublicHeader() {
   const pathname = usePathname();
   const [accountOpen, setAccountOpen] = useState(false);
+  const [menuOpen, setMenuOpen] = useState(false);
   const [mounted, setMounted] = useState(false);
+  const installed = useInstalledApp();
   const { user, isAuthenticated, logout } = useAuthStore();
 
   useEffect(() => setMounted(true), []);
 
   useEffect(() => {
     setAccountOpen(false);
+    setMenuOpen(false);
   }, [pathname]);
 
   const navItems = mounted && isAuthenticated ? AUTH_NAV : GUEST_NAV;
@@ -122,6 +126,18 @@ export function PublicHeader() {
               </div>
             ) : null}
 
+            {!installed ? (
+              <button
+                type="button"
+                onClick={() => setMenuOpen((open) => !open)}
+                className="xl:hidden inline-flex items-center justify-center h-8 w-8 rounded-full border border-white/80 bg-white/70 text-zinc-700 hover:bg-white dark:border-zinc-700 dark:text-zinc-200"
+                aria-label={menuOpen ? "Close menu" : "Open menu"}
+                aria-expanded={menuOpen}
+              >
+                {menuOpen ? <X size={18} /> : <Menu size={18} />}
+              </button>
+            ) : null}
+
             {mounted && isAuthenticated ? (
               <div className="relative xl:hidden">
                 <button
@@ -163,6 +179,31 @@ export function PublicHeader() {
       </header>
       <div className="h-[3.75rem] sm:h-[4.25rem] shrink-0" aria-hidden="true" />
 
+      {menuOpen && !installed ? (
+        <nav
+          className="xl:hidden fixed top-[4.25rem] sm:top-[4.75rem] inset-x-3 z-50 max-w-7xl mx-auto rounded-2xl border border-white/70 bg-white/95 p-2 shadow-xl backdrop-blur-xl dark:border-zinc-800 dark:bg-zinc-950/95"
+          aria-label="Sections"
+        >
+          {navItems.map((item) => {
+            const Icon = item.icon;
+            const active = isPublicNavActive(pathname, item.href);
+            return (
+              <Link
+                key={item.name}
+                href={item.href}
+                aria-current={active ? "page" : undefined}
+                className={`flex items-center gap-3 px-3 py-3 rounded-xl text-xs font-black uppercase tracking-widest ${
+                  active ? "bg-blue-600 text-white" : "text-zinc-700 hover:bg-zinc-50 dark:text-zinc-200 dark:hover:bg-zinc-900"
+                }`}
+              >
+                <Icon size={16} />
+                {item.name}
+              </Link>
+            );
+          })}
+        </nav>
+      ) : null}
+
       {accountOpen && (
         <button
           type="button"
@@ -172,6 +213,7 @@ export function PublicHeader() {
         />
       )}
 
+      {installed ? (
       <nav
         className="xl:hidden fixed bottom-0 inset-x-0 z-50 border-t border-zinc-200 bg-white/95 backdrop-blur-md dark:border-white/10 dark:bg-zinc-950/95 pb-[env(safe-area-inset-bottom)]"
         aria-label="Mobile"
@@ -196,6 +238,7 @@ export function PublicHeader() {
           })}
         </div>
       </nav>
+      ) : null}
     </>
   );
 }

@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useMemo } from "react";
-import { ArrowRight, Info, Shield } from "lucide-react";
+import { Info, Shield } from "lucide-react";
 import { useCrisisStore, useAuthStore } from "@/app/store/crisisStore";
 import { InfoPageHero, PublicPageShell, PublicPageContent, PublicPanel } from "@/app/components/InfoPageHero";
 import { AsyncState, ErrorState } from "@/app/components/ui/AsyncState";
@@ -12,80 +12,13 @@ import { AlertDetailModal } from "@/app/components/crisis/AlertDetailModal";
 import { CrisisHubMap } from "@/app/components/maps/CrisisHubMap";
 import { ROLE_INTERFACE } from "@/lib/roleInterfaceCopy";
 import { RoleContextBanner } from "@/app/components/dashboard/RoleContextBanner";
+import { StatusRecordList } from "@/app/components/shell/StatusRecordList";
 import {
   DEFAULT_CRISIS_TYPE_OPTIONS,
   DEFAULT_SEVERITY_ORDER,
 } from "@/app/components/shell/PublicCategorizedCardFilters";
 
-const ALERT_ROW =
-  "grid grid-cols-[4.75rem_minmax(0,1.1fr)_minmax(0,0.9fr)_minmax(0,1fr)_auto] items-center gap-x-2";
-
 const DAET_CENTER = [14.1122, 122.9553];
-
-function ViewDetailsMark() {
-  return (
-    <span className="inline-flex items-center gap-0.5 text-[10px] font-black uppercase tracking-wide text-blue-600 shrink-0">
-      View
-      <ArrowRight size={14} aria-hidden />
-    </span>
-  );
-}
-
-function AlertCell({ children, title }) {
-  return (
-    <span className="truncate text-xs font-medium text-zinc-700" title={title}>
-      {children || "—"}
-    </span>
-  );
-}
-
-function AlertRowList({ alerts, onSelect }) {
-  if (!alerts.length) {
-    return (
-      <p className="text-sm font-medium text-zinc-500 bg-zinc-50 border border-zinc-100 rounded-xl p-3">
-        Nothing is published in this category right now.
-      </p>
-    );
-  }
-
-  return (
-    <div className="rounded-xl border border-zinc-200 overflow-hidden bg-white">
-      <div className={`${ALERT_ROW} px-3 py-2 bg-zinc-50 border-b border-zinc-100`}>
-        {["Status", "Place", "Type", "When"].map((label) => (
-          <span key={label} className="text-[10px] font-black uppercase tracking-widest text-zinc-400 truncate">
-            {label}
-          </span>
-        ))}
-        <span className="sr-only">Details</span>
-      </div>
-      <ul className="divide-y divide-zinc-100">
-        {alerts.map((alert) => {
-          const styles = getSeverityOutline(alert.severity);
-          const place = alert.location || alert.affected_area || alert.title;
-          const when = alert.created_at ? new Date(alert.created_at).toLocaleString() : "";
-          return (
-            <li key={alert.id}>
-              <button
-                type="button"
-                onClick={() => onSelect(alert.id)}
-                className={`${ALERT_ROW} w-full text-left px-3 py-2.5 bg-white transition-colors hover:bg-zinc-50`}
-                aria-label="View alert details"
-              >
-                <span className={`inline-flex max-w-full truncate text-[9px] font-black uppercase tracking-wide px-1.5 py-0.5 rounded ${styles.badge}`}>
-                  {alert.severity || "Low"}
-                </span>
-                <AlertCell title={place}>{place}</AlertCell>
-                <AlertCell title={alert.type}>{alert.type || "General"}</AlertCell>
-                <AlertCell title={when}>{when}</AlertCell>
-                <ViewDetailsMark />
-              </button>
-            </li>
-          );
-        })}
-      </ul>
-    </div>
-  );
-}
 
 function FilterSelect({ label, value, onChange, options }) {
   return (
@@ -163,6 +96,17 @@ export default function CrisisPublicPage() {
     }
   };
 
+  const alertRows = filteredAlerts.map((alert) => ({
+    id: alert.id,
+    status: alert.severity || "Low",
+    statusClass: getSeverityOutline(alert.severity).badge,
+    place: alert.location || alert.title,
+    type: alert.type || "General",
+    when: alert.created_at ? new Date(alert.created_at).toLocaleString() : "—",
+    onSelect: () => handleViewAlert(alert.id),
+    ariaLabel: "View alert details",
+  }));
+
   const selectedAlertData = alerts.find((alert) => alert.id === selectedAlert);
 
   return (
@@ -235,7 +179,7 @@ export default function CrisisPublicPage() {
                     options={DEFAULT_SEVERITY_ORDER}
                   />
                 </div>
-                <AlertRowList alerts={filteredAlerts} onSelect={handleViewAlert} />
+                <StatusRecordList rows={alertRows} />
               </AsyncState>
             </PublicPanel>
 

@@ -61,6 +61,22 @@ function ViewMark({ label = "View" }) {
   );
 }
 
+function MobileRecord({ row, trailing }) {
+  return (
+    <div className="flex items-start gap-3 sm:hidden px-3 py-3">
+      <div className="min-w-0 flex-1">
+        <span className={`inline-flex max-w-full text-[9px] font-black uppercase tracking-wide px-1.5 py-0.5 rounded ${row.statusClass || "bg-zinc-100 text-zinc-600"}`}>
+          {row.status || "—"}
+        </span>
+        <p className="mt-1.5 text-sm font-semibold text-zinc-800 break-words">{row.place || "—"}</p>
+        <p className="mt-0.5 text-xs font-medium text-zinc-600 break-words">{row.type || "—"}</p>
+        <p className="text-xs font-medium text-zinc-500 break-words">{row.when || "—"}</p>
+      </div>
+      <div className="shrink-0 pt-0.5">{trailing}</div>
+    </div>
+  );
+}
+
 function ActionIcons({ actions }) {
   return (
     <span className="inline-flex items-center justify-end gap-0.5 shrink-0">
@@ -99,7 +115,7 @@ export function StatusRecordList({
 
   return (
     <div className="rounded-xl border border-zinc-200 overflow-hidden bg-white">
-      <div className={`${STATUS_RECORD_ROW} px-3 py-2 bg-zinc-50 border-b border-zinc-100`}>
+      <div className={`${STATUS_RECORD_ROW} hidden sm:grid px-3 py-2 bg-zinc-50 border-b border-zinc-100`}>
         {["Status", "Place", "Type", "When"].map((label) => (
           <span key={label} className="text-[10px] font-black uppercase tracking-widest text-zinc-400 truncate">
             {label}
@@ -128,9 +144,12 @@ export function StatusRecordList({
 
           if (row.actions?.length) {
             return (
-              <li key={row.id} className={`${STATUS_RECORD_ROW} px-3 py-2 bg-white`}>
-                {cells}
-                <ActionIcons actions={row.actions} />
+              <li key={row.id} className="bg-white">
+                <MobileRecord row={row} trailing={<ActionIcons actions={row.actions} />} />
+                <div className={`${STATUS_RECORD_ROW} hidden sm:grid px-3 py-2`}>
+                  {cells}
+                  <ActionIcons actions={row.actions} />
+                </div>
               </li>
             );
           }
@@ -140,11 +159,14 @@ export function StatusRecordList({
               <button
                 type="button"
                 onClick={row.onSelect}
-                className={`${STATUS_RECORD_ROW} w-full text-left px-3 py-2.5 bg-white transition-colors hover:bg-zinc-50`}
+                className="w-full text-left bg-white transition-colors hover:bg-zinc-50"
                 aria-label={row.ariaLabel || "View details"}
               >
-                {cells}
-                <ViewMark label={row.actionLabel} />
+                <MobileRecord row={row} trailing={<ViewMark label={row.actionLabel} />} />
+                <div className={`${STATUS_RECORD_ROW} hidden sm:grid px-3 py-2.5`}>
+                  {cells}
+                  <ViewMark label={row.actionLabel} />
+                </div>
               </button>
             </li>
           );

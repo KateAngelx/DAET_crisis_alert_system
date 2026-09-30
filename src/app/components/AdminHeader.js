@@ -1,7 +1,9 @@
 "use client";
 
-import React from "react";
-import { User, LogOut } from "lucide-react";
+import React, { useState } from "react";
+import { User, LogOut, LayoutDashboard, AlertTriangle, Route, FileWarning } from "lucide-react";
+import { useInstalledApp } from "@/lib/useInstalledApp";
+import { InstalledBottomNav } from "@/app/components/shell/InstalledBottomNav";
 import { BrandLogo } from "@/app/components/BrandLogo";
 import { useAuthStore } from "../store/crisisStore";
 import Link from "next/link";
@@ -9,13 +11,23 @@ import { MobileAdminMenu } from "./MobileAdminMenu";
 import { NotificationPanel } from "@/app/components/NotificationPanel";
 import { typography } from "@/lib/designSystem";
 
+const ADMIN_APP_NAV = [
+  { href: "/admin", short: "Home", icon: LayoutDashboard },
+  { href: "/crisis/admin", short: "Crisis", icon: AlertTriangle },
+  { href: "/crisis/admin/routes", short: "Roads", icon: Route },
+  { href: "/admin/incidents", short: "Reports", icon: FileWarning },
+];
+
 export function AdminHeader() {
   const { user, logout } = useAuthStore();
+  const installed = useInstalledApp();
+  const [menuOpen, setMenuOpen] = useState(false);
 
   return (
+    <>
     <header className="h-[72px] bg-white border-b border-zinc-200 px-4 lg:px-6 flex items-center justify-between sticky top-0 z-10 dashboard-shell">
       <div className="flex items-center gap-4">
-        <MobileAdminMenu />
+        <MobileAdminMenu hideButton={installed} open={menuOpen} onOpenChange={setMenuOpen} />
         <Link href="/admin" className={`lg:hidden flex items-center gap-2 ${typography.brand} text-zinc-900`}>
           <BrandLogo size={28} />
           <span className={typography.brand}>CONNECT-DAET</span>
@@ -48,5 +60,9 @@ export function AdminHeader() {
         </div>
       </div>
     </header>
+    {installed ? (
+      <InstalledBottomNav items={ADMIN_APP_NAV} onMore={() => setMenuOpen(true)} />
+    ) : null}
+    </>
   );
 }
