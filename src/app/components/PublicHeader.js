@@ -7,7 +7,6 @@ import { AlertTriangle, CheckCircle2, FileText, Home, Info, Menu, Route, User, X
 import { useInstalledApp } from "@/lib/useInstalledApp";
 import { BrandLogo } from "@/app/components/BrandLogo";
 import { siteInfo } from "@/lib/siteInfo";
-import { typography } from "@/lib/designSystem";
 import { useAuthStore } from "../store/crisisStore";
 import { NotificationPanel } from "@/app/components/NotificationPanel";
 import { isPublicNavActive } from "@/lib/navUtils";
@@ -75,9 +74,8 @@ export function PublicHeader() {
     <>
       <header className="fixed top-3 inset-x-0 z-50 px-3 sm:px-4">
         <div className="max-w-7xl mx-auto h-12 sm:h-14 px-2.5 sm:px-4 flex items-center justify-between gap-2 rounded-2xl border border-white/50 bg-white/35 dark:bg-zinc-950/40 dark:border-white/10 backdrop-blur-2xl backdrop-saturate-150 shadow-[0_8px_30px_rgba(15,23,42,0.06)]">
-          <Link href="/" className="flex items-center gap-2 shrink-0 min-w-0" aria-label={`${siteInfo.officeName} — Home`}>
+          <Link href="/" className="flex items-center shrink-0" aria-label={`${siteInfo.officeName} — Home`}>
             <BrandLogo size={32} className="shrink-0" />
-            <span className={`truncate max-[340px]:hidden ${typography.brand} text-blue-600`}>{siteInfo.brandName}</span>
           </Link>
 
           <nav className="hidden xl:flex items-center gap-1" aria-label="Primary">

@@ -5,7 +5,7 @@ import { ArrowRight, Ban, CheckCircle2, Eye, Pencil, RotateCcw, Trash2 } from "l
 import { portalShell } from "@/lib/designSystem";
 
 export const STATUS_RECORD_ROW =
-  "grid grid-cols-[4.75rem_minmax(0,1.1fr)_minmax(0,0.9fr)_minmax(0,1fr)_minmax(7.5rem,max-content)] items-center gap-x-2";
+  "grid grid-cols-[3.6rem_minmax(0,1.25fr)_minmax(0,0.75fr)_minmax(0,1.15fr)_auto] items-start gap-x-1.5";
 
 const ACTION_ICONS = {
   View: Eye,
@@ -54,26 +54,10 @@ export function CategoryFilterSelect({ label, value, onChange, options, allValue
 
 function ViewMark({ label = "View" }) {
   return (
-    <span className="inline-flex items-center justify-end gap-0.5 text-[10px] font-black uppercase tracking-wide text-blue-600 shrink-0">
+    <span className="inline-flex items-center justify-end gap-0.5 pt-0.5 text-[10px] font-black uppercase tracking-wide text-blue-600 shrink-0">
       {label}
       <ArrowRight size={14} aria-hidden />
     </span>
-  );
-}
-
-function MobileRecord({ row, trailing }) {
-  return (
-    <div className="flex items-start gap-3 sm:hidden px-3 py-3">
-      <div className="min-w-0 flex-1">
-        <span className={`inline-flex max-w-full text-[9px] font-black uppercase tracking-wide px-1.5 py-0.5 rounded ${row.statusClass || "bg-zinc-100 text-zinc-600"}`}>
-          {row.status || "—"}
-        </span>
-        <p className="mt-1.5 text-sm font-semibold text-zinc-800 break-words">{row.place || "—"}</p>
-        <p className="mt-0.5 text-xs font-medium text-zinc-600 break-words">{row.type || "—"}</p>
-        <p className="text-xs font-medium text-zinc-500 break-words">{row.when || "—"}</p>
-      </div>
-      <div className="shrink-0 pt-0.5">{trailing}</div>
-    </div>
   );
 }
 
@@ -115,9 +99,9 @@ export function StatusRecordList({
 
   return (
     <div className="rounded-xl border border-zinc-200 overflow-hidden bg-white">
-      <div className={`${STATUS_RECORD_ROW} hidden sm:grid px-3 py-2 bg-zinc-50 border-b border-zinc-100`}>
+      <div className={`${STATUS_RECORD_ROW} px-3 py-2 bg-zinc-50 border-b border-zinc-100`}>
         {["Status", "Place", "Type", "When"].map((label) => (
-          <span key={label} className="text-[10px] font-black uppercase tracking-widest text-zinc-400 truncate">
+          <span key={label} className="text-[9px] font-black uppercase tracking-wide text-zinc-400 leading-tight">
             {label}
           </span>
         ))}
@@ -133,23 +117,20 @@ export function StatusRecordList({
         {rows.map((row) => {
           const cells = (
             <>
-              <span className={`inline-flex max-w-full truncate text-[9px] font-black uppercase tracking-wide px-1.5 py-0.5 rounded ${row.statusClass || "bg-zinc-100 text-zinc-600"}`}>
+              <span className={`inline-flex max-w-full min-w-0 text-[9px] font-black uppercase tracking-wide px-1 py-0.5 rounded leading-tight ${row.statusClass || "bg-zinc-100 text-zinc-600"}`}>
                 {row.status || "—"}
               </span>
-              <span className="truncate text-xs font-medium text-zinc-700" title={row.place}>{row.place || "—"}</span>
-              <span className="truncate text-xs font-medium text-zinc-700" title={row.type}>{row.type || "—"}</span>
-              <span className="truncate text-xs font-medium text-zinc-700" title={row.when}>{row.when || "—"}</span>
+              <span className="min-w-0 line-clamp-2 break-words text-[11px] font-medium leading-snug text-zinc-700" title={row.place}>{row.place || "—"}</span>
+              <span className="min-w-0 line-clamp-2 break-words text-[11px] font-medium leading-snug text-zinc-700" title={row.type}>{row.type || "—"}</span>
+              <span className="min-w-0 line-clamp-2 break-words text-[11px] font-medium leading-snug text-zinc-700" title={row.when}>{row.when || "—"}</span>
             </>
           );
 
           if (row.actions?.length) {
             return (
-              <li key={row.id} className="bg-white">
-                <MobileRecord row={row} trailing={<ActionIcons actions={row.actions} />} />
-                <div className={`${STATUS_RECORD_ROW} hidden sm:grid px-3 py-2`}>
-                  {cells}
-                  <ActionIcons actions={row.actions} />
-                </div>
+              <li key={row.id} className={`${STATUS_RECORD_ROW} px-3 py-2 bg-white`}>
+                {cells}
+                <ActionIcons actions={row.actions} />
               </li>
             );
           }
@@ -159,14 +140,11 @@ export function StatusRecordList({
               <button
                 type="button"
                 onClick={row.onSelect}
-                className="w-full text-left bg-white transition-colors hover:bg-zinc-50"
+                className={`${STATUS_RECORD_ROW} w-full text-left px-3 py-2.5 bg-white transition-colors hover:bg-zinc-50`}
                 aria-label={row.ariaLabel || "View details"}
               >
-                <MobileRecord row={row} trailing={<ViewMark label={row.actionLabel} />} />
-                <div className={`${STATUS_RECORD_ROW} hidden sm:grid px-3 py-2.5`}>
-                  {cells}
-                  <ViewMark label={row.actionLabel} />
-                </div>
+                {cells}
+                <ViewMark label={row.actionLabel} />
               </button>
             </li>
           );

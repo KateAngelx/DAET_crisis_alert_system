@@ -27,7 +27,13 @@ import { CrisisHubMap } from "@/app/components/maps/CrisisHubMap";
 
 function formatResolvedAt(alert) {
   const date = alert.updated_at || alert.created_at;
-  return date ? new Date(date).toLocaleString() : "—";
+  if (!date) return "—";
+  return new Date(date).toLocaleString(undefined, {
+    month: "short",
+    day: "numeric",
+    hour: "numeric",
+    minute: "2-digit",
+  });
 }
 
 export default function ResolvedAlertsPage() {
