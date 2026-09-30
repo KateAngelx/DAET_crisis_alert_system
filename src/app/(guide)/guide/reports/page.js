@@ -1,9 +1,8 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
-import Link from "next/link";
-import { FileText, ArrowRight, AlertTriangle, Plus } from "lucide-react";
-import { Card } from "@/app/components/ui/Card";
+import { useRouter } from "next/navigation";
+import { FileText, AlertTriangle, Plus } from "lucide-react";
 import { GuidePageHeader } from "@/app/components/guide/GuidePageHeader";
 import { RoleContextBanner } from "@/app/components/dashboard/RoleContextBanner";
 import { ROLE_INTERFACE } from "@/lib/roleInterfaceCopy";
@@ -12,16 +11,16 @@ import { StatCardSkeletonGrid } from "@/app/components/ui/Skeletons";
 import { AsyncState, EmptyState } from "@/app/components/ui/AsyncState";
 import { useAuthStore } from "@/app/store/crisisStore";
 import { useGuideStore } from "@/app/store/guideStore";
-import { getStatusColor, getSeverityColor } from "@/lib/constants";
+import { getStatusColor } from "@/lib/constants";
 import { GuideDashboardQuickActions } from "@/app/components/guide/GuideDashboardQuickActions";
 import { ReportIncidentModal } from "@/app/components/ReportIncidentModal";
 import { iconSize, statGrid, portalLayout } from "@/lib/designSystem";
 import { GuidePanel } from "@/app/components/guide/GuidePanel";
-import { PublicCategorizedCardList } from "@/app/components/shell/PublicCategorizedCardList";
-import { INCIDENT_SEVERITIES } from "@/lib/constants";
+import { StatusRecordList } from "@/app/components/shell/StatusRecordList";
 
 export default function GuideReportsPage() {
   const { user } = useAuthStore();
+  const router = useRouter();
   const { guideIncidents, fetchGuideIncidents, resetGuideScope, loading, error } = useGuideStore();
   const [modalOpen, setModalOpen] = useState(false);
 
@@ -76,46 +75,20 @@ export default function GuideReportsPage() {
           />
         }
       >
-        <GuidePanel title="All group reports" bodyClassName={portalLayout.panelBodyStack}>
-        <PublicCategorizedCardList
-          items={guideIncidents}
-          getCategory={(inc) => inc.category}
-          getSeverity={(inc) => inc.severity}
-          categoryLabel="Report category"
-          severityOrder={[...INCIDENT_SEVERITIES].reverse()}
-          listPaneClassName={portalLayout.listScrollPane}
-          modalTitle="Group incident reports"
-          modalSubtitle={`${guideIncidents.length} total`}
-          listClassName="space-y-3"
-          renderItem={(inc) => (
-            <Link href={`/guide/reports/${inc.id}`} className="block no-underline">
-              <Card className="p-5 border-zinc-100 hover:shadow-md transition-all">
-                <div className="flex items-center justify-between gap-4">
-                  <div className="flex-1 min-w-0">
-                    <div className="flex flex-wrap items-center gap-2 mb-1">
-                      <p className="font-mono text-xs text-blue-600 font-black">{inc.reference_number}</p>
-                      <span className={`px-2 py-0.5 rounded-full text-[10px] font-black uppercase ${getSeverityColor(inc.severity)}`}>
-                        {inc.severity}
-                      </span>
-                      <span className={`px-2 py-0.5 rounded-full text-[10px] font-black uppercase ${getStatusColor(inc.status)}`}>
-                        {inc.status}
-                      </span>
-                    </div>
-                    <h3 className="font-black text-zinc-900 uppercase text-sm">{inc.category}</h3>
-                    <p className="text-sm text-zinc-500 line-clamp-1 mt-1">{inc.description}</p>
-                    {inc.reporter && (
-                      <p className="text-[10px] font-bold text-zinc-400 uppercase mt-2">
-                        Reported by {inc.reporter.full_name}
-                        {inc.assigned_to === user?.id ? " · Assigned to you" : ""}
-                      </p>
-                    )}
-                  </div>
-                  <ArrowRight size={18} className="text-zinc-400 shrink-0" />
-                </div>
-              </Card>
-            </Link>
-          )}
-        />
+        <GuidePanel title="All group reports" subtitle="Create a report from the header. View opens the full record." bodyClassName={portalLayout.panelBodyStack}>
+          <StatusRecordList
+            rows={guideIncidents.map((inc) => ({
+              id: inc.id,
+              status: inc.status,
+              statusClass: getStatusColor(inc.status),
+              place: inc.location || inc.reporter?.full_name || inc.reference_number,
+              type: `${inc.severity} · ${inc.category}`,
+              when: inc.created_at ? new Date(inc.created_at).toLocaleString() : "",
+              actions: [
+                { label: "View", onClick: () => router.push(`/guide/reports/${inc.id}`) },
+              ],
+            }))}
+          />
         </GuidePanel>
       </AsyncState>
 

@@ -24,7 +24,6 @@ import { DashboardStatCard } from "@/app/components/dashboard/DashboardStatCard"
 import { 
   AlertTriangle, Cloud, Heart, Shield, Info, MapPin, Search, CheckCircle, 
   Radio, X, BellRing, FileText, ChevronLeft, ChevronRight,
-  Trash2, Edit3, Eye,
   Mail, MessageSquare, Smartphone, Map, Plus, ArrowRight, Route, Users, Archive
 } from "lucide-react";
 import { adminShell, iconSize, statGrid, typography, getSeverityOutline, outlinedCard, portalLayout } from "@/lib/designSystem";
@@ -379,7 +378,16 @@ export default function CrisisAdminPage() {
               <div className="flex items-center gap-2 p-4 bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-400 rounded-2xl text-xs font-bold uppercase">
                 <MapPin size={16}/> {selectedAlert.location}
               </div>
-              <button onClick={() => setIsViewModalOpen(false)} className="w-full py-4 bg-zinc-900 dark:bg-zinc-100 text-white dark:text-black rounded-2xl font-black uppercase text-xs tracking-widest hover:opacity-90">Close Detailed View</button>
+              <div className="grid grid-cols-2 gap-2">
+                <button type="button" onClick={() => { setIsViewModalOpen(false); handleEditClick(selectedAlert); }} className="py-3 rounded-2xl border border-amber-200 text-amber-700 font-black uppercase text-[10px] tracking-widest hover:bg-amber-50">Edit</button>
+                {selectedAlert.status === "Active" ? (
+                  <button type="button" onClick={() => { setIsViewModalOpen(false); handleResolveClick(selectedAlert); }} className="py-3 rounded-2xl border border-green-200 text-green-700 font-black uppercase text-[10px] tracking-widest hover:bg-green-50">Resolve</button>
+                ) : (
+                  <span />
+                )}
+                <button type="button" onClick={() => { setIsViewModalOpen(false); handleDelete(selectedAlert.id); }} className="py-3 rounded-2xl border border-red-200 text-red-600 font-black uppercase text-[10px] tracking-widest hover:bg-red-50">Delete</button>
+                <button type="button" onClick={() => setIsViewModalOpen(false)} className="py-3 bg-zinc-900 dark:bg-zinc-100 text-white dark:text-black rounded-2xl font-black uppercase text-[10px] tracking-widest hover:opacity-90">Close</button>
+              </div>
             </div>
           </div>
         </div>
@@ -624,7 +632,9 @@ export default function CrisisAdminPage() {
                           when: alert.created_at ? new Date(alert.created_at).toLocaleString() : "",
                           actions: [
                             { label: "View", onClick: () => handleViewClick(alert) },
-                            { label: "Resolve", onClick: () => handleResolveClick(alert) },
+                            { label: "Edit", onClick: () => handleEditClick(alert) },
+                            { label: "Resolve", onClick: () => handleResolveClick(alert), tone: "success" },
+                            { label: "Delete", onClick: () => handleDelete(alert.id), tone: "danger" },
                           ],
                         }))}
                       />
@@ -682,48 +692,39 @@ export default function CrisisAdminPage() {
                       />
                 </div>
               </div>
-                <div className={auditLogExpanded && auditLogHasMore ? portalLayout.listScrollPaneAdmin : undefined}>
-                <table className="w-full border-collapse leading-none">
-                  <thead>
-                    <tr className="bg-zinc-50 dark:bg-zinc-900/80 text-zinc-500 dark:text-zinc-400 text-[9px] uppercase tracking-widest font-black">
-                      <th className="px-6 py-4 text-left font-sans">Status</th>
-                      <th className="px-6 py-4 text-left font-sans">Alert Details</th>
-                      <th className="px-6 py-4 text-center font-sans">Channels</th>
-                      <th className="px-6 py-4 text-left font-sans">Severity</th>
-                      <th className="px-6 py-4 text-right font-sans">Actions</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-gray-200 dark:divide-white/10 font-medium">
-                    {loading ? (
-                      <TableSkeleton rows={5} columns={5} />
-                    ) : displayedAuditAlerts.length > 0 ? displayedAuditAlerts.map(alert => (
-                      <tr key={alert.id} className="hover:bg-zinc-50/80 dark:hover:bg-zinc-900/50 transition-colors text-xs group font-bold leading-none">
-                        <td className="px-6 py-4"><span className={`text-[8px] font-black uppercase px-2 py-1 rounded-full ${alert.status === 'Active' ? 'bg-red-100 text-red-700 dark:bg-red-900/30' : 'bg-green-100 text-green-700 dark:bg-green-900/30'}`}>{alert.status}</span></td>
-                        <td className="px-6 py-4"><p className="text-xs font-black uppercase text-zinc-900 dark:text-white truncate max-w-[200px] mb-1">{alert.title}</p><p className="text-[9px] text-zinc-400 font-mono italic">{alert.location}</p></td>
-                        <td className="px-6 py-4">
-                          <div className="flex justify-center gap-2 text-zinc-300">
-                             {alert.channels?.email && <Mail size={14} className="text-blue-500" title="Email" />}
-                             {alert.channels?.sms && <MessageSquare size={14} className="text-green-500" title="SMS" />}
-                             {alert.channels?.app && <Smartphone size={14} className="text-purple-500" title="App Push" />}
-                             {!alert.channels && <span className="text-[8px] opacity-20">N/A</span>}
-                          </div>
-                        </td>
-                        <td className="px-6 py-4">
-                           <div className={`size-2.5 rounded-full ${alert.severity === 'Critical' ? 'bg-red-600' : alert.severity === 'High' ? 'bg-orange-500' : 'bg-blue-500'}`} />
-                        </td>
-                        <td className="px-6 py-4 text-right">
-                          <div className="flex justify-end gap-2">
-                            <button onClick={() => handleViewClick(alert)} className="p-2 hover:bg-blue-50 dark:hover:bg-blue-900/30 text-blue-600 rounded-lg transition-all" title="View Details"><Eye size={16}/></button>
-                            <button onClick={() => handleEditClick(alert)} className="p-2 hover:bg-amber-50 dark:hover:bg-amber-900/30 text-amber-600 rounded-lg transition-all" title="Edit Entry"><Edit3 size={16}/></button>
-                            <button onClick={() => handleDelete(alert.id)} className="p-2 hover:bg-red-50 dark:hover:bg-red-900/30 text-red-600 rounded-lg transition-all" title="Delete Permanent"><Trash2 size={16}/></button>
-                          </div>
-                        </td>
-                      </tr>
-                    )) : (
-                      <tr><td colSpan="5" className="py-10 text-center text-zinc-400 text-xs font-bold uppercase font-sans">No matching audit logs found.</td></tr>
-                    )}
-                  </tbody>
-                </table>
+                <div className={`px-4 sm:px-6 py-4 ${auditLogExpanded && auditLogHasMore ? portalLayout.listScrollPaneAdmin : ""}`}>
+                  {loading ? (
+                    <TableSkeleton rows={5} columns={4} />
+                  ) : (
+                    <StatusRecordList
+                      rows={displayedAuditAlerts.map((alert) => {
+                        const channels = [
+                          alert.channels?.email && "Email",
+                          alert.channels?.sms && "SMS",
+                          alert.channels?.app && "App",
+                        ].filter(Boolean);
+                        return {
+                          id: alert.id,
+                          status: alert.status,
+                          statusClass: alert.status === "Active" ? "bg-red-100 text-red-700" : "bg-green-100 text-green-700",
+                          place: alert.location || alert.title,
+                          type: [alert.severity, alert.type || "General", channels.join(", ")].filter(Boolean).join(" · "),
+                          when: alert.updated_at || alert.created_at
+                            ? new Date(alert.updated_at || alert.created_at).toLocaleString()
+                            : "",
+                          actions: [
+                            { label: "View", onClick: () => handleViewClick(alert) },
+                            { label: "Edit", onClick: () => handleEditClick(alert) },
+                            ...(alert.status === "Active"
+                              ? [{ label: "Resolve", onClick: () => handleResolveClick(alert), tone: "success" }]
+                              : []),
+                            { label: "Delete", onClick: () => handleDelete(alert.id), tone: "danger" },
+                          ],
+                        };
+                      })}
+                      emptyMessage="No matching audit logs found."
+                    />
+                  )}
                 </div>
                 {!loading && auditLogHasMore ? (
                   <div className="px-4 sm:px-6 py-3 border-t border-zinc-100 bg-zinc-50/50 flex flex-wrap items-center justify-between gap-3">

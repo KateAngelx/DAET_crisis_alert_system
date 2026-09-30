@@ -2,7 +2,7 @@
 
 import React, { useEffect, useMemo, useState } from "react";
 import {
-  AlertOctagon, Plus, Search, X, Trash2, Edit3, BellRing, Navigation, ShieldAlert,
+  AlertOctagon, Plus, Search, X, Navigation, ShieldAlert,
 } from "lucide-react";
 import { useDangerousLocationStore } from "@/app/store/dangerousLocationStore";
 import { notifyTouristsOfDangerousLocation } from "@/lib/notificationService";
@@ -367,7 +367,7 @@ export function AreaHazardsAdminPanel({
                   actions: [
                     { label: "Edit", onClick: () => openEdit(warning) },
                     { label: "Deactivate", onClick: () => handleDeactivate(warning) },
-                    { label: "Delete", onClick: () => handleDelete(warning.id) },
+                    { label: "Delete", onClick: () => handleDelete(warning.id), tone: "danger" },
                   ],
                 };
               })}
@@ -397,40 +397,23 @@ export function AreaHazardsAdminPanel({
 
       {inactiveWarnings.length > 0 && (
         <AdminTablePanel title="Inactive area hazards" subtitle="Deactivated hazards — reactivate or delete from here">
-          <table className="w-full border-collapse text-xs">
-            <thead>
-              <tr className="bg-zinc-50 text-zinc-500 text-[9px] uppercase tracking-widest font-black">
-                <th className="px-6 py-3 text-left">Status</th>
-                <th className="px-6 py-3 text-left">Location</th>
-                <th className="px-6 py-3 text-left">Severity</th>
-                <th className="px-6 py-3 text-right">Actions</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-zinc-100">
-              {inactiveWarnings.map((warning) => (
-                <tr key={warning.id} className="hover:bg-zinc-50/80">
-                  <td className="px-6 py-3">
-                    <span className="text-[8px] font-black uppercase px-2 py-1 rounded-full bg-zinc-100 text-zinc-600">Inactive</span>
-                  </td>
-                  <td className="px-6 py-3 font-black uppercase text-zinc-900 max-w-[220px] truncate">{warning.dangerous_location}</td>
-                  <td className="px-6 py-3 text-zinc-500 font-medium">{warning.severity}</td>
-                  <td className="px-6 py-3 text-right">
-                    <div className="flex justify-end gap-2">
-                      <button type="button" onClick={() => handleReactivate(warning)} className="p-2 hover:bg-green-50 text-green-600 rounded-lg" title="Reactivate">
-                        <BellRing size={16} />
-                      </button>
-                      <button type="button" onClick={() => openEdit(warning)} className="p-2 hover:bg-amber-50 text-amber-600 rounded-lg" title="Edit">
-                        <Edit3 size={16} />
-                      </button>
-                      <button type="button" onClick={() => handleDelete(warning.id)} className="p-2 hover:bg-red-50 text-red-600 rounded-lg" title="Delete">
-                        <Trash2 size={16} />
-                      </button>
-                    </div>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+          <div className="px-4 sm:px-6 py-4">
+            <StatusRecordList
+              rows={inactiveWarnings.map((warning) => ({
+                id: warning.id,
+                status: "Inactive",
+                statusClass: "bg-zinc-100 text-zinc-600",
+                place: warning.dangerous_location,
+                type: warning.severity,
+                when: warning.danger_type || "Hazard",
+                actions: [
+                  { label: "Reactivate", onClick: () => handleReactivate(warning), tone: "success" },
+                  { label: "Edit", onClick: () => openEdit(warning) },
+                  { label: "Delete", onClick: () => handleDelete(warning.id), tone: "danger" },
+                ],
+              }))}
+            />
+          </div>
         </AdminTablePanel>
       )}
 

@@ -3,7 +3,7 @@
 import React, { Suspense, useEffect, useMemo, useState } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import {
-  Route, Plus, X, MapPin, Trash2, Edit3, Ban, CheckCircle, Navigation, Loader2, Radio, Archive, FileWarning,
+  Route, Plus, X, MapPin, Ban, CheckCircle, Navigation, Loader2, Radio, Archive, FileWarning,
 } from "lucide-react";
 import { useRouteAdvisoryStore } from "@/app/store/routeAdvisoryStore";
 import {
@@ -458,7 +458,7 @@ function RouteAdvisoriesAdminPanel({
                   actions: [
                     { label: "Edit", onClick: () => openEdit(advisory) },
                     { label: "Deactivate", onClick: () => handleDeactivate(advisory) },
-                    { label: "Delete", onClick: () => handleDelete(advisory.id) },
+                    { label: "Delete", onClick: () => handleDelete(advisory.id), tone: "danger" },
                   ],
                 };
               })}
@@ -492,44 +492,23 @@ function RouteAdvisoriesAdminPanel({
           title="Inactive routes"
           subtitle="Deactivated advisories — reactivate or delete from here"
         >
-          <table className="w-full border-collapse text-xs">
-            <thead>
-              <tr className="bg-zinc-50 text-zinc-500 text-[9px] uppercase tracking-widest font-black">
-                <th className="px-6 py-3 text-left">Status</th>
-                <th className="px-6 py-3 text-left">Route</th>
-                <th className="px-6 py-3 text-left">Segment</th>
-                <th className="px-6 py-3 text-right">Actions</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-zinc-100">
-              {inactiveAdvisories.map((advisory) => (
-                <tr key={advisory.id} className="hover:bg-zinc-50/80">
-                  <td className="px-6 py-3">
-                    <span className="text-[8px] font-black uppercase px-2 py-1 rounded-full bg-zinc-100 text-zinc-600">
-                      Inactive
-                    </span>
-                  </td>
-                  <td className="px-6 py-3 font-black uppercase text-zinc-900 max-w-[200px] truncate">{advisory.title}</td>
-                  <td className="px-6 py-3 text-zinc-500 font-medium">
-                    {advisory.from_location || "—"} → {advisory.to_location || "—"}
-                  </td>
-                  <td className="px-6 py-3 text-right">
-                    <div className="flex justify-end gap-2">
-                      <button type="button" onClick={() => handleReactivate(advisory)} className="p-2 hover:bg-green-50 text-green-600 rounded-lg" title="Reactivate">
-                        <CheckCircle size={16} />
-                      </button>
-                      <button type="button" onClick={() => openEdit(advisory)} className="p-2 hover:bg-amber-50 text-amber-600 rounded-lg" title="Edit">
-                        <Edit3 size={16} />
-                      </button>
-                      <button type="button" onClick={() => handleDelete(advisory.id)} className="p-2 hover:bg-red-50 text-red-600 rounded-lg" title="Delete">
-                        <Trash2 size={16} />
-                      </button>
-                    </div>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+          <div className="px-4 sm:px-6 py-4">
+            <StatusRecordList
+              rows={inactiveAdvisories.map((advisory) => ({
+                id: advisory.id,
+                status: "Inactive",
+                statusClass: "bg-zinc-100 text-zinc-600",
+                place: `${advisory.from_location || "—"} → ${advisory.to_location || "—"}`,
+                type: advisory.route_type === "alternative" ? "Detour" : advisory.route_status || "Primary",
+                when: advisory.title,
+                actions: [
+                  { label: "Reactivate", onClick: () => handleReactivate(advisory), tone: "success" },
+                  { label: "Edit", onClick: () => openEdit(advisory) },
+                  { label: "Delete", onClick: () => handleDelete(advisory.id), tone: "danger" },
+                ],
+              }))}
+            />
+          </div>
         </AdminTablePanel>
       )}
 
