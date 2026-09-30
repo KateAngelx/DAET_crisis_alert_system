@@ -28,6 +28,7 @@ import { adminShell, iconSize, statGrid, portalLayout } from "@/lib/designSystem
 import { RouteAdvisoryIcon } from "@/app/components/ui/cardTypeIcons";
 import { AreaHazardsAdminPanel } from "@/app/components/admin/AreaHazardsAdminPanel";
 import { RoadsHazardsSectionFilters } from "@/app/components/admin/RoadsHazardsSectionFilters";
+import { CategoryFilterSelect, StatusRecordList } from "@/app/components/shell/StatusRecordList";
 import { AdminDashboardKpiSection } from "@/app/components/admin/AdminDashboardKpiSection";
 import {
   AdminDashboardQuickNavDivider,
@@ -404,16 +405,6 @@ function RouteAdvisoriesAdminPanel({
         searchValue={searchTerm}
         onSearchChange={(e) => setSearchTerm(e.target.value)}
       >
-        <select
-          className={`${adminShell.select} !py-2 !text-xs min-w-[7.5rem]`}
-          value={filterStatus}
-          onChange={(e) => setFilterStatus(e.target.value)}
-        >
-          <option value="All">All Status</option>
-          {ROUTE_ADVISORY_STATUSES.map((s) => (
-            <option key={s} value={s}>{s}</option>
-          ))}
-        </select>
       </AdminFilterBar>
 
       <div className={portalLayout.splitGrid}>
@@ -431,6 +422,15 @@ function RouteAdvisoriesAdminPanel({
               }}
             />
           ) : null}
+          <div className="mb-3">
+            <CategoryFilterSelect
+              label="Status"
+              value={filterStatus}
+              onChange={setFilterStatus}
+              options={ROUTE_ADVISORY_STATUSES}
+              allValue="All"
+            />
+          </div>
           {loading ? (
             <div className={portalLayout.listScrollPaneCompact}>
               <AlertCardSkeletonList count={3} />
@@ -441,58 +441,28 @@ function RouteAdvisoriesAdminPanel({
               <p className="font-black uppercase tracking-widest text-[10px] text-zinc-400">No active route advisories</p>
             </div>
           ) : (
-            <div className={`space-y-2 ${portalLayout.listScrollPaneCompact}`}>
-              {filtered.filter((a) => a.status === "Active").map((advisory) => {
+            <StatusRecordList
+              rows={filtered.filter((advisory) => advisory.status === "Active").map((advisory) => {
                 const styles = getRouteAdvisoryStatusStyles(advisory.route_status);
-                const pathReady = hasRoutePath(advisory) || (advisory.from_location && advisory.to_location);
-                const meta = `${advisory.route_status} • ${advisory.route_type === "alternative" ? "Detour" : "Primary"}`;
-                const locationLine = `${advisory.from_location || "Start"} → ${advisory.to_location || "End"}`;
-                const message =
-                  advisory.reason?.trim() ||
-                  (pathReady ? "Map line ready for tourists." : "Add From and To locations to draw the map line.");
-                return (
-                  <AdminActiveOpsCard
-                    key={advisory.id}
-                    compact
-                    severityForCard={routeStatusToCardSeverity(advisory.route_status)}
-                    borderClassName={styles.border}
-                    metaLabel={meta}
-                    title={advisory.title}
-                    message={message}
-                    location={locationLine}
-                    timeLabel={
-                      advisory.updated_at
-                        ? new Date(advisory.updated_at).toLocaleTimeString()
-                        : advisory.created_at
-                          ? new Date(advisory.created_at).toLocaleTimeString()
-                          : null
-                    }
-                    icon={
-                      <div className="p-2 bg-zinc-100 dark:bg-zinc-800 rounded-lg text-zinc-600 dark:text-zinc-400 leading-none shrink-0">
-                        <RouteAdvisoryIcon routeStatus={advisory.route_status} size={iconSize.section} />
-                      </div>
-                    }
-                    primaryAction={{ label: "Deactivate", onClick: () => handleDeactivate(advisory) }}
-                    secondaryActions={[
-                      {
-                        key: "edit",
-                        label: "Edit",
-                        icon: Edit3,
-                        onClick: () => openEdit(advisory),
-                        className: "hover:bg-amber-50 text-amber-600",
-                      },
-                      {
-                        key: "delete",
-                        label: "Delete",
-                        icon: Trash2,
-                        onClick: () => handleDelete(advisory.id),
-                        className: "hover:bg-red-50 text-red-600",
-                      },
-                    ]}
-                  />
-                );
+                return {
+                  id: advisory.id,
+                  status: advisory.route_status,
+                  statusClass: styles.badge,
+                  place: `${advisory.from_location || "Start"} → ${advisory.to_location || "End"}`,
+                  type: advisory.route_type === "alternative" ? "Detour" : "Primary",
+                  when: advisory.updated_at
+                    ? new Date(advisory.updated_at).toLocaleString()
+                    : advisory.created_at
+                      ? new Date(advisory.created_at).toLocaleString()
+                      : "",
+                  actions: [
+                    { label: "Edit", onClick: () => openEdit(advisory) },
+                    { label: "Deactivate", onClick: () => handleDeactivate(advisory) },
+                    { label: "Delete", onClick: () => handleDelete(advisory.id) },
+                  ],
+                };
               })}
-            </div>
+            />
           )}
         </AdminPanel>
 
@@ -506,7 +476,7 @@ function RouteAdvisoriesAdminPanel({
             <div className={portalLayout.mapColumnFill}>
               <MapContainer center={mapCenter} zoom={13} style={{ height: "100%", width: "100%" }}>
                 <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" attribution="&copy; OpenStreetMap" />
-                <RouteAdvisoryPolylines advisories={activeAdvisories} />
+                <RouteAdvisoryPolylines advisories={filtered.filter((advisory) => advisory.status === "Active")} />
               </MapContainer>
             </div>
           ) : (

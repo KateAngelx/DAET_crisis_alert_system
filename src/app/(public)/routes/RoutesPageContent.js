@@ -2,14 +2,13 @@
 
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
-import { Route, AlertTriangle, ChevronDown } from "lucide-react";
+import { ArrowRight, Route, AlertTriangle } from "lucide-react";
 import { useRouteAdvisoryStore } from "@/app/store/routeAdvisoryStore";
 import { useDangerousLocationStore } from "@/app/store/dangerousLocationStore";
 import { CrisisHubMap } from "@/app/components/maps/CrisisHubMap";
-import { RouteListCard } from "@/app/components/routes/RouteListCard";
 import { RouteDetailModal } from "@/app/components/routes/RouteDetailModal";
-import { DangerousLocationListCard } from "@/app/components/danger/DangerousLocationListCard";
-import { InfoPageHero, PublicPageShell, PublicPageContent, PublicPanel, publicLayout } from "@/app/components/InfoPageHero";
+import { DangerousLocationCard } from "@/app/components/danger/DangerousLocationCard";
+import { InfoPageHero, PublicPageShell, PublicPageContent, PublicPanel } from "@/app/components/InfoPageHero";
 import { AsyncState, ErrorState, EmptyState } from "@/app/components/ui/AsyncState";
 import { AlertCardSkeletonList, MapSkeleton } from "@/app/components/ui/Skeletons";
 import { PublicStatCard } from "@/app/components/dashboard/PublicStatCard";
@@ -17,14 +16,17 @@ import {
   buildRouteCatalog,
   findRouteItem,
   getRouteItemFromAdvisory,
+  getRouteStatusStyles,
   resolveRouteItemView,
 } from "@/lib/routesUtils";
+import { formatWarningTimeRange, getDangerSeverityStyles } from "@/lib/dangerousLocationUtils";
 import { advisoryToMapWarning } from "@/lib/routeAdvisoryUtils";
 import { useTravelDeepLinks } from "@/lib/useTravelDeepLinks";
 import { ROLE_INTERFACE } from "@/lib/roleInterfaceCopy";
 import { RoleContextBanner } from "@/app/components/dashboard/RoleContextBanner";
-import { iconSize, statGrid, portalLayout } from "@/lib/designSystem";
-import { PublicCardListPreview } from "@/app/components/shell/PublicCardListPreview";
+import { portalLayout, portalShell } from "@/lib/designSystem";
+import { ROUTES_MAP_LEGEND } from "@/lib/mapPinUtils";
+import { PublicListModal } from "@/app/components/shell/PublicListModal";
 
 const FILTERS = [
   { id: "all", label: "All" },
@@ -36,55 +38,105 @@ const FILTERS = [
   { id: "safe", label: "Safe" },
 ];
 
-function RouteAdvisoryGroup({
-  title,
-  description,
-  empty,
-  emptyTone = "neutral",
-  collapsible,
-  defaultOpen = false,
-  children,
-}) {
-  const emptyBlock = empty ? (
-    <p
-      className={`text-sm font-medium p-3 rounded-xl ${
-        emptyTone === "positive"
-          ? "text-green-700 bg-green-50 border border-green-200"
-          : "text-zinc-500 bg-zinc-50 border border-zinc-100"
-      }`}
-    >
-      {empty}
-    </p>
-  ) : null;
+const ADVISORY_ROW =
+  "grid grid-cols-[4.75rem_minmax(0,1.1fr)_minmax(0,0.9fr)_minmax(0,1fr)_auto] items-center gap-x-2";
 
-  if (!collapsible) {
+function ViewDetailsMark() {
+  return (
+    <span className="inline-flex items-center gap-0.5 text-[10px] font-black uppercase tracking-wide text-blue-600 shrink-0">
+      View
+      <ArrowRight size={14} aria-hidden />
+    </span>
+  );
+}
+
+function AdvisoryCell({ children, title }) {
+  return (
+    <span className="truncate text-xs font-medium text-zinc-700" title={title}>
+      {children || "—"}
+    </span>
+  );
+}
+
+function AdvisoryFormList({ items, onSelectRoute, onSelectHazard, highlightedHazardId }) {
+  if (!items.length) {
     return (
-      <div className={publicLayout.stackTight}>
-        <div>
-          <h3 className="text-xs font-black uppercase tracking-widest text-zinc-500">{title}</h3>
-          {description ? <p className="text-xs text-zinc-400 font-medium mt-0.5">{description}</p> : null}
-        </div>
-        {empty ? emptyBlock : <div className={publicLayout.stackTight}>{children}</div>}
-      </div>
+      <p className="text-sm font-medium text-zinc-500 bg-zinc-50 border border-zinc-100 rounded-xl p-3">
+        Nothing is published in this category right now.
+      </p>
     );
   }
 
   return (
-    <details
-      open={defaultOpen}
-      className="rounded-xl border border-zinc-200 bg-zinc-50/40 overflow-hidden group"
-    >
-      <summary className="list-none cursor-pointer px-3 py-2.5 flex items-start justify-between gap-2 hover:bg-zinc-50 [&::-webkit-details-marker]:hidden">
-        <div className="min-w-0 text-left">
-          <span className="text-xs font-black uppercase tracking-widest text-zinc-700">{title}</span>
-          {description ? <p className="text-[11px] text-zinc-400 font-medium mt-0.5">{description}</p> : null}
-        </div>
-        <ChevronDown className="shrink-0 text-zinc-400 group-open:rotate-180 transition-transform mt-0.5" size={16} />
-      </summary>
-      <div className="px-3 pb-3 border-t border-zinc-100">
-        {empty ? emptyBlock : <div className={`${publicLayout.stackTight} pt-3`}>{children}</div>}
+    <div className="rounded-xl border border-zinc-200 overflow-hidden bg-white">
+      <div className={`${ADVISORY_ROW} px-3 py-2 bg-zinc-50 border-b border-zinc-100`}>
+        {["Status", "Place", "Type", "When"].map((label) => (
+          <span key={label} className="text-[10px] font-black uppercase tracking-widest text-zinc-400 truncate">
+            {label}
+          </span>
+        ))}
+        <span className="sr-only">Details</span>
       </div>
-    </details>
+      <ul className="divide-y divide-zinc-100">
+        {items.map((entry) => {
+          const isHazard = entry.kind === "hazard";
+          const highlighted = isHazard && highlightedHazardId === entry.item.id;
+          const rowClass = `${ADVISORY_ROW} w-full text-left px-3 py-2.5 transition-colors hover:bg-zinc-50 ${
+            highlighted ? "bg-blue-50" : "bg-white"
+          }`;
+          const cells = isHazard ? <HazardRowCells warning={entry.item} /> : <RouteRowCells route={entry.item} />;
+
+          return (
+            <li key={entry.key} id={isHazard ? `hazard-${entry.item.id}` : undefined}>
+              <button
+                type="button"
+                onClick={() => (isHazard ? onSelectHazard(entry.item) : onSelectRoute(entry.item))}
+                className={rowClass}
+                aria-label={isHazard ? "View hazard details" : "View route details"}
+              >
+                {cells}
+              </button>
+            </li>
+          );
+        })}
+      </ul>
+    </div>
+  );
+}
+
+function RouteRowCells({ route }) {
+  const styles = getRouteStatusStyles(route.status);
+  const place = [route.from, route.to].filter(Boolean).join(" → ");
+  return (
+    <>
+      <StatusBadge className={styles.badge} label={route.statusLabel || styles.label} />
+      <AdvisoryCell title={place}>{place}</AdvisoryCell>
+      <AdvisoryCell title={route.subtitle}>{route.subtitle}</AdvisoryCell>
+      <AdvisoryCell>—</AdvisoryCell>
+      <ViewDetailsMark />
+    </>
+  );
+}
+
+function HazardRowCells({ warning }) {
+  const styles = getDangerSeverityStyles(warning.severity);
+  const when = formatWarningTimeRange(warning);
+  return (
+    <>
+      <StatusBadge className={styles.badge} label={styles.label} />
+      <AdvisoryCell title={warning.dangerous_location}>{warning.dangerous_location}</AdvisoryCell>
+      <AdvisoryCell title={warning.danger_type}>{warning.danger_type}</AdvisoryCell>
+      <AdvisoryCell title={when}>{when}</AdvisoryCell>
+      <ViewDetailsMark />
+    </>
+  );
+}
+
+function StatusBadge({ className, label }) {
+  return (
+    <span className={`inline-flex max-w-full truncate text-[9px] font-black uppercase tracking-wide px-1.5 py-0.5 rounded ${className}`}>
+      {label}
+    </span>
   );
 }
 
@@ -93,7 +145,8 @@ export default function RoutesPageContent() {
   const { warnings, fetchWarnings, loading: hazardsLoading, error: hazardsError } = useDangerousLocationStore();
   const [mapReady, setMapReady] = useState(false);
   const [selectedRoute, setSelectedRoute] = useState(null);
-  const [activeFilter, setActiveFilter] = useState("urgent");
+  const [selectedHazard, setSelectedHazard] = useState(null);
+  const [activeFilter, setActiveFilter] = useState("all");
   const [highlightedHazardId, setHighlightedHazardId] = useState(null);
   const searchParams = useSearchParams();
   const router = useRouter();
@@ -112,19 +165,9 @@ export default function RoutesPageContent() {
 
   const catalog = useMemo(() => buildRouteCatalog(advisories), [advisories]);
 
-  const mapWarnings = useMemo(
-    () => catalog.published.map(advisoryToMapWarning).filter(Boolean),
-    [catalog.published]
-  );
-
   const activeAreaHazards = useMemo(
     () => warnings.filter((w) => w.status === "Active" && w.is_public !== false),
     [warnings]
-  );
-
-  const allMapWarnings = useMemo(
-    () => [...mapWarnings, ...activeAreaHazards],
-    [mapWarnings, activeAreaHazards]
   );
 
   const urgentCount = catalog.affected.length + catalog.active.length + activeAreaHazards.filter((w) => w.severity !== "Caution").length;
@@ -194,9 +237,59 @@ export default function RoutesPageContent() {
   }, [searchParams, catalog, loading]);
 
   const mapBlocked = !!selectedRoute;
+  const areaItems =
+    activeFilter === "urgent"
+      ? activeAreaHazards.filter((warning) => warning.severity !== "Caution")
+      : activeAreaHazards;
 
-  useEffect(() => {
-  }, []);
+  const attentionGroups = [
+    showClosed &&
+      catalog.affected.length > 0 && {
+        key: "closed",
+        items: catalog.affected,
+      },
+    showCaution &&
+      catalog.active.length > 0 && {
+        key: "caution",
+        items: catalog.active,
+      },
+    showAreas &&
+      areaItems.length > 0 && {
+        key: "areas",
+        items: areaItems,
+      },
+  ].filter(Boolean);
+
+  const openGroups = [
+    showDetours &&
+      catalog.alternative.length > 0 && {
+        key: "detours",
+        items: catalog.alternative,
+      },
+    showSafe &&
+      catalog.safe.length > 0 && {
+        key: "safe",
+        items: catalog.safe,
+      },
+  ].filter(Boolean);
+
+  const listItems = [...attentionGroups, ...openGroups].flatMap((group) =>
+    group.items.map((item, index) => ({
+      key: `${group.key}-${item?.id ?? index}`,
+      kind: group.key === "areas" ? "hazard" : "route",
+      item,
+    }))
+  );
+
+  const visibleRouteIds = new Set(
+    listItems.filter((entry) => entry.kind === "route").map((entry) => entry.item.advisoryId)
+  );
+  const visibleHazards = listItems.filter((entry) => entry.kind === "hazard").map((entry) => entry.item);
+  const visibleRouteAdvisories = catalog.published.filter((advisory) => visibleRouteIds.has(advisory.id));
+  const visibleMapWarnings = [
+    ...visibleRouteAdvisories.map(advisoryToMapWarning).filter(Boolean),
+    ...visibleHazards,
+  ];
 
   return (
     <PublicPageShell>
@@ -240,13 +333,13 @@ export default function RoutesPageContent() {
           }
         >
           <div className={portalLayout.stackPublic}>
-            <PublicPanel title="Overview & filters" subtitle="Counts and category filters">
-              <div className={`${statGrid.crisisHub} grid-cols-2 lg:grid-cols-5 mb-4`}>
-                <PublicStatCard compact value={catalog.safe.length} label="Safe Routes" accent="green" />
-                <PublicStatCard compact value={catalog.active.length} label="Caution" accent="green" />
-                <PublicStatCard compact value={catalog.affected.length} label="Closed / Avoid" accent="red" />
-                <PublicStatCard compact value={catalog.alternative.length} label="Detours" accent="blue" />
-                <PublicStatCard compact value={activeAreaHazards.length} label="Area Hazards" accent="red" />
+            <PublicPanel title="Overview" subtitle="Route and hazard counts">
+              <div className="grid grid-cols-6 gap-1.5 sm:gap-3 mb-4 min-w-0">
+                <PublicStatCard compact className="col-span-2" value={catalog.safe.length} label="Safe Routes" accent="green" />
+                <PublicStatCard compact className="col-span-2" value={catalog.active.length} label="Caution" accent="green" />
+                <PublicStatCard compact className="col-span-2" value={catalog.affected.length} label="Closed / Avoid" accent="red" />
+                <PublicStatCard compact className="col-span-3" value={catalog.alternative.length} label="Detours" accent="blue" />
+                <PublicStatCard compact className="col-span-3" value={activeAreaHazards.length} label="Area Hazards" accent="red" />
               </div>
 
               {urgentCount > 0 && (
@@ -255,129 +348,43 @@ export default function RoutesPageContent() {
                   <div>
                     <p className="text-xs font-black uppercase text-orange-700 tracking-widest">Check before you travel</p>
                     <p className="text-sm text-orange-900 font-medium mt-0.5">
-                      {urgentCount} item{urgentCount > 1 ? "s" : ""} need attention — use filters or expand categories below.
+                      {urgentCount} item{urgentCount > 1 ? "s" : ""} need attention. Those are listed first under Advisories.
                     </p>
                   </div>
                 </div>
               )}
 
-              <div className="flex flex-wrap gap-2">
-                {FILTERS.map((filter) => (
-                  <button
-                    key={filter.id}
-                    type="button"
-                    onClick={() => setActiveFilter(filter.id)}
-                    className={`px-3 py-1.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-colors ${
-                      activeFilter === filter.id
-                        ? "bg-blue-600 text-white"
-                        : "bg-zinc-100 text-zinc-600 hover:bg-zinc-200"
-                    }`}
-                  >
-                    {filter.label}
-                  </button>
-                ))}
-              </div>
             </PublicPanel>
 
             <div className={portalLayout.splitGridPublic}>
               <PublicPanel
                 title="Advisories"
-                subtitle={
-                  activeFilter === "all"
-                    ? "Expand a category — detours and safe routes stay collapsed"
-                    : "Showing selected category"
-                }
-                className={`${portalLayout.panelFill} order-2 lg:order-1`}
-                bodyClassName={portalLayout.panelBodyStack}
+                subtitle="Status, place, type, and when. View opens the full details."
+                className="order-2 lg:order-1"
               >
-                <div className={`${publicLayout.stackTight} ${portalLayout.listScrollPane}`}>
-                  {showClosed && (
-                    <RouteAdvisoryGroup
-                      title="Closed / Avoid"
-                      description="Do not use unless the tourism office or your guide directs otherwise."
-                      empty={catalog.affected.length === 0 ? "No routes are currently closed or marked unsafe." : null}
-                      emptyTone="positive"
-                      collapsible={activeFilter === "all"}
-                      defaultOpen={catalog.affected.length > 0}
-                    >
-                      <PublicCardListPreview
-                        items={catalog.affected}
-                        modalTitle="Closed / Avoid"
-                        renderItem={(route) => <RouteListCard route={route} onSelect={openRoute} />}
-                      />
-                    </RouteAdvisoryGroup>
-                  )}
-
-                  {showCaution && (
-                    <RouteAdvisoryGroup
-                      title="Open with Caution"
-                      description="Passable routes where the tourism office advises extra care."
-                      empty={catalog.active.length === 0 ? "No caution-level advisories are active." : null}
-                      collapsible={activeFilter === "all"}
-                      defaultOpen={catalog.active.length > 0}
-                    >
-                      <PublicCardListPreview
-                        items={catalog.active}
-                        modalTitle="Open with Caution"
-                        renderItem={(route) => <RouteListCard route={route} onSelect={openRoute} />}
-                      />
-                    </RouteAdvisoryGroup>
-                  )}
-
-                  {showDetours && (
-                    <RouteAdvisoryGroup
-                      title="Recommended Detours"
-                      description="Safer alternatives when a primary route is affected."
-                      empty={catalog.alternative.length === 0 ? "No detours are published at this time." : null}
-                      collapsible={activeFilter === "all"}
-                      defaultOpen={false}
-                    >
-                      <PublicCardListPreview
-                        items={catalog.alternative}
-                        modalTitle="Recommended Detours"
-                        renderItem={(route) => <RouteListCard route={route} onSelect={openRoute} />}
-                      />
-                    </RouteAdvisoryGroup>
-                  )}
-
-                  {showAreas && (
-                    <RouteAdvisoryGroup
-                      title="Area Hazards"
-                      description="Unsafe places — follow alternatives on each card."
-                      empty={activeAreaHazards.length === 0 ? "No area hazards are active right now." : null}
-                      emptyTone="positive"
-                      collapsible={activeFilter === "all"}
-                      defaultOpen={activeAreaHazards.length > 0}
-                    >
-                      <PublicCardListPreview
-                        items={activeAreaHazards}
-                        modalTitle="Area Hazards"
-                        renderItem={(warning) => (
-                          <DangerousLocationListCard
-                            warning={warning}
-                            highlighted={highlightedHazardId === warning.id}
-                          />
-                        )}
-                      />
-                    </RouteAdvisoryGroup>
-                  )}
-
-                  {showSafe && (
-                    <RouteAdvisoryGroup
-                      title="Safe Routes"
-                      description="Tourism office–published routes that are open and safe."
-                      empty={catalog.safe.length === 0 ? "No routes are explicitly marked Safe right now." : null}
-                      collapsible={activeFilter === "all"}
-                      defaultOpen={false}
-                    >
-                      <PublicCardListPreview
-                        items={catalog.safe}
-                        modalTitle="Safe Routes"
-                        renderItem={(route) => <RouteListCard route={route} onSelect={openRoute} />}
-                      />
-                    </RouteAdvisoryGroup>
-                  )}
-                </div>
+                <label className="block mb-3">
+                  <span className="text-[10px] font-black uppercase tracking-widest text-zinc-400 mb-1.5 block">
+                    Category
+                  </span>
+                  <select
+                    className={portalShell.select}
+                    value={activeFilter}
+                    onChange={(event) => setActiveFilter(event.target.value)}
+                    aria-label="Category"
+                  >
+                    {FILTERS.map((filter) => (
+                      <option key={filter.id} value={filter.id}>
+                        {filter.label}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+                <AdvisoryFormList
+                  items={listItems}
+                  onSelectRoute={openRoute}
+                  onSelectHazard={setSelectedHazard}
+                  highlightedHazardId={highlightedHazardId}
+                />
               </PublicPanel>
 
               <PublicPanel
@@ -390,12 +397,13 @@ export default function RoutesPageContent() {
                 {mapReady ? (
                   <CrisisHubMap
                     alerts={[]}
-                    warnings={allMapWarnings}
-                    routeAdvisories={catalog.published}
+                    warnings={visibleMapWarnings}
+                    routeAdvisories={visibleRouteAdvisories}
                     highlightRouteId={selectedRoute?.advisoryId}
                     heightClass={portalLayout.mapColumnFill}
                     showTouristSpots={false}
                     showSafeRoutePins
+                    legendItems={ROUTES_MAP_LEGEND}
                   />
                 ) : (
                   <MapSkeleton height={portalLayout.mapColumnFill} />
@@ -413,6 +421,15 @@ export default function RoutesPageContent() {
         onClose={closeRoute}
         onSelectRoute={openRoute}
       />
+
+      <PublicListModal
+        open={!!selectedHazard}
+        onClose={() => setSelectedHazard(null)}
+        title="Area hazard"
+        subtitle={selectedHazard?.dangerous_location}
+      >
+        {selectedHazard ? <DangerousLocationCard warning={selectedHazard} /> : null}
+      </PublicListModal>
     </PublicPageShell>
   );
 }

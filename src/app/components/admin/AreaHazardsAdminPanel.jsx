@@ -21,6 +21,7 @@ import { adminShell, iconSize, statGrid, portalLayout } from "@/lib/designSystem
 import { AdminFilterBar } from "@/app/components/admin/AdminFilterBar";
 import { AdminPanel } from "@/app/components/admin/AdminPanel";
 import { RoadsHazardsSectionFilters } from "@/app/components/admin/RoadsHazardsSectionFilters";
+import { CategoryFilterSelect, StatusRecordList } from "@/app/components/shell/StatusRecordList";
 import { AdminDashboardKpiSection } from "@/app/components/admin/AdminDashboardKpiSection";
 import { AdminDashboardQuickNavLink, AdminDashboardQuickNavRow } from "@/app/components/admin/AdminDashboardQuickNavLink";
 import { Radio } from "lucide-react";
@@ -322,16 +323,6 @@ export function AreaHazardsAdminPanel({
         searchValue={searchTerm}
         onSearchChange={(e) => setSearchTerm(e.target.value)}
       >
-        <select
-          className={`${adminShell.select} !py-2 !text-xs min-w-[7.5rem]`}
-          value={filterSeverity}
-          onChange={(e) => setFilterSeverity(e.target.value)}
-        >
-          <option value="All">All Severity</option>
-          {DANGER_SEVERITIES.map((s) => (
-            <option key={s} value={s}>{s}</option>
-          ))}
-        </select>
       </AdminFilterBar>
 
       <div className={portalLayout.splitGrid}>
@@ -344,6 +335,15 @@ export function AreaHazardsAdminPanel({
           {onSectionChange ? (
             <RoadsHazardsSectionFilters activeSection={activeSection} onSectionChange={onSectionChange} />
           ) : null}
+          <div className="mb-3">
+            <CategoryFilterSelect
+              label="Severity"
+              value={filterSeverity}
+              onChange={setFilterSeverity}
+              options={DANGER_SEVERITIES}
+              allValue="All"
+            />
+          </div>
           {loading ? (
             <div className={portalLayout.listScrollPaneCompact}>
               <AlertCardSkeletonList count={3} />
@@ -354,61 +354,24 @@ export function AreaHazardsAdminPanel({
               <p className="font-black uppercase tracking-widest text-[10px] text-zinc-400">No active area hazards</p>
             </div>
           ) : (
-            <div className={`space-y-2 ${portalLayout.listScrollPaneCompact}`}>
-            {filtered
-              .filter((w) => w.status === "Active")
-              .map((warning) => {
+            <StatusRecordList
+              rows={filtered.filter((warning) => warning.status === "Active").map((warning) => {
                 const styles = getDangerSeverityStyles(warning.severity);
-                const meta = `${warning.severity} • ${warning.danger_type || "Hazard"}`;
-                const message =
-                  warning.safety_instructions?.trim() ||
-                  warning.reason?.trim() ||
-                  formatWarningTimeRange(warning);
-                return (
-                  <div key={warning.id} className="space-y-2">
-                    <AdminActiveOpsCard
-                      compact
-                      severityForCard={hazardSeverityToCardSeverity(warning.severity)}
-                      borderClassName={styles.border}
-                      metaLabel={meta}
-                      title={warning.dangerous_location}
-                      message={message}
-                      location={warning.affected_area || warning.dangerous_location}
-                      timeLabel={
-                        warning.updated_at
-                          ? new Date(warning.updated_at).toLocaleTimeString()
-                          : warning.created_at
-                            ? new Date(warning.created_at).toLocaleTimeString()
-                            : null
-                      }
-                      icon={
-                        <div className="p-2 bg-zinc-100 dark:bg-zinc-800 rounded-lg text-zinc-600 dark:text-zinc-400 leading-none shrink-0">
-                          <DangerSeverityIcon severity={warning.severity} size={iconSize.section} />
-                        </div>
-                      }
-                      primaryAction={{ label: "Deactivate", onClick: () => handleDeactivate(warning) }}
-                      secondaryActions={[
-                        {
-                          key: "edit",
-                          label: "Edit",
-                          icon: Edit3,
-                          onClick: () => openEdit(warning),
-                          className: "hover:bg-amber-50 text-amber-600",
-                        },
-                        {
-                          key: "delete",
-                          label: "Delete",
-                          icon: Trash2,
-                          onClick: () => handleDelete(warning.id),
-                          className: "hover:bg-red-50 text-red-600",
-                        },
-                      ]}
-                    />
-                    <AlternativeRouteDisplay warning={warning} compact />
-                  </div>
-                );
+                return {
+                  id: warning.id,
+                  status: warning.severity,
+                  statusClass: styles.badge,
+                  place: warning.dangerous_location,
+                  type: warning.danger_type || "Hazard",
+                  when: formatWarningTimeRange(warning),
+                  actions: [
+                    { label: "Edit", onClick: () => openEdit(warning) },
+                    { label: "Deactivate", onClick: () => handleDeactivate(warning) },
+                    { label: "Delete", onClick: () => handleDelete(warning.id) },
+                  ],
+                };
               })}
-            </div>
+            />
           )}
         </AdminPanel>
 
@@ -422,7 +385,7 @@ export function AreaHazardsAdminPanel({
             {mounted && !mapBlocked && (
               <MapContainer center={DAET_CENTER} zoom={13} style={{ height: "100%", width: "100%" }}>
                 <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" attribution="&copy; OpenStreetMap" />
-                <DangerousLocationMapMarkers warnings={activeWarnings} />
+                <DangerousLocationMapMarkers warnings={filtered.filter((warning) => warning.status === "Active")} />
               </MapContainer>
             )}
             <div className="absolute bottom-3 left-3 z-[3]">

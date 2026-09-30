@@ -1,6 +1,7 @@
 /** Route path geometry: waypoints, polylines, GPX export */
 
 import { geocodeLocation } from "@/lib/geocodeLocation";
+import { getActiveSession } from "@/lib/authSession";
 
 function normalizePathInput(raw) {
   if (!raw) return [];
@@ -59,10 +60,23 @@ export function hasRoutePath(source) {
   return parseRoutePath(source).length >= 2;
 }
 
-/** Paths with only endpoint waypoints are straight-line segments */
+/** True when the stored path is only the endpoints, or samples of a direct line. */
 export function isLikelyStraightLinePath(source) {
   const points = serializeRoutePath(source?.route_path ?? source);
-  return points.length > 0 && points.length <= 3;
+  if (points.length < 2) return false;
+  if (points.length <= 3) return true;
+
+  const start = points[0];
+  const end = points[points.length - 1];
+  const dx = end.lng - start.lng;
+  const dy = end.lat - start.lat;
+  const length = Math.hypot(dx, dy);
+  if (length < 1e-6) return true;
+
+  return points.every((point) => {
+    const deviation = Math.abs((point.lng - start.lng) * dy - (point.lat - start.lat) * dx) / length;
+    return deviation < 0.0002;
+  });
 }
 
 function sameCoords(a, b) {
@@ -103,8 +117,6 @@ async function geocodeEndpointWaypoints({ from, to, via }) {
   return waypoints.length >= 2 ? waypoints : [];
 }
 
-import { getActiveSession } from "@/lib/authSession";
-
 /** Snap waypoints to drivable roads using OSRM via our API route */
 export async function snapWaypointsToRoads(waypoints) {
   if (!Array.isArray(waypoints) || waypoints.length < 2) return [];
@@ -121,14 +133,14 @@ export async function snapWaypointsToRoads(waypoints) {
     const response = await fetch(`/api/route-geometry?points=${encodeURIComponent(pointsParam)}`, { headers });
     const data = await response.json();
 
-    if (Array.isArray(data.path) && data.path.length >= 2) {
+    if (response.ok && data.source === "osrm" && Array.isArray(data.path) && data.path.length >= 2) {
       return serializeRoutePath(data.path);
     }
   } catch {
-    /* fall through to straight line */
+    /* caller keeps the previous path */
   }
 
-  return normalized;
+  return [];
 }
 
 /** Geocode From → Via? → To, then snap to actual road geometry */
@@ -140,18 +152,38 @@ export async function buildRoutePathFromLocations({ from, to, via }) {
   return roadPath.length >= 2 ? roadPath : waypoints;
 }
 
-/** Rebuild road path for advisories stored with straight-line geometry */
+/** Rebuild a road trace when the stored path is missing, coarse, or only a straight segment. */
 export async function ensureRoadSnappedPath(advisory) {
   if (!advisory) return [];
 
   const existing = serializeRoutePath(advisory.route_path);
-  if (existing.length > 3) return existing;
+  const coarse = existing.length > 0 && existing.length < 24;
+  if (existing.length >= 2 && !coarse && !isLikelyStraightLinePath(existing)) return existing;
 
-  return buildRoutePathFromLocations({
+  const anchors =
+    existing.length >= 2
+      ? existing.length <= 6
+        ? existing
+        : [existing[0], existing[existing.length - 1]]
+      : [];
+
+  if (anchors.length >= 2) {
+    const snapped = await snapWaypointsToRoads(anchors);
+    if (
+      snapped.length >= 2 &&
+      (snapped.length > anchors.length + 2 || !isLikelyStraightLinePath(snapped))
+    ) {
+      return snapped;
+    }
+  }
+
+  const built = await buildRoutePathFromLocations({
     from: advisory.from_location,
     to: advisory.to_location,
     via: advisory.via_location,
   });
+  if (built.length >= 2 && !isLikelyStraightLinePath(built)) return built;
+  return existing.length >= 2 ? existing : built;
 }
 
 export function getRoutePolylineStyle(advisory) {

@@ -59,17 +59,17 @@ export const iconSize = {
   emptyLg: 40,
 };
 
-/** Responsive stat card grid layouts — mobile-first (Crisis Hub style) */
+/** Responsive stat card grid layouts — always compact on small screens */
 export const statGrid = {
   /** 4 stats: 2×2 on mobile, row of 4 on large screens */
-  dashboard: "grid grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-3 lg:gap-4 min-w-0",
-  /** 3 stats: stack on narrow phones, row from sm */
-  dashboardThree: "grid grid-cols-1 sm:grid-cols-3 gap-2 sm:gap-3 lg:gap-4 min-w-0",
-  /** 5 stats: 2 cols mobile, 3 tablet, 5 desktop */
-  dashboardFive: "grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2 sm:gap-3 lg:gap-4 min-w-0",
-  public: "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6",
-  /** Crisis Hub — stack on narrow viewports, three columns from sm */
-  crisisHub: "grid grid-cols-1 sm:grid-cols-3 gap-2 sm:gap-3 lg:gap-4 min-w-0",
+  dashboard: "grid grid-cols-2 lg:grid-cols-4 gap-1.5 sm:gap-3 lg:gap-4 min-w-0",
+  /** 3 stats: one row at every breakpoint */
+  dashboardThree: "grid grid-cols-3 gap-1.5 sm:gap-3 lg:gap-4 min-w-0",
+  /** 5+ stats: at least 2 columns on mobile, 3 tablet, 5 desktop */
+  dashboardFive: "grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-1.5 sm:gap-3 lg:gap-4 min-w-0",
+  public: "grid grid-cols-2 lg:grid-cols-3 gap-1.5 sm:gap-3 lg:gap-4 min-w-0",
+  /** Crisis Hub — three compact columns, including phones */
+  crisisHub: "grid grid-cols-3 gap-1.5 sm:gap-3 lg:gap-4 min-w-0",
   /** Incident reports — one horizontal row (scroll on narrow, 7 equal columns on xl) */
   incidentStatsRow:
     "grid grid-flow-col auto-cols-[minmax(8rem,1fr)] grid-rows-1 gap-2 sm:gap-3 overflow-x-auto pb-1 min-w-0 xl:grid-flow-row xl:grid-cols-7 xl:auto-cols-auto xl:overflow-x-visible",
@@ -84,8 +84,8 @@ export const outlinedCard = {
   base: "bg-white border shadow-none min-w-0",
   radius: "rounded-xl",
   radiusCompact: "rounded-xl",
-  statPadding: "p-3 sm:p-4 lg:p-5",
-  statPaddingCompact: "p-2.5 sm:p-3 lg:p-4",
+  statPadding: "p-2 sm:p-4 lg:p-5",
+  statPaddingCompact: "p-2 sm:p-3 lg:p-4",
   alertPadding: "p-5 sm:p-6",
   notificationPadding: "p-4 sm:p-5",
 };
@@ -385,9 +385,9 @@ export const statCard = {
   compact: "text-left min-w-0",
   dashboard: "text-left min-w-0",
   public: "text-left min-w-0",
-  iconWrap: "flex h-10 w-10 items-center justify-center rounded-lg shrink-0 [&_svg]:size-4 sm:[&_svg]:size-[18px]",
-  iconRow: "flex items-start justify-between gap-1.5 sm:gap-2 mb-2 sm:mb-3",
-  label: "text-[9px] sm:text-[10px] font-black uppercase tracking-wide sm:tracking-widest leading-tight line-clamp-2",
+  iconWrap: "flex h-7 w-7 sm:h-9 sm:w-9 lg:h-10 lg:w-10 items-center justify-center rounded-lg shrink-0 [&_svg]:size-3.5 sm:[&_svg]:size-4 lg:[&_svg]:size-[18px]",
+  iconRow: "flex items-start justify-between gap-1 sm:gap-2 mb-1.5 sm:mb-3",
+  label: "text-[8px] sm:text-[10px] font-black uppercase tracking-tight sm:tracking-widest leading-tight line-clamp-3",
 };
 
 /** Auth login / register — fixed viewport card, no page scroll */

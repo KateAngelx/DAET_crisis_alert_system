@@ -60,7 +60,7 @@ export function InstallPwaPrompt() {
   if (!visible) return null;
 
   return (
-    <div className="fixed bottom-4 left-4 right-4 z-[60] mx-auto max-w-lg rounded-2xl border border-blue-200 bg-white p-4 shadow-xl dark:border-blue-900/40 dark:bg-slate-900">
+    <div className="fixed bottom-[5.25rem] left-4 right-4 xl:bottom-4 z-[60] mx-auto max-w-lg rounded-2xl border border-blue-200 bg-white p-4 shadow-xl dark:border-blue-900/40 dark:bg-slate-900">
       <div className="flex items-start gap-3">
         <BrandLogo size={40} />
         <div className="min-w-0 flex-1">

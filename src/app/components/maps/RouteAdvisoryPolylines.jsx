@@ -1,7 +1,8 @@
 "use client";
 
-import React, { useMemo } from "react";
+import React, { useEffect, useMemo } from "react";
 import dynamic from "next/dynamic";
+import { useMap } from "react-leaflet";
 import { parseRoutePath, getRoutePolylineStyle } from "@/lib/routeGeometryUtils";
 import { useResolvedRouteAdvisories } from "@/lib/useResolvedRouteAdvisories";
 
@@ -27,7 +28,28 @@ function createEndpointIcon(label, color) {
   });
 }
 
-export function RouteAdvisoryPolylines({ advisories = [], highlightId = null, showEndpoints = true }) {
+function FitRouteBounds({ positions }) {
+  const map = useMap();
+  const signature = positions.length
+    ? `${positions.length}:${positions[0]?.join(",")}:${positions[positions.length - 1]?.join(",")}`
+    : "";
+
+  useEffect(() => {
+    if (positions.length < 2) return;
+    map.fitBounds(positions, { padding: [24, 24], maxZoom: 15 });
+    // signature changes only when the road geometry changes
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [map, signature]);
+
+  return null;
+}
+
+export function RouteAdvisoryPolylines({
+  advisories = [],
+  highlightId = null,
+  showEndpoints = true,
+  fitBounds = false,
+}) {
   const resolvedAdvisories = useResolvedRouteAdvisories(advisories);
 
   const lines = useMemo(
@@ -52,9 +74,12 @@ export function RouteAdvisoryPolylines({ advisories = [], highlightId = null, sh
   return (
     <>
       {lines.map(({ advisory, positions, style, highlighted }) => (
-        <React.Fragment key={advisory.id}>
+        <React.Fragment key={`${advisory.id}-${positions.length}`}>
+          {fitBounds ? <FitRouteBounds positions={positions} /> : null}
           <Polyline
+            key={`${advisory.id}-${positions.length}`}
             positions={positions}
+            smoothFactor={0}
             pathOptions={{
               color: style.color,
               weight: highlighted ? style.weight + 2 : style.weight,

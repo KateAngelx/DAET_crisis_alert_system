@@ -28,11 +28,15 @@ import { useCrisisStore } from "@/app/store/crisisStore";
 import { useIncidentStore } from "@/app/store/incidentStore";
 import { useRouteAdvisoryStore } from "@/app/store/routeAdvisoryStore";
 import { useDangerousLocationStore } from "@/app/store/dangerousLocationStore";
-import { CrisisAlertListCard } from "@/app/components/crisis/CrisisAlertListCard";
-import { PublicCardListPreview } from "@/app/components/shell/PublicCardListPreview";
-import { AlertCardSkeletonList } from "@/app/components/ui/Skeletons";
-import { adminShell, iconSize, portalLayout, statGrid } from "@/lib/designSystem";
-import { StatCardSkeletonGrid } from "@/app/components/ui/Skeletons";
+import { CrisisHubMap } from "@/app/components/maps/CrisisHubMap";
+import { AlertDetailModal } from "@/app/components/crisis/AlertDetailModal";
+import { CategoryFilterSelect, StatusRecordList } from "@/app/components/shell/StatusRecordList";
+import {
+  DEFAULT_CRISIS_TYPE_OPTIONS,
+  DEFAULT_SEVERITY_ORDER,
+} from "@/app/components/shell/PublicCategorizedCardFilters";
+import { AlertCardSkeletonList, MapSkeleton, StatCardSkeletonGrid } from "@/app/components/ui/Skeletons";
+import { adminShell, getSeverityOutline, iconSize, portalLayout, statGrid } from "@/lib/designSystem";
 import {
   ARCHIVE_INCIDENT_STATUSES,
   incidentStatusBadgeClass,
@@ -45,6 +49,9 @@ export default function AdminArchivePage() {
   const { advisories, fetchAdvisories, loading: routesLoading } = useRouteAdvisoryStore();
   const { warnings, fetchWarnings, loading: hazardsLoading } = useDangerousLocationStore();
   const [mounted, setMounted] = useState(false);
+  const [categoryFilter, setCategoryFilter] = useState("All");
+  const [severityFilter, setSeverityFilter] = useState("All");
+  const [selectedAlert, setSelectedAlert] = useState(null);
 
   useEffect(() => {
     setMounted(true);
@@ -61,6 +68,25 @@ export default function AdminArchivePage() {
         .sort((a, b) => new Date(b.updated_at || b.created_at) - new Date(a.updated_at || a.created_at)),
     [alerts]
   );
+
+  const filteredAlerts = useMemo(() => {
+    return resolvedAlerts.filter((alert) => {
+      if (categoryFilter !== "All" && (alert.type || "General") !== categoryFilter) return false;
+      if (severityFilter !== "All" && alert.severity !== severityFilter) return false;
+      return true;
+    });
+  }, [resolvedAlerts, categoryFilter, severityFilter]);
+
+  const alertRows = filteredAlerts.map((alert) => ({
+    id: alert.id,
+    status: alert.severity || "Low",
+    statusClass: getSeverityOutline(alert.severity).badge,
+    place: alert.location || alert.title,
+    type: alert.type || "General",
+    when: new Date(alert.updated_at || alert.created_at).toLocaleString(),
+    onSelect: () => setSelectedAlert(alert),
+    ariaLabel: "View resolved alert",
+  }));
 
   const closedIncidents = useMemo(
     () =>
@@ -278,33 +304,55 @@ export default function AdminArchivePage() {
         </AdminPanel>
       </div>
 
-      <div className={portalLayout.archiveGrid}>
-        <AdminPanel
-          title="Resolved crisis alerts"
-          subtitle={`${resolvedAlerts.length} on record — admin view only`}
-          bodyClassName={portalLayout.panelBodyStack}
-        >
-          {loading ? (
-            <AlertCardSkeletonList count={3} />
-          ) : resolvedAlerts.length === 0 ? (
-            <p className="text-sm text-zinc-500 font-medium py-8 text-center">No resolved alerts yet.</p>
-          ) : (
-            <PublicCardListPreview
-              items={resolvedAlerts}
-              modalTitle="Resolved crisis alerts"
-              listClassName="space-y-3"
-              scrollPaneClassName={portalLayout.listScrollPane}
-              renderItem={(alert) => (
-                <CrisisAlertListCard
-                  alert={alert}
-                  resolved
-                  timeLabel={new Date(alert.updated_at || alert.created_at).toLocaleString()}
+      <AdminPanel
+        title="Resolved crisis alerts"
+        subtitle="Status, place, type, and when. Pins follow the filters."
+        bodyClassName={portalLayout.panelBodyStack}
+      >
+        {loading ? (
+          <AlertCardSkeletonList count={3} />
+        ) : resolvedAlerts.length === 0 ? (
+          <p className="text-sm text-zinc-500 font-medium py-8 text-center">No resolved alerts yet.</p>
+        ) : (
+          <div className={portalLayout.splitGridPublic}>
+            <div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-3">
+                <CategoryFilterSelect
+                  label="Crisis type"
+                  value={categoryFilter}
+                  onChange={setCategoryFilter}
+                  options={DEFAULT_CRISIS_TYPE_OPTIONS}
+                  allValue="All"
                 />
+                <CategoryFilterSelect
+                  label="Severity"
+                  value={severityFilter}
+                  onChange={setSeverityFilter}
+                  options={DEFAULT_SEVERITY_ORDER}
+                  allValue="All"
+                />
+              </div>
+              <StatusRecordList rows={alertRows} emptyMessage="No resolved alerts match this filter." />
+            </div>
+            <div className={selectedAlert ? "pointer-events-none opacity-40" : ""}>
+              {mounted ? (
+                <CrisisHubMap
+                  alerts={filteredAlerts}
+                  warnings={[]}
+                  showWarnings={false}
+                  showTouristSpots={false}
+                  fitToAlerts
+                  heightClass="h-[min(420px,60vh)]"
+                />
+              ) : (
+                <MapSkeleton height="h-[min(420px,60vh)]" />
               )}
-            />
-          )}
-        </AdminPanel>
+            </div>
+          </div>
+        )}
+      </AdminPanel>
 
+      <div className={portalLayout.archiveGrid}>
         <AdminPanel title="Incident outcomes" subtitle="Counts from closed reports">
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
             <div className="rounded-xl border border-green-200 bg-green-50/60 p-4">
@@ -343,6 +391,8 @@ export default function AdminArchivePage() {
       <div className="flex items-center gap-2 text-zinc-400 text-[10px] font-bold uppercase tracking-widest px-1">
         <Archive size={iconSize.inline} /> Admin portal only — records refresh when stores reload.
       </div>
+
+      <AlertDetailModal alert={selectedAlert} onClose={() => setSelectedAlert(null)} />
     </>
   );
 }

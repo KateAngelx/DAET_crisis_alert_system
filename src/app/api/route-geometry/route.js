@@ -1,6 +1,5 @@
 import { NextResponse } from "next/server";
-import { requireAuthenticatedRequest } from "@/lib/apiAuth";
-import { API_RATE_LIMITS, enforceRateLimit } from "@/lib/apiRateLimit";
+import { enforceRateLimit } from "@/lib/apiRateLimit";
 
 const MAX_WAYPOINTS = 25;
 
@@ -56,9 +55,6 @@ export async function GET(request) {
   const limited = enforceRateLimit(request, { name: "route-geometry", limit: 30, windowMs: 60_000 });
   if (limited) return limited;
 
-  const auth = await requireAuthenticatedRequest(request);
-  if (!auth.ok) return auth.response;
-
   let waypoints = parseWaypointsParam(request.nextUrl.searchParams.get("points"));
   waypoints = waypoints.slice(0, MAX_WAYPOINTS);
 
@@ -76,12 +72,8 @@ export async function GET(request) {
     });
   } catch (error) {
     return NextResponse.json(
-      {
-        error: error.message || "Road routing failed",
-        path: waypoints,
-        source: "fallback",
-      },
-      { status: 200 }
+      { error: error.message || "Road routing failed", source: "fallback" },
+      { status: 502 }
     );
   }
 }
@@ -89,9 +81,6 @@ export async function GET(request) {
 export async function POST(request) {
   const limited = enforceRateLimit(request, { name: "route-geometry-post", limit: 30, windowMs: 60_000 });
   if (limited) return limited;
-
-  const auth = await requireAuthenticatedRequest(request);
-  if (!auth.ok) return auth.response;
 
   try {
     const body = await request.json().catch(() => ({}));

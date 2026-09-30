@@ -143,6 +143,8 @@ export function RouteDetailContent({ route, catalog, onSelectRoute }) {
             highlightRouteId={resolvedAdvisory.id}
             center={pathCenter || undefined}
             zoom={pathPoints.length >= 2 ? 12 : 13}
+            mapKey={`route-detail-${resolvedAdvisory.id}-${pathPoints.length}`}
+            fitToRoutes
             heightClass="h-[220px] sm:h-[240px]"
             showTouristSpots={false}
             showWarnings={false}

@@ -17,6 +17,21 @@ export const ROUTE_LINE_LEGEND = [
   { id: "route_end", label: "Route End (E)", color: "#16a34a", kind: "pin" },
 ];
 
+export const ALERT_STATUS_LEGEND = [
+  { id: "Critical", label: "Critical", color: "#dc2626", kind: "pin" },
+  { id: "High", label: "High", color: "#f97316", kind: "pin" },
+  { id: "Medium", label: "Medium", color: "#eab308", kind: "pin" },
+  { id: "Low", label: "Low", color: "#2563eb", kind: "pin" },
+];
+
+export function crisisAlertLegendItems({ showTouristSpots = false, showWarnings = false } = {}) {
+  const extraIds = [];
+  if (showWarnings) extraIds.push("danger");
+  if (showTouristSpots) extraIds.push("tourist");
+  const extras = MAP_PIN_LEGEND.filter((item) => extraIds.includes(item.id));
+  return [...ALERT_STATUS_LEGEND, ...extras];
+}
+
 export const ROUTES_MAP_LEGEND = [
   ...MAP_PIN_LEGEND.filter((item) =>
     ["caution", "danger", "route_safe"].includes(item.id)
@@ -32,13 +47,8 @@ export const TOURIST_LANDMARKS = [
 ];
 
 export function getAlertPinCategory(alert) {
-  const type = (alert?.type || "").toLowerCase();
   const severity = alert?.severity || "Low";
-
-  if (type === "weather") return "weather";
-  if (severity === "Critical" || severity === "High") return "crisis";
-  if (severity === "Medium") return "caution";
-  return "crisis";
+  return ALERT_STATUS_LEGEND.some((item) => item.id === severity) ? severity : "Low";
 }
 
 export function getDangerPinCategory(warning) {
@@ -47,7 +57,11 @@ export function getDangerPinCategory(warning) {
 }
 
 export function getLegendItem(categoryId) {
-  return MAP_PIN_LEGEND.find((item) => item.id === categoryId) || MAP_PIN_LEGEND[1];
+  return (
+    ALERT_STATUS_LEGEND.find((item) => item.id === categoryId) ||
+    MAP_PIN_LEGEND.find((item) => item.id === categoryId) ||
+    MAP_PIN_LEGEND[1]
+  );
 }
 
 export function getPinColor(categoryId) {

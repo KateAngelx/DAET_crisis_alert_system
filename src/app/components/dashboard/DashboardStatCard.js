@@ -54,7 +54,7 @@ export function DashboardStatCard({
         </div>
       )}
       <p className={`${statCard.label} ${styles.label} mb-0.5 sm:mb-1`}>{label}</p>
-      <p className={`${typography.statValue} ${styles.value} break-words tabular-nums font-bold`}>{value}</p>
+      <p className={`${compact ? "text-lg sm:text-2xl lg:text-[28px] font-bold leading-none" : typography.statValue} ${styles.value} break-words tabular-nums`}>{value}</p>
       {subtext ? (
         <p className="text-[9px] sm:text-[10px] text-zinc-400 mt-1 font-medium leading-tight line-clamp-2">
           {subtext}

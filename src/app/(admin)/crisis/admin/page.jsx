@@ -36,7 +36,8 @@ import { CrisisHubMap } from "@/app/components/maps/CrisisHubMap";
 import { CharCounterTextarea } from "@/app/components/ui/CharCounterTextarea";
 import { formatCrisisAlertSms } from "@/lib/smsMessageFormat";
 import { OutlinedCard } from "@/app/components/ui/OutlinedCard";
-import { PublicCategorizedCardList } from "@/app/components/shell/PublicCategorizedCardList";
+import { CategoryFilterSelect, StatusRecordList } from "@/app/components/shell/StatusRecordList";
+import { DEFAULT_CRISIS_TYPE_OPTIONS } from "@/app/components/shell/PublicCategorizedCardFilters";
 import { ConfirmDialog } from "@/app/components/ui/ConfirmDialog";
 import { useConfirm } from "@/app/components/ui/ConfirmDialogProvider";
 import dynamic from 'next/dynamic';
@@ -79,6 +80,7 @@ export default function CrisisAdminPage() {
 
   const [searchTerm, setSearchTerm] = useState("");
   const [filterSeverity, setFilterSeverity] = useState("All");
+  const [filterType, setFilterType] = useState("All");
 
   const auditLogPreviewCount = 5;
   const [auditLogExpanded, setAuditLogExpanded] = useState(false);
@@ -316,9 +318,10 @@ export default function CrisisAdminPage() {
       if (alert.status !== "Active") return false; // Hides the alert once resolved
       const matchesSearch = alert.title?.toLowerCase().includes(searchTerm.toLowerCase()) || alert.location?.toLowerCase().includes(searchTerm.toLowerCase());
       const matchesSeverity = filterSeverity === "All" || alert.severity === filterSeverity;
-      return matchesSearch && matchesSeverity;
+      const matchesType = filterType === "All" || (alert.type || "General") === filterType;
+      return matchesSearch && matchesSeverity && matchesType;
     });
-  }, [alerts, searchTerm, filterSeverity]);
+  }, [alerts, searchTerm, filterSeverity, filterType]);
 
   const logFilteredAlerts = useMemo(() => {
     return alerts.filter(a => a.id.toLowerCase().includes(logSearchTerm.toLowerCase()) || a.title?.toLowerCase().includes(logSearchTerm.toLowerCase()));
@@ -579,17 +582,6 @@ export default function CrisisAdminPage() {
               searchValue={searchTerm}
               onSearchChange={(e) => setSearchTerm(e.target.value)}
             >
-              <select
-                className={`${adminShell.select} !py-2 !text-xs min-w-[7.5rem]`}
-                value={filterSeverity}
-                onChange={(e) => setFilterSeverity(e.target.value)}
-              >
-                <option value="All">All Severity</option>
-                <option>Critical</option>
-                <option>High</option>
-                <option>Medium</option>
-                <option>Low</option>
-              </select>
             </AdminFilterBar>
 
             <div className={portalLayout.splitGrid}>
@@ -603,47 +595,46 @@ export default function CrisisAdminPage() {
                   <div className={portalLayout.listScrollPaneCompact}>
                     <AlertCardSkeletonList count={3} />
                   </div>
-                ) : filteredAlerts.length > 0 ? (
-                  <PublicCategorizedCardList
-                    items={filteredAlerts}
-                    getCategory={(alert) => alert.type}
-                    getSeverity={(alert) => alert.severity}
-                    categoryLabel="Crisis type"
-                    modalTitle="Active incidents"
-                    modalSubtitle={`${filteredAlerts.length} matching filters`}
-                    listClassName="space-y-2"
-                    filtersClassName="!gap-2 [&_p]:!mb-1"
-                    listPaneClassName={portalLayout.listScrollPaneCompact}
-                    renderItem={(alert) => (
-                      <OutlinedCard
-                        variant="severity"
-                        severity={alert.severity}
-                        padding={outlinedCard.statPaddingCompact}
-                        className="bg-background"
-                      >
-                        <div className="flex justify-between items-start gap-2">
-                          <div className="flex items-center gap-2 min-w-0">
-                            <div className="p-2 bg-zinc-100 dark:bg-zinc-800 rounded-lg text-zinc-600 dark:text-zinc-400 leading-none shrink-0">{getAlertIcon(alert.type)}</div>
-                            <div className="min-w-0">
-                              <span className="text-[8px] font-black uppercase tracking-widest px-1.5 py-0.5 rounded-full bg-zinc-100 dark:bg-zinc-800 leading-none">{alert.severity} • {alert.type}</span>
-                              <h3 className="text-sm font-black mt-0.5 leading-tight uppercase truncate">{alert.title}</h3>
-                            </div>
-                          </div>
-                          <span className="text-[9px] font-bold opacity-60 bg-zinc-100 dark:bg-zinc-800 px-1.5 py-0.5 rounded-md leading-none font-sans shrink-0">{new Date(alert.created_at).toLocaleTimeString()}</span>
-                        </div>
-                        <p className="mt-2 text-zinc-700 dark:text-zinc-300 text-xs font-medium leading-snug line-clamp-2 italic">&ldquo;{alert.message}&rdquo;</p>
-                        <div className="mt-2 pt-2 border-t border-gray-200 dark:border-white/10 flex justify-between items-center gap-2 leading-none">
-                          <div className="flex items-center gap-1 text-[10px] font-bold text-zinc-500 uppercase min-w-0 truncate"><MapPin size={12} className="text-blue-500 shrink-0" /> {alert.location}</div>
-                          <button type="button" onClick={() => handleResolveClick(alert)} className={`${adminShell.btnCardAction} !py-1.5 !px-3 !text-[9px]`}>Resolve</button>
-                        </div>
-                      </OutlinedCard>
-                    )}
-                  />
                 ) : (
+                  <>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-3">
+                      <CategoryFilterSelect
+                        label="Crisis type"
+                        value={filterType}
+                        onChange={setFilterType}
+                        options={DEFAULT_CRISIS_TYPE_OPTIONS}
+                        allValue="All"
+                      />
+                      <CategoryFilterSelect
+                        label="Severity"
+                        value={filterSeverity}
+                        onChange={setFilterSeverity}
+                        options={["Critical", "High", "Medium", "Low"]}
+                        allValue="All"
+                      />
+                    </div>
+                    {filteredAlerts.length > 0 ? (
+                      <StatusRecordList
+                        rows={filteredAlerts.map((alert) => ({
+                          id: alert.id,
+                          status: alert.severity || "Low",
+                          statusClass: getSeverityOutline(alert.severity).badge,
+                          place: alert.location || alert.title,
+                          type: alert.type || "General",
+                          when: alert.created_at ? new Date(alert.created_at).toLocaleString() : "",
+                          actions: [
+                            { label: "View", onClick: () => handleViewClick(alert) },
+                            { label: "Resolve", onClick: () => handleResolveClick(alert) },
+                          ],
+                        }))}
+                      />
+                    ) : (
                   <div className="py-12 text-center border-2 border-dashed border-zinc-200 rounded-2xl">
                     <Shield size={36} className="mx-auto text-zinc-200 mb-2" />
                     <p className="text-zinc-400 font-black uppercase tracking-widest text-[10px]">No Active Alerts</p>
                   </div>
+                    )}
+                  </>
                 )}
               </AdminPanel>
 
@@ -657,8 +648,11 @@ export default function CrisisAdminPage() {
                     <MapSkeleton height={portalLayout.mapColumnFill} />
                   ) : mounted && !mapBlocked ? (
                     <CrisisHubMap
-                      alerts={activeAlerts}
+                      alerts={filteredAlerts}
                       warnings={[]}
+                      showWarnings={false}
+                      showTouristSpots={false}
+                      fitToAlerts
                       heightClass={portalLayout.mapColumnFill}
                     />
                   ) : (

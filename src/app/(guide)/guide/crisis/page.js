@@ -3,31 +3,32 @@
 import React, { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import {
-  AlertTriangle, Bell, MapPin, Clock, ShieldCheck, Users, Compass, ArrowRight, Navigation, Route,
+  AlertTriangle, Bell, ShieldCheck, Users, Compass, ArrowRight, Navigation, Route,
 } from "lucide-react";
-import { OutlinedCard } from "@/app/components/ui/OutlinedCard";
 import { Card } from "@/app/components/ui/Card";
-import { outlinedCard } from "@/lib/designSystem";
 import { GuidePageHeader } from "@/app/components/guide/GuidePageHeader";
 import { DashboardStatCard } from "@/app/components/dashboard/DashboardStatCard";
-import { StatCardSkeletonGrid } from "@/app/components/ui/Skeletons";
+import { MapSkeleton, StatCardSkeletonGrid } from "@/app/components/ui/Skeletons";
 import { AsyncState, EmptyState } from "@/app/components/ui/AsyncState";
 import { useAuthStore, useCrisisStore } from "@/app/store/crisisStore";
 import { useGuideStore } from "@/app/store/guideStore";
 import { useRouteAdvisoryStore } from "@/app/store/routeAdvisoryStore";
-import { RouteListCard } from "@/app/components/routes/RouteListCard";
 import { RouteDetailModal } from "@/app/components/routes/RouteDetailModal";
-import { buildRouteCatalog } from "@/lib/routesUtils";
+import { CrisisHubMap } from "@/app/components/maps/CrisisHubMap";
+import { AlertDetailModal } from "@/app/components/crisis/AlertDetailModal";
+import { CategoryFilterSelect, StatusRecordList } from "@/app/components/shell/StatusRecordList";
+import {
+  DEFAULT_CRISIS_TYPE_OPTIONS,
+  DEFAULT_SEVERITY_ORDER,
+} from "@/app/components/shell/PublicCategorizedCardFilters";
+import { buildRouteCatalog, getRouteStatusStyles } from "@/lib/routesUtils";
 import { formatTourRoute, getRelevantRouteAdvisoriesForGroup } from "@/lib/tourGroupRoute";
-import { iconSize, statGrid, typography, getSeverityOutline, portalLayout } from "@/lib/designSystem";
+import { iconSize, statGrid, getSeverityOutline, portalLayout } from "@/lib/designSystem";
 import { GuidePanel } from "@/app/components/guide/GuidePanel";
-import { CardIconBox } from "@/app/components/ui/CardIconBox";
-import { AlertSeverityIcon } from "@/app/components/ui/cardTypeIcons";
 import { ROLE_INTERFACE } from "@/lib/roleInterfaceCopy";
 import { RoleContextBanner } from "@/app/components/dashboard/RoleContextBanner";
 import { GuideDashboardQuickActions } from "@/app/components/guide/GuideDashboardQuickActions";
 import { PublicCategorizedCardList } from "@/app/components/shell/PublicCategorizedCardList";
-import { PublicCardListPreview } from "@/app/components/shell/PublicCardListPreview";
 import { INCIDENT_SEVERITIES } from "@/lib/constants";
 
 export default function GuideCrisisHubPage() {
@@ -43,6 +44,9 @@ export default function GuideCrisisHubPage() {
   } = useGuideStore();
   const { advisories, fetchAdvisories } = useRouteAdvisoryStore();
   const [selectedRoute, setSelectedRoute] = useState(null);
+  const [selectedAlert, setSelectedAlert] = useState(null);
+  const [categoryFilter, setCategoryFilter] = useState("all");
+  const [severityFilter, setSeverityFilter] = useState("all");
 
   useEffect(() => {
     if (!user?.id) return;
@@ -74,6 +78,26 @@ export default function GuideCrisisHubPage() {
     });
   }, [activeAlerts, guideDestinations]);
 
+  const filteredAlerts = useMemo(() => {
+    return relevantAlerts.filter((alert) => {
+      const type = alert.type || alert.alert_type || "General";
+      if (categoryFilter !== "all" && type !== categoryFilter) return false;
+      if (severityFilter !== "all" && alert.severity !== severityFilter) return false;
+      return true;
+    });
+  }, [relevantAlerts, categoryFilter, severityFilter]);
+
+  const alertRows = filteredAlerts.map((alert) => ({
+    id: alert.id,
+    status: alert.severity || "Low",
+    statusClass: getSeverityOutline(alert.severity).badge,
+    place: alert.location || alert.affected_area || alert.title,
+    type: alert.type || alert.alert_type || "General",
+    when: alert.created_at ? new Date(alert.created_at).toLocaleString() : "—",
+    onSelect: () => setSelectedAlert(alert),
+    ariaLabel: "View alert details",
+  }));
+
   const catalog = useMemo(() => buildRouteCatalog(advisories), [advisories]);
 
   const relevantRouteAdvisories = useMemo(() => {
@@ -83,6 +107,17 @@ export default function GuideCrisisHubPage() {
     });
     return [...catalog.active, ...catalog.affected, ...catalog.alternative].filter((r) => ids.has(r.advisoryId));
   }, [activeGroups, catalog.published, catalog.active, catalog.affected, catalog.alternative]);
+
+  const routeRows = relevantRouteAdvisories.map((route) => ({
+    id: route.id,
+    status: route.statusLabel || getRouteStatusStyles(route.status).label,
+    statusClass: getRouteStatusStyles(route.status).badge,
+    place: [route.from, route.to].filter(Boolean).join(" → "),
+    type: route.subtitle,
+    when: route.timeRange || "—",
+    onSelect: () => setSelectedRoute(route),
+    ariaLabel: "View route details",
+  }));
 
   const statsLoading = alertsLoading || guideLoading;
 
@@ -144,11 +179,9 @@ export default function GuideCrisisHubPage() {
               View all routes
             </Link>
           </div>
-          <PublicCardListPreview
-            items={relevantRouteAdvisories}
-            modalTitle="Route advisories for your groups"
-            scrollPaneClassName={portalLayout.listScrollPane}
-            renderItem={(route) => <RouteListCard route={route} onSelect={setSelectedRoute} />}
+          <StatusRecordList
+            rows={routeRows}
+            emptyMessage="No route advisories match your active tour groups."
           />
         </Card>
       )}
@@ -156,13 +189,9 @@ export default function GuideCrisisHubPage() {
       <div className={portalLayout.splitGrid}>
         <GuidePanel
           title="Alerts affecting your destinations"
+          subtitle="Status, place, type, and when. View opens the full details."
           className={portalLayout.panelFill}
           bodyClassName={portalLayout.panelBodyStack}
-          action={
-            <Link href="/guide/crisis" className="text-[10px] font-black uppercase text-blue-600 hover:underline">
-              View all
-            </Link>
-          }
         >
           <AsyncState
             loading={alertsLoading}
@@ -177,58 +206,59 @@ export default function GuideCrisisHubPage() {
               />
             }
           >
-            <PublicCategorizedCardList
-              items={relevantAlerts}
-              getCategory={(alert) => alert.type || alert.alert_type}
-              getSeverity={(alert) => alert.severity}
-              listPaneClassName={portalLayout.listScrollPane}
-              modalTitle="Alerts affecting your destinations"
-              modalSubtitle={`${relevantAlerts.length} relevant`}
-              renderItem={(alert) => {
-                const alertStyles = getSeverityOutline(alert.severity);
-                return (
-                  <OutlinedCard variant="severity" severity={alert.severity} padding={outlinedCard.statPadding}>
-                    <div className="flex items-start gap-3">
-                      <CardIconBox boxClass={alertStyles.icon}>
-                        <AlertSeverityIcon severity={alert.severity} size={iconSize.stat} />
-                      </CardIconBox>
-                      <div className="min-w-0 flex-1">
-                        <p className="text-[10px] font-black uppercase tracking-widest text-zinc-400 mb-1">
-                          {alert.severity} · {alert.alert_type || alert.type}
-                        </p>
-                        <h3 className={`${typography.cardTitleBase} ${alertStyles.titleStatic}`}>{alert.title}</h3>
-                        <p className="text-sm text-zinc-600 mt-2 line-clamp-2">{alert.description || alert.message}</p>
-                        <div className="flex flex-wrap gap-3 mt-3 text-xs text-zinc-500">
-                          {(alert.location || alert.affected_area) && (
-                            <span className="flex items-center gap-1">
-                              <MapPin size={12} /> {alert.location || alert.affected_area}
-                            </span>
-                          )}
-                          {alert.created_at && (
-                            <span className="flex items-center gap-1">
-                              <Clock size={12} /> {new Date(alert.created_at).toLocaleString()}
-                            </span>
-                          )}
-                        </div>
-                      </div>
-                    </div>
-                  </OutlinedCard>
-                );
-              }}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-3">
+              <CategoryFilterSelect
+                label="Crisis type"
+                value={categoryFilter}
+                onChange={setCategoryFilter}
+                options={DEFAULT_CRISIS_TYPE_OPTIONS}
+              />
+              <CategoryFilterSelect
+                label="Severity"
+                value={severityFilter}
+                onChange={setSeverityFilter}
+                options={DEFAULT_SEVERITY_ORDER}
+              />
+            </div>
+            <StatusRecordList
+              rows={alertRows}
+              emptyMessage="No alerts match this filter."
             />
           </AsyncState>
         </GuidePanel>
 
         <GuidePanel
-          title="Your active tour groups"
-          className={portalLayout.panelFill}
-          bodyClassName={portalLayout.panelBodyStack}
-          action={
-            <Link href="/guide/groups" className="text-[10px] font-black uppercase text-blue-600 hover:underline">
-              Manage
-            </Link>
-          }
+          title="Affected areas map"
+          subtitle="Pins follow the filters above"
+          className={`${portalLayout.panelFill} ${selectedAlert ? "pointer-events-none opacity-40" : ""}`}
+          noPadding
+          bodyClassName={portalLayout.mapColumnBody}
         >
+          {alertsLoading ? (
+            <MapSkeleton height={portalLayout.mapColumnFill} />
+          ) : (
+            <CrisisHubMap
+              alerts={filteredAlerts}
+              warnings={[]}
+              showWarnings={false}
+              showTouristSpots={false}
+              fitToAlerts
+              heightClass={portalLayout.mapColumnFill}
+            />
+          )}
+        </GuidePanel>
+      </div>
+
+      <GuidePanel
+        title="Your active tour groups"
+        className={portalLayout.panelFill}
+        bodyClassName={portalLayout.panelBodyStack}
+        action={
+          <Link href="/guide/groups" className="text-[10px] font-black uppercase text-blue-600 hover:underline">
+            Manage
+          </Link>
+        }
+      >
           {activeGroups.length === 0 ? (
             <Card className="p-8 text-center border-zinc-100">
               <Compass size={32} className="mx-auto text-zinc-200 mb-2" />
@@ -284,7 +314,6 @@ export default function GuideCrisisHubPage() {
             </div>
           )}
         </GuidePanel>
-      </div>
 
       <GuideDashboardQuickActions />
 
@@ -295,6 +324,8 @@ export default function GuideCrisisHubPage() {
         onClose={() => setSelectedRoute(null)}
         onSelectRoute={setSelectedRoute}
       />
+
+      <AlertDetailModal alert={selectedAlert} onClose={() => setSelectedAlert(null)} />
     </>
   );
 }

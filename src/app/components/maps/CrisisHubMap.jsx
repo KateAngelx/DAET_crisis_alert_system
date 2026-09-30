@@ -10,7 +10,7 @@ import { MapLegend } from "@/app/components/maps/MapLegend";
 
 import { useLeafletReady } from "@/lib/useLeafletReady";
 
-import { ROUTES_MAP_LEGEND } from "@/lib/mapPinUtils";
+import { ROUTES_MAP_LEGEND, crisisAlertLegendItems } from "@/lib/mapPinUtils";
 
 
 
@@ -94,12 +94,23 @@ export function CrisisHubMap({
 
   mapKey,
 
+  fitToRoutes = false,
+
+  fitToAlerts = false,
+
 }) {
 
   const leafletReady = useLeafletReady();
 
+  const alertStatusLegend =
+    !legendItems && !(showRoutePaths && routeAdvisories.length > 0) && alerts.length > 0;
   const resolvedLegendItems =
-    legendItems || (showRoutePaths && routeAdvisories.length > 0 ? ROUTES_MAP_LEGEND : null);
+    legendItems ||
+    (showRoutePaths && routeAdvisories.length > 0
+      ? ROUTES_MAP_LEGEND
+      : alertStatusLegend
+        ? crisisAlertLegendItems({ showTouristSpots, showWarnings })
+        : null);
 
 
 
@@ -147,10 +158,14 @@ export function CrisisHubMap({
 
           {showTouristSpots && <TouristLandmarkMarkers />}
 
-          <CrisisAlertMapMarkers alerts={alerts} />
+          <CrisisAlertMapMarkers alerts={alerts} fitToAlerts={fitToAlerts} />
 
           {showRoutePaths && routeAdvisories.length > 0 && (
-            <RouteAdvisoryPolylines advisories={routeAdvisories} highlightId={highlightRouteId} />
+            <RouteAdvisoryPolylines
+              advisories={routeAdvisories}
+              highlightId={highlightRouteId}
+              fitBounds={fitToRoutes}
+            />
           )}
 
           {showWarnings && (
@@ -167,7 +182,11 @@ export function CrisisHubMap({
 
         <div className="absolute bottom-3 left-3 z-[3] max-w-[200px]">
 
-          <MapLegend compact items={resolvedLegendItems || undefined} />
+          <MapLegend
+            compact
+            title={alertStatusLegend ? "Status" : "Map Legend"}
+            items={resolvedLegendItems || undefined}
+          />
 
         </div>
 

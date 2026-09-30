@@ -1,30 +1,29 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import { Bell, CheckCircle, Info } from "lucide-react";
+import { Bell, Info } from "lucide-react";
 import { useCrisisStore } from "@/app/store/crisisStore";
 import {
   InfoPageHero,
   PublicPageShell,
   PublicPageContent,
-  publicLayout,
   PublicInfoCallout,
   PublicPanel,
 } from "@/app/components/InfoPageHero";
 import { AsyncState, ErrorState } from "@/app/components/ui/AsyncState";
-import { AlertCardSkeletonList, PublicStatCardSkeleton } from "@/app/components/ui/Skeletons";
+import { AlertCardSkeletonList, MapSkeleton, PublicStatCardSkeleton } from "@/app/components/ui/Skeletons";
 import { PublicStatCard } from "@/app/components/dashboard/PublicStatCard";
-import { iconSize, statGrid, portalLayout } from "@/lib/designSystem";
+import { getSeverityOutline, iconSize, statGrid, portalLayout } from "@/lib/designSystem";
 import {
-  PublicCategorizedCardFilters,
   DEFAULT_SEVERITY_ORDER,
   DEFAULT_CRISIS_TYPE_OPTIONS,
 } from "@/app/components/shell/PublicCategorizedCardFilters";
-import { CrisisAlertListCard } from "@/app/components/crisis/CrisisAlertListCard";
 import { ROLE_INTERFACE } from "@/lib/roleInterfaceCopy";
 import { RoleContextBanner } from "@/app/components/dashboard/RoleContextBanner";
-import { PublicCategorizedCardList } from "@/app/components/shell/PublicCategorizedCardList";
+import { CategoryFilterSelect, StatusRecordList } from "@/app/components/shell/StatusRecordList";
+import { AlertDetailModal } from "@/app/components/crisis/AlertDetailModal";
+import { CrisisHubMap } from "@/app/components/maps/CrisisHubMap";
 
 function formatResolvedAt(alert) {
   const date = alert.updated_at || alert.created_at;
@@ -36,6 +35,7 @@ export default function ResolvedAlertsPage() {
   const [mounted, setMounted] = useState(false);
   const [categoryFilter, setCategoryFilter] = useState("all");
   const [severityFilter, setSeverityFilter] = useState("all");
+  const [selectedAlert, setSelectedAlert] = useState(null);
   useEffect(() => {
     setMounted(true);
     const init = async () => {
@@ -50,19 +50,6 @@ export default function ResolvedAlertsPage() {
       });
     };
   }, [fetchAlerts]);
-
-  useEffect(() => {
-    if (!mounted || typeof window === "undefined") return;
-    const resolved = alerts.filter((a) => a.status === "Resolved" && a.is_public);
-    const weekCount = resolved.filter((a) => {
-      const t = new Date(a.updated_at || a.created_at).getTime();
-      return Date.now() - t < 7 * 24 * 60 * 60 * 1000;
-    }).length;
-    const monthCount = resolved.filter((a) => {
-      const t = new Date(a.updated_at || a.created_at).getTime();
-      return Date.now() - t < 30 * 24 * 60 * 60 * 1000;
-    }).length;
-  }, [mounted, alerts]);
 
   const resolvedAlerts = alerts
     .filter((a) => a.status === "Resolved" && a.is_public)
@@ -82,6 +69,25 @@ export default function ResolvedAlertsPage() {
     return Date.now() - t < 30 * 24 * 60 * 60 * 1000;
   }).length;
 
+  const filteredAlerts = useMemo(() => {
+    return resolvedAlerts.filter((alert) => {
+      if (categoryFilter !== "all" && (alert.type || "General") !== categoryFilter) return false;
+      if (severityFilter !== "all" && alert.severity !== severityFilter) return false;
+      return true;
+    });
+  }, [resolvedAlerts, categoryFilter, severityFilter]);
+
+  const rows = filteredAlerts.map((alert) => ({
+    id: alert.id,
+    status: alert.severity || "Low",
+    statusClass: getSeverityOutline(alert.severity).badge,
+    place: alert.location || alert.title,
+    type: alert.type || "General",
+    when: formatResolvedAt(alert),
+    onSelect: () => setSelectedAlert(alert),
+    ariaLabel: "View resolved alert",
+  }));
+
   return (
     <PublicPageShell>
       <InfoPageHero
@@ -92,72 +98,82 @@ export default function ResolvedAlertsPage() {
       <PublicPageContent>
           <RoleContextBanner helper={ROLE_INTERFACE.public.resolvedAlerts.helper} tone="info" />
 
-          <PublicPanel title="Overview & filters" subtitle="Counts and category filters">
+          <PublicPanel title="Overview" subtitle="Resolved counts">
             {loading ? (
-              <PublicStatCardSkeleton count={3} className={`${statGrid.crisisHub} mb-4`} compact />
+              <PublicStatCardSkeleton count={3} className={statGrid.crisisHub} compact />
             ) : (
-              <div className={`${statGrid.crisisHub} mb-4`}>
+              <div className={statGrid.crisisHub}>
                 <PublicStatCard compact value={resolvedAlerts.length} label="Overall Solved" accent="orange" />
                 <PublicStatCard compact value={recentCount} label="Resolved This Week" accent="blue" />
                 <PublicStatCard compact value={monthCount} label="Resolved This Month" accent="green" />
               </div>
             )}
-            <PublicCategorizedCardFilters
-              items={resolvedAlerts}
-              getCategory={(alert) => alert.type}
-              getSeverity={(alert) => alert.severity}
-              categoryLabel="Crisis type"
-              severityLabel="Severity"
-              categoryOptions={DEFAULT_CRISIS_TYPE_OPTIONS}
-              severityOptions={DEFAULT_SEVERITY_ORDER}
-              categoryFilter={categoryFilter}
-              severityFilter={severityFilter}
-              onCategoryFilterChange={setCategoryFilter}
-              onSeverityFilterChange={setSeverityFilter}
-            />
           </PublicPanel>
 
-          <PublicPanel title="Resolved incidents & alerts" bodyClassName={portalLayout.panelBodyStack}>
-            <AsyncState
-              loading={loading}
-              error={error}
-              isEmpty={!loading && !error && resolvedAlerts.length === 0}
-              onRetry={fetchAlerts}
-              loadingFallback={<AlertCardSkeletonList count={3} />}
-              errorFallback={
-                <ErrorState message={error} onRetry={fetchAlerts} title="Could not load resolved alerts" />
-              }
-              emptyFallback={
-                <div className="text-center py-8 bg-zinc-50 rounded-2xl border-2 border-dashed border-zinc-200">
-                  <Info size={iconSize.emptyLg} className="mx-auto text-zinc-300 mb-4" />
-                  <p className="font-bold text-zinc-400 uppercase tracking-widest text-xs">No Resolved Alerts Yet</p>
-                  <p className="text-zinc-400 text-sm mt-2 font-medium max-w-md mx-auto">
-                    When the Daet Municipal Tourism Office marks an emergency alert as resolved, it will appear here for reference. Use Crisis Hub in the menu for active alerts.
-                  </p>
-                </div>
-              }
+          <div className={portalLayout.splitGridPublic}>
+            <PublicPanel
+              title="Resolved incidents"
+              subtitle="Status, place, type, and when. View opens the full details."
+              className="order-2 lg:order-1"
             >
-              <PublicCategorizedCardList
-                items={resolvedAlerts}
-                getCategory={(alert) => alert.type}
-                getSeverity={(alert) => alert.severity}
-                hideFilters
-                categoryFilter={categoryFilter}
-                severityFilter={severityFilter}
-                listPaneClassName={portalLayout.listScrollPane}
-                modalTitle="Resolved incidents & alerts"
-                modalSubtitle={`${resolvedAlerts.length} resolved`}
-                renderItem={(alert) => (
-                  <CrisisAlertListCard
-                    alert={alert}
-                    resolved
-                    timeLabel={`Resolved ${formatResolvedAt(alert)}`}
-                    className="opacity-95"
+              <AsyncState
+                loading={loading}
+                error={error}
+                isEmpty={!loading && !error && resolvedAlerts.length === 0}
+                onRetry={fetchAlerts}
+                loadingFallback={<AlertCardSkeletonList count={3} />}
+                errorFallback={
+                  <ErrorState message={error} onRetry={fetchAlerts} title="Could not load resolved alerts" />
+                }
+                emptyFallback={
+                  <div className="text-center py-8 bg-zinc-50 rounded-2xl border-2 border-dashed border-zinc-200">
+                    <Info size={iconSize.emptyLg} className="mx-auto text-zinc-300 mb-4" />
+                    <p className="font-bold text-zinc-400 uppercase tracking-widest text-xs">No Resolved Alerts Yet</p>
+                    <p className="text-zinc-400 text-sm mt-2 font-medium max-w-md mx-auto">
+                      When the Daet Municipal Tourism Office marks an emergency alert as resolved, it will appear here for reference. Use Crisis Hub in the menu for active alerts.
+                    </p>
+                  </div>
+                }
+              >
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-3">
+                  <CategoryFilterSelect
+                    label="Crisis type"
+                    value={categoryFilter}
+                    onChange={setCategoryFilter}
+                    options={DEFAULT_CRISIS_TYPE_OPTIONS}
                   />
-                )}
-              />
-            </AsyncState>
-          </PublicPanel>
+                  <CategoryFilterSelect
+                    label="Severity"
+                    value={severityFilter}
+                    onChange={setSeverityFilter}
+                    options={DEFAULT_SEVERITY_ORDER}
+                  />
+                </div>
+                <StatusRecordList rows={rows} />
+              </AsyncState>
+            </PublicPanel>
+
+            <PublicPanel
+              title="Resolved areas map"
+              subtitle="Pins follow the filters above"
+              className={`${portalLayout.panelFill} order-1 lg:order-2 ${selectedAlert ? "pointer-events-none opacity-40" : ""}`}
+              noPadding
+              bodyClassName={portalLayout.mapColumnBody}
+            >
+              {loading ? (
+                <MapSkeleton height={portalLayout.mapColumnFill} />
+              ) : mounted ? (
+                <CrisisHubMap
+                  alerts={filteredAlerts}
+                  warnings={[]}
+                  showWarnings={false}
+                  showTouristSpots={false}
+                  fitToAlerts
+                  heightClass={portalLayout.mapColumnFill}
+                />
+              ) : null}
+            </PublicPanel>
+          </div>
 
           <PublicPanel title="Your incident reports">
             <PublicInfoCallout variant="zinc" className="border-0 bg-transparent p-0">
@@ -174,6 +190,8 @@ export default function ResolvedAlertsPage() {
             </PublicInfoCallout>
           </PublicPanel>
       </PublicPageContent>
+
+      <AlertDetailModal alert={selectedAlert} onClose={() => setSelectedAlert(null)} />
     </PublicPageShell>
   );
 }

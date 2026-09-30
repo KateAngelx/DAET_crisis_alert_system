@@ -4,14 +4,13 @@ import React, { useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useSearchParams, useRouter } from "next/navigation";
 import {
-  AlertOctagon, CheckCircle, Navigation, MapPin, Users, ArrowRight, Route, ShieldCheck,
+  MapPin, Users, ArrowRight, Route,
 } from "lucide-react";
 import { useAuthStore } from "@/app/store/crisisStore";
 import { useRouteAdvisoryStore } from "@/app/store/routeAdvisoryStore";
 import { useDangerousLocationStore } from "@/app/store/dangerousLocationStore";
 import { useGuideStore } from "@/app/store/guideStore";
 import { CrisisHubMap } from "@/app/components/maps/CrisisHubMap";
-import { RouteListCard } from "@/app/components/routes/RouteListCard";
 import { RouteDetailModal } from "@/app/components/routes/RouteDetailModal";
 import { DangerousLocationCard } from "@/app/components/danger/DangerousLocationCard";
 import { GuidePageHeader } from "@/app/components/guide/GuidePageHeader";
@@ -23,9 +22,14 @@ import {
   buildRouteCatalog,
   findRouteItem,
   getRouteItemFromAdvisory,
+  getRouteStatusStyles,
   resolveRouteItemView,
 } from "@/lib/routesUtils";
 import { advisoryToMapWarning } from "@/lib/routeAdvisoryUtils";
+import { formatWarningTimeRange, getDangerSeverityStyles } from "@/lib/dangerousLocationUtils";
+import { ROUTES_MAP_LEGEND } from "@/lib/mapPinUtils";
+import { CategoryFilterSelect, StatusRecordList } from "@/app/components/shell/StatusRecordList";
+import { PublicListModal } from "@/app/components/shell/PublicListModal";
 import { formatTourRoute, getRelevantRouteAdvisoriesForGroup } from "@/lib/tourGroupRoute";
 import { useTravelDeepLinks } from "@/lib/useTravelDeepLinks";
 import { iconSize, statGrid } from "@/lib/designSystem";
@@ -39,7 +43,8 @@ export default function GuideRoutesPage() {
   const { warnings, fetchWarnings, loading: hazardsLoading, error: hazardsError } = useDangerousLocationStore();
   const { tourGroups, fetchTourGroups, resetGuideScope, loading: guideLoading } = useGuideStore();
   const [selectedRoute, setSelectedRoute] = useState(null);
-  const [highlightedHazardId, setHighlightedHazardId] = useState(null);
+  const [selectedHazard, setSelectedHazard] = useState(null);
+  const [activeFilter, setActiveFilter] = useState("all");
   const searchParams = useSearchParams();
   const router = useRouter();
 
@@ -61,19 +66,9 @@ export default function GuideRoutesPage() {
 
   const catalog = useMemo(() => buildRouteCatalog(advisories), [advisories]);
 
-  const mapWarnings = useMemo(
-    () => catalog.published.map(advisoryToMapWarning).filter(Boolean),
-    [catalog.published]
-  );
-
   const activeAreaHazards = useMemo(
     () => warnings.filter((w) => w.status === "Active" && w.is_public !== false),
     [warnings]
-  );
-
-  const allMapWarnings = useMemo(
-    () => [...mapWarnings, ...activeAreaHazards],
-    [mapWarnings, activeAreaHazards]
   );
 
   const publishedAdvisoryIds = useMemo(
@@ -117,7 +112,7 @@ export default function GuideRoutesPage() {
   const statsLoading = loading || guideLoading;
   const mapBlocked = !!selectedRoute;
 
-  const focusAreas = useCallback(() => {}, []);
+  const focusAreas = useCallback(() => setActiveFilter("areas"), []);
 
   useTravelDeepLinks({
     loading,
@@ -128,8 +123,11 @@ export default function GuideRoutesPage() {
   });
 
   useEffect(() => {
-    setHighlightedHazardId(searchParams.get("hazard") || null);
-  }, [searchParams]);
+    const hazardId = searchParams.get("hazard");
+    if (!hazardId) return;
+    const warning = activeAreaHazards.find((item) => String(item.id) === String(hazardId));
+    if (warning) setSelectedHazard(warning);
+  }, [searchParams, activeAreaHazards]);
 
   const openRoute = useCallback((route) => setSelectedRoute(route), []);
 
@@ -166,6 +164,62 @@ export default function GuideRoutesPage() {
     }
   }, [searchParams, catalog, loading]);
 
+  const showClosed = activeFilter === "all" || activeFilter === "urgent" || activeFilter === "closed";
+  const showCaution = activeFilter === "all" || activeFilter === "urgent" || activeFilter === "caution";
+  const showDetours = activeFilter === "all" || activeFilter === "detours";
+  const showSafe = activeFilter === "all" || activeFilter === "safe";
+  const showAreas = activeFilter === "all" || activeFilter === "urgent" || activeFilter === "areas";
+  const areaItems = activeFilter === "urgent"
+    ? activeAreaHazards.filter((warning) => warning.severity !== "Caution")
+    : activeAreaHazards;
+
+  const listItems = [
+    showClosed && relevantAffected.length > 0 && { key: "closed", kind: "route", items: relevantAffected },
+    showCaution && relevantActive.length > 0 && { key: "caution", kind: "route", items: relevantActive },
+    showAreas && areaItems.length > 0 && { key: "areas", kind: "hazard", items: areaItems },
+    showDetours && relevantAlternative.length > 0 && { key: "detours", kind: "route", items: relevantAlternative },
+    showSafe && relevantSafe.length > 0 && { key: "safe", kind: "route", items: relevantSafe },
+  ].filter(Boolean).flatMap((group) => group.items.map((item) => ({ key: `${group.key}-${item.id}`, kind: group.kind, item })));
+
+  const visibleRouteIds = new Set(
+    listItems.filter((entry) => entry.kind === "route").map((entry) => entry.item.advisoryId)
+  );
+  const visibleHazards = listItems.filter((entry) => entry.kind === "hazard").map((entry) => entry.item);
+  const visibleRouteAdvisories = catalog.published.filter((advisory) => visibleRouteIds.has(advisory.id));
+  const visibleMapWarnings = [
+    ...visibleRouteAdvisories.map(advisoryToMapWarning).filter(Boolean),
+    ...visibleHazards,
+  ];
+
+  const advisoryRows = listItems.map((entry) => {
+    if (entry.kind === "hazard") {
+      const warning = entry.item;
+      const styles = getDangerSeverityStyles(warning.severity);
+      return {
+        id: entry.key,
+        status: styles.label,
+        statusClass: styles.badge,
+        place: warning.dangerous_location,
+        type: warning.danger_type,
+        when: formatWarningTimeRange(warning),
+        onSelect: () => setSelectedHazard(warning),
+        ariaLabel: "View hazard details",
+      };
+    }
+    const route = entry.item;
+    const styles = getRouteStatusStyles(route.status);
+    return {
+      id: entry.key,
+      status: route.statusLabel || styles.label,
+      statusClass: styles.badge,
+      place: [route.from, route.to].filter(Boolean).join(" → "),
+      type: route.subtitle,
+      when: route.timeRange || route.updatedAtLabel || "—",
+      onSelect: () => openRoute(route),
+      ariaLabel: "View route details",
+    };
+  });
+
   return (
     <>
       <GuidePageHeader
@@ -184,9 +238,9 @@ export default function GuideRoutesPage() {
       <RoleContextBanner helper={ROLE_INTERFACE.guide.routes.helper} tone="info" />
 
       {statsLoading ? (
-        <StatCardSkeletonGrid count={5} className={`${statGrid.dashboardThree} lg:grid-cols-5`} />
+        <StatCardSkeletonGrid count={5} className={statGrid.dashboardFive} />
       ) : (
-        <div className={`${statGrid.dashboardThree} lg:grid-cols-5`}>
+        <div className={statGrid.dashboardFive}>
           <DashboardStatCard compact label="Safe (Your Groups)" value={relevantSafe.length} accent="green" />
           <DashboardStatCard compact label="Caution" value={relevantActive.length} accent="orange" />
           <DashboardStatCard compact label="Closed / Avoid" value={relevantAffected.length} accent="red" />
@@ -250,117 +304,48 @@ export default function GuideRoutesPage() {
         )}
 
         <div className="grid grid-cols-1 xl:grid-cols-2 gap-6 items-start">
-          <div className="space-y-8">
-            <section>
-              <h2 className="text-sm font-black uppercase tracking-widest text-zinc-400 mb-4 flex items-center gap-2">
-                <AlertOctagon size={iconSize.section} className="text-red-600" /> Routes Affecting Your Groups
-              </h2>
-              {relevantAffected.length === 0 ? (
-                <EmptyState
-                  icon={CheckCircle}
-                  title="No closed routes"
-                  description="None of your active tour group routes match a published closure or unsafe advisory."
-                />
-              ) : (
-                <div className="space-y-3">
-                  {relevantAffected.map((route) => (
-                    <RouteListCard key={route.id} route={route} onSelect={openRoute} />
-                  ))}
-                </div>
-              )}
-            </section>
-
-            <section>
-              <h2 className="text-sm font-black uppercase tracking-widest text-zinc-400 mb-4 flex items-center gap-2">
-                <AlertOctagon size={iconSize.section} className="text-red-600" /> Area Hazards
-              </h2>
-              {activeAreaHazards.length === 0 ? (
-                <p className="text-sm text-zinc-500 font-medium p-4 bg-green-50 rounded-2xl border border-green-200 text-green-700">
-                  No area hazards are active right now.
-                </p>
-              ) : (
-                <div className="space-y-3">
-                  {activeAreaHazards.map((warning) => (
-                    <DangerousLocationCard
-                      key={warning.id}
-                      warning={warning}
-                      highlighted={highlightedHazardId === warning.id}
-                    />
-                  ))}
-                </div>
-              )}
-            </section>
-
-            <section>
-              <h2 className="text-sm font-black uppercase tracking-widest text-zinc-400 mb-4 flex items-center gap-2">
-                <Navigation size={iconSize.section} className="text-blue-600" /> Recommended Detours
-              </h2>
-              {relevantAlternative.length === 0 ? (
-                <p className="text-sm text-zinc-500 font-medium p-4 bg-zinc-50 rounded-2xl">
-                  No detours are published for your groups right now.
-                </p>
-              ) : (
-                <div className="space-y-3">
-                  {relevantAlternative.map((route) => (
-                    <RouteListCard key={route.id} route={route} onSelect={openRoute} />
-                  ))}
-                </div>
-              )}
-            </section>
-
-            <section>
-              <h2 className="text-sm font-black uppercase tracking-widest text-zinc-400 mb-4 flex items-center gap-2">
-                <ShieldCheck size={iconSize.section} className="text-green-600" /> Safe Routes
-              </h2>
-              {relevantSafe.length === 0 ? (
-                <p className="text-sm text-zinc-500 font-medium p-4 bg-zinc-50 rounded-2xl">
-                  No safe routes match your groups right now.
-                </p>
-              ) : (
-                <div className="space-y-3">
-                  {relevantSafe.map((route) => (
-                    <RouteListCard key={route.id} route={route} onSelect={openRoute} />
-                  ))}
-                </div>
-              )}
-            </section>
-
-            <section>
-              <h2 className="text-sm font-black uppercase tracking-widest text-zinc-400 mb-4 flex items-center gap-2">
-                <CheckCircle size={iconSize.section} className="text-orange-500" /> Open with Caution
-              </h2>
-              {relevantActive.length === 0 ? (
-                <p className="text-sm text-zinc-500 font-medium p-4 bg-zinc-50 rounded-2xl">
-                  No caution-level advisories match your groups.
-                </p>
-              ) : (
-                <div className="space-y-3">
-                  {relevantActive.map((route) => (
-                    <RouteListCard key={route.id} route={route} onSelect={openRoute} />
-                  ))}
-                </div>
-              )}
-            </section>
-          </div>
+          <section className="rounded-2xl border border-zinc-200 bg-white p-4 sm:p-6 shadow-sm">
+            <h2 className="text-sm font-black uppercase tracking-widest text-zinc-900">Advisories</h2>
+            <p className="text-xs text-zinc-500 font-medium mt-1 mb-3">
+              Status, place, type, and when. View opens the full details.
+            </p>
+            <div className="mb-3">
+              <CategoryFilterSelect
+                label="Category"
+                value={activeFilter}
+                onChange={setActiveFilter}
+                options={[
+                  { value: "urgent", label: "Needs attention" },
+                  { value: "closed", label: "Closed" },
+                  { value: "caution", label: "Caution" },
+                  { value: "detours", label: "Detours" },
+                  { value: "areas", label: "Area hazards" },
+                  { value: "safe", label: "Safe" },
+                ]}
+              />
+            </div>
+            <StatusRecordList rows={advisoryRows} />
+          </section>
 
           <div className={`xl:sticky xl:top-24 ${mapBlocked ? "pointer-events-none opacity-40" : ""}`}>
             <h2 className="text-sm font-black uppercase tracking-widest text-zinc-400 mb-4 flex items-center gap-2">
               <MapPin size={iconSize.section} className="text-blue-600" /> Travel Map
             </h2>
             <p className="text-xs text-zinc-500 font-medium mb-3">
-              Route lines and hazard pins — same view tourists see on the public page.
+              Pins and route lines follow the category above.
             </p>
             {loading ? (
               <MapSkeleton height="h-[min(520px,70vh)] sm:h-[520px]" />
             ) : (
               <CrisisHubMap
                 alerts={[]}
-                warnings={allMapWarnings}
-                routeAdvisories={catalog.published}
+                warnings={visibleMapWarnings}
+                routeAdvisories={visibleRouteAdvisories}
                 highlightRouteId={selectedRoute?.advisoryId}
                 heightClass="h-[min(520px,70vh)] sm:h-[520px]"
                 showTouristSpots={false}
                 showSafeRoutePins
+                legendItems={ROUTES_MAP_LEGEND}
               />
             )}
           </div>
@@ -376,6 +361,18 @@ export default function GuideRoutesPage() {
         onClose={closeRoute}
         onSelectRoute={openRoute}
       />
+
+      <PublicListModal
+        open={!!selectedHazard}
+        onClose={() => {
+          setSelectedHazard(null);
+          if (searchParams.get("hazard")) router.replace("/guide/routes", { scroll: false });
+        }}
+        title="Area hazard"
+        subtitle={selectedHazard?.dangerous_location}
+      >
+        {selectedHazard ? <DangerousLocationCard warning={selectedHazard} /> : null}
+      </PublicListModal>
     </>
   );
 }

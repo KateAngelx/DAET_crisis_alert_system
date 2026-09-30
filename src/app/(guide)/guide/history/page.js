@@ -6,12 +6,17 @@ import { ArrowRight, CheckCircle, Compass, FileText, History } from "lucide-reac
 import { GuidePageHeader } from "@/app/components/guide/GuidePageHeader";
 import { GuidePanel } from "@/app/components/guide/GuidePanel";
 import { CompletedToursPanel } from "@/app/components/tour/CompletedToursPanel";
-import { CrisisAlertListCard } from "@/app/components/crisis/CrisisAlertListCard";
-import { PublicCardListPreview } from "@/app/components/shell/PublicCardListPreview";
+import { CrisisHubMap } from "@/app/components/maps/CrisisHubMap";
+import { AlertDetailModal } from "@/app/components/crisis/AlertDetailModal";
+import { CategoryFilterSelect, StatusRecordList } from "@/app/components/shell/StatusRecordList";
+import {
+  DEFAULT_CRISIS_TYPE_OPTIONS,
+  DEFAULT_SEVERITY_ORDER,
+} from "@/app/components/shell/PublicCategorizedCardFilters";
 import { useAuthStore, useCrisisStore } from "@/app/store/crisisStore";
 import { useGuideStore } from "@/app/store/guideStore";
-import { AlertCardSkeletonList, StatCardSkeletonGrid } from "@/app/components/ui/Skeletons";
-import { guideShell, portalLayout, statGrid, iconSize } from "@/lib/designSystem";
+import { AlertCardSkeletonList, MapSkeleton, StatCardSkeletonGrid } from "@/app/components/ui/Skeletons";
+import { getSeverityOutline, guideShell, portalLayout, statGrid, iconSize } from "@/lib/designSystem";
 import { DashboardStatCard } from "@/app/components/dashboard/DashboardStatCard";
 
 const CLOSED_REPORT_STATUSES = ["Resolved", "Closed", "Rejected"];
@@ -21,6 +26,9 @@ export default function GuideHistoryPage() {
   const { alerts, fetchAlerts, loading: alertsLoading } = useCrisisStore();
   const { tourGroups, guideIncidents, fetchTourGroups, fetchGuideIncidents, loading: guideLoading } = useGuideStore();
   const [mounted, setMounted] = useState(false);
+  const [categoryFilter, setCategoryFilter] = useState("all");
+  const [severityFilter, setSeverityFilter] = useState("all");
+  const [selectedAlert, setSelectedAlert] = useState(null);
 
   useEffect(() => {
     if (!user?.id) return;
@@ -42,6 +50,25 @@ export default function GuideHistoryPage() {
     () => alerts.filter((a) => a.status === "Resolved" && a.is_public),
     [alerts]
   );
+
+  const filteredAlerts = useMemo(() => {
+    return resolvedAlerts.filter((alert) => {
+      if (categoryFilter !== "all" && (alert.type || "General") !== categoryFilter) return false;
+      if (severityFilter !== "all" && alert.severity !== severityFilter) return false;
+      return true;
+    });
+  }, [resolvedAlerts, categoryFilter, severityFilter]);
+
+  const alertRows = filteredAlerts.map((alert) => ({
+    id: alert.id,
+    status: alert.severity || "Low",
+    statusClass: getSeverityOutline(alert.severity).badge,
+    place: alert.location || alert.title,
+    type: alert.type || "General",
+    when: new Date(alert.updated_at || alert.created_at).toLocaleString(),
+    onSelect: () => setSelectedAlert(alert),
+    ariaLabel: "View resolved alert",
+  }));
 
   useEffect(() => {
     if (!mounted) return;
@@ -106,23 +133,49 @@ export default function GuideHistoryPage() {
         )}
       </GuidePanel>
 
-      <GuidePanel title="Resolved crisis alerts" subtitle="Official alerts marked resolved by the tourism office">
+      <GuidePanel title="Resolved crisis alerts" subtitle="Status, place, type, and when. Pins follow the filters.">
         {loading ? (
           <AlertCardSkeletonList count={2} />
         ) : resolvedAlerts.length === 0 ? (
           <p className="text-sm text-zinc-500 font-medium py-6">No resolved alerts on record.</p>
         ) : (
-          <PublicCardListPreview
-            items={resolvedAlerts}
-            modalTitle="Resolved alerts"
-            listClassName="space-y-3"
-            scrollPaneClassName={portalLayout.listScrollPane}
-            renderItem={(alert) => (
-              <CrisisAlertListCard alert={alert} resolved timeLabel={new Date(alert.updated_at || alert.created_at).toLocaleString()} />
-            )}
-          />
+          <div className={portalLayout.splitGridPublic}>
+            <div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-3">
+                <CategoryFilterSelect
+                  label="Crisis type"
+                  value={categoryFilter}
+                  onChange={setCategoryFilter}
+                  options={DEFAULT_CRISIS_TYPE_OPTIONS}
+                />
+                <CategoryFilterSelect
+                  label="Severity"
+                  value={severityFilter}
+                  onChange={setSeverityFilter}
+                  options={DEFAULT_SEVERITY_ORDER}
+                />
+              </div>
+              <StatusRecordList rows={alertRows} emptyMessage="No resolved alerts match this filter." />
+            </div>
+            <div className={selectedAlert ? "pointer-events-none opacity-40" : ""}>
+              {mounted ? (
+                <CrisisHubMap
+                  alerts={filteredAlerts}
+                  warnings={[]}
+                  showWarnings={false}
+                  showTouristSpots={false}
+                  fitToAlerts
+                  heightClass="h-[min(420px,60vh)]"
+                />
+              ) : (
+                <MapSkeleton height="h-[min(420px,60vh)]" />
+              )}
+            </div>
+          </div>
         )}
       </GuidePanel>
+
+      <AlertDetailModal alert={selectedAlert} onClose={() => setSelectedAlert(null)} />
 
       <div className="flex items-center gap-2 text-zinc-400 text-[10px] font-bold uppercase tracking-widest px-1">
         <History size={14} /> For live emergencies, use Crisis Hub and Group Reports.

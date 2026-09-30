@@ -5,15 +5,15 @@ import { typography, getStatCardAccent } from "@/lib/designSystem";
 export function PublicStatCard({ value, label, accent = "blue", compact = false, className = "" }) {
   const styles = getStatCardAccent(accent);
   const labelClass = compact
-    ? `${typography.statLabel} text-[9px] sm:text-[10px] leading-tight tracking-wide`
-    : typography.statLabel;
+    ? "text-[8px] sm:text-[10px] font-black uppercase leading-tight tracking-tight sm:tracking-widest line-clamp-3"
+    : `${typography.statLabel} line-clamp-2`;
   const valueClass = compact
-    ? "text-xl sm:text-2xl font-bold leading-none tabular-nums"
+    ? "text-lg sm:text-2xl font-bold leading-none tabular-nums"
     : `${typography.statValue} tabular-nums`;
 
   return (
     <OutlinedCard accent={accent} compact={compact} className={className}>
-      <p className={`${labelClass} ${styles.label} mb-1 line-clamp-2`}>{label}</p>
+      <p className={`${labelClass} ${styles.label} mb-1`}>{label}</p>
       <p className={`${valueClass} ${styles.value} break-words`}>{value}</p>
     </OutlinedCard>
   );

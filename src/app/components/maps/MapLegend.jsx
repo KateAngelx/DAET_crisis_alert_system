@@ -3,13 +3,13 @@
 import React from "react";
 import { MAP_PIN_LEGEND } from "@/lib/mapPinUtils";
 
-export function MapLegend({ className = "", compact = false, items = MAP_PIN_LEGEND }) {
+export function MapLegend({ className = "", compact = false, items = MAP_PIN_LEGEND, title = "Map Legend" }) {
   return (
     <div
       className={`bg-white/95 dark:bg-zinc-900/95 border border-zinc-200 dark:border-white/10 rounded-xl shadow-lg backdrop-blur-sm ${compact ? "p-2.5" : "p-3"} ${className}`}
       aria-label="Map legend"
     >
-      <p className="text-[9px] font-black uppercase tracking-widest text-zinc-400 mb-2">Map Legend</p>
+      <p className="text-[9px] font-black uppercase tracking-widest text-zinc-400 mb-2">{title}</p>
       <ul className={`${compact ? "space-y-1.5" : "space-y-2"}`}>
         {items.map((item) => (
           <li key={item.id} className="flex items-center gap-2">

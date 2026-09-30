@@ -3,36 +3,41 @@
 import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Menu, X, User } from "lucide-react";
+import { AlertTriangle, CheckCircle2, FileText, Home, Info, Route, User } from "lucide-react";
 import { BrandLogo } from "@/app/components/BrandLogo";
 import { siteInfo } from "@/lib/siteInfo";
 import { typography } from "@/lib/designSystem";
 import { useAuthStore } from "../store/crisisStore";
 import { NotificationPanel } from "@/app/components/NotificationPanel";
 import { isPublicNavActive } from "@/lib/navUtils";
+
 const GUEST_NAV = [
-  { name: "Home", href: "/" },
-  { name: "Crisis Hub", href: "/crisis" },
-  { name: "Resolved", href: "/crisis/resolved" },
-  { name: "Roads & Travel", href: "/routes" },
-  { name: "About", href: "/about" },
+  { name: "Home", short: "Home", href: "/", icon: Home },
+  { name: "Crisis Hub", short: "Crisis", href: "/crisis", icon: AlertTriangle },
+  { name: "Resolved", short: "Resolved", href: "/crisis/resolved", icon: CheckCircle2 },
+  { name: "Roads & Travel", short: "Roads", href: "/routes", icon: Route },
+  { name: "About", short: "About", href: "/about", icon: Info },
 ];
 
 const AUTH_NAV = [
-  { name: "Home", href: "/" },
-  { name: "Crisis Hub", href: "/crisis" },
-  { name: "Resolved", href: "/crisis/resolved" },
-  { name: "Roads & Travel", href: "/routes" },
-  { name: "My Reports", href: "/crisis/reports" },
+  { name: "Home", short: "Home", href: "/", icon: Home },
+  { name: "Crisis Hub", short: "Crisis", href: "/crisis", icon: AlertTriangle },
+  { name: "Resolved", short: "Resolved", href: "/crisis/resolved", icon: CheckCircle2 },
+  { name: "Roads & Travel", short: "Roads", href: "/routes", icon: Route },
+  { name: "My Reports", short: "Reports", href: "/crisis/reports", icon: FileText },
 ];
 
 export function PublicHeader() {
   const pathname = usePathname();
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [accountOpen, setAccountOpen] = useState(false);
   const [mounted, setMounted] = useState(false);
   const { user, isAuthenticated, logout } = useAuthStore();
 
   useEffect(() => setMounted(true), []);
+
+  useEffect(() => {
+    setAccountOpen(false);
+  }, [pathname]);
 
   const navItems = mounted && isAuthenticated ? AUTH_NAV : GUEST_NAV;
 
@@ -40,54 +45,60 @@ export function PublicHeader() {
     const active = isPublicNavActive(pathname, href);
     return active
       ? "bg-blue-600 text-white shadow-lg shadow-blue-200"
-      : "text-zinc-500 hover:bg-zinc-100 dark:hover:bg-zinc-800";
+      : "text-zinc-600 hover:bg-white/80 dark:hover:bg-zinc-800";
   };
 
+  const showGuestActions = !mounted || !isAuthenticated;
+
+  const guestActions = (
+    <div className="flex items-center gap-1.5 shrink-0">
+      <Link
+        href="/login"
+        className="inline-flex items-center justify-center h-8 px-2.5 sm:px-4 rounded-full border border-zinc-200/80 bg-white/70 text-[10px] font-black uppercase tracking-widest text-zinc-700 hover:bg-white transition-colors"
+      >
+        Login
+      </Link>
+      <Link
+        href="/register"
+        className="inline-flex items-center justify-center h-8 px-2.5 sm:px-4 rounded-full bg-blue-600 text-[10px] font-black uppercase tracking-widest text-white hover:bg-blue-700 transition-colors shadow-md shadow-blue-600/20"
+      >
+        Register
+      </Link>
+    </div>
+  );
+
   return (
-    <header className="sticky top-0 z-50 w-full bg-background/80 backdrop-blur-md border-b border-gray-200 dark:border-white/10">
-      <div className="max-w-7xl mx-auto px-4 h-16 flex items-center justify-between">
-        <Link href="/" className="flex items-center gap-2.5 shrink-0" aria-label={`${siteInfo.officeName} — Home`}>
-          <BrandLogo size={44} />
-          <span className={`hidden sm:block ${typography.brand} text-blue-600`}>{siteInfo.brandName}</span>
-        </Link>
+    <>
+      <header className="fixed top-3 inset-x-0 z-50 px-3 sm:px-4">
+        <div className="max-w-7xl mx-auto h-12 sm:h-14 px-2.5 sm:px-4 flex items-center justify-between gap-2 rounded-2xl border border-white/50 bg-white/35 dark:bg-zinc-950/40 dark:border-white/10 backdrop-blur-2xl backdrop-saturate-150 shadow-[0_8px_30px_rgba(15,23,42,0.06)]">
+          <Link href="/" className="flex items-center gap-2 shrink-0 min-w-0" aria-label={`${siteInfo.officeName} — Home`}>
+            <BrandLogo size={32} className="shrink-0" />
+            <span className={`truncate max-[340px]:hidden ${typography.brand} text-blue-600`}>{siteInfo.brandName}</span>
+          </Link>
 
-        <nav className="hidden xl:flex items-center gap-1">
-          {navItems.map((item) => (
-            <Link
-              key={item.name}
-              href={item.href}
-              aria-current={isPublicNavActive(pathname, item.href) ? "page" : undefined}
-              className={`px-4 py-2 rounded-full text-xs font-black uppercase tracking-widest transition-all ${linkClass(item.href)}`}
-            >
-              <span className="font-sans leading-none">{item.name}</span>
-            </Link>
-          ))}
-        </nav>
+          <nav className="hidden xl:flex items-center gap-1" aria-label="Primary">
+            {navItems.map((item) => (
+              <Link
+                key={item.name}
+                href={item.href}
+                aria-current={isPublicNavActive(pathname, item.href) ? "page" : undefined}
+                className={`px-4 py-2 rounded-full text-xs font-black uppercase tracking-widest transition-all ${linkClass(item.href)}`}
+              >
+                <span className="font-sans leading-none">{item.name}</span>
+              </Link>
+            ))}
+          </nav>
 
-        <div className="flex items-center gap-3">
-          {mounted && isAuthenticated && <NotificationPanel />}
+          <div className="flex items-center gap-2 shrink-0">
+            {mounted && isAuthenticated && <NotificationPanel />}
 
-          <div className="hidden sm:flex items-center gap-2">
-            {!mounted ? (
-              <>
-                <Link
-                  href="/login"
-                  className="text-[10px] font-black uppercase text-zinc-600 px-5 py-2.5 rounded-full hover:bg-zinc-100 transition-all font-sans border border-zinc-200"
-                >
-                  Login
-                </Link>
-                <Link
-                  href="/register"
-                  className="text-[10px] font-black uppercase bg-blue-600 text-white px-5 py-2.5 rounded-full hover:bg-blue-700 transition-all shadow-lg shadow-blue-600/20 font-sans"
-                >
-                  Register
-                </Link>
-              </>
-            ) : isAuthenticated ? (
-              <>
+            {showGuestActions ? guestActions : null}
+
+            {mounted && isAuthenticated ? (
+              <div className="hidden xl:flex items-center gap-2">
                 <Link
                   href="/profile"
-                  className="flex items-center gap-2 bg-zinc-50 dark:bg-zinc-900 border border-zinc-100 dark:border-zinc-800 pl-2 pr-4 py-1.5 rounded-full hover:border-blue-200 transition-colors"
+                  className="flex items-center gap-2 bg-white/70 dark:bg-zinc-900 border border-white/80 dark:border-zinc-800 pl-2 pr-4 py-1.5 rounded-full hover:border-blue-200 transition-colors"
                 >
                   <div className="bg-blue-600 p-1.5 rounded-full text-white">
                     <User size={14} />
@@ -102,92 +113,89 @@ export function PublicHeader() {
                   </div>
                 </Link>
                 <button
+                  type="button"
                   onClick={logout}
-                  className="text-[10px] font-black uppercase text-red-500 bg-red-50 dark:bg-red-950/30 px-4 py-2.5 rounded-full hover:bg-red-100 transition-all font-sans border border-red-100 dark:border-red-900/50"
+                  className="text-[10px] font-black uppercase text-red-500 bg-red-50 dark:bg-red-950/30 px-4 py-2 rounded-full hover:bg-red-100 transition-all font-sans border border-red-100 dark:border-red-900/50"
                 >
                   Logout
                 </button>
-              </>
-            ) : (
-              <>
-                <Link
-                  href="/login"
-                  className="text-[10px] font-black uppercase text-zinc-600 px-5 py-2.5 rounded-full hover:bg-zinc-100 transition-all font-sans border border-zinc-200"
+              </div>
+            ) : null}
+
+            {mounted && isAuthenticated ? (
+              <div className="relative xl:hidden">
+                <button
+                  type="button"
+                  onClick={() => setAccountOpen((open) => !open)}
+                  className="p-2 rounded-full border border-white/80 bg-white/70 text-zinc-700 hover:bg-white dark:border-zinc-700 dark:text-zinc-200"
+                  aria-label="Account menu"
+                  aria-expanded={accountOpen}
                 >
-                  Login
-                </Link>
-                <Link
-                  href="/register"
-                  className="text-[10px] font-black uppercase bg-blue-600 text-white px-5 py-2.5 rounded-full hover:bg-blue-700 transition-all shadow-lg shadow-blue-600/20 font-sans"
-                >
-                  Register
-                </Link>
-              </>
-            )}
+                  <User size={18} />
+                </button>
+                {accountOpen && (
+                  <div className="absolute right-0 top-full mt-2 w-52 rounded-2xl border border-white/70 bg-white/90 p-2 shadow-xl backdrop-blur-xl dark:border-zinc-800 dark:bg-zinc-950/90">
+                    <p className="px-3 py-2 text-[11px] font-black uppercase tracking-tight text-zinc-900 dark:text-zinc-100 truncate">
+                      {user?.name}
+                    </p>
+                    <p className="px-3 -mt-1 pb-2 text-[9px] font-bold uppercase tracking-widest text-blue-600">
+                      {user?.role || "tourist"}
+                    </p>
+                    <Link
+                      href="/profile"
+                      className="block px-3 py-2.5 rounded-xl text-[11px] font-black uppercase tracking-widest text-zinc-700 hover:bg-zinc-50 dark:text-zinc-200 dark:hover:bg-zinc-900"
+                    >
+                      My Profile
+                    </Link>
+                    <button
+                      type="button"
+                      onClick={logout}
+                      className="w-full text-left px-3 py-2.5 rounded-xl text-[11px] font-black uppercase tracking-widest text-red-500 hover:bg-red-50"
+                    >
+                      Logout
+                    </button>
+                  </div>
+                )}
+              </div>
+            ) : null}
           </div>
-
-          <button
-            onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-            className="xl:hidden p-2 rounded-lg hover:bg-zinc-100"
-            aria-label="Toggle menu"
-          >
-            {mobileMenuOpen ? <X size={24} /> : <Menu size={24} />}
-          </button>
         </div>
-      </div>
+      </header>
+      <div className="h-[3.75rem] sm:h-[4.25rem] shrink-0" aria-hidden="true" />
 
-      {mobileMenuOpen && (
-        <div className="xl:hidden border-t border-gray-200 dark:border-white/10 bg-background p-4 space-y-2 animate-in slide-in-from-top">
-          {navItems.map((item) => (
-            <Link
-              key={item.name}
-              href={item.href}
-              onClick={() => setMobileMenuOpen(false)}
-              aria-current={isPublicNavActive(pathname, item.href) ? "page" : undefined}
-              className={`flex items-center justify-between px-6 py-4 rounded-2xl transition-all ${
-                isPublicNavActive(pathname, item.href)
-                  ? "bg-blue-600 text-white font-black"
-                  : "text-zinc-600 hover:bg-zinc-50 dark:hover:bg-zinc-900"
-              }`}
-            >
-              <span className="text-sm font-black uppercase tracking-widest font-sans">{item.name}</span>
-            </Link>
-          ))}
-          {mounted && !isAuthenticated && (
-            <div className="pt-4 border-t border-zinc-100 mt-2 space-y-2">
-              <Link
-                href="/login"
-                onClick={() => setMobileMenuOpen(false)}
-                className="flex items-center justify-center px-6 py-4 rounded-2xl text-zinc-600 hover:bg-zinc-50 border border-zinc-200 text-sm font-black uppercase tracking-widest"
-              >
-                Login
-              </Link>
-              <Link
-                href="/register"
-                onClick={() => setMobileMenuOpen(false)}
-                className="flex items-center justify-center px-6 py-4 rounded-2xl bg-blue-600 text-white text-sm font-black uppercase tracking-widest"
-              >
-                Register
-              </Link>
-            </div>
-          )}
-          {mounted && isAuthenticated && (
-            <div className="pt-4 border-t border-zinc-100 mt-4 space-y-2">
-              <Link
-                href="/profile"
-                onClick={() => setMobileMenuOpen(false)}
-                className="flex items-center gap-3 px-6 py-4 rounded-2xl text-zinc-600 hover:bg-zinc-50"
-              >
-                <User size={18} className="text-blue-600" />
-                <span className="text-sm font-black uppercase">My Profile</span>
-              </Link>
-              <button onClick={logout} className="w-full text-left px-6 py-4 text-red-500 font-black uppercase text-sm">
-                Logout
-              </button>
-            </div>
-          )}
-        </div>
+      {accountOpen && (
+        <button
+          type="button"
+          className="fixed inset-0 z-40 xl:hidden"
+          aria-label="Close account menu"
+          onClick={() => setAccountOpen(false)}
+        />
       )}
-    </header>
+
+      <nav
+        className="xl:hidden fixed bottom-0 inset-x-0 z-50 border-t border-zinc-200 bg-white/95 backdrop-blur-md dark:border-white/10 dark:bg-zinc-950/95 pb-[env(safe-area-inset-bottom)]"
+        aria-label="Mobile"
+      >
+        <div className="grid grid-cols-5 max-w-lg mx-auto">
+          {navItems.map((item) => {
+            const Icon = item.icon;
+            const active = isPublicNavActive(pathname, item.href);
+            return (
+              <Link
+                key={item.name}
+                href={item.href}
+                aria-current={active ? "page" : undefined}
+                className={`flex flex-col items-center justify-center gap-0.5 min-h-[52px] px-0.5 py-1.5 text-[9px] font-black uppercase tracking-tight leading-none ${
+                  active ? "text-blue-600" : "text-zinc-500"
+                }`}
+              >
+                <Icon size={18} strokeWidth={active ? 2.5 : 2} />
+                <span className="truncate max-w-full">{item.short}</span>
+              </Link>
+            );
+          })}
+        </div>
+      </nav>
+    </>
   );
 }
