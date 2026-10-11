@@ -5,10 +5,8 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useAuthStore } from "@/app/store/crisisStore";
 import {
-  LayoutDashboard, Bell, ShieldCheck, FileText, Map, LogOut, Users, Compass, CheckCircle, History, Menu,
+  LayoutDashboard, Bell, ShieldCheck, FileText, Map, LogOut, Users, Compass, CheckCircle, History, Menu, X,
 } from "lucide-react";
-import { useInstalledApp } from "@/lib/useInstalledApp";
-import { InstalledBottomNav } from "@/app/components/shell/InstalledBottomNav";
 import { BrandLogo } from "@/app/components/BrandLogo";
 import { GUIDE_NAV, isNavActive } from "@/lib/dashboardNav";
 import { NotificationPanel } from "@/app/components/NotificationPanel";
@@ -96,15 +94,12 @@ export function GuideSidebar() {
   );
 }
 
-export function MobileGuideMenu({ hideButton = false, open, onOpenChange }) {
-  const [internalOpen, setInternalOpen] = React.useState(false);
-  const isOpen = open ?? internalOpen;
-  const setIsOpen = onOpenChange ?? setInternalOpen;
+export function MobileGuideMenu() {
+  const [isOpen, setIsOpen] = React.useState(false);
   const pathname = usePathname();
 
   return (
     <>
-      {hideButton ? null : (
       <button
         onClick={() => setIsOpen(true)}
         className="lg:hidden p-2 hover:bg-zinc-100 rounded-lg transition-colors"
@@ -112,15 +107,16 @@ export function MobileGuideMenu({ hideButton = false, open, onOpenChange }) {
       >
         <Menu size={iconSize.nav} className="text-zinc-600" />
       </button>
-      )}
 
       {isOpen && (
         <>
           <div className="fixed inset-0 bg-black/50 z-40 lg:hidden backdrop-blur-sm" onClick={() => setIsOpen(false)} />
-          <div className="fixed inset-y-0 left-0 w-[280px] bg-white z-50 lg:hidden overflow-y-auto shadow-2xl dashboard-shell">
+          <div className="fixed inset-y-0 left-0 w-[280px] bg-white z-50 lg:hidden overflow-y-auto shadow-2xl animate-in slide-in-from-left duration-300 dashboard-shell">
             <div className="flex items-center justify-between p-4 border-b border-zinc-200">
               <span className="text-sm font-black text-blue-600 uppercase">Guide Portal</span>
-              <button onClick={() => setIsOpen(false)} className="p-2 hover:bg-zinc-100 rounded-lg">✕</button>
+              <button onClick={() => setIsOpen(false)} className="p-2 hover:bg-zinc-100 rounded-lg" aria-label="Close menu">
+                <X size={24} />
+              </button>
             </div>
             <div className="p-4 space-y-6">
               <div>
@@ -151,23 +147,13 @@ export function MobileGuideMenu({ hideButton = false, open, onOpenChange }) {
   );
 }
 
-const GUIDE_APP_NAV = [
-  { href: "/guide", short: "Home", icon: LayoutDashboard },
-  { href: "/guide/groups", short: "Groups", icon: Compass },
-  { href: "/guide/crisis", short: "Crisis", icon: ShieldCheck },
-  { href: "/guide/routes", short: "Roads", icon: Map },
-];
-
 export function GuideHeader() {
   const { user, logout } = useAuthStore();
-  const installed = useInstalledApp();
-  const [menuOpen, setMenuOpen] = React.useState(false);
 
   return (
-    <>
     <header className="h-[72px] bg-white border-b border-zinc-200 px-4 lg:px-6 flex items-center justify-between sticky top-0 z-10 dashboard-shell">
       <div className="flex items-center gap-4">
-        <MobileGuideMenu hideButton={installed} open={menuOpen} onOpenChange={setMenuOpen} />
+        <MobileGuideMenu />
         <div className="hidden sm:block">
           <p className={`${typography.statLabel} tracking-[0.2em] text-zinc-400 leading-none mb-0.5`}>Guide portal</p>
           <h1 className={`${typography.pageTitle} leading-none text-zinc-800`}>Tour operations</h1>
@@ -195,9 +181,5 @@ export function GuideHeader() {
         </div>
       </div>
     </header>
-    {installed ? (
-      <InstalledBottomNav items={GUIDE_APP_NAV} onMore={() => setMenuOpen(true)} />
-    ) : null}
-    </>
   );
 }

@@ -17,10 +17,8 @@ const ICONS = {
   "Incident Reports": FileWarning,
 };
 
-export function MobileAdminMenu({ hideButton = false, open, onOpenChange }) {
-  const [internalOpen, setInternalOpen] = useState(false);
-  const isOpen = open ?? internalOpen;
-  const setIsOpen = onOpenChange ?? setInternalOpen;
+export function MobileAdminMenu() {
+  const [isOpen, setIsOpen] = useState(false);
   const pathname = usePathname();
 
   const renderSection = (title, items, variant = "default") => (
@@ -55,7 +53,6 @@ export function MobileAdminMenu({ hideButton = false, open, onOpenChange }) {
 
   return (
     <>
-      {hideButton ? null : (
       <button
         onClick={() => setIsOpen(true)}
         className="lg:hidden p-2 hover:bg-zinc-100 rounded-lg transition-colors"
@@ -63,7 +60,6 @@ export function MobileAdminMenu({ hideButton = false, open, onOpenChange }) {
       >
         <Menu size={24} className="text-zinc-600" />
       </button>
-      )}
 
       {isOpen && (
         <>

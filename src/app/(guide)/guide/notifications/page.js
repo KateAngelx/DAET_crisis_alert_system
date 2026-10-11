@@ -7,18 +7,17 @@ import { NotificationItemCard } from "@/app/components/NotificationItemCard";
 import { getAreaHazardNotificationLink } from "@/lib/travelLinks";
 import { GuidePageHeader } from "@/app/components/guide/GuidePageHeader";
 import { AsyncState, EmptyState } from "@/app/components/ui/AsyncState";
-import { NotificationItemSkeleton, SessionInboxSkeleton } from "@/app/components/ui/Skeletons";
+import { NotificationPanelSkeleton, SessionInboxSkeleton } from "@/app/components/ui/Skeletons";
 import { useAuthStore } from "@/app/store/crisisStore";
 import { useNotificationStore } from "@/app/store/notificationStore";
 import { getActiveSession } from "@/lib/authSession";
 import { GuideDashboardQuickActions } from "@/app/components/guide/GuideDashboardQuickActions";
-import { PublicCardListPreview } from "@/app/components/shell/PublicCardListPreview";
 import { GuidePanel } from "@/app/components/guide/GuidePanel";
-import { portalLayout } from "@/lib/designSystem";
 
 export default function GuideNotificationsPage() {
   const { user } = useAuthStore();
-  const { notifications, fetchNotifications, markAsRead, markAllAsRead, loading, error, clearNotifications } = useNotificationStore();
+  const { notifications, fetchNotifications, markAsRead, markAllAsRead, loading, error, clearNotifications } =
+    useNotificationStore();
   const [sessionChecked, setSessionChecked] = useState(false);
 
   useEffect(() => {
@@ -58,7 +57,7 @@ export default function GuideNotificationsPage() {
     return (
       <>
         <GuidePageHeader title="Notifications" description="Private updates on alerts, tour group activity, and incident reports." />
-        <GuidePanel title="Inbox" bodyClassName={portalLayout.panelBodyStack}>
+        <GuidePanel title="Inbox" compact>
           <SessionInboxSkeleton count={4} />
         </GuidePanel>
       </>
@@ -69,7 +68,9 @@ export default function GuideNotificationsPage() {
     return (
       <div className="py-16 text-center">
         <p className="text-sm text-zinc-500 mb-4">Sign in to view your private notifications.</p>
-        <Link href="/login" className="text-blue-600 font-black uppercase text-xs">Sign In</Link>
+        <Link href="/login" className="text-blue-600 font-black uppercase text-xs">
+          Sign In
+        </Link>
       </div>
     );
   }
@@ -90,42 +91,34 @@ export default function GuideNotificationsPage() {
         }
       />
 
-      <GuidePanel title="Inbox" bodyClassName={portalLayout.panelBodyStack}>
-      <AsyncState
-        loading={loading}
-        error={error}
-        isEmpty={!loading && !error && notifications.length === 0}
-        onRetry={() => fetchNotifications(user.id)}
-        loadingFallback={
-          <div className="space-y-3">
-            {Array.from({ length: 4 }).map((_, i) => (
-              <NotificationItemSkeleton key={i} />
-            ))}
-          </div>
-        }
-        emptyFallback={
-          <EmptyState
-            icon={Bell}
-            title="No notifications"
-            description="You'll see private updates here when alerts are issued or tourists in your groups submit reports."
-          />
-        }
-      >
-        <PublicCardListPreview
-          items={notifications}
-          modalTitle="Guide notifications"
-          listClassName="space-y-3"
-          scrollPaneClassName={portalLayout.listScrollPane}
-          renderItem={(n) => (
-            <NotificationItemCard
-              notification={n}
-              variant="list"
-              relatedLink={getRelatedLink(n)}
-              onMarkRead={markAsRead}
+      <GuidePanel title="Inbox" subtitle={`${notifications.length} total`} compact>
+        <AsyncState
+          loading={loading}
+          error={error}
+          isEmpty={!loading && !error && notifications.length === 0}
+          onRetry={() => fetchNotifications(user.id)}
+          loadingFallback={<NotificationPanelSkeleton count={6} />}
+          emptyFallback={
+            <EmptyState
+              icon={Bell}
+              title="No notifications"
+              description="You'll see private updates here when alerts are issued or tourists in your groups submit reports."
             />
-          )}
-        />
-      </AsyncState>
+          }
+        >
+          <ul className="divide-y divide-zinc-100 border border-zinc-100 rounded-lg overflow-hidden">
+            {notifications.map((n) => (
+              <li key={n.id}>
+                <NotificationItemCard
+                  notification={n}
+                  compact
+                  relatedLink={getRelatedLink(n)}
+                  onMarkRead={markAsRead}
+                />
+              </li>
+            ))}
+          </ul>
+        </AsyncState>
       </GuidePanel>
 
       <GuideDashboardQuickActions />

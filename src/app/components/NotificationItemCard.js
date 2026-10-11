@@ -5,6 +5,16 @@ import { OutlinedCard } from "@/app/components/ui/OutlinedCard";
 import { getPriorityOutline, iconSize, outlinedCard, typography } from "@/lib/designSystem";
 import { CardIconBox } from "@/app/components/ui/CardIconBox";
 
+function formatWhen(date) {
+  if (!date) return "—";
+  return new Date(date).toLocaleString(undefined, {
+    month: "short",
+    day: "numeric",
+    hour: "numeric",
+    minute: "2-digit",
+  });
+}
+
 export function NotificationItemCard({
   notification,
   compact = false,
@@ -15,7 +25,8 @@ export function NotificationItemCard({
 }) {
   const styles = getPriorityOutline(notification.priority);
   const isUnread = !notification.is_read;
-  const listVariant = variant === "list" || compact;
+  const useRow = compact || variant === "row";
+  const listVariant = variant === "list";
   const priorityBadge = {
     CRITICAL: "bg-red-100 text-red-700",
     HIGH: "bg-orange-100 text-orange-700",
@@ -40,13 +51,35 @@ export function NotificationItemCard({
           event.stopPropagation();
           onMarkRead(notification.id);
         }}
-        className="text-[9px] font-black text-blue-600 uppercase flex items-center gap-1"
+        className={`font-black text-blue-600 uppercase flex items-center gap-1 ${useRow ? "text-[8px]" : "text-[9px]"}`}
+        aria-label="Mark read"
       >
-        <Check size={listVariant ? 10 : 12} /> Mark read
+        <Check size={useRow ? 10 : 12} />
+        {useRow ? "Read" : "Mark read"}
       </button>
     ) : null;
 
-  const card = listVariant ? (
+  const card = useRow ? (
+    <div
+      className={`flex items-start gap-2 px-2.5 py-2 ${isUnread ? "bg-blue-50/70" : "bg-white"} ${relatedLink ? "cursor-pointer hover:bg-zinc-50" : ""}`}
+    >
+      <span
+        className={`mt-1.5 h-1.5 w-1.5 rounded-full shrink-0 ${isUnread ? "bg-blue-600" : "bg-zinc-300"}`}
+        aria-hidden="true"
+      />
+      <div className="min-w-0 flex-1">
+        <p className="text-[11px] font-semibold leading-snug text-zinc-800 line-clamp-2">{notification.title}</p>
+        {notification.message ? (
+          <p className="mt-0.5 text-[10px] leading-snug text-zinc-500 line-clamp-1">{notification.message}</p>
+        ) : null}
+        <p className="mt-0.5 text-[9px] text-zinc-400">{formatWhen(notification.created_at)}</p>
+      </div>
+      <div className="flex flex-col items-end gap-1 shrink-0">
+        {markReadControl}
+        {relatedLink ? <ArrowRight size={12} className="text-zinc-300" /> : null}
+      </div>
+    </div>
+  ) : listVariant ? (
     <OutlinedCard
       variant="priority"
       priority={notification.priority}
@@ -74,7 +107,7 @@ export function NotificationItemCard({
           <h3 className={`${typography.cardTitleBase} ${styles.title}`}>{notification.title}</h3>
           <p className="text-[10px] text-zinc-400 font-bold uppercase mt-2 flex items-center gap-1">
             <Clock size={iconSize.inlineSm} />
-            {new Date(notification.created_at).toLocaleString()}
+            {formatWhen(notification.created_at)}
           </p>
           {markReadControl ? <div className="mt-2">{markReadControl}</div> : null}
         </div>
@@ -104,9 +137,7 @@ export function NotificationItemCard({
             <span className="text-[9px] font-black uppercase text-zinc-400 shrink-0">{notification.priority}</span>
           </div>
           <p className="text-zinc-600 mt-1 text-sm">{notification.message}</p>
-          <p className="text-zinc-400 font-bold uppercase mt-2 text-[10px]">
-            {new Date(notification.created_at).toLocaleString()}
-          </p>
+          <p className="text-zinc-400 font-bold uppercase mt-2 text-[10px]">{formatWhen(notification.created_at)}</p>
           {markReadControl ? <div className="flex items-center gap-2 mt-2">{markReadControl}</div> : null}
         </div>
       </div>
