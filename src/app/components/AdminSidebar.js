@@ -5,7 +5,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useAuthStore } from "@/app/store/crisisStore";
 import {
-  LayoutDashboard, Users, Workflow, AlertTriangle, FileWarning, LogOut, Archive, ClipboardList,
+  LayoutDashboard, Users, AlertTriangle, FileWarning, LogOut, Archive, ClipboardList,
 } from "lucide-react";
 import { BrandLogo } from "@/app/components/BrandLogo";
 import { ADMIN_NAV, isNavActive } from "@/lib/dashboardNav";
@@ -15,7 +15,6 @@ const ICONS = {
   Dashboard: LayoutDashboard,
   "Activity Log": ClipboardList,
   Users,
-  "Alert Pipeline": Workflow,
   "Command Center": AlertTriangle,
   "Incident Reports": FileWarning,
   "Archive & History": Archive,

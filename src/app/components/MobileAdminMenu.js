@@ -4,7 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
-  Menu, X, LayoutDashboard, Users, Workflow, AlertTriangle, FileWarning,
+  Menu, X, LayoutDashboard, Users, AlertTriangle, FileWarning,
 } from "lucide-react";
 import { BrandLogo } from "@/app/components/BrandLogo";
 import { ADMIN_NAV, isNavActive } from "@/lib/dashboardNav";
@@ -12,7 +12,6 @@ import { ADMIN_NAV, isNavActive } from "@/lib/dashboardNav";
 const ICONS = {
   Dashboard: LayoutDashboard,
   Users,
-  "Alert Pipeline": Workflow,
   "Command Center": AlertTriangle,
   "Incident Reports": FileWarning,
 };

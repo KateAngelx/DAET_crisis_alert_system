@@ -78,11 +78,6 @@ export const ROLE_INTERFACE = {
       description: "Monitor registrations, online activity, and inactive accounts. Create, edit, deactivate, or delete users.",
       helper: "Users inactive 30+ days have SMS paused until they sign in again and re-enable it. Inactive notices are sent in-app and by email when RESEND_API_KEY is configured.",
     },
-    workflow: {
-      title: "Alert Pipeline",
-      description: "Track how alerts are issued, delivered, and resolved across the Daet crisis system.",
-      helper: "Use Command Center to publish alerts. This view shows pipeline health — not individual road advisories.",
-    },
     settings: {
       title: "System Settings",
       description: "Configure notification audience, exports, and office-wide delivery rules.",
