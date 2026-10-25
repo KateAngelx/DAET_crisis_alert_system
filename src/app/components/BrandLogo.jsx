@@ -7,7 +7,8 @@ export function BrandLogo({ size = 32, className = "" }) {
       alt="Daet Municipal Tourism Office"
       width={size}
       height={size}
-      className={`object-contain shrink-0 ${className}`}
+      className={`block object-contain shrink-0 aspect-square ${className}`}
+      style={{ width: size, height: size }}
     />
   );
 }

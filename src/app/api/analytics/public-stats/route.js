@@ -8,7 +8,7 @@ import {
 } from "@/lib/publicAnalytics";
 import { API_RATE_LIMITS, enforceRateLimit } from "@/lib/apiRateLimit";
 
-export const revalidate = 60;
+export const dynamic = "force-dynamic";
 
 export async function GET(request) {
   const limited = enforceRateLimit(request, { name: "public-stats", ...API_RATE_LIMITS.publicStats });

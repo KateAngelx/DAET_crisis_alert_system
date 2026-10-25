@@ -39,7 +39,7 @@ export default function LoginPage() {
     <Card className={authForm.card}>
       <AuthBackLink />
       <div className={authForm.header}>
-        <BrandLogo size={44} className="mx-auto mb-3" />
+        <BrandLogo size={52} className="mx-auto mb-4 h-[52px] w-[52px]" />
         <p className={`${typography.statLabel} tracking-[0.25em] text-blue-600 mb-1`}>Account Access</p>
         <h1 className={typography.heroTitle}>Sign In</h1>
         <p className={`${typography.description} mt-1 text-xs leading-snug`}>

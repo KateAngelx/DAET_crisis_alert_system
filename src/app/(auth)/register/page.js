@@ -7,6 +7,7 @@ import { Card } from "@/app/components/ui/Card";
 import { AuthBackLink } from "@/app/components/AuthShell";
 import { UserPlus, CheckCircle, ArrowRight, User, Mail, Phone, Globe, Lock, Loader2 } from "lucide-react";
 import Link from "next/link";
+import { BrandLogo } from "@/app/components/BrandLogo";
 import { typography, iconSize, authForm } from "@/lib/designSystem";
 
 export default function RegisterPage() {
@@ -93,9 +94,7 @@ export default function RegisterPage() {
     <Card className={`${authForm.cardWide} overflow-y-auto`}>
       <AuthBackLink />
       <div className={authForm.header}>
-        <div className={authForm.iconWrap}>
-          <UserPlus size={iconSize.auth} className="text-white" />
-        </div>
+        <BrandLogo size={52} className="mx-auto mb-4 h-[52px] w-[52px]" />
         <p className={`${typography.statLabel} tracking-[0.25em] text-blue-600 mb-1`}>Tourist Registration</p>
         <h1 className={typography.heroTitle}>Create Account</h1>
         <p className={`${typography.description} mt-1 text-xs leading-snug`}>

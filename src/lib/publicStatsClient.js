@@ -5,6 +5,12 @@ let cachedAt = 0;
 let cachedStats = null;
 let inflight = null;
 
+export function invalidatePublicStatsCache() {
+  cachedStats = null;
+  cachedAt = 0;
+  inflight = null;
+}
+
 export async function fetchPublicStatsCached() {
   const now = Date.now();
   if (cachedStats && now - cachedAt < TTL_MS) {

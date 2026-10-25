@@ -1,20 +1,18 @@
 "use client";
 
 import { usePathname } from "next/navigation";
-import { useInstalledApp } from "@/lib/useInstalledApp";
-
 export function PublicMain({ children }) {
   const pathname = usePathname();
-  const installed = useInstalledApp();
   const isHome = pathname === "/";
-  const bottomPad = installed ? "pb-20 sm:pb-24 xl:pb-8" : "pb-6";
+  const mobileChromeBottom = "pb-[calc(5.75rem+env(safe-area-inset-bottom))] md:pb-8";
+  const mobileChromeTop = isHome ? "" : "pt-[calc(3.75rem+env(safe-area-inset-top))] md:pt-0";
 
   return (
     <main
       className={
         isHome
-          ? `flex-1 scrollbar-none bg-zinc-50 p-0 ${bottomPad}`
-          : `flex-1 scrollbar-none bg-zinc-100/80 p-4 md:p-6 lg:p-8 ${bottomPad}`
+          ? `flex-1 scrollbar-none bg-white p-0 ${mobileChromeBottom} ${mobileChromeTop}`
+          : `flex-1 scrollbar-none bg-zinc-100/80 p-4 md:p-6 lg:p-8 ${mobileChromeBottom} ${mobileChromeTop}`
       }
       data-public-main={isHome ? "home" : "default"}
     >

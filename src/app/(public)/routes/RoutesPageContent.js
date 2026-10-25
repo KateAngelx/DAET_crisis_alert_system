@@ -334,12 +334,12 @@ export default function RoutesPageContent() {
         >
           <div className={portalLayout.stackPublic}>
             <PublicPanel title="Overview" subtitle="Route and hazard counts">
-              <div className="grid grid-cols-6 gap-1.5 sm:gap-3 mb-4 min-w-0">
-                <PublicStatCard compact className="col-span-2" value={catalog.safe.length} label="Safe Routes" accent="green" />
-                <PublicStatCard compact className="col-span-2" value={catalog.active.length} label="Caution" accent="green" />
-                <PublicStatCard compact className="col-span-2" value={catalog.affected.length} label="Closed / Avoid" accent="red" />
-                <PublicStatCard compact className="col-span-3" value={catalog.alternative.length} label="Detours" accent="blue" />
-                <PublicStatCard compact className="col-span-3" value={activeAreaHazards.length} label="Area Hazards" accent="red" />
+              <div className="grid grid-cols-5 gap-1 sm:gap-2 md:gap-3 mb-4 min-w-0">
+                <PublicStatCard compact value={catalog.safe.length} label="Safe Routes" accent="green" />
+                <PublicStatCard compact value={catalog.active.length} label="Caution" accent="green" />
+                <PublicStatCard compact value={catalog.affected.length} label="Closed / Avoid" accent="red" />
+                <PublicStatCard compact value={catalog.alternative.length} label="Detours" accent="blue" />
+                <PublicStatCard compact value={activeAreaHazards.length} label="Area Hazards" accent="red" />
               </div>
 
               {urgentCount > 0 && (
