@@ -1,5 +1,4 @@
 "use client";
-
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { Phone, Mail, MapPin } from "lucide-react";
@@ -39,80 +38,68 @@ export function PublicFooter() {
   const showResponderPortal = mounted && user?.role === "admin";
 
   return (
-    <footer data-public-footer className="relative z-10 bg-zinc-950 text-white border-t border-white/5 shrink-0 pb-16 xl:pb-0">
+    <footer data-public-footer className="relative z-10 bg-white text-zinc-900 border-t border-zinc-200 shrink-0 pb-16 xl:pb-0">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-10">
         <div className="grid grid-cols-2 lg:grid-cols-5 gap-x-4 gap-y-4 sm:gap-10">
           <div className="col-span-2 lg:col-span-2 space-y-2 sm:space-y-4">
             <div className="flex items-center gap-2.5 sm:gap-3">
               <BrandLogo size={44} className="h-8 w-8 sm:h-11 sm:w-11" />
-              <span className={`${typography.brand} text-white`}>{siteInfo.brandName}</span>
+              <span className={`${typography.brand} text-zinc-900`}>{siteInfo.brandName}</span>
             </div>
-            <p className="text-xs sm:text-sm text-zinc-400 max-w-sm leading-snug sm:leading-relaxed font-medium">
-              <span className="block font-black uppercase tracking-wide text-zinc-300 mb-1">{siteInfo.officeName}</span>
+            <p className="text-xs sm:text-sm text-zinc-500 max-w-sm leading-snug sm:leading-relaxed font-medium">
+              <span className="block font-bold uppercase tracking-wide text-zinc-900 mb-1">{siteInfo.officeName}</span>
               {siteInfo.tagline}
             </p>
           </div>
-
           <div>
-            <h3 className="font-black text-[10px] uppercase tracking-[0.2em] mb-2 sm:mb-4 text-zinc-500">Crisis Services</h3>
-            <ul className="space-y-1.5 sm:space-y-3 text-xs sm:text-sm font-bold">
-              <li><Link href="/crisis" className="text-zinc-400 hover:text-white transition-colors">Crisis Hub</Link></li>
-              <li><Link href="/crisis/resolved" className="text-zinc-400 hover:text-white transition-colors">Resolved Alerts</Link></li>
-              <li><Link href="/routes" className="text-zinc-400 hover:text-white transition-colors">Roads & Travel</Link></li>
-              <li><Link href="/crisis/reports" className="text-zinc-400 hover:text-white transition-colors">My Reports</Link></li>
-              <li>
-                <Link href="/crisis" className="text-blue-400 hover:text-blue-300 transition-colors flex items-center gap-2">
-                  <span className="relative flex h-2 w-2">
-                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-blue-400 opacity-75" />
-                    <span className="relative inline-flex rounded-full h-2 w-2 bg-blue-500" />
-                  </span>
-                  Live Alerts
-                </Link>
-              </li>
+            <h3 className="font-bold text-[10px] uppercase tracking-[0.2em] mb-2 sm:mb-4 text-zinc-400">Crisis Services</h3>
+            <ul className="space-y-1.5 sm:space-y-3 text-xs sm:text-sm font-medium">
+              <li><Link href="/crisis" className="text-zinc-600 hover:text-blue-600 transition-colors">Crisis Hub</Link></li>
+              <li><Link href="/crisis/resolved" className="text-zinc-600 hover:text-blue-600 transition-colors">Resolved Alerts</Link></li>
+              <li><Link href="/routes" className="text-zinc-600 hover:text-blue-600 transition-colors">Roads & Travel</Link></li>
+              <li><Link href="/crisis/reports" className="text-zinc-600 hover:text-blue-600 transition-colors">My Reports</Link></li>
             </ul>
           </div>
-
           <div>
-            <h3 className="font-black text-[10px] uppercase tracking-[0.2em] mb-2 sm:mb-4 text-zinc-500">About</h3>
-            <ul className="space-y-1.5 sm:space-y-3 text-xs sm:text-sm font-bold">
-              <li><Link href="/about" className="text-zinc-400 hover:text-white transition-colors">About the System</Link></li>
-              <li><Link href="/faq" className="text-zinc-400 hover:text-white transition-colors">FAQs</Link></li>
-              <li><Link href="/contact" className="text-zinc-400 hover:text-white transition-colors">Contact</Link></li>
-              <li><Link href="/privacy" className="text-zinc-400 hover:text-white transition-colors">Privacy Policy</Link></li>
-              <li><Link href="/terms" className="text-zinc-400 hover:text-white transition-colors">Terms of Service</Link></li>
+            <h3 className="font-bold text-[10px] uppercase tracking-[0.2em] mb-2 sm:mb-4 text-zinc-400">About</h3>
+            <ul className="space-y-1.5 sm:space-y-3 text-xs sm:text-sm font-medium">
+              <li><Link href="/about" className="text-zinc-600 hover:text-blue-600 transition-colors">About the System</Link></li>
+              <li><Link href="/faq" className="text-zinc-600 hover:text-blue-600 transition-colors">FAQs</Link></li>
+              <li><Link href="/contact" className="text-zinc-600 hover:text-blue-600 transition-colors">Contact</Link></li>
+              <li><Link href="/privacy" className="text-zinc-600 hover:text-blue-600 transition-colors">Privacy Policy</Link></li>
+              <li><Link href="/terms" className="text-zinc-600 hover:text-blue-600 transition-colors">Terms of Service</Link></li>
             </ul>
           </div>
-
           <div className="col-span-2 lg:col-span-1">
-            <h3 className="font-black text-[10px] uppercase tracking-[0.2em] mb-2 sm:mb-4 text-zinc-500">Emergency Contacts</h3>
-            <ul className="space-y-1.5 sm:space-y-3 text-xs sm:text-sm font-bold">
+            <h3 className="font-bold text-[10px] uppercase tracking-[0.2em] mb-2 sm:mb-4 text-zinc-400">Emergency Contacts</h3>
+            <ul className="space-y-1.5 sm:space-y-3 text-xs sm:text-sm font-medium">
               <li className="flex items-start gap-3">
-                <MapPin size={16} className="text-blue-500 shrink-0 mt-0.5" />
-                <span className="text-zinc-400 leading-snug text-xs sm:text-sm">{siteInfo.address}</span>
+                <MapPin size={16} className="text-blue-600 shrink-0 mt-0.5" />
+                <span className="text-zinc-600 leading-snug text-xs sm:text-sm">{siteInfo.address}</span>
               </li>
               <li className="flex items-center gap-3">
-                <Phone size={16} className="text-blue-500 shrink-0" />
-                <a href={`tel:${siteInfo.phoneMunicipalTel}`} className="text-zinc-400 hover:text-white transition-colors">{siteInfo.phoneMunicipal} — Municipal Hotline</a>
+                <Phone size={16} className="text-blue-600 shrink-0" />
+                <a href={`tel:${siteInfo.phoneMunicipalTel}`} className="text-zinc-600 hover:text-blue-600 transition-colors">{siteInfo.phoneMunicipal}   Municipal Hotline</a>
               </li>
               <li className="flex items-center gap-3">
-                <Phone size={16} className="text-blue-500 shrink-0" />
-                <a href={`tel:${siteInfo.phoneTourismTel}`} className="text-zinc-400 hover:text-white transition-colors">{siteInfo.phoneTourism} — Tourism Office</a>
+                <Phone size={16} className="text-blue-600 shrink-0" />
+                <a href={`tel:${siteInfo.phoneTourismTel}`} className="text-zinc-600 hover:text-blue-600 transition-colors">{siteInfo.phoneTourism}   Tourism Office</a>
               </li>
               <li className="flex items-center gap-3">
-                <Phone size={16} className="text-blue-500 shrink-0" />
-                <a href="tel:911" className="text-zinc-400 hover:text-white transition-colors">911 — National Emergency</a>
+                <Phone size={16} className="text-blue-600 shrink-0" />
+                <a href="tel:911" className="text-zinc-600 hover:text-blue-600 transition-colors">911   National Emergency</a>
               </li>
               <li className="flex items-center gap-3">
-                <Phone size={16} className="text-blue-500 shrink-0" />
-                <a href="tel:117" className="text-zinc-400 hover:text-white transition-colors">117 — PNP</a>
+                <Phone size={16} className="text-blue-600 shrink-0" />
+                <a href="tel:117" className="text-zinc-600 hover:text-blue-600 transition-colors">117   PNP</a>
               </li>
               <li className="flex items-center gap-3">
-                <Mail size={16} className="text-blue-500 shrink-0" />
-                <a href={`mailto:${siteInfo.emailTourism}`} className="text-zinc-400 hover:text-white transition-colors truncate text-xs sm:text-sm">{siteInfo.emailTourism}</a>
+                <Mail size={16} className="text-blue-600 shrink-0" />
+                <a href={`mailto:${siteInfo.emailTourism}`} className="text-zinc-600 hover:text-blue-600 transition-colors truncate text-xs sm:text-sm">{siteInfo.emailTourism}</a>
               </li>
               {showResponderPortal && (
                 <li className="pt-1">
-                  <Link href="/admin" className="inline-block bg-zinc-900 border border-zinc-800 px-4 py-2 rounded-xl text-blue-400 hover:bg-zinc-800 transition-all text-xs">
+                  <Link href="/admin" className="inline-block bg-zinc-50 border border-zinc-200 px-4 py-2 rounded-xl font-bold text-blue-600 hover:bg-zinc-100 transition-all text-xs">
                     Responder Portal
                   </Link>
                 </li>
@@ -120,15 +107,14 @@ export function PublicFooter() {
             </ul>
           </div>
         </div>
-
-        <div className="border-t border-white/5 mt-4 sm:mt-10 pt-3 sm:pt-6 flex flex-col md:flex-row justify-between items-center gap-3 sm:gap-4">
-          <p className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest text-center md:text-left max-sm:max-w-[calc(100%-5rem)] max-sm:leading-relaxed">
+        <div className="border-t border-zinc-200 mt-4 sm:mt-10 pt-3 sm:pt-6 flex flex-col md:flex-row justify-between items-center gap-3 sm:gap-4">
+          <p className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest text-center md:text-left max-sm:max-w-[calc(100%-5rem)] max-sm:leading-relaxed">
             &copy; {currentYear} {siteInfo.officeName}
           </p>
-          <div className="flex flex-wrap justify-center gap-4 sm:gap-6 text-[9px] font-black uppercase tracking-[0.15em] text-zinc-500 max-sm:pr-20">
-            <Link href="/privacy" className="hover:text-white transition-colors">Privacy</Link>
-            <Link href="/terms" className="hover:text-white transition-colors">Terms</Link>
-            <Link href="/contact" className="hover:text-white transition-colors">Contact</Link>
+          <div className="flex flex-wrap justify-center gap-4 sm:gap-6 text-[9px] font-bold uppercase tracking-[0.15em] text-zinc-400 max-sm:pr-20">
+            <Link href="/privacy" className="hover:text-blue-600 transition-colors">Privacy</Link>
+            <Link href="/terms" className="hover:text-blue-600 transition-colors">Terms</Link>
+            <Link href="/contact" className="hover:text-blue-600 transition-colors">Contact</Link>
           </div>
         </div>
       </div>

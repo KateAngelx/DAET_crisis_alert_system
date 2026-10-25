@@ -2,7 +2,6 @@ import { Geist, Geist_Mono } from "next/font/google";
 import { GlobalEmergencyBanner } from "@/app/components/GlobalEmergencyBanner";
 import { AuthSessionSync } from "@/app/components/AuthSessionSync";
 import { PasswordRecoveryRedirect } from "@/app/components/PasswordRecoveryRedirect";
-import { ChannelPreferencesGate } from "@/app/components/ChannelPreferencesGate";
 import { AssignmentRequestHandler } from "@/app/components/tour/AssignmentRequestHandler";
 import { NotificationArrivalListener } from "@/app/components/NotificationArrivalListener";
 import { ConfirmDialogProvider } from "@/app/components/ui/ConfirmDialogProvider";
@@ -53,7 +52,6 @@ export default function RootLayout({ children }) {
         <PwaSplashScreen />
         <AuthSessionSync />
         <PasswordRecoveryRedirect />
-        <ChannelPreferencesGate />
         <AssignmentRequestHandler />
         <GlobalEmergencyBanner />
         <NotificationArrivalListener />

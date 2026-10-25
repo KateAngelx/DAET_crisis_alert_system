@@ -72,8 +72,8 @@ export function PublicHeader() {
 
   return (
     <>
-      <header className="fixed top-3 inset-x-0 z-50 px-3 sm:px-4">
-        <div className="max-w-7xl mx-auto h-12 sm:h-14 px-2.5 sm:px-4 flex items-center justify-between gap-2 rounded-2xl border border-white/50 bg-white/35 dark:bg-zinc-950/40 dark:border-white/10 backdrop-blur-2xl backdrop-saturate-150 shadow-[0_8px_30px_rgba(15,23,42,0.06)]">
+      <header className="fixed top-0 inset-x-0 z-50 bg-white border-b border-zinc-200 dark:bg-zinc-950 dark:border-zinc-800 shadow-sm">
+        <div className="max-w-7xl mx-auto h-16 px-4 sm:px-6 lg:px-8 flex items-center justify-between gap-2">
           <Link href="/" className="flex items-center shrink-0" aria-label={`${siteInfo.officeName} — Home`}>
             <BrandLogo size={32} className="shrink-0" />
           </Link>
@@ -175,11 +175,12 @@ export function PublicHeader() {
           </div>
         </div>
       </header>
-      <div className="h-[3.75rem] sm:h-[4.25rem] shrink-0" aria-hidden="true" />
+      
+      <div className="h-16 shrink-0" aria-hidden="true" />
 
       {menuOpen && !installed ? (
         <nav
-          className="xl:hidden fixed top-[4.25rem] sm:top-[4.75rem] inset-x-3 z-50 max-w-7xl mx-auto rounded-2xl border border-white/70 bg-white/95 p-2 shadow-xl backdrop-blur-xl dark:border-zinc-800 dark:bg-zinc-950/95"
+          className="xl:hidden fixed top-16 inset-x-0 z-40 bg-white border-b border-zinc-200 p-2 shadow-lg dark:bg-zinc-950 dark:border-zinc-800"
           aria-label="Sections"
         >
           {navItems.map((item) => {
