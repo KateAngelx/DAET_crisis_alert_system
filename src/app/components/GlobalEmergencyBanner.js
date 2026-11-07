@@ -18,12 +18,14 @@ export function GlobalEmergencyBanner() {
 
   /**
    * FIX: Mahigpit na check para sa Admin Pages.
-   * Kasama na rito ang /admin at /crisis/admin
+   * Admin shells: /admin, /crisis/command, /crisis/roads, /crisis/hazards
    */
   const isAdminPage =
     pathname.startsWith("/admin") ||
-    pathname.includes("/admin") ||
-    pathname.includes("admin");
+    pathname.startsWith("/crisis/command") ||
+    pathname.startsWith("/crisis/roads") ||
+    pathname.startsWith("/crisis/hazards") ||
+    pathname.includes("/admin");
 
   const isAuthPage = pathname === "/login" || pathname === "/register";
 

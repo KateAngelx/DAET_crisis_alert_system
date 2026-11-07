@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 
-const PROTECTED_PREFIXES = ["/admin", "/crisis/admin", "/guide"];
+const PROTECTED_PREFIXES = ["/admin", "/crisis/admin", "/crisis/command", "/crisis/roads", "/crisis/hazards", "/guide"];
 
 function isProtectedPath(pathname) {
   return PROTECTED_PREFIXES.some(

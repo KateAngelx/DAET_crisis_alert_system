@@ -300,7 +300,7 @@ export function AreaHazardsAdminPanel({
         footer={
           embedded ? (
             <AdminDashboardQuickNavRow>
-              <AdminDashboardQuickNavLink href="/crisis/admin" icon={Radio} label="Command Center" />
+              <AdminDashboardQuickNavLink href="/crisis/command" icon={Radio} label="Command Center" />
             </AdminDashboardQuickNavRow>
           ) : null
         }

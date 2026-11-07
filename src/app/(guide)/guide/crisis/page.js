@@ -15,7 +15,7 @@ import { useGuideStore } from "@/app/store/guideStore";
 import { useRouteAdvisoryStore } from "@/app/store/routeAdvisoryStore";
 import { RouteDetailModal } from "@/app/components/routes/RouteDetailModal";
 import { CrisisHubMap } from "@/app/components/maps/CrisisHubMap";
-import { AlertDetailModal } from "@/app/components/crisis/AlertDetailModal";
+import { AlertDetailModal } from "@/app/(subsystems)/crisis/(public)/_components/AlertDetailModal";
 import { CategoryFilterSelect, StatusRecordList } from "@/app/components/shell/StatusRecordList";
 import {
   DEFAULT_CRISIS_TYPE_OPTIONS,

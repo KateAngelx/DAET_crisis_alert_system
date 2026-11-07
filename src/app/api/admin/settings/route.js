@@ -16,13 +16,14 @@ export async function PATCH(request) {
 
   const body = await request.json().catch(() => ({}));
 
-  if (!body.notification_audience) {
-    return NextResponse.json({ error: "notification_audience is required" }, { status: 400 });
+  if (!body.notification_audience && !body.public_visibility) {
+    return NextResponse.json({ error: "Nothing to update" }, { status: 400 });
   }
 
   try {
     const settings = await updateSystemSettings(auth.admin, {
       notification_audience: body.notification_audience,
+      public_visibility: body.public_visibility,
       updatedBy: auth.user.id,
     });
     return NextResponse.json({ success: true, settings });

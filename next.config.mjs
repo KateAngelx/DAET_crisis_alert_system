@@ -17,6 +17,14 @@ const nextConfig = {
   turbopack: {
     root: __dirname,
   },
+  async redirects() {
+    return [
+      { source: "/crisis/admin/routes", destination: "/crisis/roads", permanent: false },
+      { source: "/crisis/admin/dangerous-locations", destination: "/crisis/hazards", permanent: false },
+      { source: "/crisis/admin", destination: "/crisis/command", permanent: false },
+      { source: "/crisis/routes", destination: "/routes", permanent: false },
+    ];
+  },
 };
 
 export default withPWA(nextConfig);

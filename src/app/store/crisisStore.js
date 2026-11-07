@@ -5,6 +5,7 @@ import { useNotificationStore } from '@/app/store/notificationStore';
 import { channelsToDb, normalizeAlert } from '@/lib/alertChannels';
 import { getActiveSession } from '@/lib/authSession';
 import { DEFAULT_USER_NOTIFICATION_CHANNELS } from '@/lib/userNotificationChannels';
+import { parseApiJson } from '@/lib/parseApiJson';
 
 export const useCrisisStore = create((set, get) => ({
   alerts: [], 
@@ -374,7 +375,7 @@ async function syncProfileFromServer(session, { loginEvent = false } = {}) {
     },
     body: JSON.stringify({ loginEvent }),
   });
-  const result = await res.json();
+  const result = await parseApiJson(res, 'Profile sync');
   if (!res.ok) throw new Error(result.error || 'Failed to sync profile');
   return result.profile;
 }

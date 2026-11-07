@@ -5,6 +5,7 @@ import { supabase } from "@/lib/supabaseClient";
 import { useAuthStore } from "@/app/store/crisisStore";
 import { useNotificationStore } from "@/app/store/notificationStore";
 import { clearInvalidAuthSession, getActiveSession, isInvalidRefreshError } from "@/lib/authSession";
+import { parseApiJson } from "@/lib/parseApiJson";
 
 async function fetchAppProfile(session, { loginEvent = false } = {}) {
   const res = await fetch("/api/auth/ensure-profile", {
@@ -15,7 +16,7 @@ async function fetchAppProfile(session, { loginEvent = false } = {}) {
     },
     body: JSON.stringify({ loginEvent }),
   });
-  const result = await res.json();
+  const result = await parseApiJson(res, "Profile sync");
   if (!res.ok) throw new Error(result.error || "Profile sync failed");
   return result.profile;
 }

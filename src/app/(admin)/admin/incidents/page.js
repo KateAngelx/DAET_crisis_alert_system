@@ -357,10 +357,10 @@ export default function AdminIncidentsPage() {
         pageId="incidents"
         footer={
           <AdminDashboardQuickNavRow>
-            <AdminDashboardQuickNavLink href="/crisis/admin" icon={Radio} label="Command Center" />
+            <AdminDashboardQuickNavLink href="/crisis/command" icon={Radio} label="Command Center" />
             <AdminDashboardQuickNavDivider />
             <AdminDashboardQuickNavLink
-              href="/crisis/admin/routes"
+              href="/crisis/roads"
               icon={Route}
               label="Roads & hazards"
             />

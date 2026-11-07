@@ -7,7 +7,7 @@ import { GuidePageHeader } from "@/app/components/guide/GuidePageHeader";
 import { GuidePanel } from "@/app/components/guide/GuidePanel";
 import { CompletedToursPanel } from "@/app/components/tour/CompletedToursPanel";
 import { CrisisHubMap } from "@/app/components/maps/CrisisHubMap";
-import { AlertDetailModal } from "@/app/components/crisis/AlertDetailModal";
+import { AlertDetailModal } from "@/app/(subsystems)/crisis/(public)/_components/AlertDetailModal";
 import { CategoryFilterSelect, StatusRecordList } from "@/app/components/shell/StatusRecordList";
 import {
   DEFAULT_CRISIS_TYPE_OPTIONS,

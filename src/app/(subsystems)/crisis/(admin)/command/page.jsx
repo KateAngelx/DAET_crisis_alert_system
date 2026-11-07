@@ -543,7 +543,7 @@ export default function CrisisAdminPage() {
               footer={
                 <AdminDashboardQuickNavRow>
                   <AdminDashboardQuickNavLink
-                    href="/crisis/admin/routes"
+                    href="/crisis/roads"
                     icon={Route}
                     label="Roads & hazards"
                     meta={`${activeRouteAdvisories.length} routes · ${activeDangerWarnings.length} hazards`}

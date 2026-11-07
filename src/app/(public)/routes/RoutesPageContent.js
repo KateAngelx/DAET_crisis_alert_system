@@ -27,6 +27,7 @@ import { RoleContextBanner } from "@/app/components/dashboard/RoleContextBanner"
 import { portalLayout, portalShell } from "@/lib/designSystem";
 import { ROUTES_MAP_LEGEND } from "@/lib/mapPinUtils";
 import { PublicListModal } from "@/app/components/shell/PublicListModal";
+import { usePublicVisibility } from "@/lib/usePublicVisibility";
 
 const FILTERS = [
   { id: "all", label: "All" },
@@ -150,6 +151,7 @@ export default function RoutesPageContent() {
   const [highlightedHazardId, setHighlightedHazardId] = useState(null);
   const searchParams = useSearchParams();
   const router = useRouter();
+  const visibility = usePublicVisibility();
 
   const loading = routesLoading || hazardsLoading;
   const error = routesError || hazardsError;
@@ -290,6 +292,24 @@ export default function RoutesPageContent() {
     ...visibleRouteAdvisories.map(advisoryToMapWarning).filter(Boolean),
     ...visibleHazards,
   ];
+
+  if (!visibility.roadsAndHazards) {
+    return (
+      <PublicPageShell>
+        <InfoPageHero
+          title={ROLE_INTERFACE.public.routes.title}
+          description="This page is turned off by the tourism office."
+        />
+        <PublicPageContent>
+          <PublicPanel title="Roads and hazards">
+            <p className="text-sm font-medium text-zinc-600">
+              Roads and hazards are not shown on the public site right now. Active emergency alerts stay on Crisis Hub.
+            </p>
+          </PublicPanel>
+        </PublicPageContent>
+      </PublicPageShell>
+    );
+  }
 
   return (
     <PublicPageShell>

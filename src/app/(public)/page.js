@@ -12,12 +12,13 @@ import { useNotificationStore } from "@/app/store/notificationStore";
 import { HeroStatSkeleton } from "@/app/components/ui/Skeletons";
 import { DashboardStatCard } from "@/app/components/dashboard/DashboardStatCard";
 import { InfoOutlineCard } from "@/app/components/ui/InfoOutlineCard";
-import { typography, iconSize, statGrid, getInfoCardAccent } from "@/lib/designSystem";
+import { typography, statGrid } from "@/lib/designSystem";
 import { PublicFeedbackSection } from "@/app/components/feedback/PublicFeedbackSection";
 import { BrandLogo } from "@/app/components/BrandLogo";
 import { siteInfo } from "@/lib/siteInfo";
 import { fetchPublicStatsCached, invalidatePublicStatsCache } from "@/lib/publicStatsClient";
 import { MobilePopStack, MobilePopStackItem } from "@/app/components/landing/MobilePopStack";
+import { usePublicVisibility } from "@/lib/usePublicVisibility";
 
 const CHANNELS = [
   {
@@ -229,6 +230,7 @@ function HeroLivePanel({ variant = "desktop" }) {
 export default function Home() {
   const { fetchAlerts, alerts, loading, error } = useCrisisStore();
   const { isAuthenticated, user } = useAuthStore();
+  const visibility = usePublicVisibility();
   const { unreadCount, fetchNotifications } = useNotificationStore();
   const [mounted, setMounted] = useState(false);
   const router = useRouter();
@@ -264,10 +266,39 @@ export default function Home() {
 
   const quickLinks = [
     { href: "/crisis", label: "Alerts", icon: AlertTriangle },
-    { href: "/routes", label: "Routes", icon: Navigation },
+    visibility.roadsAndHazards ? { href: "/routes", label: "Routes", icon: Navigation } : null,
     { href: "/faq", label: "FAQ", icon: FileText },
     { href: isAuthenticated ? "/profile" : "/login", label: isAuthenticated ? "Profile" : "Sign In", icon: Users },
-  ];
+  ].filter(Boolean);
+
+  const featureCards = [
+    {
+      title: "Crisis Hub",
+      icon: ShieldCheck,
+      desc: "Active emergency alerts, affected-area map, safety instructions, and official announcements from the Daet Municipal Tourism Office.",
+      href: "/crisis",
+    },
+    visibility.roadsAndHazards
+      ? {
+          title: "Roads & Travel",
+          icon: Navigation,
+          desc: "Route status, detours, area hazards, and tourism-office recommended paths on one map.",
+          href: "/routes",
+        }
+      : null,
+    {
+      title: "Incident Reporting",
+      icon: FileText,
+      desc: "Report a hazard or emergency with location details and track response status from the tourism office.",
+      href: "/crisis/reports",
+    },
+    {
+      title: "Alert Notifications",
+      icon: Radio,
+      desc: "Sign in to receive private in-app updates when the tourism office responds to your reports or account activity occurs.",
+      href: "/login",
+    },
+  ].filter(Boolean);
 
   return (
     <div className="flex flex-col bg-white font-sans text-left">
@@ -275,10 +306,12 @@ export default function Home() {
       {/* 1. HERO SECTION */}
       <section
         data-landing-section="hero"
-        className="relative w-full min-h-[100dvh] md:min-h-[640px] overflow-hidden flex flex-col justify-end md:justify-center bg-cover bg-center bg-no-repeat pt-[calc(3.75rem+env(safe-area-inset-top))] pb-5 md:py-20 lg:py-24"
+        className="relative w-full min-h-[100dvh] md:min-h-[640px] overflow-hidden flex flex-col justify-end md:justify-center bg-cover bg-center bg-no-repeat pt-[calc(3.75rem+env(safe-area-inset-top))] pb-[calc(6.25rem+env(safe-area-inset-bottom))] md:py-20 lg:py-24"
         style={{ backgroundImage: "url('/images/hero-bg.jpg')" }} 
       >
-        <div className="absolute inset-0 bg-gradient-to-b from-zinc-950/80 via-zinc-900/75 to-zinc-950/90 md:bg-gradient-to-r md:from-zinc-900/88 md:via-zinc-900/55 md:to-zinc-900/15" aria-hidden="true"></div>
+        <div className="absolute inset-0 bg-gradient-to-b from-zinc-950/85 via-blue-950/70 to-zinc-950/90 md:bg-gradient-to-r md:from-zinc-950/90 md:via-blue-950/55 md:to-zinc-900/20" aria-hidden="true"></div>
+        <div className="absolute -left-16 top-16 h-64 w-64 rounded-full bg-blue-500/35 blur-3xl" aria-hidden="true"></div>
+        <div className="absolute bottom-10 right-10 h-48 w-48 rounded-full bg-sky-400/20 blur-3xl" aria-hidden="true"></div>
 
         <div className="hidden md:block absolute top-[5.5rem] right-6 lg:right-8 z-20 animate-in fade-in slide-in-from-top-4 duration-700 max-w-[calc(100%-2rem)]">
           <HeroLivePanel variant="desktop" />
@@ -375,19 +408,19 @@ export default function Home() {
             {loading ? (
               <HeroStatSkeleton />
             ) : (
-            <div className="pt-4 md:pt-8 border-t border-white/20 w-full max-w-md mx-auto md:mx-0 md:max-w-lg">
-              <div className="grid grid-cols-3 gap-2 md:gap-10 md:flex md:items-center md:justify-start text-center md:text-left">
-                <div className="min-w-0 flex flex-col items-center md:items-start">
+            <div className="pt-4 md:pt-8 w-full max-w-md mx-auto md:mx-0 md:max-w-lg">
+              <div className="grid grid-cols-3 gap-2 rounded-2xl border border-white/20 bg-white/10 px-3 py-4 text-center shadow-lg shadow-blue-950/20 backdrop-blur-md md:px-5">
+                <div className="min-w-0 flex flex-col items-center">
                   <p className="text-xl md:text-2xl font-black text-white leading-none mb-1">{activeAlerts.length}</p>
-                  <p className="text-[8px] md:text-[10px] font-bold text-zinc-400 uppercase tracking-widest leading-tight">Active Alerts</p>
+                  <p className="text-[8px] md:text-[10px] font-bold text-blue-100 uppercase tracking-widest leading-tight">Active Alerts</p>
                 </div>
-                <div className="min-w-0 flex flex-col items-center md:items-start">
-                  <p className="text-xl md:text-2xl font-black text-red-500 tabular-nums leading-none mb-1">{criticalCount}</p>
-                  <p className="text-[8px] md:text-[10px] font-bold text-zinc-400 uppercase tracking-widest leading-tight">Critical</p>
+                <div className="min-w-0 flex flex-col items-center border-x border-white/15">
+                  <p className="text-xl md:text-2xl font-black text-red-400 tabular-nums leading-none mb-1">{criticalCount}</p>
+                  <p className="text-[8px] md:text-[10px] font-bold text-blue-100 uppercase tracking-widest leading-tight">Critical</p>
                 </div>
-                <div className="min-w-0 flex flex-col items-center md:items-start">
+                <div className="min-w-0 flex flex-col items-center">
                   <p className="text-xl md:text-2xl font-black text-white leading-none mb-1">24/7</p>
-                  <p className="text-[8px] md:text-[10px] font-bold text-zinc-400 uppercase tracking-widest leading-tight">Monitoring</p>
+                  <p className="text-[8px] md:text-[10px] font-bold text-blue-100 uppercase tracking-widest leading-tight">Monitoring</p>
                 </div>
               </div>
             </div>
@@ -418,7 +451,7 @@ export default function Home() {
               </div>
               <Link 
                 href="/crisis" 
-                className="shrink-0 flex items-center gap-2 bg-zinc-50 text-zinc-700 px-5 py-3 md:px-6 md:py-3.5 rounded-full font-black text-[10px] uppercase tracking-widest hover:bg-zinc-100 transition-colors shadow-sm border border-zinc-200"
+                className="shrink-0 flex items-center gap-2 bg-blue-600 text-white px-5 py-3 md:px-6 md:py-3.5 rounded-full font-black text-[10px] uppercase tracking-widest hover:bg-blue-700 transition-colors shadow-lg shadow-blue-200"
               >
                 View All Alerts <ArrowRight size={14} />
               </Link>
@@ -474,11 +507,13 @@ export default function Home() {
                     There are currently no active crisis alerts in Daet. Enjoy your stay and travel safely. We recommend registering to receive immediate notifications if an emergency occurs.
                   </p>
                 </div>
+                {visibility.roadsAndHazards ? (
                 <div className="shrink-0 flex flex-col sm:flex-row gap-3 w-full md:w-auto">
                   <Link href="/routes" className="flex items-center justify-center gap-2 bg-white border border-green-200 text-green-700 px-6 py-3.5 rounded-full font-black text-[10px] uppercase tracking-widest hover:bg-green-100 transition-colors shadow-sm">
                     View Travel Map <ArrowRight size={14} />
                   </Link>
                 </div>
+                ) : null}
               </div>
             )}
 
@@ -507,65 +542,35 @@ export default function Home() {
 
       {/* 4. CORE FEATURES SECTION (What You Can Check Here) - CAROUSEL ON MOBILE */}
       {!isAuthenticated && (
-      <section className="py-8 md:py-16 bg-zinc-50 relative z-20 border-b border-zinc-200">
+      <section className="relative z-20 overflow-hidden border-b border-blue-100 bg-gradient-to-b from-blue-50 via-white to-sky-50 py-8 md:py-16">
+        <div className="pointer-events-none absolute -right-16 -top-16 h-56 w-56 rounded-full bg-blue-200/50 blur-3xl" aria-hidden="true"></div>
         <div className="max-w-7xl mx-auto px-3 sm:px-6 text-left">
           
           <div className="mb-5 md:mb-10 flex flex-col md:flex-row md:items-end justify-between gap-4 md:gap-6">
             <div>
               <p className={`${typography.sectionTitle} text-blue-600 mb-2`}>Platform Features</p>
-              <h3 className="text-xl font-black uppercase tracking-tight text-zinc-900 mb-4">
+              <h3 className="text-2xl md:text-3xl font-black uppercase tracking-tight text-zinc-900 mb-4">
                 What You Can Check Here
               </h3>
-              <p className="text-zinc-500 font-medium max-w-xl text-sm leading-relaxed">
+              <p className="text-zinc-600 font-medium max-w-xl text-sm leading-relaxed">
                 Each section shows specific crisis information: active alerts, affected locations, report status, and official announcements from the Daet Municipal Tourism Office.
               </p>
             </div>
             <Link 
               href="/login" 
-              className="shrink-0 flex items-center gap-2 bg-red-50 text-red-600 px-6 py-3.5 rounded-full font-black text-xs uppercase tracking-widest hover:bg-red-100 transition-colors shadow-sm border border-red-200"
+              className="shrink-0 flex items-center gap-2 bg-red-600 text-white px-6 py-3.5 rounded-full font-black text-xs uppercase tracking-widest hover:bg-red-700 transition-colors shadow-lg shadow-red-200"
             >
               <AlertTriangle size={16} /> Report an Incident
             </Link>
           </div>
 
           <MobilePopStack>
-            <div className="space-y-2.5 md:space-y-0 md:grid md:grid-cols-2 lg:grid-cols-4 md:gap-5">
-              <MobilePopStackItem>
-                <ServiceCard
-                  title="Crisis Hub"
-                  icon={ShieldCheck}
-                  accent="blue"
-                  desc="Active emergency alerts, affected-area map, safety instructions, and official announcements from the Daet Municipal Tourism Office."
-                  href="/crisis"
-                />
-              </MobilePopStackItem>
-              <MobilePopStackItem>
-                <ServiceCard
-                  title="Roads & Travel"
-                  icon={Navigation}
-                  accent="blue"
-                  desc="Route status, detours, area hazards, and tourism-office recommended paths on one map."
-                  href="/routes"
-                />
-              </MobilePopStackItem>
-              <MobilePopStackItem>
-                <ServiceCard
-                  title="Incident Reporting"
-                  icon={FileText}
-                  accent="blue"
-                  desc="Report a hazard or emergency with location details and track response status from the tourism office."
-                  href="/crisis/reports"
-                />
-              </MobilePopStackItem>
-              <MobilePopStackItem>
-                <ServiceCard
-                  title="Alert Notifications"
-                  icon={Radio}
-                  accent="blue"
-                  desc="Sign in to receive private in-app updates when the tourism office responds to your reports or account activity occurs."
-                  href="/login"
-                />
-              </MobilePopStackItem>
+            <div className={`grid grid-cols-1 gap-3 md:gap-5 ${featureCards.length >= 4 ? "md:grid-cols-2 lg:grid-cols-4" : featureCards.length === 3 ? "md:grid-cols-3" : "md:grid-cols-2"}`}>
+              {featureCards.map((card) => (
+                <MobilePopStackItem key={card.title}>
+                  <ServiceCard {...card} />
+                </MobilePopStackItem>
+              ))}
             </div>
           </MobilePopStack>
         </div>
@@ -590,36 +595,33 @@ export default function Home() {
           <MobilePopStack>
             <div className="space-y-2.5 md:space-y-0 md:grid md:grid-cols-3 md:gap-5">
               <MobilePopStackItem>
-                <div className="flex flex-col items-start p-4 md:p-6 rounded-xl md:rounded-2xl border-2 border-blue-200 bg-white shadow-sm md:shadow-md hover:border-blue-400 transition-all">
-                  <div className="flex items-center gap-3 mb-3 md:mb-4">
-                    <div className="flex h-10 w-10 md:h-12 md:w-12 items-center justify-center rounded-xl bg-blue-50 text-blue-600">
-                      <UserPlus size={20} strokeWidth={2.25} />
-                    </div>
-                    <h4 className="text-[11px] sm:text-xs font-black uppercase tracking-wide text-blue-900">1. Register</h4>
+                <div className="flex h-full flex-col items-start rounded-2xl border border-blue-100 bg-white p-5 shadow-sm transition-all hover:-translate-y-1 hover:border-blue-400 hover:shadow-xl hover:shadow-blue-100 md:p-6">
+                  <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-2xl bg-blue-600 text-lg font-black text-white shadow-md shadow-blue-200">1</div>
+                  <div className="mb-3 flex items-center gap-2 text-blue-600">
+                    <UserPlus size={18} strokeWidth={2.25} />
+                    <h4 className="text-xs font-black uppercase tracking-wide text-zinc-900">Register</h4>
                   </div>
-                  <p className="text-xs sm:text-sm text-zinc-600 font-medium leading-relaxed flex-1">Create a free account to ensure the tourism office can reach you during your stay.</p>
+                  <p className="text-sm text-zinc-600 font-medium leading-relaxed flex-1">Create a free account to ensure the tourism office can reach you during your stay.</p>
                 </div>
               </MobilePopStackItem>
               <MobilePopStackItem>
-                <div className="flex flex-col items-start p-4 md:p-6 rounded-xl md:rounded-2xl border-2 border-blue-200 bg-white shadow-sm md:shadow-md hover:border-blue-400 transition-all">
-                  <div className="flex items-center gap-3 mb-3 md:mb-4">
-                    <div className="flex h-10 w-10 md:h-12 md:w-12 items-center justify-center rounded-xl bg-blue-50 text-blue-600">
-                      <Settings size={20} strokeWidth={2.25} />
-                    </div>
-                    <h4 className="text-[11px] sm:text-xs font-black uppercase tracking-wide text-blue-900">2. Set Preferences</h4>
+                <div className="flex h-full flex-col items-start rounded-2xl border border-blue-100 bg-white p-5 shadow-sm transition-all hover:-translate-y-1 hover:border-blue-400 hover:shadow-xl hover:shadow-blue-100 md:p-6">
+                  <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-2xl bg-blue-600 text-lg font-black text-white shadow-md shadow-blue-200">2</div>
+                  <div className="mb-3 flex items-center gap-2 text-blue-600">
+                    <Settings size={18} strokeWidth={2.25} />
+                    <h4 className="text-xs font-black uppercase tracking-wide text-zinc-900">Set Preferences</h4>
                   </div>
-                  <p className="text-xs sm:text-sm text-zinc-600 font-medium leading-relaxed flex-1">Choose exactly how you want to receive alerts: via Email, SMS, or In-App notifications.</p>
+                  <p className="text-sm text-zinc-600 font-medium leading-relaxed flex-1">Choose exactly how you want to receive alerts: via Email, SMS, or In-App notifications.</p>
                 </div>
               </MobilePopStackItem>
               <MobilePopStackItem>
-                <div className="flex flex-col items-start p-4 md:p-6 rounded-xl md:rounded-2xl border-2 border-blue-200 bg-white shadow-sm md:shadow-md hover:border-blue-400 transition-all">
-                  <div className="flex items-center gap-3 mb-3 md:mb-4">
-                    <div className="flex h-10 w-10 md:h-12 md:w-12 items-center justify-center rounded-xl bg-blue-50 text-blue-600">
-                      <ShieldCheck size={20} strokeWidth={2.25} />
-                    </div>
-                    <h4 className="text-[11px] sm:text-xs font-black uppercase tracking-wide text-blue-900">3. Travel Safely</h4>
+                <div className="flex h-full flex-col items-start rounded-2xl border border-blue-100 bg-white p-5 shadow-sm transition-all hover:-translate-y-1 hover:border-blue-400 hover:shadow-xl hover:shadow-blue-100 md:p-6">
+                  <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-2xl bg-blue-600 text-lg font-black text-white shadow-md shadow-blue-200">3</div>
+                  <div className="mb-3 flex items-center gap-2 text-blue-600">
+                    <ShieldCheck size={18} strokeWidth={2.25} />
+                    <h4 className="text-xs font-black uppercase tracking-wide text-zinc-900">Travel Safely</h4>
                   </div>
-                  <p className="text-xs sm:text-sm text-zinc-600 font-medium leading-relaxed flex-1">Enjoy your trip knowing you will be instantly notified if an emergency occurs.</p>
+                  <p className="text-sm text-zinc-600 font-medium leading-relaxed flex-1">Enjoy your trip knowing you will be instantly notified if an emergency occurs.</p>
                 </div>
               </MobilePopStackItem>
             </div>
@@ -683,19 +685,20 @@ export default function Home() {
   );
 }
 
-function ServiceCard({ title, desc, icon: Icon, accent = "blue", href = "#" }) {
-  const styles = getInfoCardAccent(accent);
+function ServiceCard({ title, desc, icon: Icon, href = "#" }) {
   return (
-    <InfoOutlineCard
-      href={href}
-      accent={accent}
-      icon={Icon}
-      label={title}
-      description={desc}
-      className="h-full bg-white hover:border-blue-300 transition-colors"
-      footer={
-        <span className={`text-[9px] font-black uppercase tracking-widest transition-colors ${styles.label}`}>Open</span>
-      }
-    />
+    <Link href={href} className="group block h-full no-underline">
+      <article className="relative flex h-full flex-col overflow-hidden rounded-2xl border border-blue-100 bg-white p-5 shadow-sm transition-all hover:-translate-y-1 hover:border-blue-400 hover:shadow-xl hover:shadow-blue-100">
+        <div className="absolute inset-x-0 top-0 h-1.5 bg-gradient-to-r from-blue-600 to-sky-400" />
+        <div className="mt-2 flex h-12 w-12 items-center justify-center rounded-2xl bg-blue-600 text-white shadow-md shadow-blue-200">
+          <Icon size={22} strokeWidth={2.25} />
+        </div>
+        <h3 className="mt-4 text-sm font-black uppercase tracking-wide text-zinc-900 group-hover:text-blue-700">{title}</h3>
+        <p className="mt-2 flex-1 text-sm font-medium leading-relaxed text-zinc-600">{desc}</p>
+        <span className="mt-5 inline-flex items-center gap-1 text-[10px] font-black uppercase tracking-widest text-blue-600">
+          Open <ArrowRight size={14} className="transition-transform group-hover:translate-x-1" />
+        </span>
+      </article>
+    </Link>
   );
 }

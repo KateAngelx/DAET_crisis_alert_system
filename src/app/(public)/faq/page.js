@@ -23,7 +23,6 @@ import {
 import { ChevronDown } from "lucide-react";
 
 import { siteInfo } from "@/lib/siteInfo";
-import { portalLayout } from "@/lib/designSystem";
 
 
 
@@ -74,22 +73,6 @@ const faqs = [
     q: "What information does each alert include?",
 
     a: "Each alert shows the crisis type (e.g. Weather, Health, Security), severity level (Low to Critical), affected location, time issued, official message with safety instructions, and current status (Active or Resolved).",
-
-  },
-
-  {
-
-    q: "How do user roles work?",
-
-    a: `New registrations are assigned the tourist role by default. Tourism guide and administrator roles are assigned by ${siteInfo.officeName} staff. Guides can monitor assigned tourists; admins can issue alerts and manage reports.`,
-
-  },
-
-  {
-
-    q: "Who can access the admin portal and Command Center?",
-
-    a: `Only users with the administrator role assigned by ${siteInfo.officeName} staff. Tourists and guides cannot access admin features.`,
 
   },
 
@@ -181,7 +164,7 @@ export default function FaqPage() {
 
       <PublicPageContent>
 
-        <PublicPanel title="Questions & answers" subtitle="Tap a question to expand" bodyClassName={portalLayout.scrollPane}>
+        <PublicPanel title="Questions & answers" subtitle="Tap a question to expand">
 
           <div className={publicLayout.stackTight}>
 

@@ -115,7 +115,7 @@ export function AdminActivityDetailModal({ entry, onClose }) {
               {h.severity}
             </span>
           </div>
-          <Link href="/crisis/admin" className={`${adminShell.btnGhost} no-underline inline-flex`}>
+          <Link href="/crisis/command" className={`${adminShell.btnGhost} no-underline inline-flex`}>
             Open command center <ArrowRight size={iconSize.inline} />
           </Link>
         </div>

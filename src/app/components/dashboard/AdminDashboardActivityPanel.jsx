@@ -101,7 +101,7 @@ export function AdminDashboardActivityPanel({
             icon={Radio}
             title="Recent alerts"
             count={recentAlerts.length}
-            href="/crisis/admin"
+            href="/crisis/command"
             hrefLabel="Command"
           />
           {recentAlerts.length > 0 ? (

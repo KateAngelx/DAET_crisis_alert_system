@@ -6,10 +6,12 @@ import { BrandLogo } from "@/app/components/BrandLogo";
 import { useAuthStore } from "@/app/store/crisisStore";
 import { siteInfo } from "@/lib/siteInfo";
 import { typography } from "@/lib/designSystem";
+import { usePublicVisibility } from "@/lib/usePublicVisibility";
 
 export function PublicFooter() {
   const currentYear = new Date().getFullYear();
   const { user } = useAuthStore();
+  const visibility = usePublicVisibility();
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
@@ -36,7 +38,9 @@ export function PublicFooter() {
               <h3 className="font-bold text-[10px] uppercase tracking-[0.18em] mb-2 text-zinc-400">Services</h3>
               <ul className="space-y-1.5">
                 <li><Link href="/crisis" className="text-zinc-600 hover:text-blue-600">Crisis Hub</Link></li>
-                <li><Link href="/routes" className="text-zinc-600 hover:text-blue-600">Roads & Travel</Link></li>
+                {visibility.roadsAndHazards ? (
+                  <li><Link href="/routes" className="text-zinc-600 hover:text-blue-600">Roads & Travel</Link></li>
+                ) : null}
                 <li><Link href="/crisis/reports" className="text-zinc-600 hover:text-blue-600">My Reports</Link></li>
               </ul>
             </div>
@@ -80,7 +84,9 @@ export function PublicFooter() {
             <ul className="space-y-3 text-sm font-medium">
               <li><Link href="/crisis" className="text-zinc-600 hover:text-blue-600 transition-colors">Crisis Hub</Link></li>
               <li><Link href="/crisis/resolved" className="text-zinc-600 hover:text-blue-600 transition-colors">Resolved Alerts</Link></li>
-              <li><Link href="/routes" className="text-zinc-600 hover:text-blue-600 transition-colors">Roads & Travel</Link></li>
+              {visibility.roadsAndHazards ? (
+                <li><Link href="/routes" className="text-zinc-600 hover:text-blue-600 transition-colors">Roads & Travel</Link></li>
+              ) : null}
               <li><Link href="/crisis/reports" className="text-zinc-600 hover:text-blue-600 transition-colors">My Reports</Link></li>
             </ul>
           </div>

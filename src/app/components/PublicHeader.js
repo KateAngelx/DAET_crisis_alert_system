@@ -3,12 +3,13 @@
 import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { AlertTriangle, CheckCircle2, FileText, Home, Info, Route, User } from "lucide-react";
+import { AlertTriangle, CheckCircle2, FileText, HelpCircle, Home, Info, Route, User } from "lucide-react";
 import { BrandLogo } from "@/app/components/BrandLogo";
 import { siteInfo } from "@/lib/siteInfo";
 import { useAuthStore } from "../store/crisisStore";
 import { NotificationPanel } from "@/app/components/NotificationPanel";
 import { isPublicNavActive } from "@/lib/navUtils";
+import { usePublicVisibility } from "@/lib/usePublicVisibility";
 
 const GUEST_NAV = [
   { name: "Home", short: "Home", href: "/", icon: Home },
@@ -16,6 +17,7 @@ const GUEST_NAV = [
   { name: "Resolved", short: "Resolved", href: "/crisis/resolved", icon: CheckCircle2 },
   { name: "Roads & Travel", short: "Roads", href: "/routes", icon: Route },
   { name: "About", short: "About", href: "/about", icon: Info },
+  { name: "FAQs", short: "FAQ", href: "/faq", icon: HelpCircle },
 ];
 
 const AUTH_NAV = [
@@ -24,6 +26,7 @@ const AUTH_NAV = [
   { name: "Resolved", short: "Resolved", href: "/crisis/resolved", icon: CheckCircle2 },
   { name: "Roads & Travel", short: "Roads", href: "/routes", icon: Route },
   { name: "My Reports", short: "Reports", href: "/crisis/reports", icon: FileText },
+  { name: "FAQs", short: "FAQ", href: "/faq", icon: HelpCircle },
 ];
 
 export function PublicHeader() {
@@ -31,6 +34,7 @@ export function PublicHeader() {
   const [accountOpen, setAccountOpen] = useState(false);
   const [mounted, setMounted] = useState(false);
   const { user, isAuthenticated, logout } = useAuthStore();
+  const visibility = usePublicVisibility();
 
   useEffect(() => setMounted(true), []);
 
@@ -38,7 +42,9 @@ export function PublicHeader() {
     setAccountOpen(false);
   }, [pathname]);
 
-  const navItems = mounted && isAuthenticated ? AUTH_NAV : GUEST_NAV;
+  const navItems = (mounted && isAuthenticated ? AUTH_NAV : GUEST_NAV).filter(
+    (item) => visibility.roadsAndHazards || item.href !== "/routes"
+  );
 
   const linkClass = (href) => {
     const active = isPublicNavActive(pathname, href);
@@ -77,8 +83,15 @@ export function PublicHeader() {
         >
           <div className="max-md:rounded-xl max-md:bg-white max-md:border max-md:border-zinc-200 max-md:shadow-[0_4px_18px_rgba(15,23,42,0.08)] md:rounded-none md:bg-transparent md:shadow-none md:border-0">
             <div className="w-full max-w-7xl mx-auto flex items-center justify-between gap-2 h-12 px-3 md:h-16 md:px-6 lg:px-8">
-              <Link href="/" className="flex items-center shrink-0" aria-label={`${siteInfo.officeName} — Home`}>
+              <Link
+                href="/"
+                className="flex items-center gap-1.5 shrink-0"
+                aria-label={`CONNECT-DAET — ${siteInfo.officeName} Home`}
+              >
                 <BrandLogo size={32} className="h-8 w-8" />
+                <span className="text-[19px] md:text-[20px] font-black uppercase tracking-wide text-blue-600 whitespace-nowrap">
+                  CONNECT-DAET
+                </span>
               </Link>
 
               <nav className="hidden md:flex items-center gap-1 flex-1 justify-center px-4" aria-label="Primary">
@@ -186,7 +199,10 @@ export function PublicHeader() {
         aria-label="Mobile"
       >
         <div className="pointer-events-auto mx-auto max-w-lg rounded-2xl border border-zinc-200 bg-white shadow-[0_8px_28px_rgba(15,23,42,0.12)]">
-          <div className="grid grid-cols-5">
+          <div
+            className="grid"
+            style={{ gridTemplateColumns: `repeat(${navItems.length}, minmax(0, 1fr))` }}
+          >
             {navItems.map((item) => {
               const Icon = item.icon;
               const active = isPublicNavActive(pathname, item.href);

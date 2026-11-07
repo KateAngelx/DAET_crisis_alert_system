@@ -7,9 +7,21 @@ import { siteInfo } from "@/lib/siteInfo";
 
 const DISMISS_KEY = "connect-daet-pwa-dismissed";
 
-function isIos() {
+function isMobileBrowser() {
   if (typeof navigator === "undefined") return false;
-  return /iphone|ipad|ipod/i.test(navigator.userAgent);
+  const ua = navigator.userAgent || "";
+  if (/android|iphone|ipod|ipad|mobile|webos|blackberry|iemobile|opera mini/i.test(ua)) {
+    return true;
+  }
+  // iPadOS 13+ identifies as a Mac, but it still has a touch screen.
+  return /macintosh/i.test(ua) && navigator.maxTouchPoints > 1;
+}
+
+function isIos() {
+  if (!isMobileBrowser()) return false;
+  const ua = navigator.userAgent || "";
+  if (/iphone|ipad|ipod/i.test(ua)) return true;
+  return /macintosh/i.test(ua) && navigator.maxTouchPoints > 1;
 }
 
 function isStandalone() {
@@ -26,7 +38,7 @@ export function InstallPwaPrompt() {
   const [visible, setVisible] = useState(false);
 
   useEffect(() => {
-    if (isStandalone() || sessionStorage.getItem(DISMISS_KEY) === "1") return;
+    if (!isMobileBrowser() || isStandalone() || sessionStorage.getItem(DISMISS_KEY) === "1") return;
 
     const onBeforeInstall = (e) => {
       e.preventDefault();

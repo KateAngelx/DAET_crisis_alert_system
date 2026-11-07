@@ -3,7 +3,7 @@
 import React, { useCallback, useEffect, useState } from "react";
 import { SettingsPanelSkeleton } from "@/app/components/ui/Skeletons";
 import {
-  Users, FileText, Download, Bell, Loader2, CheckCircle, AlertCircle, Mail, MessageSquare,
+  Users, FileText, Download, Bell, Loader2, CheckCircle, AlertCircle, Mail, MessageSquare, Map, Route,
 } from "lucide-react";
 import { AdminPanel } from "@/app/components/admin/AdminPanel";
 import { DashboardPageHeader } from "@/app/components/dashboard/DashboardPageHeader";
@@ -28,8 +28,10 @@ async function authFetch(url, options = {}) {
 
 export default function AdminSettingsPage() {
   const [audience, setAudience] = useState({ tourists: true, guides: true, admins: false });
+  const [visibility, setVisibility] = useState({ map: true, roadsAndHazards: true });
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [savingVisibility, setSavingVisibility] = useState(false);
   const [exporting, setExporting] = useState(null);
   const [testingEmail, setTestingEmail] = useState(false);
   const [testingSms, setTestingSms] = useState(false);
@@ -47,6 +49,7 @@ export default function AdminSettingsPage() {
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "Failed to load settings");
       setAudience(data.settings.notification_audience);
+      if (data.settings.public_visibility) setVisibility(data.settings.public_visibility);
       setUpdatedAt(data.settings.updated_at);
     } catch (err) {
       setMessage({ type: "error", text: err.message });
@@ -89,6 +92,26 @@ export default function AdminSettingsPage() {
       setMessage({ type: "error", text: err.message });
     } finally {
       setSaving(false);
+    }
+  };
+
+  const handleSaveVisibility = async () => {
+    setSavingVisibility(true);
+    setMessage(null);
+    try {
+      const res = await authFetch("/api/admin/settings", {
+        method: "PATCH",
+        body: JSON.stringify({ public_visibility: visibility }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Failed to save public visibility");
+      if (data.settings.public_visibility) setVisibility(data.settings.public_visibility);
+      setUpdatedAt(data.settings.updated_at);
+      setMessage({ type: "success", text: "Public visibility saved. Visitors see only what is turned on." });
+    } catch (err) {
+      setMessage({ type: "error", text: err.message });
+    } finally {
+      setSavingVisibility(false);
     }
   };
 
@@ -219,6 +242,65 @@ export default function AdminSettingsPage() {
           {message.text}
         </div>
       )}
+
+      <AdminPanel
+        title="Public visibility"
+        subtitle="Turn these off to hide them from visitors. Admin and guide screens stay the same."
+      >
+        {loading ? (
+          <SettingsPanelSkeleton rows={2} />
+        ) : (
+          <>
+            <div className="space-y-3 mb-6">
+              {[
+                {
+                  key: "map",
+                  label: "Crisis Hub map",
+                  description: "The affected-areas map on the public Crisis Hub.",
+                  icon: Map,
+                },
+                {
+                  key: "roadsAndHazards",
+                  label: "Roads and hazards",
+                  description: "The public Roads & Travel page, area hazards, and those links in the visitor menu.",
+                  icon: Route,
+                },
+              ].map(({ key, label, description, icon: Icon }) => (
+                <button
+                  key={key}
+                  type="button"
+                  onClick={() => {
+                    setVisibility((prev) => ({ ...prev, [key]: !prev[key] }));
+                    setMessage(null);
+                  }}
+                  className={`w-full flex items-start gap-4 p-4 rounded-2xl border text-left transition-all ${
+                    visibility[key]
+                      ? "bg-blue-50 border-blue-200"
+                      : "bg-zinc-50 border-zinc-100 opacity-75"
+                  }`}
+                >
+                  <Icon size={18} className={visibility[key] ? "text-blue-600 shrink-0 mt-0.5" : "text-zinc-400 shrink-0 mt-0.5"} />
+                  <div className="flex-1">
+                    <p className="font-black text-sm uppercase tracking-wide text-zinc-900">{label}</p>
+                    <p className="text-xs text-zinc-500 mt-1 font-medium">{description}</p>
+                  </div>
+                  <span className={`text-[10px] font-black uppercase tracking-widest shrink-0 ${visibility[key] ? "text-blue-600" : "text-zinc-400"}`}>
+                    {visibility[key] ? "On" : "Off"}
+                  </span>
+                </button>
+              ))}
+            </div>
+            <button
+              type="button"
+              onClick={handleSaveVisibility}
+              disabled={savingVisibility}
+              className={`${adminShell.btnPrimary} w-full py-3.5 disabled:opacity-50`}
+            >
+              {savingVisibility ? <><Loader2 size={16} className="animate-spin" /> Saving...</> : "Save public visibility"}
+            </button>
+          </>
+        )}
+      </AdminPanel>
 
       <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
         <AdminPanel

@@ -8,9 +8,10 @@ import { AsyncState, ErrorState } from "@/app/components/ui/AsyncState";
 import { PublicStatCardSkeleton, AlertCardSkeletonList, MapSkeleton } from "@/app/components/ui/Skeletons";
 import { PublicStatCard } from "@/app/components/dashboard/PublicStatCard";
 import { getSeverityOutline, portalLayout, portalShell, statGrid } from "@/lib/designSystem";
-import { AlertDetailModal } from "@/app/components/crisis/AlertDetailModal";
+import { AlertDetailModal } from "@/app/(subsystems)/crisis/(public)/_components/AlertDetailModal";
 import { CrisisHubMap } from "@/app/components/maps/CrisisHubMap";
 import { ROLE_INTERFACE } from "@/lib/roleInterfaceCopy";
+import { usePublicVisibility } from "@/lib/usePublicVisibility";
 import { RoleContextBanner } from "@/app/components/dashboard/RoleContextBanner";
 import { StatusRecordList } from "@/app/components/shell/StatusRecordList";
 import {
@@ -46,6 +47,7 @@ function FilterSelect({ label, value, onChange, options }) {
 export default function CrisisPublicPage() {
   const { alerts, fetchAlerts, loading, error } = useCrisisStore();
   const { isAuthenticated } = useAuthStore();
+  const visibility = usePublicVisibility();
   const [selectedAlert, setSelectedAlert] = useState(null);
   const [viewedAlerts, setViewedAlerts] = useState(new Set());
   const [mounted, setMounted] = useState(false);
@@ -117,7 +119,14 @@ export default function CrisisPublicPage() {
       />
 
       <PublicPageContent>
-        <RoleContextBanner helper={ROLE_INTERFACE.public.crisisHub.helper} tone="info" />
+        <RoleContextBanner
+          helper={
+            visibility.roadsAndHazards
+              ? ROLE_INTERFACE.public.crisisHub.helper
+              : "This page is for weather, health, security, and other emergencies."
+          }
+          tone="info"
+        />
         <div className={portalLayout.stackPublic}>
           <PublicPanel title="Overview" subtitle="Alert counts">
             {loading ? (
@@ -142,7 +151,7 @@ export default function CrisisPublicPage() {
             ) : null}
           </PublicPanel>
 
-          <div className={portalLayout.splitGridPublic}>
+          <div className={visibility.map ? portalLayout.splitGridPublic : "grid grid-cols-1 gap-4"}>
             <PublicPanel
               title="Active announcements"
               subtitle="Status, place, type, and when. View opens the full details."
@@ -183,6 +192,7 @@ export default function CrisisPublicPage() {
               </AsyncState>
             </PublicPanel>
 
+            {visibility.map ? (
             <PublicPanel
               title="Affected areas map"
               className={`${portalLayout.panelFill} order-1 lg:order-2 ${selectedAlert ? "pointer-events-none opacity-40" : ""}`}
@@ -203,10 +213,11 @@ export default function CrisisPublicPage() {
                 />
               ) : null}
             </PublicPanel>
+            ) : null}
           </div>
         </div>
 
-        <PublicPanel title="Safety instructions for tourists" bodyClassName="bg-zinc-900 text-white">
+        <PublicPanel title="Safety instructions for tourists" bodyClassName="bg-blue-600 text-white">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm font-medium opacity-90 text-left">
             <p>1. During typhoon season (June–December), check this page before visiting beaches or remote areas.</p>
             <p>2. Save emergency numbers: <strong>911</strong> (national), <strong>117</strong> (PNP), municipal hotline <strong>(054) 472-3000</strong>, tourism office <strong>0907 834 1818</strong>.</p>

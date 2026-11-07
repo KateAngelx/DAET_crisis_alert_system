@@ -7,6 +7,7 @@ import { NotificationArrivalListener } from "@/app/components/NotificationArriva
 import { ConfirmDialogProvider } from "@/app/components/ui/ConfirmDialogProvider";
 import { InstallPwaPrompt } from "@/app/components/InstallPwaPrompt";
 import { PwaSplashScreen } from "@/app/components/PwaSplashScreen";
+import { DevServiceWorkerCleanup } from "@/app/components/DevServiceWorkerCleanup";
 import { siteInfo } from "@/lib/siteInfo";
 import "./globals.css";
 
@@ -50,6 +51,7 @@ export default function RootLayout({ children }) {
     <html lang="en" className={`${geistSans.variable} ${geistMono.variable} h-full antialiased scrollbar-none`}>
       <body className="min-h-full flex flex-col relative scrollbar-none">
         <PwaSplashScreen />
+        <DevServiceWorkerCleanup />
         <AuthSessionSync />
         <PasswordRecoveryRedirect />
         <AssignmentRequestHandler />

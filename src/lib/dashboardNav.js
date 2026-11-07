@@ -7,8 +7,8 @@ export const ADMIN_NAV = {
     { path: "/admin/settings", label: "Settings" },
   ],
   crisisOps: [
-    { path: "/crisis/admin", label: "Command Center" },
-    { path: "/crisis/admin/routes", label: "Roads & Hazards" },
+    { path: "/crisis/command", label: "Command Center" },
+    { path: "/crisis/roads", label: "Roads & Hazards" },
     { path: "/admin/incidents", label: "Incident Reports" },
     { path: "/admin/archive", label: "Archive & History" },
   ],
@@ -49,11 +49,11 @@ export function isNavActive(pathname, path) {
   if (path.startsWith("/guide/")) {
     return pathname === path || pathname.startsWith(`${path}/`);
   }
-  if (path === "/crisis/admin") {
-    return pathname === "/crisis/admin";
+  if (path === "/crisis/command") {
+    return pathname === "/crisis/command";
   }
-  if (path === "/crisis/admin/routes") {
-    return pathname === "/crisis/admin/routes" || pathname.startsWith("/crisis/admin/routes/");
+  if (path === "/crisis/roads") {
+    return pathname === "/crisis/roads" || pathname.startsWith("/crisis/roads/");
   }
   return pathname === path || pathname.startsWith(`${path}/`);
 }

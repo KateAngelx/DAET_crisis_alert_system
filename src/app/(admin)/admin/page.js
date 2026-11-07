@@ -226,7 +226,7 @@ export default function AdminDashboard() {
                   </div>
                 </div>
                 <Link
-                  href="/crisis/admin/routes?tab=areas"
+                  href="/crisis/roads?tab=areas"
                   className="inline-flex items-center gap-2 bg-red-600 text-white px-5 py-2.5 rounded-2xl font-black uppercase text-xs tracking-widest hover:bg-red-700 shrink-0"
                 >
                   Manage <ArrowRight size={14} />
@@ -242,7 +242,7 @@ export default function AdminDashboard() {
               value={metrics.activeAlerts.length}
               icon={<Radio size={iconSize.stat} />}
               accent="red"
-              href="/crisis/admin"
+              href="/crisis/command"
               hrefLabel="Manage"
             />
             <DashboardStatCard
@@ -251,7 +251,7 @@ export default function AdminDashboard() {
               value={metrics.urgentAlerts.length}
               icon={<AlertTriangle size={iconSize.stat} />}
               accent="orange"
-              href="/crisis/admin"
+              href="/crisis/command"
               hrefLabel="Review"
             />
             <DashboardStatCard
@@ -317,7 +317,7 @@ export default function AdminDashboard() {
         <AdminQuickActions
           items={[
             {
-              href: "/crisis/admin",
+              href: "/crisis/command",
               icon: AlertTriangle,
               title: "Broadcast Alert",
               sub: `${metrics.activeAlerts.length} active`,

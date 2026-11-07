@@ -22,7 +22,7 @@ import {
 import { ROLE_INTERFACE } from "@/lib/roleInterfaceCopy";
 import { RoleContextBanner } from "@/app/components/dashboard/RoleContextBanner";
 import { CategoryFilterSelect, StatusRecordList } from "@/app/components/shell/StatusRecordList";
-import { AlertDetailModal } from "@/app/components/crisis/AlertDetailModal";
+import { AlertDetailModal } from "@/app/(subsystems)/crisis/(public)/_components/AlertDetailModal";
 
 function formatResolvedAt(alert) {
   const date = alert.updated_at || alert.created_at;

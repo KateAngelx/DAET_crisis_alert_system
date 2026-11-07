@@ -29,7 +29,7 @@ import { useIncidentStore } from "@/app/store/incidentStore";
 import { useRouteAdvisoryStore } from "@/app/store/routeAdvisoryStore";
 import { useDangerousLocationStore } from "@/app/store/dangerousLocationStore";
 import { CrisisHubMap } from "@/app/components/maps/CrisisHubMap";
-import { AlertDetailModal } from "@/app/components/crisis/AlertDetailModal";
+import { AlertDetailModal } from "@/app/(subsystems)/crisis/(public)/_components/AlertDetailModal";
 import { CategoryFilterSelect, StatusRecordList } from "@/app/components/shell/StatusRecordList";
 import {
   DEFAULT_CRISIS_TYPE_OPTIONS,
@@ -136,7 +136,7 @@ export default function AdminArchivePage() {
         title="Archive & History"
         description="Admin-only record of closed incidents, inactive routes and hazards, and resolved crisis alerts."
         action={
-          <Link href="/crisis/admin" className={`${adminShell.btnPrimary} no-underline`}>
+          <Link href="/crisis/command" className={`${adminShell.btnPrimary} no-underline`}>
             Command Center <ArrowRight size={iconSize.inline} />
           </Link>
         }
@@ -151,7 +151,7 @@ export default function AdminArchivePage() {
         pageId="archive"
         footer={
           <AdminDashboardQuickNavRow>
-            <AdminDashboardQuickNavLink href="/crisis/admin" icon={Radio} label="Command Center" />
+            <AdminDashboardQuickNavLink href="/crisis/command" icon={Radio} label="Command Center" />
             <AdminDashboardQuickNavDivider />
             <AdminDashboardQuickNavLink
               href="/admin/incidents"
@@ -159,7 +159,7 @@ export default function AdminArchivePage() {
               label="Incident reports"
             />
             <AdminDashboardQuickNavDivider />
-            <AdminDashboardQuickNavLink href="/crisis/admin/routes" icon={Route} label="Roads & hazards" />
+            <AdminDashboardQuickNavLink href="/crisis/roads" icon={Route} label="Roads & hazards" />
           </AdminDashboardQuickNavRow>
         }
       >
@@ -252,7 +252,7 @@ export default function AdminArchivePage() {
           title="Inactive routes"
           subtitle={`${inactiveRoutes.length} off the live map`}
           action={
-            <Link href="/crisis/admin/routes" className={`${adminShell.btnGhost} no-underline`}>
+            <Link href="/crisis/roads" className={`${adminShell.btnGhost} no-underline`}>
               <Navigation size={iconSize.inline} /> Roads
             </Link>
           }
@@ -281,7 +281,7 @@ export default function AdminArchivePage() {
           title="Inactive area hazards"
           subtitle={`${inactiveHazards.length} deactivated`}
           action={
-            <Link href="/crisis/admin/routes?tab=areas" className={`${adminShell.btnGhost} no-underline`}>
+            <Link href="/crisis/roads?tab=areas" className={`${adminShell.btnGhost} no-underline`}>
               <ShieldAlert size={iconSize.inline} /> Hazards
             </Link>
           }
@@ -378,10 +378,10 @@ export default function AdminArchivePage() {
             <Link href="/admin/incidents" className={`${adminShell.btnPrimary} no-underline justify-center`}>
               <FileWarning size={iconSize.inline} /> Incident reports
             </Link>
-            <Link href="/crisis/admin/routes" className={`${adminShell.btnPrimary} no-underline justify-center`}>
+            <Link href="/crisis/roads" className={`${adminShell.btnPrimary} no-underline justify-center`}>
               <Navigation size={iconSize.inline} /> Roads & hazards
             </Link>
-            <Link href="/crisis/admin" className={`${adminShell.btnGhost} no-underline justify-center`}>
+            <Link href="/crisis/command" className={`${adminShell.btnGhost} no-underline justify-center`}>
               <Radio size={iconSize.inline} /> Command Center
             </Link>
           </div>

@@ -370,7 +370,7 @@ function RouteAdvisoriesAdminPanel({
         pageId="roads-hazards"
         footer={
           <AdminDashboardQuickNavRow>
-            <AdminDashboardQuickNavLink href="/crisis/admin" icon={Radio} label="Command Center" />
+            <AdminDashboardQuickNavLink href="/crisis/command" icon={Radio} label="Command Center" />
             {!embedded ? (
               <>
                 <AdminDashboardQuickNavDivider />
@@ -752,7 +752,7 @@ function RoadsAndHazardsAdminPage() {
   const [hazardCreateIntent, setHazardCreateIntent] = useState(false);
 
   const setTab = (next) => {
-    router.replace(next === "areas" ? "/crisis/admin/routes?tab=areas" : "/crisis/admin/routes", { scroll: false });
+    router.replace(next === "areas" ? "/crisis/roads?tab=areas" : "/crisis/roads", { scroll: false });
   };
 
   useEffect(() => {

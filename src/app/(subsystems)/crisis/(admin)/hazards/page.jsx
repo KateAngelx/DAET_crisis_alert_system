@@ -7,7 +7,7 @@ export default function DangerousLocationsRedirectPage() {
   const router = useRouter();
 
   useEffect(() => {
-    router.replace("/crisis/admin/routes?tab=areas");
+    router.replace("/crisis/roads?tab=areas");
   }, [router]);
 
   return null;
