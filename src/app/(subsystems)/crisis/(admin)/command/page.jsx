@@ -627,7 +627,9 @@ export default function CrisisAdminPage() {
                           id: alert.id,
                           status: alert.severity || "Low",
                           statusClass: getSeverityOutline(alert.severity).badge,
-                          place: alert.location || alert.title,
+                          place: alert.title && alert.location
+                            ? `${alert.title} · ${alert.location}`
+                            : alert.title || alert.location || "—",
                           type: alert.type || "General",
                           when: alert.created_at ? new Date(alert.created_at).toLocaleString() : "",
                           actions: [
@@ -694,7 +696,11 @@ export default function CrisisAdminPage() {
               </div>
                 <div className={`px-4 sm:px-6 py-4 ${auditLogExpanded && auditLogHasMore ? portalLayout.listScrollPaneAdmin : ""}`}>
                   {loading ? (
-                    <TableSkeleton rows={5} columns={4} />
+                    <table className="w-full border-collapse">
+                      <tbody>
+                        <TableSkeleton rows={5} columns={4} />
+                      </tbody>
+                    </table>
                   ) : (
                     <StatusRecordList
                       rows={displayedAuditAlerts.map((alert) => {

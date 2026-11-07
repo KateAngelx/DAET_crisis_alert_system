@@ -1,20 +1,28 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 
-/** True when the site is running as an installed home-screen app, not a mobile browser tab. */
+export function isInstalledApp() {
+  if (typeof window === "undefined") return false;
+  return (
+    window.matchMedia("(display-mode: standalone)").matches ||
+    window.navigator.standalone === true
+  );
+}
+
+/** Synchronizes installed-app mode with the document root for responsive navigation styles. */
 export function useInstalledApp() {
-  const [installed, setInstalled] = useState(false);
-
   useEffect(() => {
     const media = window.matchMedia("(display-mode: standalone)");
     const update = () => {
-      setInstalled(Boolean(media.matches || window.navigator.standalone));
+      const isInstalled = isInstalledApp();
+      document.documentElement.dataset.installedApp = String(isInstalled);
     };
     update();
     media.addEventListener?.("change", update);
-    return () => media.removeEventListener?.("change", update);
+    return () => {
+      media.removeEventListener?.("change", update);
+      delete document.documentElement.dataset.installedApp;
+    };
   }, []);
-
-  return installed;
 }

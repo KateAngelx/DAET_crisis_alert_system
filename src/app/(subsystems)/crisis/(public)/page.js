@@ -102,7 +102,9 @@ export default function CrisisPublicPage() {
     id: alert.id,
     status: alert.severity || "Low",
     statusClass: getSeverityOutline(alert.severity).badge,
-    place: alert.location || alert.title,
+    place: alert.title && alert.location
+      ? `${alert.title} · ${alert.location}`
+      : alert.title || alert.location || "—",
     type: alert.type || "General",
     when: alert.created_at ? new Date(alert.created_at).toLocaleString() : "—",
     onSelect: () => handleViewAlert(alert.id),
@@ -139,11 +141,11 @@ export default function CrisisPublicPage() {
               </div>
             )}
             {!loading && criticalAlerts.length > 0 ? (
-              <div className="p-3 rounded-xl bg-orange-50 border border-orange-200 flex items-start gap-3 mt-4">
-                <Shield className="text-orange-600 shrink-0 mt-0.5" size={18} />
+              <div className="p-3 rounded-xl bg-red-50 border border-red-200 flex items-start gap-3 mt-4">
+                <Shield className="text-red-600 shrink-0 mt-0.5" size={18} />
                 <div>
-                  <p className="text-xs font-black uppercase text-orange-700 tracking-widest">Critical alerts active</p>
-                  <p className="text-sm text-orange-900 font-medium mt-0.5">
+                  <p className="text-xs font-black uppercase text-red-700 tracking-widest">Critical alerts active</p>
+                  <p className="text-sm text-red-900 font-medium mt-0.5">
                     {criticalAlerts.length} alert{criticalAlerts.length > 1 ? "s" : ""} need immediate attention. Those are listed first under Active announcements.
                   </p>
                 </div>

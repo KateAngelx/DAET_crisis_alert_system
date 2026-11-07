@@ -4,7 +4,7 @@ import React, { useEffect, useState } from "react";
 import { X, MapPin } from "lucide-react";
 import { Card } from "@/app/components/ui/Card";
 import { CardIconBox } from "@/app/components/ui/CardIconBox";
-import { AlertSeverityIcon } from "@/app/components/ui/cardTypeIcons";
+import { AlertSeverityIcon, AlertTypeIcon } from "@/app/components/ui/cardTypeIcons";
 import { CrisisHubMap } from "@/app/components/maps/CrisisHubMap";
 import { geocodeLocation } from "@/lib/geocodeLocation";
 import { getSeverityOutline, iconSize } from "@/lib/designSystem";
@@ -16,6 +16,15 @@ export function AlertDetailModal({ alert, onClose }) {
   const [mapReady, setMapReady] = useState(false);
 
   const styles = alert ? getSeverityOutline(alert.severity) : null;
+  const alertStatus = String(alert?.status || "Unknown");
+  const normalizedStatus = alertStatus.toLowerCase();
+  const statusClass = normalizedStatus === "resolved"
+    ? "bg-green-100 text-green-600"
+    : normalizedStatus === "expired"
+      ? "bg-yellow-100 text-yellow-800"
+      : normalizedStatus === "active"
+        ? "bg-blue-100 text-blue-700"
+        : "bg-zinc-100 text-zinc-700";
 
   useEffect(() => {
     if (!alert || !mapReady) return;
@@ -81,7 +90,7 @@ export function AlertDetailModal({ alert, onClose }) {
         <div className={`${styles.headerBg} ${styles.headerFg} p-6 sm:p-8 text-left shrink-0 rounded-t-2xl`}>
           <div className="flex justify-between items-start mb-4">
             <div className={`p-3 rounded-2xl ${styles.headerIcon}`}>
-              <AlertSeverityIcon severity={alert.severity} size={iconSize.empty} />
+              <AlertTypeIcon type={alert.type} size={iconSize.empty} />
             </div>
             <button type="button" onClick={onClose} className={styles.headerFg} aria-label="Close">
               <X />
@@ -107,7 +116,9 @@ export function AlertDetailModal({ alert, onClose }) {
             </div>
             <div className="p-4 bg-zinc-50 rounded-2xl border border-zinc-100">
               <p className="text-[10px] font-black uppercase text-zinc-400 mb-1">Status</p>
-              <p className="font-bold text-zinc-900 uppercase">{alert.status}</p>
+              <p className={`inline-flex px-2 py-1 rounded text-xs font-bold uppercase ${statusClass}`}>
+                {alertStatus}
+              </p>
             </div>
           </div>
 

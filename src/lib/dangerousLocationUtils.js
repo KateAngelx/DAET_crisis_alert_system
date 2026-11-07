@@ -34,14 +34,14 @@ export function getDangerSeverityStyles(severity) {
       titleStatic: "text-red-700",
     },
     Caution: {
-      border: "border-orange-500",
-      badge: "bg-orange-100 text-orange-700",
-      text: "text-orange-700",
-      bg: "bg-orange-50",
-      icon: "border-orange-200 bg-orange-50 text-orange-700",
+      border: "border-yellow-500",
+      badge: "bg-yellow-100 text-yellow-800",
+      text: "text-yellow-800",
+      bg: "bg-yellow-50",
+      icon: "border-yellow-200 bg-yellow-50 text-yellow-800",
       label: "Potential Risk",
-      title: "text-zinc-900 group-hover:text-orange-700 group-active:text-orange-700 transition-colors",
-      titleStatic: "text-orange-700",
+      title: "text-zinc-900 group-hover:text-yellow-800 group-active:text-yellow-800 transition-colors",
+      titleStatic: "text-yellow-800",
     },
   };
   return map[severity] || map.Caution;

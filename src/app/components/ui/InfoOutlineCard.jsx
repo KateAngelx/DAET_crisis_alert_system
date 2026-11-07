@@ -1,6 +1,6 @@
 import React from "react";
 import Link from "next/link";
-import { cardGroupTouchShadow, getInfoCardAccent, typography } from "@/lib/designSystem";
+import { cardGroupTouchShadow, getInfoCardAccent } from "@/lib/designSystem";
 
 function renderCardIcon(Icon, iconSize) {
   if (!Icon) return null;
@@ -33,7 +33,7 @@ export function InfoOutlineCard({
           {renderCardIcon(Icon, iconSize)}
         </div>
         {label ? (
-          <h3 className={`${typography.cardTitleBase} text-[11px] sm:text-xs tracking-wide ${href ? styles.label : styles.labelStatic}`}>
+          <h3 className={`text-xs font-semibold tracking-wide ${href ? styles.label : styles.labelStatic}`}>
             {label}
           </h3>
         ) : null}

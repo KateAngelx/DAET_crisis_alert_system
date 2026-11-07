@@ -49,6 +49,36 @@ body {
   overflow-x: hidden;
 }
 
+@media (max-width: 1023px) {
+  .installed-app-bottom-nav {
+    display: none;
+  }
+
+  html[data-installed-app="true"] .installed-app-main {
+    padding-bottom: calc(4rem + env(safe-area-inset-bottom));
+  }
+
+  html[data-installed-app="true"] .installed-app-bottom-nav {
+    display: block;
+  }
+}
+
+@media (display-mode: standalone) and (max-width: 1023px) {
+  .installed-app-bottom-nav {
+    display: block;
+  }
+
+  .installed-app-main {
+    padding-bottom: calc(4rem + env(safe-area-inset-bottom));
+  }
+}
+
+@media (min-width: 1024px) {
+  .installed-app-bottom-nav {
+    display: none;
+  }
+}
+
 @layer base {
   *,
   *::before,

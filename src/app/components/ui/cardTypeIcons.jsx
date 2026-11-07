@@ -7,6 +7,8 @@ import {
   Route,
   ShieldAlert,
   AlertOctagon,
+  CloudRain,
+  HeartPulse,
 } from "lucide-react";
 
 const ALERT_SEVERITY_ICONS = {
@@ -34,8 +36,23 @@ const DANGER_SEVERITY_ICONS = {
   Caution: ShieldAlert,
 };
 
+const ALERT_TYPE_ICONS = {
+  weather: CloudRain,
+  health: HeartPulse,
+  security: ShieldAlert,
+  general: Info,
+};
+
 export function AlertSeverityIcon({ severity, size = 18 }) {
   const Icon = ALERT_SEVERITY_ICONS[severity] || Bell;
+  return <Icon size={size} strokeWidth={2.25} />;
+}
+
+export function AlertTypeIcon({ type, size = 18 }) {
+  const normalizedType = String(type || "General").toLowerCase();
+  const Icon =
+    Object.entries(ALERT_TYPE_ICONS).find(([category]) => normalizedType.includes(category))?.[1] ||
+    Info;
   return <Icon size={size} strokeWidth={2.25} />;
 }
 

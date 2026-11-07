@@ -83,7 +83,9 @@ export default function ResolvedAlertsPage() {
     id: alert.id,
     status: alert.severity || "Low",
     statusClass: getSeverityOutline(alert.severity).badge,
-    place: alert.location || alert.title,
+    place: alert.title && alert.location
+      ? `${alert.title} · ${alert.location}`
+      : alert.title || alert.location || "—",
     type: alert.type || "General",
     when: formatResolvedAt(alert),
     onSelect: () => setSelectedAlert(alert),
@@ -105,7 +107,7 @@ export default function ResolvedAlertsPage() {
               <PublicStatCardSkeleton count={3} className={statGrid.crisisHub} compact />
             ) : (
               <div className={statGrid.crisisHub}>
-                <PublicStatCard compact value={resolvedAlerts.length} label="Overall Solved" accent="orange" />
+                <PublicStatCard compact value={resolvedAlerts.length} label="Overall Solved" accent="green" />
                 <PublicStatCard compact value={recentCount} label="Resolved This Week" accent="blue" />
                 <PublicStatCard compact value={monthCount} label="Resolved This Month" accent="green" />
               </div>

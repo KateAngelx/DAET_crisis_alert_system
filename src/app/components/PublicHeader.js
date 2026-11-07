@@ -56,16 +56,16 @@ export function PublicHeader() {
   const showGuestActions = !mounted || !isAuthenticated;
 
   const guestActions = (
-    <div className="flex items-center gap-2.5 shrink-0">
+    <div className="flex items-center gap-1 sm:gap-2.5 shrink-0">
       <Link
         href="/login"
-        className="inline-flex items-center justify-center h-8 px-3 rounded-full border border-zinc-200 bg-zinc-50 text-[10px] font-black uppercase tracking-widest text-zinc-700 hover:bg-zinc-100 transition-colors"
+        className="hidden min-[360px]:inline-flex items-center justify-center min-h-11 px-2 sm:px-3 rounded-full border border-zinc-200 bg-zinc-50 text-[10px] font-black uppercase tracking-widest text-zinc-700 hover:bg-zinc-100 transition-colors"
       >
         Login
       </Link>
       <Link
         href="/register"
-        className="inline-flex items-center justify-center h-8 px-3 rounded-full bg-blue-600 text-[10px] font-black uppercase tracking-widest text-white hover:bg-blue-700 transition-colors shadow-sm shadow-blue-600/20"
+        className="inline-flex min-h-11 items-center justify-center px-2 sm:px-3 rounded-full bg-blue-600 text-[10px] font-black uppercase tracking-widest text-white hover:bg-blue-700 transition-colors shadow-sm shadow-blue-600/20 whitespace-nowrap"
       >
         Register
       </Link>
@@ -85,16 +85,16 @@ export function PublicHeader() {
             <div className="w-full max-w-7xl mx-auto flex items-center justify-between gap-2 h-12 px-3 md:h-16 md:px-6 lg:px-8">
               <Link
                 href="/"
-                className="flex items-center gap-1.5 shrink-0"
+                className="flex min-w-0 flex-1 items-center gap-1.5"
                 aria-label={`CONNECT-DAET — ${siteInfo.officeName} Home`}
               >
-                <BrandLogo size={32} className="h-8 w-8" />
-                <span className="text-[19px] md:text-[20px] font-black uppercase tracking-wide text-blue-600 whitespace-nowrap">
+                <BrandLogo size={24} className="h-6 w-6 shrink-0 md:h-8 md:w-8" />
+                <span className="truncate text-[14px] sm:text-[16px] lg:text-[20px] font-black uppercase tracking-wide text-blue-600">
                   CONNECT-DAET
                 </span>
               </Link>
 
-              <nav className="hidden md:flex items-center gap-1 flex-1 justify-center px-4" aria-label="Primary">
+              <nav className="hidden lg:flex items-center gap-1 flex-1 justify-center px-4" aria-label="Primary">
                 {navItems.map((item) => (
                   <Link
                     key={item.name}
@@ -113,7 +113,7 @@ export function PublicHeader() {
                 {showGuestActions ? guestActions : null}
 
                 {mounted && isAuthenticated ? (
-                  <div className="hidden md:flex items-center gap-2">
+                  <div className="hidden lg:flex items-center gap-2">
                     <Link
                       href="/profile"
                       className="flex items-center gap-2 bg-white/70 dark:bg-zinc-900 border border-white/80 dark:border-zinc-800 pl-2 pr-4 py-1.5 rounded-full hover:border-blue-200 transition-colors"
@@ -141,7 +141,7 @@ export function PublicHeader() {
                 ) : null}
 
                 {mounted && isAuthenticated ? (
-                  <div className="relative md:hidden">
+                  <div className="relative lg:hidden">
                     <button
                       type="button"
                       onClick={() => setAccountOpen((open) => !open)}
@@ -187,7 +187,7 @@ export function PublicHeader() {
       {accountOpen && (
         <button
           type="button"
-          className="fixed inset-0 z-40 md:hidden"
+          className="fixed inset-0 z-40 lg:hidden"
           aria-label="Close account menu"
           onClick={() => setAccountOpen(false)}
         />
@@ -195,7 +195,7 @@ export function PublicHeader() {
 
       <nav
         data-public-mobile-nav
-        className="md:hidden fixed z-50 bottom-[max(0.75rem,env(safe-area-inset-bottom))] inset-x-3 sm:inset-x-4 pointer-events-none"
+        className="lg:hidden fixed z-50 bottom-[max(0.75rem,env(safe-area-inset-bottom))] inset-x-3 sm:inset-x-4 pointer-events-none"
         aria-label="Mobile"
       >
         <div className="pointer-events-auto mx-auto max-w-lg rounded-2xl border border-zinc-200 bg-white shadow-[0_8px_28px_rgba(15,23,42,0.12)]">

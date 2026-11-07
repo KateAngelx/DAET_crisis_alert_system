@@ -47,25 +47,30 @@ export function GlobalEmergencyBanner() {
         <div className="p-4">
           <div className="flex justify-between items-start mb-2">
             <div className="flex items-center gap-2">
-              <span className="bg-red-600 p-1.5 rounded-lg animate-pulse">
+              <span className="bg-red-600 p-1.5 rounded-lg">
                 <ShieldAlert size={14} className="text-white" />
               </span>
-              <span className="text-[10px] font-black uppercase tracking-widest text-red-500">
-                {latestAlert.severity}
+              <span className="bg-red-600 text-white px-2 py-1 rounded-md text-[10px] font-black uppercase tracking-widest">
+                Critical
               </span>
             </div>
-            <button onClick={() => setIsVisible(false)} className="text-zinc-500 hover:text-white">
+            <button
+              type="button"
+              onClick={() => setIsVisible(false)}
+              className="text-zinc-300 hover:text-white"
+              aria-label="Dismiss critical alert"
+            >
               <X size={16} />
             </button>
           </div>
           
-          <h4 className="text-sm font-black uppercase tracking-tight leading-tight mb-1">
+          <h4 className="text-base font-black tracking-tight leading-tight mb-1">
             {latestAlert.title}
           </h4>
-          <p className="text-[10px] font-bold text-zinc-400 uppercase tracking-tighter mb-1">
+          <p className="text-xs font-semibold text-zinc-300 mb-1">
             {latestAlert.type} · {latestAlert.location}
           </p>
-          <p className="text-[10px] text-zinc-500 mb-4 line-clamp-2 leading-relaxed">
+          <p className="text-xs text-zinc-300 mb-4 line-clamp-2 leading-relaxed">
             {latestAlert.message}
           </p>
 

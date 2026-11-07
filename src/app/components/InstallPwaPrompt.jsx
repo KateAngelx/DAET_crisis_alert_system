@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { Download, Share, X } from "lucide-react";
 import { BrandLogo } from "@/app/components/BrandLogo";
 import { siteInfo } from "@/lib/siteInfo";
+import { isInstalledApp } from "@/lib/useInstalledApp";
 
 const DISMISS_KEY = "connect-daet-pwa-dismissed";
 
@@ -24,21 +25,13 @@ function isIos() {
   return /macintosh/i.test(ua) && navigator.maxTouchPoints > 1;
 }
 
-function isStandalone() {
-  if (typeof window === "undefined") return false;
-  return (
-    window.matchMedia("(display-mode: standalone)").matches ||
-    window.navigator.standalone === true
-  );
-}
-
 export function InstallPwaPrompt() {
   const [installEvent, setInstallEvent] = useState(null);
   const [showIosHint, setShowIosHint] = useState(false);
   const [visible, setVisible] = useState(false);
 
   useEffect(() => {
-    if (!isMobileBrowser() || isStandalone() || sessionStorage.getItem(DISMISS_KEY) === "1") return;
+    if (!isMobileBrowser() || isInstalledApp() || sessionStorage.getItem(DISMISS_KEY) === "1") return;
 
     const onBeforeInstall = (e) => {
       e.preventDefault();
@@ -48,7 +41,7 @@ export function InstallPwaPrompt() {
 
     window.addEventListener("beforeinstallprompt", onBeforeInstall);
 
-    if (isIos() && !isStandalone()) {
+    if (isIos() && !isInstalledApp()) {
       setShowIosHint(true);
       setVisible(true);
     }

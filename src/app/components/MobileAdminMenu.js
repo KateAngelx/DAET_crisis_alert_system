@@ -1,6 +1,5 @@
 "use client";
 
-import { useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
@@ -16,8 +15,7 @@ const ICONS = {
   "Incident Reports": FileWarning,
 };
 
-export function MobileAdminMenu() {
-  const [isOpen, setIsOpen] = useState(false);
+export function MobileAdminMenu({ open, onOpen, onClose }) {
   const pathname = usePathname();
 
   const renderSection = (title, items, variant = "default") => (
@@ -38,7 +36,7 @@ export function MobileAdminMenu() {
             <Link
               key={item.path}
               href={item.path}
-              onClick={() => setIsOpen(false)}
+              onClick={onClose}
               className={`flex items-center gap-3 px-4 py-3 rounded-2xl transition-all ${activeClass}`}
             >
               <Icon size={20} />
@@ -53,23 +51,23 @@ export function MobileAdminMenu() {
   return (
     <>
       <button
-        onClick={() => setIsOpen(true)}
+        onClick={onOpen}
         className="lg:hidden p-2 hover:bg-zinc-100 rounded-lg transition-colors"
         aria-label="Open menu"
       >
         <Menu size={24} className="text-zinc-600" />
       </button>
 
-      {isOpen && (
+      {open && (
         <>
-          <div className="fixed inset-0 bg-black/50 z-40 lg:hidden backdrop-blur-sm" onClick={() => setIsOpen(false)} />
+          <div className="fixed inset-0 bg-black/50 z-40 lg:hidden backdrop-blur-sm" onClick={onClose} />
           <div className="fixed inset-y-0 left-0 w-[280px] bg-white z-50 lg:hidden overflow-y-auto shadow-2xl animate-in slide-in-from-left duration-300 dashboard-shell">
             <div className="flex items-center justify-between p-4 border-b border-zinc-200">
               <div className="flex items-center gap-2">
                 <BrandLogo size={28} />
                 <span className="text-sm font-black text-blue-600 tracking-tighter uppercase">CONNECT-DAET</span>
               </div>
-              <button onClick={() => setIsOpen(false)} className="p-2 hover:bg-zinc-100 rounded-lg" aria-label="Close menu">
+              <button onClick={onClose} className="p-2 hover:bg-zinc-100 rounded-lg" aria-label="Close menu">
                 <X size={24} />
               </button>
             </div>

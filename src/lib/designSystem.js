@@ -7,22 +7,22 @@
 export const typography = {
   /** CONNECT-DAET brand in headers — 18px */
   brand: "text-lg font-black uppercase tracking-tighter leading-none",
-  /** Page / dashboard titles — 20px mobile, 22px desktop */
-  pageTitle: "text-xl md:text-[22px] font-black uppercase tracking-tight text-zinc-900 leading-tight",
+  /** Page / dashboard titles — 24px mobile, 28px desktop */
+  pageTitle: "text-2xl md:text-[28px] font-black tracking-tight text-zinc-900 leading-tight",
   /** Hero, modal, auth primary headings — 26px */
   heroTitle: "text-[26px] font-black uppercase tracking-tighter text-zinc-900 leading-tight",
   /** Card and alert titles — 18px */
-  cardTitle: "text-lg font-black tracking-tight uppercase leading-snug text-zinc-900",
+  cardTitle: "text-lg font-black tracking-tight leading-snug text-zinc-900",
   /** Card titles without color — pair with accent title tokens on interactive cards */
-  cardTitleBase: "text-lg font-black tracking-tight uppercase leading-snug",
+  cardTitleBase: "text-lg font-black tracking-tight leading-snug",
   /** Large public stat values — 32px */
   statValueLg: "text-[32px] font-black leading-none",
   /** Dashboard / panel stat values — responsive compact */
   statValue: "text-xl sm:text-2xl lg:text-[28px] font-bold leading-none",
-  /** Stat card labels, eyebrows, micro CTAs — 10px */
-  statLabel: "text-[10px] font-black uppercase tracking-widest",
-  /** Section headings (e.g. ACTIVE TOURISTS) — 12px */
-  sectionTitle: "text-xs font-black uppercase tracking-widest text-zinc-400",
+  /** Stat card labels, eyebrows, micro CTAs — 12px */
+  statLabel: "text-xs font-black uppercase tracking-widest",
+  /** Section headings (e.g. ACTIVE TOURISTS) — 14px */
+  sectionTitle: "text-sm font-black uppercase tracking-widest text-zinc-400",
   /** Page descriptions — 14px */
   description: "text-sm text-zinc-500 font-medium leading-relaxed",
   /** Body copy — 14px */
@@ -84,7 +84,7 @@ export const outlinedCard = {
   base: "bg-white border shadow-none min-w-0",
   radius: "rounded-xl",
   radiusCompact: "rounded-xl",
-  statPadding: "p-2 sm:p-4 lg:p-5",
+  statPadding: "p-4 lg:p-5",
   statPaddingCompact: "p-2 sm:p-3 lg:p-4",
   alertPadding: "p-5 sm:p-6",
   notificationPadding: "p-4 sm:p-5",
@@ -387,7 +387,7 @@ export const statCard = {
   public: "text-left min-w-0",
   iconWrap: "flex h-7 w-7 sm:h-9 sm:w-9 lg:h-10 lg:w-10 items-center justify-center rounded-lg shrink-0 [&_svg]:size-3.5 sm:[&_svg]:size-4 lg:[&_svg]:size-[18px]",
   iconRow: "flex items-start justify-between gap-1 sm:gap-2 mb-1.5 sm:mb-3",
-  label: "text-[8px] sm:text-[10px] font-black uppercase tracking-tight sm:tracking-widest leading-tight line-clamp-3",
+  label: "text-xs font-black uppercase tracking-tight sm:tracking-widest leading-tight line-clamp-3",
 };
 
 /** Auth login / register — fixed viewport card, no page scroll */
@@ -397,7 +397,7 @@ export const authForm = {
   header: "text-center mb-4",
   iconWrap: "border border-blue-200 bg-blue-50 text-blue-700 size-11 rounded-xl flex items-center justify-center mx-auto mb-3",
   input: "w-full p-3 bg-zinc-50 border border-zinc-100 rounded-xl font-bold text-sm outline-none focus:ring-2 focus:ring-blue-500 transition-all text-zinc-900 disabled:opacity-50",
-  label: "text-[10px] font-black uppercase tracking-widest text-zinc-400 flex items-center gap-2 ml-1",
+  label: "text-xs font-black uppercase tracking-widest text-zinc-400 flex items-center gap-2 ml-1",
   fieldGap: "space-y-1",
   formGap: "space-y-3",
   submitBtn:

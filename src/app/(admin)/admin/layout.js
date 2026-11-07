@@ -12,7 +12,7 @@ export default function AdminLayout({ children }) {
         <AdminSidebar />
         <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
           <AdminHeader />
-          <main className={`${adminShell.main} scrollbar-none`}>
+          <main className={`${adminShell.main} installed-app-main scrollbar-none`}>
             <AdminPageShell>{children}</AdminPageShell>
           </main>
         </div>

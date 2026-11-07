@@ -10,7 +10,7 @@ export default function GuideLayout({ children }) {
         <GuideSidebar />
         <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
           <GuideHeader />
-          <main className={`${guideShell.main} scrollbar-none`}>
+          <main className={`${guideShell.main} installed-app-main scrollbar-none`}>
             <GuidePageShell>{children}</GuidePageShell>
           </main>
         </div>

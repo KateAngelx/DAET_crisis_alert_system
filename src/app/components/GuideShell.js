@@ -11,6 +11,8 @@ import { BrandLogo } from "@/app/components/BrandLogo";
 import { GUIDE_NAV, isNavActive } from "@/lib/dashboardNav";
 import { NotificationPanel } from "@/app/components/NotificationPanel";
 import { typography, iconSize } from "@/lib/designSystem";
+import { InstalledBottomNav } from "@/app/components/shell/InstalledBottomNav";
+import { useInstalledApp } from "@/lib/useInstalledApp";
 
 const ICONS = {
   Dashboard: LayoutDashboard,
@@ -24,6 +26,13 @@ const ICONS = {
   "Safety Advisories": Bell,
   "Group Reports": FileText,
 };
+
+const GUIDE_BOTTOM_NAV = [
+  { href: "/guide", short: "Home", icon: LayoutDashboard },
+  { href: "/guide/groups", short: "Groups", icon: Compass },
+  { href: "/guide/crisis", short: "Crisis", icon: ShieldCheck },
+  { href: "/guide/history", short: "History", icon: History },
+];
 
 function Logo() {
   return (
@@ -94,27 +103,26 @@ export function GuideSidebar() {
   );
 }
 
-export function MobileGuideMenu() {
-  const [isOpen, setIsOpen] = React.useState(false);
+export function MobileGuideMenu({ open, onOpen, onClose }) {
   const pathname = usePathname();
 
   return (
     <>
       <button
-        onClick={() => setIsOpen(true)}
+        onClick={onOpen}
         className="lg:hidden p-2 hover:bg-zinc-100 rounded-lg transition-colors"
         aria-label="Open menu"
       >
         <Menu size={iconSize.nav} className="text-zinc-600" />
       </button>
 
-      {isOpen && (
+      {open && (
         <>
-          <div className="fixed inset-0 bg-black/50 z-40 lg:hidden backdrop-blur-sm" onClick={() => setIsOpen(false)} />
+          <div className="fixed inset-0 bg-black/50 z-40 lg:hidden backdrop-blur-sm" onClick={onClose} />
           <div className="fixed inset-y-0 left-0 w-[280px] bg-white z-50 lg:hidden overflow-y-auto shadow-2xl animate-in slide-in-from-left duration-300 dashboard-shell">
             <div className="flex items-center justify-between p-4 border-b border-zinc-200">
               <span className="text-sm font-black text-blue-600 uppercase">Guide Portal</span>
-              <button onClick={() => setIsOpen(false)} className="p-2 hover:bg-zinc-100 rounded-lg" aria-label="Close menu">
+              <button onClick={onClose} className="p-2 hover:bg-zinc-100 rounded-lg" aria-label="Close menu">
                 <X size={24} />
               </button>
             </div>
@@ -123,7 +131,7 @@ export function MobileGuideMenu() {
                 <h3 className="text-[10px] font-black text-zinc-400 uppercase tracking-[0.2em] mb-4 px-4">Operations</h3>
                 <div className="space-y-1">
                   {GUIDE_NAV.operations.map((item) => (
-                    <div key={item.path} onClick={() => setIsOpen(false)}>
+                    <div key={item.path} onClick={onClose}>
                       <NavLink item={item} pathname={pathname} />
                     </div>
                   ))}
@@ -133,7 +141,7 @@ export function MobileGuideMenu() {
                 <h3 className="text-[10px] font-black text-zinc-400 uppercase tracking-[0.2em] mb-4 px-4">Crisis Information</h3>
                 <div className="space-y-1">
                   {GUIDE_NAV.crisisInfo.map((item) => (
-                    <div key={item.path} onClick={() => setIsOpen(false)}>
+                    <div key={item.path} onClick={onClose}>
                       <NavLink item={item} pathname={pathname} />
                     </div>
                   ))}
@@ -149,11 +157,17 @@ export function MobileGuideMenu() {
 
 export function GuideHeader() {
   const { user, logout } = useAuthStore();
+  const [menuOpen, setMenuOpen] = React.useState(false);
+  useInstalledApp();
 
   return (
     <header className="h-[72px] bg-white border-b border-zinc-200 px-4 lg:px-6 flex items-center justify-between sticky top-0 z-10 dashboard-shell">
       <div className="flex items-center gap-4">
-        <MobileGuideMenu />
+        <MobileGuideMenu
+          open={menuOpen}
+          onOpen={() => setMenuOpen(true)}
+          onClose={() => setMenuOpen(false)}
+        />
         <div className="hidden sm:block">
           <p className={`${typography.statLabel} tracking-[0.2em] text-zinc-400 leading-none mb-0.5`}>Guide portal</p>
           <h1 className={`${typography.pageTitle} leading-none text-zinc-800`}>Tour operations</h1>
@@ -180,6 +194,11 @@ export function GuideHeader() {
           </button>
         </div>
       </div>
+      <InstalledBottomNav
+        items={GUIDE_BOTTOM_NAV}
+        onMore={() => setMenuOpen(true)}
+        menuOpen={menuOpen}
+      />
     </header>
   );
 }

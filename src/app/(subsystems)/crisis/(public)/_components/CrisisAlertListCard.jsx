@@ -4,7 +4,7 @@ import { useEffect, useRef } from "react";
 import { ArrowRight, Clock, MapPin } from "lucide-react";
 import { OutlinedCard } from "@/app/components/ui/OutlinedCard";
 import { CardIconBox } from "@/app/components/ui/CardIconBox";
-import { AlertSeverityIcon } from "@/app/components/ui/cardTypeIcons";
+import { AlertTypeIcon } from "@/app/components/ui/cardTypeIcons";
 import { getSeverityOutline, iconSize, outlinedCard, typography } from "@/lib/designSystem";
 
 export function CrisisAlertListCard({ alert, onSelect, resolved = false, timeLabel, className = "" }) {
@@ -28,15 +28,23 @@ export function CrisisAlertListCard({ alert, onSelect, resolved = false, timeLab
     >
       <div className="flex items-start justify-between gap-3">
         <CardIconBox boxClass={styles.icon}>
-          <AlertSeverityIcon severity={alert.severity} size={iconSize.stat} />
+          <AlertTypeIcon type={typeLabel} size={iconSize.stat} />
         </CardIconBox>
         <div className="min-w-0 flex-1">
           <div className="flex flex-wrap gap-2 mb-2">
-            {resolved ? (
-              <span className="text-[9px] font-black uppercase px-2 py-1 rounded bg-green-100 text-green-700">
+            {resolved || alert.status === "Resolved" ? (
+              <span className="text-[9px] font-black uppercase px-2 py-1 rounded bg-green-100 text-green-600">
                 Resolved
               </span>
-            ) : null}
+            ) : alert.status === "Expired" ? (
+              <span className="text-[9px] font-black uppercase px-2 py-1 rounded bg-yellow-100 text-yellow-800">
+                Expired
+              </span>
+            ) : (
+              <span className="text-[9px] font-black uppercase px-2 py-1 rounded bg-blue-100 text-blue-700">
+                Active
+              </span>
+            )}
             <span className={`text-[9px] font-black uppercase px-2 py-1 rounded ${styles.badge}`}>{alert.severity}</span>
             <span className="text-[9px] font-black uppercase px-2 py-1 rounded bg-zinc-100 text-zinc-600">
               {resolved ? typeLabel : `Incident: ${typeLabel}`}
@@ -50,9 +58,9 @@ export function CrisisAlertListCard({ alert, onSelect, resolved = false, timeLab
             </p>
           )}
           {(timeLabel || alert.created_at) && (
-            <p className="text-[10px] text-zinc-400 font-bold uppercase mt-1 flex items-center gap-1">
+            <p className="text-xs text-zinc-500 font-medium mt-1 flex items-center gap-1">
               <Clock size={iconSize.inlineSm} />
-              {timeLabel ?? new Date(alert.created_at).toLocaleTimeString()}
+              {timeLabel ?? new Date(alert.created_at).toLocaleString()}
             </p>
           )}
         </div>

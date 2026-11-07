@@ -5,12 +5,13 @@ import { usePathname } from "next/navigation";
 import { Menu } from "lucide-react";
 import { isNavActive } from "@/lib/dashboardNav";
 
-export function InstalledBottomNav({ items, onMore }) {
+export function InstalledBottomNav({ items, onMore, menuOpen = false }) {
   const pathname = usePathname();
 
   return (
     <nav
-      className="lg:hidden fixed bottom-0 inset-x-0 z-50 border-t border-zinc-200 bg-white/95 backdrop-blur-md pb-[env(safe-area-inset-bottom)]"
+      className="installed-app-bottom-nav fixed bottom-0 inset-x-0 z-50 border-t border-zinc-200 bg-white/95 backdrop-blur-md pb-[env(safe-area-inset-bottom)]"
+      style={menuOpen ? { display: "none" } : undefined}
       aria-label="App"
     >
       <div className="grid grid-cols-5 max-w-lg mx-auto">

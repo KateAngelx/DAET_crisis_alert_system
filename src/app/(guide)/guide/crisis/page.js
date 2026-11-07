@@ -86,7 +86,9 @@ export default function GuideCrisisHubPage() {
     id: alert.id,
     status: alert.severity || "Low",
     statusClass: getSeverityOutline(alert.severity).badge,
-    place: alert.location || alert.title,
+    place: alert.title && alert.location
+      ? `${alert.title} · ${alert.location}`
+      : alert.title || alert.location || "—",
     type: alert.type || "General",
     when: alert.created_at ? new Date(alert.created_at).toLocaleString() : "—",
     onSelect: () => setSelectedAlert(alert),
