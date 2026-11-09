@@ -64,10 +64,10 @@ const GUIDE_SECTIONS = [
     title: "Send comments, feedback, or suggestions",
     summary: "Share information about public safety and crisis alerts.",
     steps: [
-      "Open the feedback form on the home page.",
+      "Open Crisis Feedback from Crisis Hub or the CONNECT-DAET menu.",
       "Choose a message type and submit your note. Submissions may be reviewed before they are shown publicly.",
     ],
-    href: "/#community-feedback",
+    href: "/crisis/feedback",
     action: "Open Crisis Feedback",
   },
   {
