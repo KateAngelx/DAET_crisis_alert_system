@@ -1,7 +1,6 @@
 "use client";
 
 import React, { useState, useEffect, useMemo } from "react";
-import Link from "next/link";
 import { Info, Shield } from "lucide-react";
 import { useCrisisStore, useAuthStore } from "@/app/store/crisisStore";
 import { InfoPageHero, PublicPageShell, PublicPageContent, PublicPanel } from "@/app/components/InfoPageHero";
@@ -125,19 +124,6 @@ export default function CrisisPublicPage() {
           }
           tone="info"
         />
-        <PublicPanel title="Share crisis and alert feedback" subtitle="Your message is reviewed before it is shown publicly.">
-          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-            <p className="max-w-2xl text-sm font-medium text-zinc-600">
-              Send a comment, feedback, or suggestion about public crisis information. This does not replace emergency reporting.
-            </p>
-            <Link
-              href={selectedAlert ? `/crisis/feedback?alertId=${encodeURIComponent(selectedAlert)}` : "/crisis/feedback"}
-              className="inline-flex min-h-11 shrink-0 items-center justify-center rounded-xl bg-blue-600 px-4 py-3 text-xs font-black uppercase tracking-widest text-white hover:bg-blue-700"
-            >
-              Open feedback form
-            </Link>
-          </div>
-        </PublicPanel>
         <div className={portalLayout.stackPublic}>
           <PublicPanel title="Overview" subtitle="Alert counts">
             {loading ? (
