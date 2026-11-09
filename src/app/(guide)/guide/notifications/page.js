@@ -13,12 +13,14 @@ import { useNotificationStore } from "@/app/store/notificationStore";
 import { getActiveSession } from "@/lib/authSession";
 import { GuideDashboardQuickActions } from "@/app/components/guide/GuideDashboardQuickActions";
 import { GuidePanel } from "@/app/components/guide/GuidePanel";
+import { ListPager } from "@/app/components/shell/ListPager";
 
 export default function GuideNotificationsPage() {
   const { user } = useAuthStore();
   const { notifications, fetchNotifications, markAsRead, markAllAsRead, loading, error, clearNotifications } =
     useNotificationStore();
   const [sessionChecked, setSessionChecked] = useState(false);
+  const [page, setPage] = useState(1);
 
   useEffect(() => {
     let cancelled = false;
@@ -68,6 +70,11 @@ export default function GuideNotificationsPage() {
     );
   }
 
+  const pageSize = 10;
+  const pageCount = Math.max(1, Math.ceil(notifications.length / pageSize));
+  const safePage = Math.min(page, pageCount);
+  const visibleNotifications = notifications.slice((safePage - 1) * pageSize, safePage * pageSize);
+
   return (
     <>
       <GuidePageHeader
@@ -100,7 +107,7 @@ export default function GuideNotificationsPage() {
           }
         >
           <ul className="divide-y divide-zinc-100 border border-zinc-100 rounded-lg overflow-hidden">
-            {notifications.map((n) => (
+            {visibleNotifications.map((n) => (
               <li key={n.id}>
                 <NotificationItemCard
                   notification={n}
@@ -111,6 +118,7 @@ export default function GuideNotificationsPage() {
               </li>
             ))}
           </ul>
+          <ListPager page={safePage} pageCount={pageCount} onPage={setPage} />
         </AsyncState>
       </GuidePanel>
 

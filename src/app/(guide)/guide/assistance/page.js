@@ -8,6 +8,7 @@ import { AsyncState, EmptyState } from "@/app/components/ui/AsyncState";
 import { useConfirm } from "@/app/components/ui/ConfirmDialogProvider";
 import { useAuthStore } from "@/app/store/crisisStore";
 import { getActiveSession } from "@/lib/authSession";
+import { ListPager } from "@/app/components/shell/ListPager";
 import { guideShell } from "@/lib/designSystem";
 
 function formatDate(value) {
@@ -23,6 +24,7 @@ export default function GuideAssistanceRequestsPage() {
   const [busyId, setBusyId] = useState(null);
   const [error, setError] = useState("");
   const [feedback, setFeedback] = useState("");
+  const [page, setPage] = useState(1);
 
   const loadRequests = useCallback(async () => {
     setLoading(true);
@@ -90,6 +92,11 @@ export default function GuideAssistanceRequestsPage() {
     }
   };
 
+  const pageSize = 5;
+  const pageCount = Math.max(1, Math.ceil(requests.length / pageSize));
+  const safePage = Math.min(page, pageCount);
+  const visibleRequests = requests.slice((safePage - 1) * pageSize, safePage * pageSize);
+
   return (
     <>
       <GuidePageHeader
@@ -113,7 +120,7 @@ export default function GuideAssistanceRequestsPage() {
           emptyFallback={<EmptyState icon={Compass} title="No assigned requests" description="When the Tourism Office selects you for a request, it will appear here." />}
         >
           <div className="grid gap-3 lg:grid-cols-2">
-            {requests.map((item) => (
+            {visibleRequests.map((item) => (
               <article key={item.id} className="rounded-2xl border border-zinc-200 bg-white p-4 shadow-sm sm:p-5">
                 <div className="flex flex-wrap items-start justify-between gap-3">
                   <div>
@@ -186,6 +193,7 @@ export default function GuideAssistanceRequestsPage() {
               </article>
             ))}
           </div>
+          <ListPager page={safePage} pageCount={pageCount} onPage={setPage} />
         </AsyncState>
       </GuidePanel>
     </>

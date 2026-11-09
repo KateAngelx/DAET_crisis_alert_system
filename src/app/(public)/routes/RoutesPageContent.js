@@ -23,10 +23,10 @@ import { formatWarningTimeRange, getDangerSeverityStyles } from "@/lib/dangerous
 import { advisoryToMapWarning } from "@/lib/routeAdvisoryUtils";
 import { useTravelDeepLinks } from "@/lib/useTravelDeepLinks";
 import { ROLE_INTERFACE } from "@/lib/roleInterfaceCopy";
-import { RoleContextBanner } from "@/app/components/dashboard/RoleContextBanner";
 import { portalLayout, portalShell } from "@/lib/designSystem";
 import { ROUTES_MAP_LEGEND } from "@/lib/mapPinUtils";
 import { PublicListModal } from "@/app/components/shell/PublicListModal";
+import { ListPager } from "@/app/components/shell/ListPager";
 import { usePublicVisibility } from "@/lib/usePublicVisibility";
 import { TravelAdvisoryViewReward } from "@/app/components/rewards/TravelAdvisoryViewReward";
 import { sortRecordsNewestFirst } from "@/lib/recordSorting";
@@ -62,6 +62,13 @@ function AdvisoryCell({ children, title }) {
 }
 
 function AdvisoryFormList({ items, onSelectRoute, onSelectHazard, highlightedHazardId }) {
+  const [page, setPage] = useState(1);
+  const signature = items.map((entry) => entry.key).join("|");
+
+  useEffect(() => {
+    setPage(1);
+  }, [signature]);
+
   if (!items.length) {
     return (
       <p className="text-sm font-medium text-zinc-500 bg-zinc-50 border border-zinc-100 rounded-xl p-3">
@@ -69,6 +76,11 @@ function AdvisoryFormList({ items, onSelectRoute, onSelectHazard, highlightedHaz
       </p>
     );
   }
+
+  const pageSize = 5;
+  const pageCount = Math.max(1, Math.ceil(items.length / pageSize));
+  const safePage = Math.min(page, pageCount);
+  const visibleItems = items.slice((safePage - 1) * pageSize, safePage * pageSize);
 
   return (
     <div className="rounded-xl border border-zinc-200 overflow-hidden bg-white">
@@ -81,7 +93,7 @@ function AdvisoryFormList({ items, onSelectRoute, onSelectHazard, highlightedHaz
         <span className="sr-only">Details</span>
       </div>
       <ul className="divide-y divide-zinc-100">
-        {items.map((entry) => {
+        {visibleItems.map((entry) => {
           const isHazard = entry.kind === "hazard";
           const highlighted = isHazard && highlightedHazardId === entry.item.id;
           const rowClass = `${ADVISORY_ROW} w-full text-left px-3 py-2.5 transition-colors hover:bg-zinc-50 ${
@@ -103,6 +115,7 @@ function AdvisoryFormList({ items, onSelectRoute, onSelectHazard, highlightedHaz
           );
         })}
       </ul>
+      <ListPager page={safePage} pageCount={pageCount} onPage={setPage} />
     </div>
   );
 }
@@ -324,9 +337,6 @@ export default function RoutesPageContent() {
       />
 
       <PublicPageContent>
-        <div className="installed-app-hide">
-          <RoleContextBanner helper={ROLE_INTERFACE.public.routes.helper} tone="info" />
-        </div>
         <AsyncState
           loading={loading}
           error={error}

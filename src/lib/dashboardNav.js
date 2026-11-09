@@ -17,19 +17,20 @@ export const ADMIN_NAV = {
 };
 
 export const GUIDE_NAV = {
-  operations: [
-    { path: "/guide", label: "Dashboard" },
-    { path: "/guide/groups", label: "Tour Groups" },
-    { path: "/guide/completed", label: "Completed Tours" },
-    { path: "/guide/assistance", label: "Guide Assistance Requests" },
-    { path: "/guide/history", label: "History & Records" },
-    { path: "/guide/tourists", label: "Active Tourists" },
-    { path: "/guide/notifications", label: "Notifications" },
+  work: [
+    { path: "/guide", label: "Home" },
+    { path: "/guide/groups", label: "Tour groups" },
+    { path: "/guide/assistance", label: "Assistance" },
+    { path: "/guide/tourists", label: "Active tourists" },
   ],
-  crisisInfo: [
+  records: [
+    { path: "/guide/completed", label: "Completed tours" },
+    { path: "/guide/history", label: "History" },
+    { path: "/guide/reports", label: "Group reports" },
+  ],
+  alerts: [
     { path: "/guide/crisis", label: "Crisis Hub" },
     { path: "/guide/routes", label: "Roads & Travel" },
-    { path: "/guide/reports", label: "Group Reports" },
   ],
 };
 

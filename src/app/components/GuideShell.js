@@ -5,7 +5,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useAuthStore } from "@/app/store/crisisStore";
 import {
-  LayoutDashboard, Bell, ShieldCheck, FileText, Map, LogOut, Users, Compass, CheckCircle, History, Menu, X,
+  LayoutDashboard, ShieldCheck, FileText, Map, LogOut, Users, Compass, CheckCircle, History, Menu, X,
 } from "lucide-react";
 import { BrandLogo } from "@/app/components/BrandLogo";
 import { GUIDE_NAV, isNavActive } from "@/lib/dashboardNav";
@@ -15,18 +15,25 @@ import { InstalledBottomNav } from "@/app/components/shell/InstalledBottomNav";
 import { useInstalledApp } from "@/lib/useInstalledApp";
 
 const ICONS = {
-  Dashboard: LayoutDashboard,
-  "Tour Groups": Compass,
-  "Completed Tours": CheckCircle,
-  "Guide Assistance Requests": Compass,
-  "History & Records": History,
-  "Active Tourists": Users,
-  Notifications: Bell,
+  Home: LayoutDashboard,
+  "Tour groups": Compass,
+  "Completed tours": CheckCircle,
+  Assistance: Compass,
+  History: History,
+  "Active tourists": Users,
   "Crisis Hub": ShieldCheck,
   "Roads & Travel": Map,
-  "Safety Advisories": Bell,
-  "Group Reports": FileText,
+  "Group reports": FileText,
 };
+
+const GUIDE_SECTIONS = [
+  ["Work", GUIDE_NAV.work],
+  ["Records", GUIDE_NAV.records],
+  ["Alerts", GUIDE_NAV.alerts],
+];
+
+const PHONE_BROWSER_PRIMARY = [...GUIDE_NAV.work, GUIDE_NAV.alerts[0]];
+const PHONE_BROWSER_MORE = [...GUIDE_NAV.records, GUIDE_NAV.alerts[1]];
 
 const GUIDE_BOTTOM_NAV = [
   { href: "/guide", short: "Home", icon: LayoutDashboard },
@@ -73,23 +80,16 @@ export function GuideSidebar() {
       <Logo />
 
       <div className="flex-1 overflow-y-auto px-4 py-6 custom-scrollbar">
-        <div className="mb-8">
-          <h3 className="text-[10px] font-black text-zinc-400 uppercase tracking-[0.2em] mb-4 px-4">Operations</h3>
-          <div className="space-y-1">
-            {GUIDE_NAV.operations.map((item) => (
-              <NavLink key={item.path} item={item} pathname={pathname} />
-            ))}
+        {GUIDE_SECTIONS.map(([title, items], index) => (
+          <div key={title} className={index === GUIDE_SECTIONS.length - 1 ? "" : "mb-8"}>
+            <h3 className="text-[10px] font-black text-zinc-400 uppercase tracking-[0.2em] mb-4 px-4">{title}</h3>
+            <div className="space-y-1">
+              {items.map((item) => (
+                <NavLink key={item.path} item={item} pathname={pathname} />
+              ))}
+            </div>
           </div>
-        </div>
-
-        <div>
-          <h3 className="text-[10px] font-black text-zinc-400 uppercase tracking-[0.2em] mb-4 px-4">Crisis Information</h3>
-          <div className="space-y-1">
-            {GUIDE_NAV.crisisInfo.map((item) => (
-              <NavLink key={item.path} item={item} pathname={pathname} />
-            ))}
-          </div>
-        </div>
+        ))}
       </div>
 
       <div className="p-4 border-t border-zinc-100">
@@ -104,8 +104,9 @@ export function GuideSidebar() {
   );
 }
 
-export function MobileGuideMenu({ open, onOpen, onClose }) {
+export function MobileGuideMenu({ open, onOpen, onClose, installed = false }) {
   const pathname = usePathname();
+  const [moreOpen, setMoreOpen] = React.useState(false);
 
   return (
     <>
@@ -128,26 +129,45 @@ export function MobileGuideMenu({ open, onOpen, onClose }) {
               </button>
             </div>
             <div className="p-4 space-y-6">
-              <div>
-                <h3 className="text-[10px] font-black text-zinc-400 uppercase tracking-[0.2em] mb-4 px-4">Operations</h3>
-                <div className="space-y-1">
-                  {GUIDE_NAV.operations.map((item) => (
-                    <div key={item.path} onClick={onClose}>
-                      <NavLink item={item} pathname={pathname} />
-                    </div>
-                  ))}
+              {installed ? GUIDE_SECTIONS.map(([title, items]) => (
+                <div key={title}>
+                  <h3 className="text-[10px] font-black text-zinc-400 uppercase tracking-[0.2em] mb-4 px-4">{title}</h3>
+                  <div className="space-y-1">
+                    {items.map((item) => (
+                      <div key={item.path} onClick={onClose}>
+                        <NavLink item={item} pathname={pathname} />
+                      </div>
+                    ))}
+                  </div>
                 </div>
-              </div>
-              <div>
-                <h3 className="text-[10px] font-black text-zinc-400 uppercase tracking-[0.2em] mb-4 px-4">Crisis Information</h3>
-                <div className="space-y-1">
-                  {GUIDE_NAV.crisisInfo.map((item) => (
-                    <div key={item.path} onClick={onClose}>
-                      <NavLink item={item} pathname={pathname} />
+              )) : (
+                <>
+                  <div className="space-y-1">
+                    {PHONE_BROWSER_PRIMARY.map((item) => (
+                      <div key={item.path} onClick={onClose}>
+                        <NavLink item={item} pathname={pathname} />
+                      </div>
+                    ))}
+                  </div>
+                  <button
+                    type="button"
+                    className="px-4 text-[10px] font-black uppercase tracking-[0.2em] text-zinc-400"
+                    aria-expanded={moreOpen}
+                    onClick={() => setMoreOpen((value) => !value)}
+                  >
+                    {moreOpen ? "Hide more" : "More"}
+                  </button>
+                  {moreOpen ? (
+                    <div className="space-y-1">
+                      {PHONE_BROWSER_MORE.map((item) => (
+                        <div key={item.path} onClick={onClose}>
+                          <NavLink item={item} pathname={pathname} />
+                        </div>
+                      ))}
                     </div>
-                  ))}
-                </div>
-              </div>
+                  ) : null}
+                </>
+              )}
             </div>
           </div>
         </>
@@ -159,13 +179,14 @@ export function MobileGuideMenu({ open, onOpen, onClose }) {
 export function GuideHeader() {
   const { user, logout } = useAuthStore();
   const [menuOpen, setMenuOpen] = React.useState(false);
-  useInstalledApp();
+  const installedApp = useInstalledApp();
 
   return (
     <header className="h-[72px] bg-white border-b border-zinc-200 px-4 lg:px-6 flex items-center justify-between sticky top-0 z-10 dashboard-shell">
       <div className="flex items-center gap-4">
         <MobileGuideMenu
           open={menuOpen}
+          installed={installedApp}
           onOpen={() => setMenuOpen(true)}
           onClose={() => setMenuOpen(false)}
         />

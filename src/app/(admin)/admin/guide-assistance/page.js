@@ -1,7 +1,8 @@
 "use client";
 
 import React, { useCallback, useEffect, useState } from "react";
-import { ChevronLeft, ChevronRight, Compass, RefreshCw, Search } from "lucide-react";
+import { Compass, RefreshCw, Search } from "lucide-react";
+import { ListPager } from "@/app/components/shell/ListPager";
 import { AdminPanel } from "@/app/components/admin/AdminPanel";
 import { DashboardPageHeader } from "@/app/components/dashboard/DashboardPageHeader";
 import { AsyncState, EmptyState } from "@/app/components/ui/AsyncState";
@@ -132,7 +133,7 @@ export default function AdminGuideAssistancePage() {
     }
   };
 
-  const pageCount = Math.max(1, Math.ceil(totalCount / 50));
+  const pageCount = Math.max(1, Math.ceil(totalCount / 10));
 
   return (
     <>
@@ -326,17 +327,7 @@ export default function AdminGuideAssistancePage() {
           </div>
         </AsyncState>
 
-        {totalCount > 50 ? (
-          <div className="mt-4 flex items-center justify-center gap-3">
-            <button type="button" onClick={() => setPage((current) => Math.max(1, current - 1))} disabled={page === 1 || loading} className={adminShell.btnIcon} aria-label="Previous page">
-              <ChevronLeft size={16} />
-            </button>
-            <span className="text-sm font-bold text-zinc-600">{page} / {pageCount}</span>
-            <button type="button" onClick={() => setPage((current) => Math.min(pageCount, current + 1))} disabled={page >= pageCount || loading} className={adminShell.btnIcon} aria-label="Next page">
-              <ChevronRight size={16} />
-            </button>
-          </div>
-        ) : null}
+        <ListPager page={page} pageCount={pageCount} onPage={setPage} disabled={loading} />
       </AdminPanel>
     </>
   );

@@ -15,6 +15,7 @@ import { DashboardStatCard } from "@/app/components/dashboard/DashboardStatCard"
 import { EmptyState } from "@/app/components/ui/AsyncState";
 import { EMPTY_ROUTE_FORM } from "@/lib/tourGroupRoute";
 import { GuideDashboardQuickActions } from "@/app/components/guide/GuideDashboardQuickActions";
+import { ListPager } from "@/app/components/shell/ListPager";
 import { typography, iconSize, statGrid } from "@/lib/designSystem";
 
 export default function GuideTourGroupsPage() {
@@ -37,6 +38,7 @@ export default function GuideTourGroupsPage() {
   const [error, setError] = useState(null);
   const [form, setForm] = useState({ ...EMPTY_ROUTE_FORM });
   const [modalGroup, setModalGroup] = useState(null);
+  const [page, setPage] = useState(1);
 
   useEffect(() => {
     if (user?.id) fetchTourGroups(user.id);
@@ -59,6 +61,10 @@ export default function GuideTourGroupsPage() {
     [tourGroups]
   );
   const displayedGroups = tab === "completed" ? completedGroups : activeGroups;
+  const pageSize = 5;
+  const pageCount = Math.max(1, Math.ceil(displayedGroups.length / pageSize));
+  const safePage = Math.min(page, pageCount);
+  const visibleGroups = displayedGroups.slice((safePage - 1) * pageSize, safePage * pageSize);
 
   const activeTourists = activeGroups.reduce((s, g) => s + (g.member_count || 0), 0);
 
@@ -135,7 +141,10 @@ export default function GuideTourGroupsPage() {
           <button
             key={item.id}
             type="button"
-            onClick={() => setTab(item.id)}
+            onClick={() => {
+              setTab(item.id);
+              setPage(1);
+            }}
             className={`flex-1 sm:flex-none px-4 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${
               tab === item.id
                 ? "bg-white text-purple-700 shadow-sm"
@@ -229,7 +238,7 @@ export default function GuideTourGroupsPage() {
         />
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {displayedGroups.map((group) => (
+          {visibleGroups.map((group) => (
             <TourGroupCard
               key={group.id}
               group={group}
@@ -240,6 +249,7 @@ export default function GuideTourGroupsPage() {
           ))}
         </div>
       )}
+      <ListPager page={safePage} pageCount={pageCount} onPage={setPage} />
 
       <GuideDashboardQuickActions showCompleted={false} />
 

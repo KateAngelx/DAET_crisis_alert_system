@@ -10,7 +10,48 @@ const ALLOWED_ASSISTANCE_TYPES = new Set([
   "Other tourism-related assistance",
 ]);
 
-export async function GET() {
+async function loadTouristRequests(request) {
+  const authHeader = request.headers.get("authorization");
+  if (!authHeader?.startsWith("Bearer ")) return [];
+
+  const auth = await requireTourist(request);
+  if (auth.error) return [];
+
+  const { data, error } = await auth.admin
+    .from("tourist_guide_assistance_requests")
+    .select("id, assistance_type, location, preferred_at, tourist_count, details, status, created_at, assigned_guide_id")
+    .eq("tourist_id", auth.user.id)
+    .order("created_at", { ascending: false })
+    .limit(20);
+  if (error) throw error;
+
+  const guideIds = [...new Set((data || []).map((item) => item.assigned_guide_id).filter(Boolean))];
+  const { data: guides, error: guideError } = guideIds.length
+    ? await auth.admin.from("profiles").select("id, full_name, phone").in("id", guideIds)
+    : { data: [], error: null };
+  if (guideError) throw guideError;
+  const guideById = new Map((guides || []).map((guide) => [guide.id, guide]));
+
+  return (data || []).map((item) => {
+    const guide = guideById.get(item.assigned_guide_id);
+    const shareGuide = item.status === "Accepted" || item.status === "Completed";
+    return {
+      id: item.id,
+      assistanceType: item.assistance_type,
+      location: item.location,
+      preferredAt: item.preferred_at,
+      touristCount: item.tourist_count,
+      details: item.details,
+      status: item.status,
+      createdAt: item.created_at,
+      guide: shareGuide && guide
+        ? { fullName: guide.full_name, phone: guide.phone || "" }
+        : null,
+    };
+  });
+}
+
+export async function GET(request) {
   try {
     const admin = getSupabaseAdmin();
     if (!admin) {
@@ -25,6 +66,7 @@ export async function GET() {
       .eq("id", "default")
       .maybeSingle();
     if (error) throw error;
+    const requests = await loadTouristRequests(request);
     return NextResponse.json(
       {
         success: true,
@@ -33,6 +75,7 @@ export async function GET() {
           introductoryInformation: settings?.tourist_guide_assistance_intro || "",
           availabilityMessage: settings?.tourist_guide_assistance_availability || "",
         },
+        requests,
       },
       { headers: { "Cache-Control": "no-store" } }
     );

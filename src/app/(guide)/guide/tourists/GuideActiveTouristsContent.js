@@ -12,6 +12,7 @@ import { useAuthStore } from "@/app/store/crisisStore";
 import { useGuideStore } from "@/app/store/guideStore";
 import { StatCardSkeletonGrid } from "@/app/components/ui/Skeletons";
 import { GuideDashboardQuickActions } from "@/app/components/guide/GuideDashboardQuickActions";
+import { ListPager } from "@/app/components/shell/ListPager";
 import { iconSize, statGrid, typography } from "@/lib/designSystem";
 
 export default function GuideActiveTouristsPage() {
@@ -21,6 +22,7 @@ export default function GuideActiveTouristsPage() {
 
   const [selectedGroupId, setSelectedGroupId] = useState(null);
   const [pendingAll, setPendingAll] = useState([]);
+  const [pendingPage, setPendingPage] = useState(1);
 
   const activeGroups = useMemo(
     () => tourGroups.filter((g) => g.status === "active"),
@@ -31,6 +33,10 @@ export default function GuideActiveTouristsPage() {
     [activeGroups]
   );
   const selectedGroup = activeGroups.find((g) => g.id === selectedGroupId) || activeGroups[0] || null;
+  const pendingPageSize = 5;
+  const pendingPageCount = Math.max(1, Math.ceil(pendingAll.length / pendingPageSize));
+  const safePendingPage = Math.min(pendingPage, pendingPageCount);
+  const visiblePending = pendingAll.slice((safePendingPage - 1) * pendingPageSize, safePendingPage * pendingPageSize);
 
   useEffect(() => {
     if (user?.id) fetchTourGroups(user.id);
@@ -144,7 +150,7 @@ export default function GuideActiveTouristsPage() {
                 <Clock size={16} /> All Pending Confirmations ({pendingAll.length})
               </h2>
               <div className="space-y-3">
-                {pendingAll.map((assignment) => (
+                {visiblePending.map((assignment) => (
                   <Card key={assignment.id} className="p-4 border-orange-100 bg-orange-50/30">
                     <div className="flex items-center justify-between gap-4">
                       <div>
@@ -164,6 +170,7 @@ export default function GuideActiveTouristsPage() {
                   </Card>
                 ))}
               </div>
+              <ListPager page={safePendingPage} pageCount={pendingPageCount} onPage={setPendingPage} />
             </section>
           )}
         </>

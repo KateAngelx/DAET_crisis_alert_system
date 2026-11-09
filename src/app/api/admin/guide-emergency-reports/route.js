@@ -8,7 +8,7 @@ import {
 
 const STATUSES = new Set(["New", "Acknowledged", "Responding", "Resolved", "Closed"]);
 const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
-const PAGE_SIZE = 50;
+const PAGE_SIZE = 10;
 
 export async function GET(request) {
   try {

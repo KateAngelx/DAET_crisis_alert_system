@@ -1,8 +1,9 @@
 "use client";
 
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { ArrowRight, Ban, CheckCircle2, Eye, Pencil, RotateCcw, Trash2 } from "lucide-react";
 import { portalShell } from "@/lib/designSystem";
+import { ListPager } from "@/app/components/shell/ListPager";
 
 export const STATUS_RECORD_ROW =
   "grid grid-cols-[3.6rem_minmax(0,1.25fr)_minmax(0,0.75fr)_minmax(0,1.15fr)_auto] items-start gap-x-1.5";
@@ -87,7 +88,15 @@ export function StatusRecordList({
   rows,
   emptyMessage = "Nothing is published in this category right now.",
   columnLabels = ["Status", "Place", "Type", "When"],
+  pageSize = 5,
 }) {
+  const [page, setPage] = useState(1);
+  const signature = rows.map((row) => row.id).join("|");
+
+  useEffect(() => {
+    setPage(1);
+  }, [signature, pageSize]);
+
   if (!rows.length) {
     return (
       <p className="text-sm font-medium text-zinc-500 bg-zinc-50 border border-zinc-100 rounded-xl p-3">
@@ -96,6 +105,9 @@ export function StatusRecordList({
     );
   }
 
+  const pageCount = Math.max(1, Math.ceil(rows.length / pageSize));
+  const safePage = Math.min(page, pageCount);
+  const visibleRows = rows.slice((safePage - 1) * pageSize, safePage * pageSize);
   const hasActions = rows.some((row) => row.actions?.length);
 
   return (
@@ -115,7 +127,7 @@ export function StatusRecordList({
         )}
       </div>
       <ul className="divide-y divide-zinc-100">
-        {rows.map((row) => {
+        {visibleRows.map((row) => {
           const cells = (
             <>
               <span className={`inline-flex max-w-full min-w-0 text-[9px] font-black uppercase tracking-wide px-1 py-0.5 rounded leading-tight ${row.statusClass || "bg-zinc-100 text-zinc-600"}`}>
@@ -157,6 +169,7 @@ export function StatusRecordList({
           );
         })}
       </ul>
+      <ListPager page={safePage} pageCount={pageCount} onPage={setPage} />
     </div>
   );
 }

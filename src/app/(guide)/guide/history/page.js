@@ -16,6 +16,7 @@ import {
 import { useAuthStore, useCrisisStore } from "@/app/store/crisisStore";
 import { useGuideStore } from "@/app/store/guideStore";
 import { AlertCardSkeletonList, MapSkeleton, StatCardSkeletonGrid } from "@/app/components/ui/Skeletons";
+import { ListPager } from "@/app/components/shell/ListPager";
 import { getSeverityOutline, guideShell, portalLayout, statGrid, iconSize } from "@/lib/designSystem";
 import { DashboardStatCard } from "@/app/components/dashboard/DashboardStatCard";
 
@@ -29,6 +30,7 @@ export default function GuideHistoryPage() {
   const [categoryFilter, setCategoryFilter] = useState("all");
   const [severityFilter, setSeverityFilter] = useState("all");
   const [selectedAlert, setSelectedAlert] = useState(null);
+  const [reportPage, setReportPage] = useState(1);
 
   useEffect(() => {
     if (!user?.id) return;
@@ -77,6 +79,10 @@ export default function GuideHistoryPage() {
   }, [mounted, completedGroups.length, closedReports.length, resolvedAlerts.length]);
 
   const loading = alertsLoading || guideLoading;
+  const reportPageSize = 10;
+  const reportPageCount = Math.max(1, Math.ceil(closedReports.length / reportPageSize));
+  const safeReportPage = Math.min(reportPage, reportPageCount);
+  const visibleReports = closedReports.slice((safeReportPage - 1) * reportPageSize, safeReportPage * reportPageSize);
 
   return (
     <>
@@ -106,7 +112,7 @@ export default function GuideHistoryPage() {
         ) : completedGroups.length === 0 ? (
           <p className="text-sm text-zinc-500 font-medium py-6">No completed tours yet.</p>
         ) : (
-          <CompletedToursPanel groups={completedGroups} guideId={user?.id} />
+          <CompletedToursPanel groups={completedGroups} guideId={user?.id} pageSize={10} />
         )}
       </GuidePanel>
 
@@ -116,8 +122,9 @@ export default function GuideHistoryPage() {
         ) : closedReports.length === 0 ? (
           <p className="text-sm text-zinc-500 font-medium py-6">No closed reports yet.</p>
         ) : (
+          <>
           <div className="space-y-3">
-            {closedReports.map((inc) => (
+            {visibleReports.map((inc) => (
               <Link
                 key={inc.id}
                 href={`/guide/reports/${inc.id}`}
@@ -132,6 +139,8 @@ export default function GuideHistoryPage() {
               </Link>
             ))}
           </div>
+          <ListPager page={safeReportPage} pageCount={reportPageCount} onPage={setReportPage} />
+          </>
         )}
       </GuidePanel>
 
@@ -157,7 +166,7 @@ export default function GuideHistoryPage() {
                   options={DEFAULT_SEVERITY_ORDER}
                 />
               </div>
-              <StatusRecordList rows={alertRows} emptyMessage="No resolved alerts match this filter." />
+              <StatusRecordList pageSize={10} rows={alertRows} emptyMessage="No resolved alerts match this filter." />
             </div>
             <div className={selectedAlert ? "pointer-events-none opacity-40" : ""}>
               {mounted ? (

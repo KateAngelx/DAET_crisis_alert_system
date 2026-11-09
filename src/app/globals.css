@@ -57,8 +57,16 @@ body {
   }
 
   html:not([data-installed-app="true"]) [data-landing-section="hero"] {
-    min-height: 420px;
+    min-height: 100dvh;
     padding-bottom: 2.5rem;
+  }
+
+  .installed-app-hide {
+    display: none;
+  }
+
+  .installed-app-show {
+    display: flex;
   }
 
   html:not([data-installed-app="true"]) [data-public-header] {
@@ -99,6 +107,16 @@ body {
   display: none;
 }
 
+@media (max-width: 1023px) {
+  .installed-app-hide {
+    display: none;
+  }
+
+  .installed-app-show {
+    display: flex;
+  }
+}
+
 @media (display-mode: standalone) and (max-width: 1023px) {
   .public-mobile-dock,
   .installed-app-bottom-nav {
@@ -112,6 +130,15 @@ body {
 
   .installed-app-show {
     display: flex;
+  }
+
+  [data-landing-section="hero"] {
+    width: 100%;
+    min-height: 100dvh;
+    margin-top: 0;
+    background-size: cover;
+    background-position: center center;
+    background-repeat: no-repeat;
   }
 
   .installed-app-main {
@@ -134,6 +161,15 @@ body {
 
 html[data-installed-app="true"] .installed-app-hide {
   display: none;
+}
+
+html[data-installed-app="true"] [data-landing-section="hero"] {
+  width: 100%;
+  min-height: 100dvh;
+  margin-top: 0;
+  background-size: cover;
+  background-position: center center;
+  background-repeat: no-repeat;
 }
 
 html[data-installed-app="true"] [data-public-footer] {

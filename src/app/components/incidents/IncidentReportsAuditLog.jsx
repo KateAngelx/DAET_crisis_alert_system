@@ -1,14 +1,28 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { ArrowRight, ClipboardList, Loader2 } from "lucide-react";
 import { AdminPanel } from "@/app/components/admin/AdminPanel";
+import { ListPager } from "@/app/components/shell/ListPager";
 import { adminShell, iconSize, portalLayout } from "@/lib/designSystem";
 import { formatIncidentAuditAction } from "@/lib/incidentAuditUtils";
 import { incidentStatusBadgeClass, normalizeIncidentStatusLabel } from "@/lib/incidentStatusUtils";
 import { AdminTablePlaceholderSkeleton } from "@/app/components/ui/Skeletons";
 
 export function IncidentReportsAuditLog({ entries, loading, onRefresh }) {
+  const [page, setPage] = useState(1);
+  const pageSize = 10;
+  const signature = entries.map((row) => row.id).join("|");
+
+  useEffect(() => {
+    setPage(1);
+  }, [signature]);
+
+  const pageCount = Math.max(1, Math.ceil(entries.length / pageSize));
+  const safePage = Math.min(page, pageCount);
+  const visibleEntries = entries.slice((safePage - 1) * pageSize, safePage * pageSize);
+
   return (
     <AdminPanel
       title="Audit log"
@@ -52,7 +66,7 @@ export function IncidentReportsAuditLog({ entries, loading, onRefresh }) {
               </tr>
             </thead>
             <tbody className="divide-y divide-zinc-100">
-              {entries.map((row) => {
+              {visibleEntries.map((row) => {
                 const ref = row.incident_reports?.reference_number || "—";
                 const status = row.new_status ? normalizeIncidentStatusLabel(row.new_status) : "—";
                 return (
@@ -86,6 +100,7 @@ export function IncidentReportsAuditLog({ entries, loading, onRefresh }) {
               })}
             </tbody>
           </table>
+          <ListPager page={safePage} pageCount={pageCount} onPage={setPage} />
         </div>
       )}
     </AdminPanel>

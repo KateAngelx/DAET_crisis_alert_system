@@ -9,7 +9,7 @@ import {
 } from "@/lib/guideAssistanceNotifications.server";
 
 const REQUEST_STATUSES = new Set(["Pending", "Assigned", "Accepted", "Declined", "Completed", "Cancelled"]);
-const PAGE_SIZE = 50;
+const PAGE_SIZE = 10;
 const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
 function getSearchTerm(value) {

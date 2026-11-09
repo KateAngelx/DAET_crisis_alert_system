@@ -2,17 +2,18 @@
 
 import React, { useCallback, useEffect, useState } from "react";
 import {
-  Check, ChevronLeft, ChevronRight, Eye, EyeOff, Loader2, MessageSquare, X,
+  Check, Eye, EyeOff, Loader2, MessageSquare, X,
 } from "lucide-react";
 import { AdminPanel } from "@/app/components/admin/AdminPanel";
 import { DashboardPageHeader } from "@/app/components/dashboard/DashboardPageHeader";
 import { useConfirm } from "@/app/components/ui/ConfirmDialogProvider";
 import { getActiveSession } from "@/lib/authSession";
+import { ListPager } from "@/app/components/shell/ListPager";
 import { adminShell } from "@/lib/designSystem";
 
 const TYPES = ["comment", "feedback", "suggestion"];
 const STATUSES = ["pending", "approved", "rejected", "removed"];
-const PAGE_SIZE = 25;
+const PAGE_SIZE = 10;
 const STATUS_BADGES = {
   pending: "bg-amber-50 text-amber-800 ring-amber-200",
   approved: "bg-green-50 text-green-700 ring-green-200",
@@ -449,27 +450,7 @@ export default function AdminCrisisFeedbackPage() {
           </div>
         )}
 
-        <div className="mt-5 flex items-center justify-between border-t border-zinc-100 pt-4">
-          <p className="text-xs font-medium text-zinc-500">Page {page} of {pageCount}</p>
-          <div className="flex gap-2">
-            <button
-              type="button"
-              onClick={() => setPage((current) => Math.max(1, current - 1))}
-              disabled={page <= 1 || loading}
-              className="inline-flex items-center gap-1 rounded-lg border border-zinc-200 px-3 py-2 text-xs font-bold disabled:opacity-40"
-            >
-              <ChevronLeft size={14} /> Previous
-            </button>
-            <button
-              type="button"
-              onClick={() => setPage((current) => Math.min(pageCount, current + 1))}
-              disabled={page >= pageCount || loading}
-              className="inline-flex items-center gap-1 rounded-lg border border-zinc-200 px-3 py-2 text-xs font-bold disabled:opacity-40"
-            >
-              Next <ChevronRight size={14} />
-            </button>
-          </div>
-        </div>
+        <ListPager page={page} pageCount={pageCount} onPage={setPage} disabled={loading} />
       </AdminPanel>
     </div>
   );

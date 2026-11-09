@@ -20,7 +20,6 @@ import { AdminTablePanel } from "@/app/components/admin/AdminTablePanel";
 import { GuideEmergencyReportsPanel } from "@/app/components/admin/GuideEmergencyReportsPanel";
 import { StatCardSkeleton, AlertCardSkeletonList, MapSkeleton, TableSkeleton } from "@/app/components/ui/Skeletons";
 import { ErrorState } from "@/app/components/ui/AsyncState";
-import { DashboardPageHeader } from "@/app/components/dashboard/DashboardPageHeader";
 import { DashboardStatCard } from "@/app/components/dashboard/DashboardStatCard";
 import { 
   AlertTriangle, Cloud, Heart, Shield, Info, MapPin, Search, CheckCircle, 
@@ -28,8 +27,6 @@ import {
   Mail, MessageSquare, Smartphone, Map, Plus, ArrowRight, Route, Users, Archive
 } from "lucide-react";
 import { adminShell, iconSize, statGrid, typography, getSeverityOutline, outlinedCard, portalLayout } from "@/lib/designSystem";
-import { ROLE_INTERFACE } from "@/lib/roleInterfaceCopy";
-import { RoleContextBanner } from "@/app/components/dashboard/RoleContextBanner";
 import { geocodeLocation } from "@/lib/geocodeLocation";
 import { createCategoryPinIcon, getAlertPinCategory } from "@/lib/mapPinUtils";
 import { CrisisHubMap } from "@/app/components/maps/CrisisHubMap";
@@ -100,8 +97,6 @@ export default function CrisisAdminPage() {
   const [filterSeverity, setFilterSeverity] = useState("All");
   const [filterType, setFilterType] = useState("All");
 
-  const auditLogPreviewCount = 5;
-  const [auditLogExpanded, setAuditLogExpanded] = useState(false);
   const [logSearchTerm, setLogSearchTerm] = useState("");
 
   const [formData, setFormData] = useState(createEmptyAlertFormData);
@@ -370,17 +365,6 @@ export default function CrisisAdminPage() {
     return alerts.filter(a => a.id.toLowerCase().includes(logSearchTerm.toLowerCase()) || a.title?.toLowerCase().includes(logSearchTerm.toLowerCase()));
   }, [alerts, logSearchTerm]);
 
-  const displayedAuditAlerts = useMemo(() => {
-    if (auditLogExpanded) return logFilteredAlerts;
-    return logFilteredAlerts.slice(0, auditLogPreviewCount);
-  }, [logFilteredAlerts, auditLogExpanded, auditLogPreviewCount]);
-
-  const auditLogHasMore = logFilteredAlerts.length > auditLogPreviewCount;
-
-  useEffect(() => {
-    setAuditLogExpanded(false);
-  }, [logSearchTerm]);
-
   return (
     <>
       {/* 1. VIEW MODAL (DETAILED) */}
@@ -602,21 +586,15 @@ export default function CrisisAdminPage() {
         </div>
       )}
 
-      <>
-            <DashboardPageHeader
-              title={ROLE_INTERFACE.admin.commandCenter.title}
-              description={ROLE_INTERFACE.admin.commandCenter.description}
-              action={
-                <button
-                  type="button"
-                  onClick={() => { setFormData(createEmptyAlertFormData()); setShowCreateModal(true); }}
-                  className={adminShell.btnDanger}
-                >
-                  <Plus size={18} /> New Broadcast
-                </button>
-              }
-            />
-
+            <div className="flex justify-end">
+              <button
+                type="button"
+                onClick={() => { setFormData(createEmptyAlertFormData()); setShowCreateModal(true); }}
+                className={adminShell.btnDanger}
+              >
+                <Plus size={18} /> New Broadcast
+              </button>
+            </div>
             <RoleContextBanner helper={ROLE_INTERFACE.admin.commandCenter.helper} tone="info" />
 
             <GuideEmergencyReportsPanel />
@@ -780,8 +758,7 @@ export default function CrisisAdminPage() {
                         onChange={(e) => setLogSearchTerm(e.target.value)}
                       />
                 </div>
-              </div>
-                <div className={`px-4 sm:px-6 py-4 ${auditLogExpanded && auditLogHasMore ? portalLayout.listScrollPaneAdmin : ""}`}>
+                <div className="px-4 sm:px-6 py-4">
                   {loading ? (
                     <table className="w-full border-collapse">
                       <tbody>
@@ -790,7 +767,8 @@ export default function CrisisAdminPage() {
                     </table>
                   ) : (
                     <StatusRecordList
-                      rows={displayedAuditAlerts.map((alert) => {
+                      pageSize={10}
+                      rows={logFilteredAlerts.map((alert) => {
                         const channels = [
                           alert.channels?.email && "Email",
                           alert.channels?.sms && "SMS",
@@ -819,21 +797,6 @@ export default function CrisisAdminPage() {
                     />
                   )}
                 </div>
-                {!loading && auditLogHasMore ? (
-                  <div className="px-4 sm:px-6 py-3 border-t border-zinc-100 bg-zinc-50/50 flex flex-wrap items-center justify-between gap-3">
-                    <p className="text-[10px] font-bold text-zinc-500 uppercase tracking-wide font-sans">
-                      {auditLogExpanded
-                        ? `Showing all ${logFilteredAlerts.length} entries`
-                        : `Showing ${displayedAuditAlerts.length} of ${logFilteredAlerts.length} entries`}
-                    </p>
-                    <button
-                      type="button"
-                      onClick={() => setAuditLogExpanded((v) => !v)}
-                      className={`${adminShell.btnGhost} !text-[10px] !py-2 !px-3`}
-                    >
-                      {auditLogExpanded ? "Show less" : "View more"}
-                    </button>
-                  </div>
                 ) : null}
             </AdminTablePanel>
       </>

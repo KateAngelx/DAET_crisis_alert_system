@@ -14,7 +14,6 @@ import { sortRecordsNewestFirst } from "@/lib/recordSorting";
 import { CrisisHubMap } from "@/app/components/maps/CrisisHubMap";
 import { ROLE_INTERFACE } from "@/lib/roleInterfaceCopy";
 import { usePublicVisibility } from "@/lib/usePublicVisibility";
-import { RoleContextBanner } from "@/app/components/dashboard/RoleContextBanner";
 import { StatusRecordList } from "@/app/components/shell/StatusRecordList";
 import {
   DEFAULT_CRISIS_TYPE_OPTIONS,
@@ -55,6 +54,7 @@ export default function CrisisPublicPage() {
   const [mounted, setMounted] = useState(false);
   const [categoryFilter, setCategoryFilter] = useState("all");
   const [severityFilter, setSeverityFilter] = useState("all");
+  const [safetyOpen, setSafetyOpen] = useState(false);
   const router = useRouter();
   const alertQueryHandled = useRef(false);
 
@@ -135,16 +135,6 @@ export default function CrisisPublicPage() {
       />
 
       <PublicPageContent>
-        <div className="installed-app-hide">
-          <RoleContextBanner
-            helper={
-              visibility.roadsAndHazards
-                ? ROLE_INTERFACE.public.crisisHub.helper
-                : "This page is for weather, health, security, and other emergencies."
-            }
-            tone="info"
-          />
-        </div>
         <div className={portalLayout.stackPublic}>
           <PublicPanel title="Overview" subtitle="Alert counts" className="installed-app-hide">
             {loading ? (
@@ -244,18 +234,31 @@ export default function CrisisPublicPage() {
           </div>
         </div>
 
-        <PublicPanel title="Safety instructions for tourists" className="installed-app-hide" bodyClassName="bg-blue-600 text-white">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm font-medium opacity-90 text-left">
-            <p>1. During typhoon season (June–December), check this page before visiting beaches or remote areas.</p>
-            <p>2. Save emergency numbers: <strong>911</strong> (national), <strong>117</strong> (PNP), municipal hotline <strong>(054) 472-3000</strong>, tourism office <strong>0907 834 1818</strong>.</p>
-            <p>3. When a Critical alert is posted, follow the listed instructions and avoid named affected areas.</p>
-            {!isAuthenticated ? (
-              <p>4. Register your account to receive email, SMS, and app notifications when the tourism office issues a new alert.</p>
-            ) : (
-              <p>4. Check your Notifications inbox when the tourism office issues a new alert for your registered contact details.</p>
-            )}
-          </div>
-        </PublicPanel>
+        <div className="installed-app-hide overflow-hidden rounded-2xl border border-zinc-200 bg-white">
+          <button
+            type="button"
+            className="flex w-full items-center justify-between gap-3 px-4 py-4 text-left sm:px-6"
+            aria-expanded={safetyOpen}
+            onClick={() => setSafetyOpen((open) => !open)}
+          >
+            <span className="text-sm font-black text-zinc-900">Safety notes</span>
+            <span className="text-[10px] font-black uppercase tracking-widest text-blue-600">
+              {safetyOpen ? "Hide" : "Open"}
+            </span>
+          </button>
+          {safetyOpen ? (
+            <div className="grid grid-cols-1 gap-4 bg-blue-600 p-4 text-left text-sm font-medium text-white md:grid-cols-2 sm:p-6">
+              <p>1. During typhoon season (June–December), check this page before visiting beaches or remote areas.</p>
+              <p>2. Save emergency numbers: <strong>911</strong> (national), <strong>117</strong> (PNP), municipal hotline <strong>(054) 472-3000</strong>, tourism office <strong>0907 834 1818</strong>.</p>
+              <p>3. When a Critical alert is posted, follow the listed instructions and avoid named affected areas.</p>
+              {!isAuthenticated ? (
+                <p>4. Register your account to receive email, SMS, and app notifications when the tourism office issues a new alert.</p>
+              ) : (
+                <p>4. Check your Notifications inbox when the tourism office issues a new alert for your registered contact details.</p>
+              )}
+            </div>
+          ) : null}
+        </div>
       </PublicPageContent>
 
       <AlertDetailModal

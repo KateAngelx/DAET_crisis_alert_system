@@ -66,7 +66,7 @@ export default function GuideCompletedToursPage() {
         </div>
       )}
 
-      <CompletedToursPanel groups={completedGroups} guideId={user?.id} loading={loading} />
+      <CompletedToursPanel groups={completedGroups} guideId={user?.id} loading={loading} pageSize={5} />
     </>
   );
 }

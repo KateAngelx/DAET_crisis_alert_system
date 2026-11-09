@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { AlertTriangle, BookOpen, CheckCircle2, FileText, HelpCircle, Home, Info, LogOut, Menu, MessageSquare, Phone, Route, User, UserPlus, X } from "lucide-react";
+import { AlertTriangle, BookOpen, CheckCircle2, Compass, FileText, Home, LogOut, Menu, MessageSquare, Route, User, UserPlus, X } from "lucide-react";
 import { BrandLogo } from "@/app/components/BrandLogo";
 import { siteInfo } from "@/lib/siteInfo";
 import { useAuthStore } from "../store/crisisStore";
@@ -18,16 +18,6 @@ const PRIMARY_NAV = [
   { name: "Home", short: "Home", href: "/", icon: Home },
   { name: "Crisis Hub", short: "Crisis", href: "/crisis", icon: AlertTriangle },
   { name: "Roads & Travel", short: "Roads", href: "/routes", icon: Route },
-];
-
-const ALERTS_NAV = [
-  { name: "Resolved alerts", href: "/crisis/resolved", icon: CheckCircle2 },
-];
-
-const HELP_NAV = [
-  { name: "FAQs", href: "/faq", icon: HelpCircle },
-  { name: "About", href: "/about", icon: Info },
-  { name: "Contact", href: "/contact", icon: Phone },
 ];
 
 const ACCOUNT_SECTIONS = [
@@ -168,82 +158,96 @@ export function PublicHeader() {
                 {showGuestActions ? guestActions : null}
 
                 {isAuthenticated ? (
-                  <div className="relative">
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setMenuOpen(false);
-                        setAccountOpen((open) => !open);
-                      }}
-                      className="inline-flex h-10 min-w-9 flex-col items-center justify-center gap-0.5 rounded-xl border border-zinc-200/90 bg-white px-1.5 text-zinc-700 hover:bg-zinc-50 transition-colors lg:h-auto lg:flex-row lg:gap-2 lg:rounded-full lg:py-1.5 lg:pl-2 lg:pr-3 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-200"
-                      aria-label="Account menu"
-                      aria-expanded={accountOpen}
-                    >
-                      <span className="flex h-7 w-7 items-center justify-center rounded-full bg-blue-600 text-white">
-                        <User size={14} />
-                      </span>
-                      <span className="hidden text-left leading-none lg:block">
-                        <span className="block max-w-32 truncate text-[11px] font-black uppercase tracking-tight text-zinc-900 dark:text-zinc-100">
-                          {user?.name}
-                        </span>
-                        <span className="text-[9px] font-bold uppercase tracking-widest text-blue-600">
-                          {user?.role === "tourist" ? <HeaderPoints variant="inline" /> : (user?.role || "tourist")}
-                        </span>
-                      </span>
-                      <span className="lg:hidden">
-                        <HeaderPoints />
-                      </span>
-                    </button>
-                    {accountOpen ? (
-                      <div className="absolute right-0 top-full z-50 mt-2 w-64 rounded-2xl border border-zinc-200 bg-white p-2 shadow-xl dark:border-zinc-800 dark:bg-zinc-950">
-                        <p className="truncate px-3 py-2 text-[11px] font-black uppercase tracking-tight text-zinc-900 dark:text-zinc-100">
-                          {user?.name}
-                        </p>
-                        <p className="-mt-1 px-3 pb-1 text-[9px] font-bold uppercase tracking-widest text-blue-600">
-                          {user?.role || "tourist"}
-                        </p>
-                        {accountSections.map((section) => (
-                          <div key={section.title}>
-                            <p className={`px-3 pb-1 pt-3 text-[10px] font-black uppercase tracking-[0.2em] ${section.tone}`}>
-                              {section.title}
+                  <TouristTourMenu>
+                    {({ visible: showTour, openTour }) => (
+                      <div className="relative">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setMenuOpen(false);
+                            setAccountOpen((open) => !open);
+                          }}
+                          className="inline-flex h-10 min-w-9 flex-col items-center justify-center gap-0.5 rounded-xl border border-zinc-200/90 bg-white px-1.5 text-zinc-700 hover:bg-zinc-50 transition-colors lg:h-auto lg:flex-row lg:gap-2 lg:rounded-full lg:py-1.5 lg:pl-2 lg:pr-3 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-200"
+                          aria-label="Account menu"
+                          aria-expanded={accountOpen}
+                        >
+                          <span className="flex h-7 w-7 items-center justify-center rounded-full bg-blue-600 text-white">
+                            <User size={14} />
+                          </span>
+                          <span className="hidden text-left leading-none lg:block">
+                            <span className="block max-w-32 truncate text-[11px] font-black uppercase tracking-tight text-zinc-900 dark:text-zinc-100">
+                              {user?.name}
+                            </span>
+                            <span className="text-[9px] font-bold uppercase tracking-widest text-blue-600">
+                              {user?.role === "tourist" ? <HeaderPoints variant="inline" /> : (user?.role || "tourist")}
+                            </span>
+                          </span>
+                          <span className="lg:hidden">
+                            <HeaderPoints />
+                          </span>
+                        </button>
+                        {accountOpen ? (
+                          <div className="absolute right-0 top-full z-50 mt-2 w-64 rounded-2xl border border-zinc-200 bg-white p-2 shadow-xl dark:border-zinc-800 dark:bg-zinc-950">
+                            <p className="truncate px-3 py-2 text-[11px] font-black uppercase tracking-tight text-zinc-900 dark:text-zinc-100">
+                              {user?.name}
                             </p>
-                            {section.title === "Account" ? <HeaderPoints variant="menu" /> : null}
-                            {section.title === "Account" ? (
-                              <TouristTourMenu onOpen={() => setAccountOpen(false)} />
-                            ) : null}
-                            {section.items.map((item) => {
-                              const Icon = item.icon;
-                              const active = isPublicNavActive(pathname, item.href);
-                              return (
-                                <Link
-                                  key={item.href}
-                                  href={item.href}
-                                  aria-current={active ? "page" : undefined}
-                                  className={`flex items-center gap-3 rounded-xl px-3 py-2.5 text-[11px] font-black uppercase tracking-widest ${
-                                    active ? "bg-blue-50 text-blue-600" : "text-zinc-700 hover:bg-zinc-50 dark:text-zinc-200 dark:hover:bg-zinc-900"
-                                  }`}
-                                  onClick={() => setAccountOpen(false)}
-                                >
-                                  <Icon size={16} className="shrink-0" />
-                                  {item.name}
-                                </Link>
-                              );
-                            })}
+                            <p className="-mt-1 px-3 pb-1 text-[9px] font-bold uppercase tracking-widest text-blue-600">
+                              {user?.role || "tourist"}
+                            </p>
+                            {accountSections.map((section) => (
+                              <div key={section.title}>
+                                <p className={`px-3 pb-1 pt-3 text-[10px] font-black uppercase tracking-[0.2em] ${section.tone}`}>
+                                  {section.title}
+                                </p>
+                                {section.title === "Account" ? <HeaderPoints variant="menu" /> : null}
+                                {section.title === "Account" && showTour ? (
+                                  <button
+                                    type="button"
+                                    className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left text-[11px] font-black uppercase tracking-widest text-purple-700 hover:bg-purple-50"
+                                    onClick={() => {
+                                      setAccountOpen(false);
+                                      openTour();
+                                    }}
+                                  >
+                                    <Compass size={16} className="shrink-0" />
+                                    My tour
+                                  </button>
+                                ) : null}
+                                {section.items.map((item) => {
+                                  const Icon = item.icon;
+                                  const active = isPublicNavActive(pathname, item.href);
+                                  return (
+                                    <Link
+                                      key={item.href}
+                                      href={item.href}
+                                      aria-current={active ? "page" : undefined}
+                                      className={`flex items-center gap-3 rounded-xl px-3 py-2.5 text-[11px] font-black uppercase tracking-widest ${
+                                        active ? "bg-blue-50 text-blue-600" : "text-zinc-700 hover:bg-zinc-50 dark:text-zinc-200 dark:hover:bg-zinc-900"
+                                      }`}
+                                      onClick={() => setAccountOpen(false)}
+                                    >
+                                      <Icon size={16} className="shrink-0" />
+                                      {item.name}
+                                    </Link>
+                                  );
+                                })}
+                              </div>
+                            ))}
+                            <div className="mt-2 border-t border-zinc-100 pt-2">
+                              <button
+                                type="button"
+                                onClick={logout}
+                                className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left text-[11px] font-black uppercase tracking-widest text-red-500 hover:bg-red-50"
+                              >
+                                <LogOut size={16} className="shrink-0" />
+                                Sign out
+                              </button>
+                            </div>
                           </div>
-                        ))}
-                        <div className="mt-2 border-t border-zinc-100 pt-2">
-                          <button
-                            type="button"
-                            onClick={logout}
-                            className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left text-[11px] font-black uppercase tracking-widest text-red-500 hover:bg-red-50"
-                          >
-                            <LogOut size={16} className="shrink-0" />
-                            Sign out
-                          </button>
-                        </div>
+                        ) : null}
                       </div>
-                    ) : null}
-                  </div>
+                    )}
+                  </TouristTourMenu>
                 ) : null}
               </div>
             </div>
@@ -268,44 +272,6 @@ export function PublicHeader() {
           >
             <p className="px-4 pb-1 pt-3 text-[10px] font-black uppercase tracking-[0.2em] text-blue-600">Pages</p>
             {primaryNav.map((item) => {
-              const Icon = item.icon;
-              const active = isPublicNavActive(pathname, item.href);
-              return (
-                <Link
-                  key={item.name}
-                  href={item.href}
-                  aria-current={active ? "page" : undefined}
-                  className={`flex items-center gap-3 border-b border-zinc-100 px-4 py-3 text-sm font-semibold ${
-                    active ? "bg-blue-50 text-blue-700" : "text-zinc-800"
-                  }`}
-                  onClick={() => setMenuOpen(false)}
-                >
-                  <Icon size={18} />
-                  {item.name}
-                </Link>
-              );
-            })}
-            <p className="px-4 pb-1 pt-3 text-[10px] font-black uppercase tracking-[0.2em] text-orange-600">Alerts</p>
-            {ALERTS_NAV.map((item) => {
-              const Icon = item.icon;
-              const active = isPublicNavActive(pathname, item.href);
-              return (
-                <Link
-                  key={item.name}
-                  href={item.href}
-                  aria-current={active ? "page" : undefined}
-                  className={`flex items-center gap-3 border-b border-zinc-100 px-4 py-3 text-sm font-semibold ${
-                    active ? "bg-blue-50 text-blue-700" : "text-zinc-800"
-                  }`}
-                  onClick={() => setMenuOpen(false)}
-                >
-                  <Icon size={18} />
-                  {item.name}
-                </Link>
-              );
-            })}
-            <p className="px-4 pb-1 pt-3 text-[10px] font-black uppercase tracking-[0.2em] text-blue-600">Help</p>
-            {HELP_NAV.map((item) => {
               const Icon = item.icon;
               const active = isPublicNavActive(pathname, item.href);
               return (

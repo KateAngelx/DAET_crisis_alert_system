@@ -10,6 +10,7 @@ import { AdminDashboardKpiSection } from "@/app/components/admin/AdminDashboardK
 import { AdminActivityDetailModal } from "@/app/components/admin/AdminActivityDetailModal";
 import { RoleContextBanner } from "@/app/components/dashboard/RoleContextBanner";
 import { AdminActivityTableSkeleton, StatCardSkeletonGrid } from "@/app/components/ui/Skeletons";
+import { ListPager } from "@/app/components/shell/ListPager";
 import { adminShell, iconSize, portalLayout, statGrid } from "@/lib/designSystem";
 import { mergeAdminActivityFeed, filterActivityFeed } from "@/lib/adminActivityFeed";
 import { supabase } from "@/lib/supabaseClient";
@@ -234,29 +235,7 @@ export default function AdminActivityLogPage() {
           </div>
         )}
 
-        {totalPages > 1 ? (
-          <div className="flex items-center justify-center gap-3 pt-4 border-t border-zinc-100 mt-2">
-            <button
-              type="button"
-              disabled={page <= 1}
-              onClick={() => setPage((p) => p - 1)}
-              className={adminShell.btnIcon}
-            >
-              Prev
-            </button>
-            <span className="text-sm font-bold text-zinc-600">
-              {page} / {totalPages}
-            </span>
-            <button
-              type="button"
-              disabled={page >= totalPages}
-              onClick={() => setPage((p) => p + 1)}
-              className={adminShell.btnIcon}
-            >
-              Next
-            </button>
-          </div>
-        ) : null}
+        <ListPager page={page} pageCount={totalPages} onPage={setPage} disabled={loading} />
       </AdminPanel>
 
       <AdminActivityDetailModal entry={selectedEntry} onClose={() => setSelectedEntry(null)} />

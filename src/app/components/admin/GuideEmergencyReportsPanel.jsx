@@ -2,6 +2,7 @@
 
 import React, { useCallback, useEffect, useState } from "react";
 import { AlertTriangle, RefreshCw } from "lucide-react";
+import { ListPager } from "@/app/components/shell/ListPager";
 import { getActiveSession } from "@/lib/authSession";
 import { useConfirm } from "@/app/components/ui/ConfirmDialogProvider";
 
@@ -13,7 +14,7 @@ const TRANSITIONS = {
   Resolved: ["Closed"],
   Closed: [],
 };
-const PAGE_SIZE = 50;
+const PAGE_SIZE = 10;
 
 function formatDate(value) {
   return value ? new Date(value).toLocaleString() : "—";
@@ -196,15 +197,7 @@ export function GuideEmergencyReportsPanel() {
           })}
         </div>
 
-        {totalCount > PAGE_SIZE ? (
-          <div className="flex items-center justify-between border-t border-zinc-100 pt-3 text-sm">
-            <span className="text-zinc-500">{totalCount} emergency report(s) · Page {page} of {totalPages}</span>
-            <div className="flex gap-2">
-              <button type="button" disabled={page <= 1 || loading} onClick={() => setPage((value) => value - 1)} className="rounded-lg border px-3 py-1.5 disabled:opacity-40">Previous</button>
-              <button type="button" disabled={page >= totalPages || loading} onClick={() => setPage((value) => value + 1)} className="rounded-lg border px-3 py-1.5 disabled:opacity-40">Next</button>
-            </div>
-          </div>
-        ) : null}
+        <ListPager page={page} pageCount={totalPages} onPage={setPage} disabled={loading} />
       </div>
     </section>
   );

@@ -16,6 +16,7 @@ import { useRouteAdvisoryStore } from "@/app/store/routeAdvisoryStore";
 import { RouteDetailModal } from "@/app/components/routes/RouteDetailModal";
 import { CrisisHubMap } from "@/app/components/maps/CrisisHubMap";
 import { AlertDetailModal } from "@/app/(subsystems)/crisis/(public)/_components/AlertDetailModal";
+import { ListPager } from "@/app/components/shell/ListPager";
 import { CategoryFilterSelect, StatusRecordList } from "@/app/components/shell/StatusRecordList";
 import {
   DEFAULT_CRISIS_TYPE_OPTIONS,
@@ -48,6 +49,7 @@ export default function GuideCrisisHubPage() {
   const [selectedAlert, setSelectedAlert] = useState(null);
   const [categoryFilter, setCategoryFilter] = useState("all");
   const [severityFilter, setSeverityFilter] = useState("all");
+  const [groupPage, setGroupPage] = useState(1);
 
   useEffect(() => {
     if (!user?.id) return;
@@ -61,6 +63,10 @@ export default function GuideCrisisHubPage() {
   const activeAlerts = alerts.filter((a) => a.status === "Active" && a.is_public);
   const criticalAlerts = activeAlerts.filter((a) => a.severity === "Critical");
   const activeGroups = tourGroups.filter((g) => g.status === "active");
+  const groupPageSize = 5;
+  const groupPageCount = Math.max(1, Math.ceil(activeGroups.length / groupPageSize));
+  const safeGroupPage = Math.min(groupPage, groupPageCount);
+  const visibleGroups = activeGroups.slice((safeGroupPage - 1) * groupPageSize, safeGroupPage * groupPageSize);
   const totalTourists = activeGroups.reduce((sum, g) => sum + (g.member_count || 0), 0);
   const openIncidents = guideIncidents.filter(
     (i) => !["Resolved", "Closed", "Rejected"].includes(i.status)
@@ -262,8 +268,8 @@ export default function GuideCrisisHubPage() {
               <p className="text-xs font-black uppercase text-zinc-400">No active tour groups</p>
             </Card>
           ) : (
-            <div className={`space-y-3 ${portalLayout.listScrollPane}`}>
-              {activeGroups.map((group) => (
+            <div className="space-y-3">
+              {visibleGroups.map((group) => (
                 <Link key={group.id} href={`/guide/groups/${group.id}`} className="block no-underline">
                   <Card className="p-4 border-zinc-100 hover:shadow-md transition-all">
                     <div className="flex items-center justify-between gap-3">
@@ -279,6 +285,7 @@ export default function GuideCrisisHubPage() {
                   </Card>
                 </Link>
               ))}
+              <ListPager page={safeGroupPage} pageCount={groupPageCount} onPage={setGroupPage} />
             </div>
           )}
 

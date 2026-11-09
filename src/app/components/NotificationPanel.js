@@ -10,6 +10,7 @@ import { NotificationItemCard } from "@/app/components/NotificationItemCard";
 import { getActiveSession } from "@/lib/authSession";
 import { getNotificationHref, getNotificationInboxHref } from "@/lib/notificationLinks";
 import { iconSize } from "@/lib/designSystem";
+import { ListPager } from "@/app/components/shell/ListPager";
 
 export function NotificationPanel() {
   const { user, isAuthenticated } = useAuthStore();
@@ -25,6 +26,7 @@ export function NotificationPanel() {
   } = useNotificationStore();
   const [open, setOpen] = useState(false);
   const [sessionReady, setSessionReady] = useState(false);
+  const [page, setPage] = useState(1);
 
   useEffect(() => {
     let cancelled = false;
@@ -58,6 +60,10 @@ export function NotificationPanel() {
   if (!isAuthenticated || !sessionReady || !user?.id) return null;
 
   const getRelatedLink = (notification) => getNotificationHref(notification, user?.role);
+  const pageSize = 10;
+  const pageCount = Math.max(1, Math.ceil(notifications.length / pageSize));
+  const safePage = Math.min(page, pageCount);
+  const visibleNotifications = notifications.slice((safePage - 1) * pageSize, safePage * pageSize);
 
   return (
     <div className="relative">
@@ -118,7 +124,7 @@ export function NotificationPanel() {
                   <p className="text-[10px] font-bold uppercase">No notifications</p>
                 </div>
               ) : (
-                notifications.slice(0, 20).map((n) => (
+                visibleNotifications.map((n) => (
                   <NotificationItemCard
                     key={n.id}
                     notification={n}
@@ -130,6 +136,7 @@ export function NotificationPanel() {
                 ))
               )}
             </div>
+            <ListPager page={safePage} pageCount={pageCount} onPage={setPage} />
 
             <div className="px-2.5 py-1.5 border-t border-zinc-100 text-center">
               <Link

@@ -111,7 +111,7 @@ export function GuideAssignmentRequestModal({
             <div>
               <p className="text-[10px] font-black uppercase text-zinc-400">Your Guide</p>
               <p className="font-bold text-zinc-900">{guide?.full_name}</p>
-              {guide?.phone && <p className="text-xs text-zinc-500">{guide.phone}</p>}
+              <p className="text-xs text-zinc-500">Phone shows in My tour after you confirm.</p>
             </div>
           </div>
 

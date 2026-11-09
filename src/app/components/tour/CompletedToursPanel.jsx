@@ -1,6 +1,7 @@
 "use client";
 
-import React, { useEffect } from "react";
+import React, { useEffect, useState } from "react";
+import { ListPager } from "@/app/components/shell/ListPager";
 import Link from "next/link";
 import { CheckCircle, Compass } from "lucide-react";
 import { TourGroupCard } from "@/app/components/tour/TourGroupCard";
@@ -15,8 +16,20 @@ export function CompletedToursPanel({
   loading = false,
   compact = false,
   limit,
+  pageSize,
 }) {
-  const displayed = limit ? groups.slice(0, limit) : groups;
+  const [page, setPage] = useState(1);
+  const signature = groups.map((group) => group.id).join("|");
+  useEffect(() => {
+    setPage(1);
+  }, [signature]);
+  const pageCount = pageSize ? Math.max(1, Math.ceil(groups.length / pageSize)) : 1;
+  const safePage = Math.min(page, pageCount);
+  const displayed = pageSize
+    ? groups.slice((safePage - 1) * pageSize, safePage * pageSize)
+    : limit
+      ? groups.slice(0, limit)
+      : groups;
 
   if (loading) {
     return (
@@ -56,7 +69,8 @@ export function CompletedToursPanel({
           />
         ))}
       </div>
-      {limit && groups.length > limit && (
+      {pageSize ? <ListPager page={safePage} pageCount={pageCount} onPage={setPage} /> : null}
+      {limit && !pageSize && groups.length > limit && (
         <p className="text-xs text-zinc-500 font-medium text-center">
           {groups.length - limit} more completed tour{groups.length - limit !== 1 ? "s" : ""} —{" "}
           <Link href="/guide/completed" className="text-green-600 font-black hover:underline">

@@ -18,6 +18,7 @@ import { NotificationItemSkeleton, SessionInboxSkeleton } from "@/app/components
 import { getActiveSession } from "@/lib/authSession";
 import { getNotificationHref } from "@/lib/notificationLinks";
 import { portalShell, portalLayout } from "@/lib/designSystem";
+import { ListPager } from "@/app/components/shell/ListPager";
 
 export default function NotificationsPage() {
   const { user, isAuthenticated } = useAuthStore();
@@ -134,15 +135,16 @@ export default function NotificationsPage() {
                   <NotificationItemCard
                     notification={n}
                     variant="row"
+              {visibleNotifications.map((n) => (
+                <li key={n.id}>
+                  <NotificationItemCard
+                    notification={n}
+                    variant="row"
                     relatedLink={getRelatedLink(n)}
                     onMarkRead={markAsRead}
                   />
                 </li>
               ))}
             </ul>
-          </AsyncState>
-        </PublicPanel>
-      </PublicPageContent>
-    </PublicPageShell>
-  );
+            <ListPager page={safePage} pageCount={pageCount} onPage={setPage} />
 }

@@ -1,13 +1,11 @@
 "use client";
 
 import React, { useEffect, useCallback } from "react";
-import { useRouter } from "next/navigation";
 import { useAuthStore } from "@/app/store/crisisStore";
 import { useGuideStore } from "@/app/store/guideStore";
 import { GuideAssignmentRequestModal } from "@/app/components/tour/GuideAssignmentRequestModal";
 
 export function AssignmentRequestHandler() {
-  const router = useRouter();
   const { user, isAuthenticated } = useAuthStore();
   const {
     pendingAssignment,
@@ -28,17 +26,11 @@ export function AssignmentRequestHandler() {
     return () => clearInterval(interval);
   }, [loadPending]);
 
-  const handleClose = useCallback(
-    (redirectToProfile = false) => {
-      if (user?.id) {
-        fetchPendingAssignmentForTourist(user.id);
-      }
-      if (redirectToProfile) {
-        router.push("/profile");
-      }
-    },
-    [user?.id, fetchPendingAssignmentForTourist, router]
-  );
+  const handleClose = useCallback(() => {
+    if (user?.id) {
+      fetchPendingAssignmentForTourist(user.id);
+    }
+  }, [user?.id, fetchPendingAssignmentForTourist]);
 
   if (!isAuthenticated || user?.role !== "tourist" || !pendingAssignment) {
     return null;
@@ -50,7 +42,7 @@ export function AssignmentRequestHandler() {
       assignment={pendingAssignment}
       onAccept={(id) => acceptAssignmentRequest(id, user.id)}
       onDecline={(id) => declineAssignmentRequest(id, user.id)}
-      onClose={() => handleClose(true)}
+      onClose={handleClose}
     />
   );
 }
