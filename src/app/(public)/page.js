@@ -749,7 +749,7 @@ export default function Home() {
       </section>
 
       {/* 7. FEEDBACK SECTION */}
-      <section className="bg-white">
+      <section id="community-feedback" className="bg-white">
         <PublicFeedbackSection />
       </section>
 
