@@ -84,8 +84,8 @@ export function HeaderPoints({ variant = "chip" }) {
   }
 
   return (
-    <span className="inline-block min-w-[2.4rem] max-w-[2.8rem] truncate text-center text-[8px] font-black leading-none text-amber-800" title={label}>
-      {balance == null ? "\u00a0" : balance.toLocaleString()}
+    <span className="inline-block min-w-[3.4rem] whitespace-nowrap text-center text-[9px] font-black leading-none text-amber-800" title={label}>
+      {balance == null ? "\u00a0" : `${balance.toLocaleString()} pts`}
     </span>
   );
 }

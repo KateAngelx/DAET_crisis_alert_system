@@ -99,7 +99,7 @@ export default function Home() {
     <div className="flex flex-col bg-white font-sans text-left">
       <section
         data-landing-section="hero"
-        className="relative flex w-full flex-col justify-center overflow-hidden bg-cover bg-center bg-no-repeat pt-[calc(4.5rem+env(safe-area-inset-top))] pb-8 md:min-h-[50vh] md:py-16"
+        className="relative flex min-h-[420px] w-full flex-col justify-center overflow-hidden bg-cover bg-center bg-no-repeat pt-[calc(4.5rem+env(safe-area-inset-top))] pb-8 md:min-h-[70vh] md:py-16"
         style={{ backgroundImage: "url('/images/hero-bg.jpg')" }}
       >
         <div className="absolute inset-0 bg-gradient-to-b from-slate-950/80 via-blue-900/60 to-indigo-950/80" aria-hidden="true" />

@@ -12,6 +12,7 @@ import { HeaderPoints } from "@/app/components/HeaderPoints";
 import { isPublicNavActive } from "@/lib/navUtils";
 import { useInstalledApp } from "@/lib/useInstalledApp";
 import { usePublicVisibility } from "@/lib/usePublicVisibility";
+import { TouristTourMenu } from "@/app/components/tourist/TouristTourMenu";
 
 const PRIMARY_NAV = [
   { name: "Home", short: "Home", href: "/", icon: Home },
@@ -174,7 +175,7 @@ export function PublicHeader() {
                         setMenuOpen(false);
                         setAccountOpen((open) => !open);
                       }}
-                      className="inline-flex h-10 min-w-9 max-w-14 flex-col items-center justify-center gap-0.5 rounded-xl border border-zinc-200/90 bg-white px-1 text-zinc-700 hover:bg-zinc-50 transition-colors lg:h-auto lg:max-w-none lg:flex-row lg:gap-2 lg:rounded-full lg:py-1.5 lg:pl-2 lg:pr-3 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-200"
+                      className="inline-flex h-10 min-w-9 flex-col items-center justify-center gap-0.5 rounded-xl border border-zinc-200/90 bg-white px-1.5 text-zinc-700 hover:bg-zinc-50 transition-colors lg:h-auto lg:flex-row lg:gap-2 lg:rounded-full lg:py-1.5 lg:pl-2 lg:pr-3 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-200"
                       aria-label="Account menu"
                       aria-expanded={accountOpen}
                     >
@@ -207,6 +208,9 @@ export function PublicHeader() {
                               {section.title}
                             </p>
                             {section.title === "Account" ? <HeaderPoints variant="menu" /> : null}
+                            {section.title === "Account" ? (
+                              <TouristTourMenu onOpen={() => setAccountOpen(false)} />
+                            ) : null}
                             {section.items.map((item) => {
                               const Icon = item.icon;
                               const active = isPublicNavActive(pathname, item.href);

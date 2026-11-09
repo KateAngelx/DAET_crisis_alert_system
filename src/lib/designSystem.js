@@ -457,8 +457,8 @@ export const portalShell = {
   panelHeaderCompact: "px-3 sm:px-4 py-2 border-b border-zinc-100 bg-zinc-50/70",
   panelBody: "p-4 sm:p-6",
   panelBodyCompact: "p-2.5 sm:p-3",
-  pageIntro: "rounded-2xl border border-zinc-200 bg-white px-4 sm:px-6 py-4 shadow-sm",
-  pageIntroDescription: "text-sm text-zinc-500 font-medium leading-relaxed line-clamp-3",
+  pageIntro: "flex h-[8.25rem] flex-col justify-center overflow-hidden rounded-2xl border border-zinc-200 bg-white px-4 sm:px-6 py-4 shadow-sm",
+  pageIntroDescription: "text-sm text-zinc-500 font-medium leading-relaxed line-clamp-1",
   input:
     "w-full px-3 py-2.5 bg-zinc-50 border border-zinc-200 rounded-xl text-sm font-medium text-zinc-900 outline-none focus:ring-2 focus:ring-blue-500/25 focus:border-blue-400 transition-shadow",
   select:

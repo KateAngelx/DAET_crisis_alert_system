@@ -37,7 +37,7 @@ export function PublicPageContent({ children, className = "" }) {
 export function InfoPageHero({ title, description }) {
   return (
     <div className={portalShell.pageIntro} data-page-intro>
-      <h1 className={`${typography.pageTitle} mb-1`}>{title}</h1>
+      <h1 className={`${typography.pageTitle} mb-1 line-clamp-2`}>{title}</h1>
       {description ? <p data-page-intro-description className={portalShell.pageIntroDescription}>{description}</p> : null}
     </div>
   );

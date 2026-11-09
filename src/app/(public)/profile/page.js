@@ -2,17 +2,14 @@
 
 import React, { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
-import { User, Mail, Phone, Globe, Shield, Loader2, CheckCircle, MapPin, Navigation, Trash2, AlertTriangle, Coins, History, ChevronLeft, ChevronRight, BookOpen } from "lucide-react";
+import { User, Mail, Phone, Globe, Shield, Loader2, CheckCircle, Trash2, AlertTriangle, Coins, History, ChevronLeft, ChevronRight, BookOpen } from "lucide-react";
 import { portalShell } from "@/lib/designSystem";
-import { DestinationModal } from "@/app/components/tour/DestinationModal";
-import { useAuthStore, useCrisisStore } from "@/app/store/crisisStore";
-import { useGuideStore } from "@/app/store/guideStore";
+import { useAuthStore } from "@/app/store/crisisStore";
 import { InfoPageHero, PublicPageShell, PublicPageContent, PublicPanel } from "@/app/components/InfoPageHero";
 import { CommunicationChannelForm } from "@/app/components/CommunicationChannelSetup";
 import { WebPushSettings } from "@/app/components/WebPushSettings";
 import { ProfileSkeleton } from "@/app/components/ui/Skeletons";
 import { ErrorState } from "@/app/components/ui/AsyncState";
-import { formatTourRoute } from "@/lib/tourGroupRoute";
 import { useConfirm } from "@/app/components/ui/ConfirmDialogProvider";
 import { notifyRewardEarned } from "@/lib/rewardFeedback";
 import { PublicListModal } from "@/app/components/shell/PublicListModal";
@@ -73,6 +70,28 @@ function getTransactionLabel(transaction) {
   return "Points earned";
 }
 
+function ProfileFold({ title, text, open, onToggle, children }) {
+  return (
+    <div className="overflow-hidden rounded-2xl border border-zinc-200 bg-white">
+      <button
+        type="button"
+        className="flex w-full items-center justify-between gap-3 px-4 py-4 text-left sm:px-6"
+        aria-expanded={open}
+        onClick={onToggle}
+      >
+        <span>
+          <span className="block text-base font-black text-zinc-900">{title}</span>
+          <span className="mt-0.5 block text-xs font-medium text-zinc-500">{text}</span>
+        </span>
+        <span className="shrink-0 text-[10px] font-black uppercase tracking-widest text-blue-600">
+          {open ? "Hide" : "Open"}
+        </span>
+      </button>
+      {open ? <div className="space-y-4 border-t border-zinc-100 px-4 py-4 sm:px-6">{children}</div> : null}
+    </div>
+  );
+}
+
 function getTransactionStatus(transaction) {
   const statuses = [humanizeTransactionValue(transaction.transaction_type)];
   if (transaction.activity?.status) statuses.push(humanizeTransactionValue(transaction.activity.status));
@@ -100,8 +119,6 @@ export default function ProfilePage() {
   const installedApp = useInstalledApp();
   const { confirm } = useConfirm();
   const { user, isAuthenticated, loading, fetchProfile, updateProfile, updateNotificationChannels, deleteAccount } = useAuthStore();
-  const { alerts, fetchAlerts } = useCrisisStore();
-  const { touristActiveGroup, fetchTouristActiveGroup } = useGuideStore();
   const [form, setForm] = useState({ full_name: "", phone: "", nationality: "Filipino" });
   const [channelForm, setChannelForm] = useState({ email: true, sms: true, app: true });
   const [channelSaving, setChannelSaving] = useState(false);
@@ -109,7 +126,7 @@ export default function ProfilePage() {
   const [message, setMessage] = useState(null);
   const [initialized, setInitialized] = useState(false);
   const [loadError, setLoadError] = useState(null);
-  const [showDestination, setShowDestination] = useState(false);
+  const [openPanel, setOpenPanel] = useState(null);
   const [deleting, setDeleting] = useState(false);
   const [deleteError, setDeleteError] = useState(null);
   const [points, setPoints] = useState({ balance: 0, transactions: [] });
@@ -158,12 +175,6 @@ export default function ProfilePage() {
       }
     }
   }, [user, initialized]);
-
-  useEffect(() => {
-    if (isAuthenticated && user?.id && user?.role === "tourist") {
-      fetchTouristActiveGroup(user.id);
-    }
-  }, [isAuthenticated, user?.id, user?.role, fetchTouristActiveGroup]);
 
   useEffect(() => {
     if (!isAuthenticated || !user?.id || user?.role !== "tourist") return undefined;
@@ -240,10 +251,6 @@ export default function ProfilePage() {
   const pointsHistoryTransactions = pointsHistoryIsCurrent ? pointsHistoryState.transactions : [];
   const pointsHistoryCount = pointsHistoryIsCurrent ? pointsHistoryState.count : 0;
   const pointsHistoryPages = Math.max(1, Math.ceil(pointsHistoryCount / POINTS_HISTORY_PAGE_SIZE));
-
-  useEffect(() => {
-    fetchAlerts();
-  }, [fetchAlerts]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -355,209 +362,80 @@ export default function ProfilePage() {
           />
         ) : (
           <>
-          {user?.role === "tourist" && touristActiveGroup?.tour_group && (
-            <PublicPanel section="tour" title="My tour" subtitle="Your assigned guide and route" bodyClassName="bg-purple-50/30">
-              <p className="text-xs text-purple-700 font-bold mb-4">
-                You are currently assigned to this tour group and guide.
-              </p>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
-                <div className="p-4 bg-white rounded-2xl border border-purple-100">
-                  <p className="text-[10px] font-black uppercase text-zinc-400 mb-1">My Guide</p>
-                  <p className="font-bold text-zinc-900 text-lg">{touristActiveGroup.guide?.full_name || "—"}</p>
-                  {touristActiveGroup.guide?.phone && (
-                    <p className="text-xs text-zinc-500 mt-1">{touristActiveGroup.guide.phone}</p>
-                  )}
-                </div>
-                <div className="p-4 bg-white rounded-2xl border border-purple-100">
-                  <p className="text-[10px] font-black uppercase text-zinc-400 mb-1">My Tour Group</p>
-                  <p className="font-bold text-zinc-900 text-lg">{touristActiveGroup.tour_group.name}</p>
-                  <span className="text-[10px] font-black uppercase px-2 py-1 rounded-full bg-green-100 text-green-700 mt-2 inline-block">
-                    {touristActiveGroup.tour_group.status}
-                  </span>
-                </div>
-                <div className="md:col-span-2 p-4 bg-white rounded-2xl border border-purple-100">
-                  <p className="text-[10px] font-black uppercase text-zinc-400 mb-1">Route</p>
-                  <p className="font-bold text-blue-600 flex items-center gap-2 text-base">
-                    <Navigation size={16} /> {formatTourRoute(touristActiveGroup.tour_group)}
-                  </p>
-                </div>
-              </div>
-              <button type="button" onClick={() => setShowDestination(true)} className={`mt-5 ${portalShell.btnPrimary}`}>
-                <MapPin size={14} /> View destination
-              </button>
-            </PublicPanel>
-          )}
-          {user?.role === "tourist" && (
-            <PublicPanel section="points" title="My Points" subtitle="Your current balance and rewards activity" bodyClassName="bg-blue-50/20">
-              {pointsLoading || pointsUserId !== user.id ? (
-                <p className="flex items-center gap-2 text-sm font-medium text-zinc-500" role="status">
-                  <Loader2 size={16} className="animate-spin" /> Loading your points...
-                </p>
-              ) : pointsError ? (
-                <ErrorState
-                  title="Could not load your points"
-                  message={pointsError}
-                  onRetry={refreshPoints}
-                />
-              ) : (
-                <div className="flex flex-wrap items-center justify-between gap-4">
-                  <div>
-                    <div className="flex items-center gap-2 text-xs font-black uppercase tracking-widest text-blue-700">
-                      <Coins size={16} /> Current balance
-                    </div>
-                    <p className="mt-3 text-3xl font-black tracking-tight text-zinc-900">
-                      {formatPoints(points.balance)}
-                    </p>
-                    <p className="mt-1 text-xs font-medium text-zinc-500">points available</p>
-                  </div>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setPointsHistoryPage(1);
-                      setPointsHistoryRetry((count) => count + 1);
-                      setPointsHistoryOpen(true);
-                      refreshPoints();
-                    }}
-                    className={portalShell.btnGhost}
-                  >
-                    <History size={14} /> View Points History
-                  </button>
-                </div>
-              )}
-            </PublicPanel>
-          )}
-          <div data-profile-section="account" className="flex flex-col gap-8">
-            <PublicPanel title="Account summary" bodyClassName="bg-zinc-50/50">
-              <div className="flex items-center gap-4 mb-6">
-                <div className="bg-blue-600 p-3 rounded-2xl text-white">
+          <div className="rounded-2xl border border-zinc-200 bg-white p-4 sm:p-6">
+            <div className="flex flex-wrap items-start justify-between gap-4">
+              <div className="flex items-center gap-4">
+                <div className="rounded-2xl bg-blue-600 p-3 text-white">
                   <User size={24} />
                 </div>
                 <div>
-                  <p className="font-black text-zinc-900 uppercase tracking-tight">{user?.name}</p>
-                  <p className="text-[10px] font-black uppercase text-blue-600 tracking-widest mt-0.5">
+                  <p className="font-black uppercase tracking-tight text-zinc-900">{user?.name}</p>
+                  <p className="mt-0.5 text-[10px] font-black uppercase tracking-widest text-blue-600">
                     {ROLE_LABELS[user?.role] || user?.role || "Tourist"}
                   </p>
+                  <p className="mt-2 break-all text-sm font-medium text-zinc-600">{user?.email || "—"}</p>
                 </div>
               </div>
-              <dl className="space-y-4 text-sm">
-                <div>
-                  <dt className="text-[10px] font-black uppercase text-zinc-400 tracking-widest mb-1">Email</dt>
-                  <dd className="font-medium text-zinc-700 break-all">{user?.email || "—"}</dd>
+              {user?.role === "tourist" ? (
+                <div className="min-w-[10rem]">
+                  {pointsLoading || pointsUserId !== user.id ? (
+                    <p className="flex items-center gap-2 text-sm font-medium text-zinc-500" role="status">
+                      <Loader2 size={16} className="animate-spin" /> Loading points...
+                    </p>
+                  ) : pointsError ? (
+                    <button type="button" className="text-xs font-bold text-red-600" onClick={() => refreshPoints()}>
+                      Retry points
+                    </button>
+                  ) : (
+                    <div>
+                      <p className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-blue-700">
+                        <Coins size={14} /> {formatPoints(points.balance)} pts
+                      </p>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setPointsHistoryPage(1);
+                          setPointsHistoryRetry((count) => count + 1);
+                          setPointsHistoryOpen(true);
+                          refreshPoints();
+                        }}
+                        className={`mt-2 ${portalShell.btnGhost}`}
+                      >
+                        <History size={14} /> View Points History
+                      </button>
+                    </div>
+                  )}
                 </div>
-                {user?.created_at && (
-                  <div>
-                    <dt className="text-[10px] font-black uppercase text-zinc-400 tracking-widest mb-1">Member Since</dt>
-                    <dd className="font-medium text-zinc-700">
-                      {new Date(user.created_at).toLocaleDateString()}
-                    </dd>
-                  </div>
-                )}
-              </dl>
-              <div className="mt-6 pt-6 border-t border-zinc-200 space-y-2">
-                <Link href="/notifications" className="block text-xs font-black uppercase text-blue-600 tracking-widest hover:underline">
-                  Notifications
-                </Link>
-                <Link href="/crisis/reports" className="block text-xs font-black uppercase text-blue-600 tracking-widest hover:underline">
-                  My Reports
-                </Link>
-                <Link href="/how-to-use" className="inline-flex items-center gap-1.5 text-xs font-black uppercase text-blue-600 tracking-widest hover:underline">
-                  <BookOpen size={13} /> How to Use CONNECT-DAET
-                </Link>
-              </div>
-            </PublicPanel>
-
-            <PublicPanel title="Account details">
-              {message && (
-                <div className={`mb-6 p-4 rounded-2xl flex items-start gap-3 text-sm font-medium ${
-                  message.type === "success"
-                    ? "bg-green-50 border border-green-100 text-green-800"
-                    : "bg-red-50 border border-red-100 text-red-700"
-                }`}>
-                  {message.type === "success" ? <CheckCircle size={18} className="shrink-0 mt-0.5" /> : null}
-                  {message.text}
-                </div>
-              )}
-
-              <form onSubmit={handleSubmit} className="space-y-4">
-                <div className="space-y-1">
-                  <label className="text-[10px] font-black uppercase tracking-widest text-zinc-400 flex items-center gap-2">
-                    <User size={12} /> Full Name
-                  </label>
-                  <input
-                    required
-                    disabled={loading}
-                    value={form.full_name}
-                    onChange={(e) => setForm({ ...form, full_name: e.target.value })}
-                    className={`${portalShell.input} font-bold disabled:opacity-50`}
-                  />
-                </div>
-
-                <div className="space-y-1">
-                  <label className="text-[10px] font-black uppercase tracking-widest text-zinc-400 flex items-center gap-2">
-                    <Mail size={12} /> Email
-                  </label>
-                  <input
-                    readOnly
-                    value={user?.email || ""}
-                    className={`${portalShell.input} bg-zinc-100 text-zinc-500 cursor-not-allowed`}
-                  />
-                </div>
-
-                <div className="space-y-1">
-                  <label className="text-[10px] font-black uppercase tracking-widest text-zinc-400 flex items-center gap-2">
-                    <Phone size={12} /> Phone Number
-                  </label>
-                  <input
-                    required
-                    type="tel"
-                    disabled={loading}
-                    value={form.phone}
-                    onChange={(e) => setForm({ ...form, phone: e.target.value })}
-                    className={`${portalShell.input} font-bold disabled:opacity-50`}
-                  />
-                </div>
-
-                <div className="space-y-1">
-                  <label className="text-[10px] font-black uppercase tracking-widest text-zinc-400 flex items-center gap-2">
-                    <Globe size={12} /> Nationality
-                  </label>
-                  <select
-                    required
-                    disabled={loading}
-                    value={form.nationality}
-                    onChange={(e) => setForm({ ...form, nationality: e.target.value })}
-                    className={`${portalShell.select} w-full appearance-none disabled:opacity-50`}
-                  >
-                    <option value="Filipino">Filipino</option>
-                    <option value="Foreigner">Foreigner</option>
-                  </select>
-                </div>
-
-                <div className="space-y-1">
-                  <label className="text-[10px] font-black uppercase tracking-widest text-zinc-400 flex items-center gap-2">
-                    <Shield size={12} /> Account Role
-                  </label>
-                  <input
-                    readOnly
-                    value={ROLE_LABELS[user?.role] || user?.role || "Tourist"}
-                    className={`${portalShell.input} bg-zinc-100 text-zinc-500 cursor-not-allowed`}
-                  />
-                  <p className="text-xs text-zinc-400 font-medium mt-1">
-                    Role changes are managed by Daet Municipal Tourism Office administrators.
-                  </p>
-                </div>
-
-                <div className="pt-2">
-                  <button type="submit" disabled={loading} className={`w-full sm:w-auto ${portalShell.btnPrimary} disabled:opacity-50`}>
-                    {loading ? <><Loader2 size={16} className="animate-spin" /> Saving...</> : "Save changes"}
-                  </button>
-                </div>
-              </form>
-            </PublicPanel>
+              ) : null}
+            </div>
+            {user?.role !== "admin" ? (
+              <p className="mt-4 text-xs font-bold text-zinc-600">
+                Phone alerts: SMS {user?.notification_channels?.sms === false ? "off" : "on"}
+                <span className="mx-2 text-zinc-300">·</span>
+                App {user?.notification_channels?.app === false ? "off" : "on"}
+              </p>
+            ) : null}
+            <div className="mt-4 flex flex-wrap gap-x-4 gap-y-2 border-t border-zinc-100 pt-4">
+              <Link href="/notifications" className="text-xs font-black uppercase tracking-widest text-blue-600 hover:underline">
+                Notifications
+              </Link>
+              <Link href="/crisis/reports" className="text-xs font-black uppercase tracking-widest text-blue-600 hover:underline">
+                My Reports
+              </Link>
+              <Link href="/how-to-use" className="inline-flex items-center gap-1.5 text-xs font-black uppercase tracking-widest text-blue-600 hover:underline">
+                <BookOpen size={13} /> How to Use
+              </Link>
+            </div>
           </div>
 
+          <ProfileFold
+            title="Alerts"
+            text="Communication channels and alerts on this phone."
+            open={openPanel === "alerts"}
+            onToggle={() => setOpenPanel((current) => (current === "alerts" ? null : "alerts"))}
+          >
           {user?.role !== "admin" ? (
-            <PublicPanel section="channels" title="Communication preferences" subtitle="SMS and in-app channels">
+            <PublicPanel title="Communication preferences" subtitle="SMS and in-app channels">
               <p className="text-sm text-zinc-500 font-medium mb-4">
                 Control SMS and in-app notifications. Official crisis alert emails are always sent to your registered email address during emergencies.
                 {user?.notification_channels && !user.notification_channels.sms ? (
@@ -590,15 +468,108 @@ export default function ProfilePage() {
           )}
 
           <PublicPanel
-            section="push"
             title={installedApp ? "Phone alerts" : "Browser push notifications"}
             subtitle={installedApp ? "Alerts on this phone." : "Optional system banners for phone and desktop"}
           >
             <WebPushSettings />
           </PublicPanel>
+          </ProfileFold>
+
+          <ProfileFold
+            title="Account"
+            text="Name, phone, and nationality."
+            open={openPanel === "account"}
+            onToggle={() => setOpenPanel((current) => (current === "account" ? null : "account"))}
+          >
+            <PublicPanel title="Account details">
+              {message && (
+                <div className={`mb-6 flex items-start gap-3 rounded-2xl p-4 text-sm font-medium ${
+                  message.type === "success"
+                    ? "border border-green-100 bg-green-50 text-green-800"
+                    : "border border-red-100 bg-red-50 text-red-700"
+                }`}>
+                  {message.type === "success" ? <CheckCircle size={18} className="mt-0.5 shrink-0" /> : null}
+                  {message.text}
+                </div>
+              )}
+              <form onSubmit={handleSubmit} className="space-y-4">
+                <div className="space-y-1">
+                  <label className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-zinc-400">
+                    <User size={12} /> Full Name
+                  </label>
+                  <input
+                    required
+                    disabled={loading}
+                    value={form.full_name}
+                    onChange={(e) => setForm({ ...form, full_name: e.target.value })}
+                    className={`${portalShell.input} font-bold disabled:opacity-50`}
+                  />
+                </div>
+                <div className="space-y-1">
+                  <label className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-zinc-400">
+                    <Mail size={12} /> Email
+                  </label>
+                  <input
+                    readOnly
+                    value={user?.email || ""}
+                    className={`${portalShell.input} cursor-not-allowed bg-zinc-100 text-zinc-500`}
+                  />
+                </div>
+                <div className="space-y-1">
+                  <label className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-zinc-400">
+                    <Phone size={12} /> Phone Number
+                  </label>
+                  <input
+                    required
+                    type="tel"
+                    disabled={loading}
+                    value={form.phone}
+                    onChange={(e) => setForm({ ...form, phone: e.target.value })}
+                    className={`${portalShell.input} font-bold disabled:opacity-50`}
+                  />
+                </div>
+                <div className="space-y-1">
+                  <label className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-zinc-400">
+                    <Globe size={12} /> Nationality
+                  </label>
+                  <select
+                    required
+                    disabled={loading}
+                    value={form.nationality}
+                    onChange={(e) => setForm({ ...form, nationality: e.target.value })}
+                    className={`${portalShell.select} w-full appearance-none disabled:opacity-50`}
+                  >
+                    <option value="Filipino">Filipino</option>
+                    <option value="Foreigner">Foreigner</option>
+                  </select>
+                </div>
+                <div className="space-y-1">
+                  <label className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-zinc-400">
+                    <Shield size={12} /> Account Role
+                  </label>
+                  <input
+                    readOnly
+                    value={ROLE_LABELS[user?.role] || user?.role || "Tourist"}
+                    className={`${portalShell.input} cursor-not-allowed bg-zinc-100 text-zinc-500`}
+                  />
+                </div>
+                <div className="pt-2">
+                  <button type="submit" disabled={loading} className={`w-full sm:w-auto ${portalShell.btnPrimary} disabled:opacity-50`}>
+                    {loading ? <><Loader2 size={16} className="animate-spin" /> Saving...</> : "Save changes"}
+                  </button>
+                </div>
+              </form>
+            </PublicPanel>
+          </ProfileFold>
 
           {user?.role !== "admin" ? (
-            <PublicPanel section="delete" title="Delete account" subtitle="Permanent — cannot be undone" bodyClassName="bg-red-50/20">
+            <ProfileFold
+              title="Delete account"
+              text="Permanent. Open this only if you want to leave."
+              open={openPanel === "delete"}
+              onToggle={() => setOpenPanel((current) => (current === "delete" ? null : "delete"))}
+            >
+            <PublicPanel title="Delete account" subtitle="Permanent — cannot be undone" bodyClassName="bg-red-50/20">
               <p className="text-sm text-zinc-600 font-medium mb-4 flex items-start gap-2">
                 <AlertTriangle size={18} className="text-red-600 shrink-0 mt-0.5" />
                 <span>
@@ -619,6 +590,7 @@ export default function ProfilePage() {
                 {deleting ? "Deleting..." : "Delete my account"}
               </button>
             </PublicPanel>
+            </ProfileFold>
           ) : null}
           </>
         )}
@@ -712,17 +684,6 @@ export default function ProfilePage() {
         )}
       </PublicListModal>
 
-      {user?.role === "tourist" && touristActiveGroup?.tour_group && (
-        <DestinationModal
-          open={showDestination}
-          onClose={() => setShowDestination(false)}
-          group={touristActiveGroup.tour_group}
-          guide={touristActiveGroup.guide}
-          members={[{ id: user.id, tourist: { full_name: user.name, nationality: user.nationality } }]}
-          alerts={alerts}
-          editable={false}
-        />
-      )}
     </PublicPageShell>
   );
 }
