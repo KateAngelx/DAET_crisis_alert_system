@@ -100,7 +100,7 @@ export default function RegisterPage() {
           <p className="text-zinc-500 text-xs mb-5 leading-relaxed">
             {needsConfirmation
               ? "Your registration is complete. Check your email for an account verification link before signing in."
-              : "Your account is ready. You can now receive alerts and submit reports through DAET TOURISM."}
+              : "Your account is ready. You can now receive alerts and submit reports through CONNECT-DAET."}
           </p>
           {notificationResults ? (
             <div className="text-left text-xs text-zinc-600 mb-5 space-y-1" role="status">

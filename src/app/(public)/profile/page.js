@@ -656,7 +656,7 @@ export default function ProfilePage() {
         open={pointsHistoryOpen}
         onClose={() => setPointsHistoryOpen(false)}
         title="Points history"
-        subtitle={pointsHistoryIsCurrent ? `${pointsHistoryCount} database transactions` : "Loading your transaction history"}
+        subtitle={pointsHistoryIsCurrent ? `${pointsHistoryCount} point transactions` : "Loading your transaction history"}
       >
         {pointsHistoryError ? (
           <ErrorState

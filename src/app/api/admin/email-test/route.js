@@ -62,7 +62,7 @@ export async function POST(request) {
     subject: body.subject || "CONNECT-DAET — Email test",
     body:
       body.message ||
-      `Hello${profile?.full_name ? ` ${profile.full_name}` : ""},\n\nThis is a test email from CONNECT-DAET. If you received this, email notifications are working.\n\n— Daet Tourism Crisis Alert System`,
+      `Hello${profile?.full_name ? ` ${profile.full_name}` : ""},\n\nThis is a test email from CONNECT-DAET. If you received this, email notifications are working.\n\n— DAET TOURISM CRISIS AND ALERT SYSTEM`,
   });
 
   if (!result.success) {

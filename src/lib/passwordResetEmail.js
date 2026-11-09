@@ -13,7 +13,7 @@ ${resetLink}
 
 If you did not request this, you can ignore this email. Your password will not change.
 
-— Daet Tourism Crisis Alert System`;
+— DAET TOURISM CRISIS AND ALERT SYSTEM`;
 
   const html = buildHtmlBody(
     `${greeting}<br><br>

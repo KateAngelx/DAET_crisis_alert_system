@@ -175,7 +175,7 @@ export function PublicFeedbackSection() {
           <h2 className={`${typography.heroTitle} mb-2`}>Feedback & Suggestions</h2>
           <p className="text-sm text-zinc-500 font-medium max-w-xl mx-auto leading-relaxed">
             {items.length > 0
-              ? "Share how DAET TOURISM helps you, or suggest improvements. Tap any note below to tilt it — everyone can read and contribute."
+              ? "Share how CONNECT-DAET helps you, or suggest improvements. Tap any note below to tilt it — everyone can read and contribute."
               : "Be the first to share feedback, a comment, or a suggestion for the Daet Municipal Tourism Office. Approved messages will appear here for others to read."}
           </p>
         </div>

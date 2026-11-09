@@ -4,7 +4,7 @@ import { siteInfo } from "@/lib/siteInfo";
 
 export const metadata = {
   title: `About | ${siteInfo.brandName}`,
-  description: `How the ${siteInfo.officeName} crisis alert system works for tourists, guides, and responders.`,
+  description: `How the ${siteInfo.officeName} crisis alert system works for tourists in Daet.`,
 };
 
 export default function AboutPage() {
@@ -12,13 +12,13 @@ export default function AboutPage() {
     <PublicPageShell>
       <InfoPageHero
         title={siteInfo.systemName}
-        description={`An official alert and reporting platform operated by the ${siteInfo.officeName}. It publishes official crisis information and lets tourists and staff submit incident reports.`}
+        description={`An official alert and reporting platform operated by the ${siteInfo.officeName}. It publishes official crisis information and lets registered tourists submit incident reports.`}
       />
 
       <PublicPageContent>
         <InfoSection title="Purpose">
           <p>
-            {siteInfo.brandName} helps tourists and tourism staff in Daet understand what is happening during a crisis — what the alert is, where it is occurring, how severe it is, and what actions to take. Authorized tourism office staff use the admin portal to issue alerts, review reports, and update response status.
+            {siteInfo.brandName} helps tourists in Daet understand what is happening during a crisis — what the alert is, where it is occurring, how severe it is, and what actions to take. The {siteInfo.officeName} publishes the alerts and safety instructions.
           </p>
         </InfoSection>
 
@@ -36,8 +36,7 @@ export default function AboutPage() {
         <InfoSection title="Who Uses It">
           <p>
             <strong>Tourists</strong> — view alerts, receive notifications, and submit incident reports.<br />
-            <strong>Tourism guides</strong> — monitor alerts and assigned tourists during an incident.<br />
-            <strong>Tourism office administrators</strong> — issue broadcasts, manage reports, and update response status through the admin portal.
+            <strong>Tourism guides</strong> — monitor alerts and check on travelers in their group during an incident.
           </p>
         </InfoSection>
 

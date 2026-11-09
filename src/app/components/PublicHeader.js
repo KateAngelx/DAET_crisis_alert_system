@@ -60,16 +60,16 @@ export function PublicHeader() {
   const showGuestActions = !mounted || !isAuthenticated;
 
   const guestActions = (
-    <div className="flex items-center gap-1 sm:gap-2.5 shrink-0">
+    <div className="flex items-center gap-1 shrink-0">
       <Link
         href="/login"
-        className="hidden min-[360px]:inline-flex w-[72px] sm:w-20 items-center justify-center min-h-11 rounded-full border border-zinc-200 bg-zinc-50 text-[10px] font-black uppercase tracking-widest text-zinc-700 hover:bg-zinc-100 transition-colors"
+        className="hidden min-[340px]:inline-flex h-7 items-center justify-center rounded-full border border-zinc-200 bg-zinc-50 px-2.5 text-[10px] font-black uppercase tracking-wide text-zinc-700 hover:bg-zinc-100 transition-colors sm:h-8 sm:px-3"
       >
         Login
       </Link>
       <Link
         href="/register"
-        className="inline-flex w-[84px] sm:w-24 items-center justify-center min-h-11 rounded-full bg-blue-600 text-[10px] font-black uppercase tracking-widest text-white hover:bg-blue-700 transition-colors shadow-sm shadow-blue-600/20 whitespace-nowrap"
+        className="inline-flex h-7 items-center justify-center rounded-full bg-blue-600 px-2.5 text-[10px] font-black uppercase tracking-wide text-white hover:bg-blue-700 transition-colors shadow-sm shadow-blue-600/20 whitespace-nowrap sm:h-8 sm:px-3"
       >
         Register
       </Link>
@@ -84,11 +84,11 @@ export function PublicHeader() {
       >
         <div data-public-header-frame className="max-md:pt-[max(0.5rem,env(safe-area-inset-top))] max-md:px-3 sm:max-md:px-4 md:pt-0 md:px-0">
           <div data-public-header-shell className="max-md:rounded-xl max-md:bg-white max-md:border max-md:border-zinc-200 max-md:shadow-[0_4px_18px_rgba(15,23,42,0.08)] md:rounded-none md:bg-transparent md:shadow-none md:border-0">
-            <div className="w-full max-w-7xl mx-auto flex items-center justify-between gap-2 h-12 px-3 md:h-16 md:px-6 lg:px-8">
+            <div className="w-full max-w-7xl mx-auto flex items-center gap-1.5 h-12 min-w-0 overflow-hidden px-2 md:h-16 md:gap-2 md:px-6 lg:px-8">
               {!installedApp ? (
                 <button
                   type="button"
-                  className="lg:hidden -ml-1 inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-lg text-zinc-700 hover:bg-zinc-100"
+                  className="lg:hidden -ml-0.5 inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-zinc-700 hover:bg-zinc-100"
                   aria-label={menuOpen ? "Close menu" : "Open menu"}
                   aria-expanded={menuOpen}
                   onClick={() => {
@@ -101,11 +101,16 @@ export function PublicHeader() {
               ) : null}
               <Link
                 href="/"
-                className="flex min-w-0 shrink-0 items-center gap-1.5"
+                className="flex min-w-0 flex-1 items-center gap-1.5"
                 aria-label={`CONNECT-DAET — ${siteInfo.officeName} Home`}
               >
-                <BrandLogo size={30} className="h-[30px] w-[30px] shrink-0" />
-                <span className="truncate text-[14px] sm:text-[16px] lg:text-[20px] font-black uppercase tracking-wide text-blue-600">
+                <span className="md:hidden">
+                  <BrandLogo size={24} />
+                </span>
+                <span className="hidden md:block">
+                  <BrandLogo size={30} />
+                </span>
+                <span className="hidden md:inline truncate text-[13px] sm:text-[16px] lg:text-[20px] font-black uppercase tracking-wide text-blue-600">
                   CONNECT-DAET
                 </span>
               </Link>
@@ -123,7 +128,7 @@ export function PublicHeader() {
                 ))}
               </nav>
 
-              <div className="flex items-center gap-2 shrink-0 ml-auto md:ml-0">
+              <div className="flex items-center gap-1.5 shrink-0 ml-auto md:gap-2">
                 {mounted && isAuthenticated && <NotificationPanel />}
 
                 {showGuestActions ? guestActions : null}

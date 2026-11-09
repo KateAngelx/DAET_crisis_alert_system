@@ -21,7 +21,7 @@ export default function PrivacyPage() {
           <p>When you register or use {siteInfo.brandName}, we may collect:</p>
           <ul className="list-disc pl-5 space-y-1 mt-2">
             <li>Full name, email address, and phone number</li>
-            <li>Nationality and account role (tourist, guide, or admin)</li>
+            <li>Nationality and the role on your account</li>
             <li>Incident reports you submit, including location and attachments</li>
             <li>Notification preferences and delivery status</li>
             <li>Usage data related to alert views and acknowledgments</li>

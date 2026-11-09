@@ -1,4 +1,3 @@
-import Link from "next/link";
 import { InfoPageHero, InfoSection, PublicPageShell, PublicPageContent, publicLayout } from "@/app/components/InfoPageHero";
 import { Phone, Mail, MapPin, Clock } from "lucide-react";
 import { iconSize, typography, portalShell } from "@/lib/designSystem";
@@ -69,8 +68,6 @@ export default function ContactPage() {
             <a href={`tel:${siteInfo.phoneTourismTel}`} className="text-blue-600 font-bold hover:underline">{siteInfo.phoneTourism}</a>.
             You may also reach the municipal hotline at{" "}
             <a href={`tel:${siteInfo.phoneMunicipalTel}`} className="text-blue-600 font-bold hover:underline">{siteInfo.phoneMunicipal}</a>.
-            Authorized responders can access the{" "}
-            <Link href="/admin" className="text-blue-600 font-bold hover:underline">Responder Portal</Link>.
           </p>
         </InfoSection>
       </PublicPageContent>

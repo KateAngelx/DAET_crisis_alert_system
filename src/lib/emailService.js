@@ -1,4 +1,5 @@
 import nodemailer from "nodemailer";
+import { siteInfo } from "@/lib/siteInfo";
 
 function trimEnv(value) {
   return String(value || "")
@@ -28,7 +29,7 @@ function buildHtmlBody(body, { title } = {}) {
   return `<div style="font-family:system-ui,-apple-system,sans-serif;max-width:600px;margin:0 auto;padding:24px;color:#18181b;">
     <div style="border-bottom:3px solid #2563eb;padding-bottom:12px;margin-bottom:20px;">
       <h1 style="margin:0;font-size:20px;color:#2563eb;letter-spacing:0.02em;">CONNECT-DAET</h1>
-      <p style="margin:4px 0 0;font-size:11px;color:#71717a;text-transform:uppercase;letter-spacing:0.08em;">Daet Tourism Crisis Alert System</p>
+      <p style="margin:4px 0 0;font-size:11px;color:#71717a;letter-spacing:0.08em;">${siteInfo.systemName}.</p>
     </div>
     ${title ? `<h2 style="font-size:16px;margin:0 0 12px;color:#18181b;">${title}</h2>` : ""}
     <div style="font-size:14px;line-height:1.6;">${safeBody}</div>

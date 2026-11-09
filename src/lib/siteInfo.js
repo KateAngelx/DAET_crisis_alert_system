@@ -1,9 +1,9 @@
 /** Public-facing brand and contact details — Daet Municipal Tourism Office */
 export const siteInfo = {
   version: "3.2",
-  brandName: "DAET TOURISM",
+  brandName: "CONNECT-DAET",
   officeName: "Daet Municipal Tourism Office",
-  systemName: "Daet Tourism Crisis Alert System",
+  systemName: "DAET TOURISM CRISIS AND ALERT SYSTEM",
   tagline:
     "Official crisis alerts and emergency information for tourists in Daet, Camarines Norte.",
   address: "Municipal Hall, Maharlika Highway, Pamorangon, Daet, Camarines Norte, Philippines",

@@ -145,7 +145,7 @@ export default function LoginPage() {
 
       <div className={authForm.footer}>
         <p className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest">
-          New to DAET TOURISM?
+          New to CONNECT-DAET?
           <Link href="/register" className="ml-2 text-blue-600 hover:underline font-black">
             Create an account
           </Link>
