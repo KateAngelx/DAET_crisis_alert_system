@@ -1,5 +1,6 @@
 import { create } from "zustand";
 import { supabase } from "@/lib/supabaseClient";
+import { channelFlagsToDb, isMissingChannelsColumn } from "@/lib/alertChannels";
 import { isRouteAdvisoryRow } from "@/lib/areaAdvisoryAdapter";
 import { sortRecordsNewestFirst } from "@/lib/recordSorting";
 export const useRouteAdvisoryStore = create((set, get) => ({
@@ -84,6 +85,7 @@ export const useRouteAdvisoryStore = create((set, get) => ({
         warning_ends_at: payload.warning_ends_at || null,
         status: "Active",
         is_public: true,
+        channels: channelFlagsToDb(payload.channels),
       };
 
       if (payload.latitude != null && payload.longitude != null) {
@@ -95,10 +97,15 @@ export const useRouteAdvisoryStore = create((set, get) => ({
         insertPayload.route_path = payload.route_path;
       }
 
-      const { data, error } = await supabase
+      let { data, error } = await supabase
         .from("route_advisories")
         .insert([insertPayload])
         .select();
+
+      if (error && isMissingChannelsColumn(error)) {
+        const { channels: _channels, ...withoutChannels } = insertPayload;
+        ({ data, error } = await supabase.from("route_advisories").insert([withoutChannels]).select());
+      }
 
       if (error) throw error;
       return { success: true, advisory: data?.[0] };
@@ -124,6 +131,7 @@ export const useRouteAdvisoryStore = create((set, get) => ({
         warning_starts_at: payload.warning_starts_at,
         warning_ends_at: payload.warning_ends_at || null,
         is_public: payload.is_public !== false,
+        channels: channelFlagsToDb(payload.channels),
       };
 
       if (payload.latitude != null && payload.longitude != null) {
@@ -135,7 +143,11 @@ export const useRouteAdvisoryStore = create((set, get) => ({
         updatePayload.route_path = payload.route_path.length >= 2 ? payload.route_path : null;
       }
 
-      const { error } = await supabase.from("route_advisories").update(updatePayload).eq("id", id);
+      let { error } = await supabase.from("route_advisories").update(updatePayload).eq("id", id);
+      if (error && isMissingChannelsColumn(error)) {
+        const { channels: _channels, ...withoutChannels } = updatePayload;
+        ({ error } = await supabase.from("route_advisories").update(withoutChannels).eq("id", id));
+      }
       if (error) throw error;
       return { success: true };
     } catch (error) {

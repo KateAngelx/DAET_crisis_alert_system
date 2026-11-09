@@ -22,6 +22,8 @@ export function PortalPanel({
 
   compact = false,
 
+  section,
+
 }) {
 
   const showHeader = title || subtitle || action;
@@ -34,7 +36,7 @@ export function PortalPanel({
 
   return (
 
-    <section className={`${portalShell.panel} ${className}`}>
+    <section data-profile-section={section} className={`${portalShell.panel} ${className}`}>
 
       {showHeader ? (
 

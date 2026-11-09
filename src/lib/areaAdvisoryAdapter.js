@@ -1,5 +1,7 @@
 /** Map route_advisories rows (advisory_kind = area) ↔ legacy warning UI shape */
 
+import { channelFlagsToDb, channelsFromDb } from "@/lib/alertChannels";
+
 export function areaAdvisoryToWarning(advisory) {
   if (!advisory) return null;
   const severity =
@@ -26,6 +28,7 @@ export function areaAdvisoryToWarning(advisory) {
     alt_longitude: null,
     status: advisory.status,
     is_public: advisory.is_public,
+    channels: channelsFromDb(advisory.channels),
     created_at: advisory.created_at,
     updated_at: advisory.updated_at,
   };
@@ -52,6 +55,7 @@ export function warningPayloadToAreaAdvisory(payload) {
     latitude: payload.latitude != null ? Number(payload.latitude) : null,
     longitude: payload.longitude != null ? Number(payload.longitude) : null,
     route_path: null,
+    channels: channelFlagsToDb(payload.channels),
   };
 }
 

@@ -4,6 +4,7 @@ import React, { useEffect, useState } from "react";
 import Link from "next/link";
 import { ArrowRight, BellRing, X } from "lucide-react";
 import { useAuthStore } from "@/app/store/crisisStore";
+import { useInstalledApp } from "@/lib/useInstalledApp";
 import { getActiveSession } from "@/lib/authSession";
 import { portalShell } from "@/lib/designSystem";
 import {
@@ -19,6 +20,7 @@ function dismissalKey(userId) {
 }
 
 export function PushEnablePrompt() {
+  const installed = useInstalledApp();
   const { isAuthenticated, user } = useAuthStore();
   const [prompt, setPrompt] = useState(null);
 
@@ -83,6 +85,7 @@ export function PushEnablePrompt() {
     setPrompt(null);
   };
 
+  if (installed && user?.role === "tourist") return null;
   if (!isAuthenticated || !user?.id || !supportsWebPush() || prompt?.userId !== user.id) return null;
 
   return (

@@ -7,6 +7,8 @@ import {
 } from "lucide-react";
 import { useRouteAdvisoryStore } from "@/app/store/routeAdvisoryStore";
 import { notifyTouristsOfRouteAdvisory } from "@/lib/notificationService";
+import { channelsFromDb } from "@/lib/alertChannels";
+import { BroadcastChannelToggles } from "@/app/components/admin/BroadcastChannelToggles";
 import {
   buildRoutePathFromLocations,
   hasRoutePath,
@@ -67,6 +69,7 @@ const EMPTY_FORM = {
   safety_instructions: "",
   warning_starts_at: "",
   warning_ends_at: "",
+  channels: { email: true, sms: true, app: true },
 };
 
 function FormSection({ step, title, description, children }) {
@@ -220,6 +223,7 @@ function RouteAdvisoriesAdminPanel({
       safety_instructions: advisory.safety_instructions || "",
       warning_starts_at: advisory.warning_starts_at?.slice(0, 16) || "",
       warning_ends_at: advisory.warning_ends_at?.slice(0, 16) || "",
+      channels: channelsFromDb(advisory.channels),
     });
     const existingPath = serializeRoutePath(advisory.route_path || []);
     setPreviewPath(existingPath);
@@ -292,7 +296,8 @@ function RouteAdvisoriesAdminPanel({
       if (advisoryId && isCurrentAndPublic) {
         const notify = await notifyTouristsOfRouteAdvisory(
           advisoryId,
-          editingId ? "updated" : "created"
+          editingId ? "updated" : "created",
+          formData.channels
         );
         if (!notify.success) setToast(`Route saved, but notification failed: ${notify.error}`);
         else if (notify.warnings?.length) setToast("Route saved, but some notifications could not be delivered.");
@@ -307,14 +312,27 @@ function RouteAdvisoriesAdminPanel({
     const ok = await confirm({
       title: "Deactivate route advisory?",
       description:
-        "This removes the route from the public travel map. You can reactivate it later from the inactive list below.",
+        "This removes the route from the public travel map and sends a cleared notice on the channels saved for this route. You can reactivate it later from the inactive list.",
       confirmLabel: "Deactivate",
       variant: "warning",
     });
     if (!ok) return;
     const result = await setAdvisoryStatus(advisory.id, "Inactive");
-    setToast(result.success ? "Route advisory deactivated." : result.error);
-    if (result.success) await fetchAdvisories();
+    if (!result.success) {
+      setToast(result.error);
+      return;
+    }
+    const notify = await notifyTouristsOfRouteAdvisory(advisory.id, "cleared");
+    const reach = (notify.notified || 0) + (notify.emailQueued || 0) + (notify.smsQueued || 0);
+    setToast(notify.success
+      ? reach > 0
+        ? "Route advisory deactivated. Tourists were told it is cleared."
+        : "Route advisory deactivated. No cleared notice was delivered."
+      : `Route deactivated, but the cleared notice failed: ${notify.error}`);
+    if (notify.success && notify.warnings?.length) {
+      setToast("Route deactivated, but some cleared notices could not be delivered.");
+    }
+    await fetchAdvisories();
   };
 
   const handleReactivate = async (advisory) => {
@@ -697,6 +715,10 @@ function RouteAdvisoriesAdminPanel({
                     className="w-full p-3 bg-zinc-50 border border-zinc-200 rounded-xl text-sm font-medium"
                     placeholder="Why is this route safe, caution, or closed?"
                   />
+                  <BroadcastChannelToggles
+                    channels={formData.channels}
+                    onChange={(channels) => setFormData({ ...formData, channels })}
+                  />
                   <CharCounterTextarea
                     label="What tourists should do"
                     rows={2}
@@ -764,7 +786,7 @@ function RouteAdvisoriesAdminPanel({
       <ConfirmDialog
         open={showConfirm}
         title={editingId ? "Update route advisory?" : "Publish route advisory?"}
-        description={`Tourists will see this route on the travel map${formData.from_location && formData.to_location ? ` from ${formData.from_location} to ${formData.to_location}` : ""}.`}
+        description={`Tourists will see this route on the travel map${formData.from_location && formData.to_location ? ` from ${formData.from_location} to ${formData.to_location}` : ""}. Notices go out only on the channels left on.`}
         confirmLabel={editingId ? "Update route" : "Publish route"}
         cancelLabel="Cancel"
         variant="info"

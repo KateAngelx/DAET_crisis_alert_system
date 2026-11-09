@@ -24,7 +24,7 @@ export async function POST(request) {
     if (
       typeof alertId !== 'string'
       || !/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(alertId)
-      || !['created', 'updated'].includes(eventType)
+      || !['created', 'updated', 'resolved'].includes(eventType)
     ) {
       return NextResponse.json({ error: 'alertId and a valid eventType are required' }, { status: 400 });
     }

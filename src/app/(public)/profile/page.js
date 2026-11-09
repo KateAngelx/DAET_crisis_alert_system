@@ -17,6 +17,7 @@ import { useConfirm } from "@/app/components/ui/ConfirmDialogProvider";
 import { notifyRewardEarned } from "@/lib/rewardFeedback";
 import { PublicListModal } from "@/app/components/shell/PublicListModal";
 import { getActiveSession } from "@/lib/authSession";
+import { useInstalledApp } from "@/lib/useInstalledApp";
 import { parseApiJson } from "@/lib/parseApiJson";
 
 const POINTS_HISTORY_PAGE_SIZE = 20;
@@ -96,6 +97,7 @@ async function fetchPointsData(page, pageSize, action) {
 }
 
 export default function ProfilePage() {
+  const installedApp = useInstalledApp();
   const { confirm } = useConfirm();
   const { user, isAuthenticated, loading, fetchProfile, updateProfile, updateNotificationChannels, deleteAccount } = useAuthStore();
   const { alerts, fetchAlerts } = useCrisisStore();
@@ -326,7 +328,7 @@ export default function ProfilePage() {
         description="View and update your account details for alerts and incident reporting."
       />
 
-      <PublicPageContent>
+      <PublicPageContent className="installed-profile-stack">
         {!initialized && loading ? (
           <ProfileSkeleton />
         ) : loadError ? (
@@ -354,7 +356,7 @@ export default function ProfilePage() {
         ) : (
           <>
           {user?.role === "tourist" && touristActiveGroup?.tour_group && (
-            <PublicPanel title="My tour" subtitle="Your assigned guide and route" bodyClassName="bg-purple-50/30">
+            <PublicPanel section="tour" title="My tour" subtitle="Your assigned guide and route" bodyClassName="bg-purple-50/30">
               <p className="text-xs text-purple-700 font-bold mb-4">
                 You are currently assigned to this tour group and guide.
               </p>
@@ -386,7 +388,7 @@ export default function ProfilePage() {
             </PublicPanel>
           )}
           {user?.role === "tourist" && (
-            <PublicPanel title="My Points" subtitle="Your current balance and rewards activity" bodyClassName="bg-blue-50/20">
+            <PublicPanel section="points" title="My Points" subtitle="Your current balance and rewards activity" bodyClassName="bg-blue-50/20">
               {pointsLoading || pointsUserId !== user.id ? (
                 <p className="flex items-center gap-2 text-sm font-medium text-zinc-500" role="status">
                   <Loader2 size={16} className="animate-spin" /> Loading your points...
@@ -411,7 +413,7 @@ export default function ProfilePage() {
 
                   <div className="min-w-0">
                     <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
-                      <h3 className="flex items-center gap-2 text-xs font-black uppercase tracking-widest text-zinc-500">
+                      <h3 className="installed-app-hide flex items-center gap-2 text-xs font-black uppercase tracking-widest text-zinc-500">
                         <History size={15} /> Recent points activity
                       </h3>
                       <button
@@ -427,6 +429,7 @@ export default function ProfilePage() {
                         <History size={14} /> View Points History
                       </button>
                     </div>
+                    <div className="installed-app-hide">
                     {points.transactions.length === 0 ? (
                       <p className="rounded-xl border border-dashed border-zinc-200 bg-white p-4 text-sm text-zinc-500">
                         No point transactions yet.
@@ -453,12 +456,13 @@ export default function ProfilePage() {
                         })}
                       </ul>
                     )}
+                    </div>
                   </div>
                 </div>
               )}
             </PublicPanel>
           )}
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          <div data-profile-section="account" className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             <PublicPanel title="Account summary" className="lg:col-span-1" bodyClassName="bg-zinc-50/50">
               <div className="flex items-center gap-4 mb-6">
                 <div className="bg-blue-600 p-3 rounded-2xl text-white">
@@ -589,7 +593,7 @@ export default function ProfilePage() {
           </div>
 
           {user?.role !== "admin" ? (
-            <PublicPanel title="Communication preferences" subtitle="SMS and in-app channels">
+            <PublicPanel section="channels" title="Communication preferences" subtitle="SMS and in-app channels">
               <p className="text-sm text-zinc-500 font-medium mb-4">
                 Control SMS and in-app notifications. Official crisis alert emails are always sent to your registered email address during emergencies.
                 {user?.notification_channels && !user.notification_channels.sms ? (
@@ -614,19 +618,23 @@ export default function ProfilePage() {
               />
             </PublicPanel>
           ) : (
-            <PublicPanel title="Communication preferences" bodyClassName="bg-zinc-50/50">
+            <PublicPanel section="channels" title="Communication preferences" bodyClassName="bg-zinc-50/50">
               <p className="text-sm text-zinc-600 font-medium">
                 Administrator accounts manage alerts in Command Center and do not receive tourist/guide SMS or email broadcasts.
               </p>
             </PublicPanel>
           )}
 
-          <PublicPanel title="Browser push notifications" subtitle="Optional system banners for phone and desktop">
+          <PublicPanel
+            section="push"
+            title={installedApp ? "Phone alerts" : "Browser push notifications"}
+            subtitle={installedApp ? "Alerts on this phone." : "Optional system banners for phone and desktop"}
+          >
             <WebPushSettings />
           </PublicPanel>
 
           {user?.role !== "admin" ? (
-            <PublicPanel title="Delete account" subtitle="Permanent — cannot be undone" bodyClassName="bg-red-50/20">
+            <PublicPanel section="delete" title="Delete account" subtitle="Permanent — cannot be undone" bodyClassName="bg-red-50/20">
               <p className="text-sm text-zinc-600 font-medium mb-4 flex items-start gap-2">
                 <AlertTriangle size={18} className="text-red-600 shrink-0 mt-0.5" />
                 <span>

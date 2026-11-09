@@ -116,16 +116,18 @@ export default function CrisisPublicPage() {
       />
 
       <PublicPageContent>
-        <RoleContextBanner
-          helper={
-            visibility.roadsAndHazards
-              ? ROLE_INTERFACE.public.crisisHub.helper
-              : "This page is for weather, health, security, and other emergencies."
-          }
-          tone="info"
-        />
+        <div className="installed-app-hide">
+          <RoleContextBanner
+            helper={
+              visibility.roadsAndHazards
+                ? ROLE_INTERFACE.public.crisisHub.helper
+                : "This page is for weather, health, security, and other emergencies."
+            }
+            tone="info"
+          />
+        </div>
         <div className={portalLayout.stackPublic}>
-          <PublicPanel title="Overview" subtitle="Alert counts">
+          <PublicPanel title="Overview" subtitle="Alert counts" className="installed-app-hide">
             {loading ? (
               <PublicStatCardSkeleton count={3} className={statGrid.crisisHub} compact />
             ) : (
@@ -147,6 +149,15 @@ export default function CrisisPublicPage() {
               </div>
             ) : null}
           </PublicPanel>
+
+          {!loading && criticalAlerts.length > 0 ? (
+            <div className="installed-app-show items-start gap-3 rounded-xl border border-red-200 bg-red-50 p-3">
+              <Shield className="mt-0.5 shrink-0 text-red-600" size={18} />
+              <p className="text-sm font-medium text-red-900">
+                {criticalAlerts.length} critical alert{criticalAlerts.length > 1 ? "s" : ""} need immediate attention.
+              </p>
+            </div>
+          ) : null}
 
           <div className={visibility.map ? portalLayout.splitGridPublic : "grid grid-cols-1 gap-4"}>
             <PublicPanel
@@ -214,7 +225,7 @@ export default function CrisisPublicPage() {
           </div>
         </div>
 
-        <PublicPanel title="Safety instructions for tourists" bodyClassName="bg-blue-600 text-white">
+        <PublicPanel title="Safety instructions for tourists" className="installed-app-hide" bodyClassName="bg-blue-600 text-white">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm font-medium opacity-90 text-left">
             <p>1. During typhoon season (June–December), check this page before visiting beaches or remote areas.</p>
             <p>2. Save emergency numbers: <strong>911</strong> (national), <strong>117</strong> (PNP), municipal hotline <strong>(054) 472-3000</strong>, tourism office <strong>0907 834 1818</strong>.</p>

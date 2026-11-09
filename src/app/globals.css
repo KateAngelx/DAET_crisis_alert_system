@@ -95,19 +95,72 @@ body {
   }
 }
 
+.installed-app-show {
+  display: none;
+}
+
 @media (display-mode: standalone) and (max-width: 1023px) {
   .public-mobile-dock,
   .installed-app-bottom-nav {
     display: block;
   }
 
-  [data-public-browser-nav] {
+  [data-public-browser-nav],
+  [data-public-footer],
+  .installed-app-hide {
     display: none;
+  }
+
+  .installed-app-show {
+    display: flex;
   }
 
   .installed-app-main {
     padding-bottom: calc(4rem + env(safe-area-inset-bottom));
   }
+
+  .installed-profile-stack {
+    display: flex;
+    flex-direction: column;
+  }
+
+  .installed-profile-stack [data-profile-section="channels"] { order: 1; }
+  .installed-profile-stack [data-profile-section="push"] { order: 2; }
+  .installed-profile-stack [data-profile-section="points"] { order: 3; }
+  .installed-profile-stack [data-profile-section="tour"] { order: 4; }
+  .installed-profile-stack [data-profile-section="account"] { order: 5; }
+  .installed-profile-stack [data-profile-section="delete"] { order: 6; }
+
+  [data-page-intro] [data-page-intro-kicker],
+  [data-page-intro] [data-page-intro-description] {
+    display: none;
+  }
+}
+
+html[data-installed-app="true"] [data-public-footer],
+html[data-installed-app="true"] .installed-app-hide {
+  display: none;
+}
+
+html[data-installed-app="true"] .installed-app-show {
+  display: flex;
+}
+
+html[data-installed-app="true"] .installed-profile-stack {
+  display: flex;
+  flex-direction: column;
+}
+
+html[data-installed-app="true"] .installed-profile-stack [data-profile-section="channels"] { order: 1; }
+html[data-installed-app="true"] .installed-profile-stack [data-profile-section="push"] { order: 2; }
+html[data-installed-app="true"] .installed-profile-stack [data-profile-section="points"] { order: 3; }
+html[data-installed-app="true"] .installed-profile-stack [data-profile-section="tour"] { order: 4; }
+html[data-installed-app="true"] .installed-profile-stack [data-profile-section="account"] { order: 5; }
+html[data-installed-app="true"] .installed-profile-stack [data-profile-section="delete"] { order: 6; }
+
+html[data-installed-app="true"] [data-page-intro] [data-page-intro-kicker],
+html[data-installed-app="true"] [data-page-intro] [data-page-intro-description] {
+  display: none;
 }
 
 @media (min-width: 1024px) {

@@ -39,6 +39,7 @@ export function CommunicationChannelForm({
   submitLabel = "Save Preferences",
   showSkip = false,
   showProfileHint = false,
+  compact = false,
 }) {
   const [channels, setChannels] = useState(initialChannels);
   const [error, setError] = useState(null);
@@ -75,12 +76,16 @@ export function CommunicationChannelForm({
         </div>
       )}
 
-      {!showProfileHint && (
+      {compact ? (
+        <p className="text-sm font-medium text-zinc-600">
+          You can change this later in Profile.
+        </p>
+      ) : !showProfileHint ? (
         <p className="text-sm text-zinc-600 font-medium">
           Choose how the {siteInfo.officeName} can reach you for crisis alerts and important updates.
           You can change this anytime in your profile.
         </p>
-      )}
+      ) : null}
 
       {error && (
         <div className="p-3 rounded-xl bg-red-50 border border-red-100 text-red-700 text-sm font-medium">
@@ -141,7 +146,7 @@ export function CommunicationChannelForm({
   );
 }
 
-export function CommunicationChannelOnboarding({ onComplete }) {
+export function CommunicationChannelOnboarding({ onComplete, compact = false }) {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState(null);
   const updateNotificationChannels = useAuthStore((s) => s.updateNotificationChannels);
@@ -205,11 +210,12 @@ export function CommunicationChannelOnboarding({ onComplete }) {
         <CommunicationChannelForm
           initialChannels={{ email: true, sms: true, app: true }}
           onSave={handleSave}
-          onSkip={handleSkip}
+          onSkip={compact ? undefined : handleSkip}
           saving={saving}
           submitLabel="Save & Continue"
-          showSkip
-          showProfileHint
+          showSkip={!compact}
+          showProfileHint={!compact}
+          compact={compact}
         />
       </Card>
     </div>

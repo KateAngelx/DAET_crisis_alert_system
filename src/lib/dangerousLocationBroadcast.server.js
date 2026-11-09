@@ -1,3 +1,4 @@
+import { channelsFromDb } from "@/lib/alertChannels";
 import { dangerSeverityToPriority } from "@/lib/dangerousLocationUtils";
 import { areaAdvisoryToWarning } from "@/lib/areaAdvisoryAdapter";
 import { NOTIFICATION_CHANNELS } from "@/lib/constants";
@@ -10,6 +11,7 @@ import {
 import { audienceToUserTypes, isProfileInAudience } from "@/lib/notificationAudience";
 import { getSystemSettings } from "@/lib/systemSettings.server";
 import { formatAreaHazardSms } from "@/lib/smsMessageFormat";
+import { normalizePhilippinePhone } from "@/lib/phoneUtils";
 import { sendWebPushToSubscriptions } from "@/lib/webPush.server";
 
 async function loadAreaHazard(admin, warningId) {
@@ -32,7 +34,12 @@ async function loadAreaHazard(admin, warningId) {
   return legacy;
 }
 
-export async function broadcastDangerousLocationToTourists(admin, warningId, eventType = "created") {
+export async function broadcastDangerousLocationToTourists(
+  admin,
+  warningId,
+  eventType = "created",
+  channelOverride
+) {
   const results = { notified: 0, skipped: 0, emailQueued: 0, smsQueued: 0, pushSent: 0, errors: [] };
 
   const warning = await loadAreaHazard(admin, warningId);
@@ -42,19 +49,33 @@ export async function broadcastDangerousLocationToTourists(admin, warningId, eve
     return results;
   }
 
-  if (warning.status !== "Active") {
+  const isCleared = eventType === "cleared";
+  const isUpdate = eventType === "updated";
+
+  if (!isCleared && warning.status !== "Active") {
     results.errors.push("Warning is not active");
     return results;
   }
 
   const priority = dangerSeverityToPriority(warning.severity);
-  const isUpdate = eventType === "updated";
-  const eventKey = isUpdate
-    ? `area-hazard:${warning.id}:updated:${warning.updated_at}`
-    : `area-hazard:${warning.id}:created`;
-  const title = `${warning.severity === "Caution" ? "Route Caution" : "Area Hazard"}${isUpdate ? " Updated" : ""}: ${warning.dangerous_location}`;
-  const message = `${warning.danger_type} reported at ${warning.dangerous_location}. Use alternative route: ${warning.alternative_route} → ${warning.destination}. ${warning.safety_instructions || ""}`.trim();
-  const smsBody = formatAreaHazardSms(warning);
+  const eventKey = isCleared
+    ? `area-hazard:${warning.id}:cleared:${warning.updated_at}`
+    : isUpdate
+      ? `area-hazard:${warning.id}:updated:${warning.updated_at}`
+      : `area-hazard:${warning.id}:created`;
+  const title = isCleared
+    ? `Cleared: ${warning.dangerous_location}`
+    : `${warning.severity === "Caution" ? "Route Caution" : "Area Hazard"}${isUpdate ? " Updated" : ""}: ${warning.dangerous_location}`;
+  const message = isCleared
+    ? `This area hazard is cleared. ${warning.dangerous_location} is no longer an active hazard.`
+    : `${warning.danger_type} reported at ${warning.dangerous_location}. Use alternative route: ${warning.alternative_route} → ${warning.destination}. ${warning.safety_instructions || ""}`.trim();
+  const smsBody = formatAreaHazardSms(warning, { cleared: isCleared });
+  const notificationType = isCleared
+    ? "dangerous_location_cleared"
+    : isUpdate
+      ? "dangerous_location_updated"
+      : "dangerous_location";
+  const hazardChannelFlags = channelsFromDb(channelOverride ?? warning.channels);
 
   const settings = await getSystemSettings(admin);
   const audience = settings.notification_audience;
@@ -70,7 +91,7 @@ export async function broadcastDangerousLocationToTourists(admin, warningId, eve
     .select("user_id")
     .eq("related_type", "dangerous_location")
     .eq("related_id", warningId);
-  if (isUpdate) existingQuery = existingQuery.eq("event_key", eventKey);
+  if (isUpdate || isCleared) existingQuery = existingQuery.eq("event_key", eventKey);
   const { data: existing, error: existingError } = await existingQuery;
 
   if (existingError) {
@@ -82,7 +103,7 @@ export async function broadcastDangerousLocationToTourists(admin, warningId, eve
 
   const { data: recipients, error: recipientError } = await admin
     .from("profiles")
-    .select("id, email, phone, user_type, notification_channels")
+    .select("id, email, phone, user_type, notification_channels, sms_suspended_at, inactive_notice_sent_at")
     .in("user_type", audienceTypes)
     .eq("is_active", true);
 
@@ -100,8 +121,6 @@ export async function broadcastDangerousLocationToTourists(admin, warningId, eve
   if (toNotify.length === 0) return results;
 
   const deliveryRecords = [];
-
-  const hazardChannelFlags = { email: true, sms: true, app: true };
 
   for (const profile of toNotify) {
     const userChannels = channelsFromProfile(profile);
@@ -122,7 +141,7 @@ export async function broadcastDangerousLocationToTourists(admin, warningId, eve
           user_id: profile.id,
           title,
           message,
-          notification_type: isUpdate ? "dangerous_location_updated" : "dangerous_location",
+          notification_type: notificationType,
           priority,
           related_type: "dangerous_location",
           related_id: warningId,
@@ -176,13 +195,14 @@ export async function broadcastDangerousLocationToTourists(admin, warningId, eve
       });
     }
 
-    if (effective.sms && profile.phone) {
+    const normalizedPhone = normalizePhilippinePhone(profile.phone);
+    if (effective.sms && normalizedPhone) {
       deliveryRecords.push({
         notification_id: notificationId,
         user_id: profile.id,
         channel: NOTIFICATION_CHANNELS.SMS,
         status: "pending",
-        recipient: profile.phone,
+        recipient: normalizedPhone,
         subject: title,
         body: smsBody,
         priority,

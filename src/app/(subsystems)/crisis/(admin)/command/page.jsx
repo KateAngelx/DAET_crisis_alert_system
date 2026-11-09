@@ -313,7 +313,7 @@ export default function CrisisAdminPage() {
       setToastMessage(`Error: ${result.error}`);
     } else {
       setToastMessage("Alert marked as resolved.");
-      notifyTouristsOfCrisisAlert(selectedAlert.id, "updated")
+      notifyTouristsOfCrisisAlert(selectedAlert.id, "resolved")
         .then((notifyResult) => {
           if (!notifyResult.success || notifyResult.warnings?.length) {
             setToastMessage(notifyResult.success
@@ -841,7 +841,7 @@ export default function CrisisAdminPage() {
       <ConfirmDialog
         open={showResolveConfirm && !!selectedAlert}
         title="Mark as resolved?"
-        description="This removes the alert from the public active feed. Tourists can still view it under Resolved Alerts for reference."
+        description="This removes the alert from the public active feed and sends a resolved notice on the channels selected for this alert. The notice says the alert is resolved. Tourists can still view it under Resolved Alerts."
         confirmLabel="Yes, resolve"
         cancelLabel="Not yet"
         variant="success"

@@ -52,16 +52,28 @@ export async function broadcastCrisisAlertToTourists(admin, alertId, eventType =
 
   const alertChannelFlags = channelsFromDb(alert.channels);
   const priority = severityToPriority(alert.severity);
+  const isResolved = eventType === 'resolved';
   const isUpdate = eventType === 'updated';
   const alertVersion = createHash('sha256').update(JSON.stringify(alert)).digest('hex');
-  const eventKey = isUpdate
-    ? `crisis-alert:${alert.id}:updated:${alertVersion}`
-    : `crisis-alert:${alert.id}:created`;
-  const title = isUpdate
-    ? `${alert.severity} Crisis Alert Updated: ${alert.title}`
-    : `${alert.severity} Crisis Alert: ${alert.title}`;
-  const message = `${alert.type} alert for ${alert.location}. ${alert.message}`;
-  const smsBody = formatCrisisAlertSms(alert);
+  const eventKey = isResolved
+    ? `crisis-alert:${alert.id}:resolved:${alert.resolved_at || alertVersion}`
+    : isUpdate
+      ? `crisis-alert:${alert.id}:updated:${alertVersion}`
+      : `crisis-alert:${alert.id}:created`;
+  const title = isResolved
+    ? `Resolved: ${alert.title}`
+    : isUpdate
+      ? `${alert.severity} Crisis Alert Updated: ${alert.title}`
+      : `${alert.severity} Crisis Alert: ${alert.title}`;
+  const message = isResolved
+    ? `This alert is resolved. ${alert.title} at ${alert.location} is no longer an active emergency.`
+    : `${alert.type} alert for ${alert.location}. ${alert.message}`;
+  const smsBody = formatCrisisAlertSms(alert, { resolved: isResolved });
+  const notificationType = isResolved
+    ? 'crisis_alert_resolved'
+    : isUpdate
+      ? 'crisis_alert_updated'
+      : 'crisis_alert';
 
   const settings = await getSystemSettings(admin);
   const audience = settings.notification_audience;
@@ -77,7 +89,7 @@ export async function broadcastCrisisAlertToTourists(admin, alertId, eventType =
     .select('user_id')
     .eq('related_type', 'alert')
     .eq('related_id', alertId);
-  if (isUpdate) existingQuery = existingQuery.eq('event_key', eventKey);
+  if (isUpdate || isResolved) existingQuery = existingQuery.eq('event_key', eventKey);
   const { data: existing, error: existingError } = await existingQuery;
 
   if (existingError) {
@@ -161,7 +173,7 @@ export async function broadcastCrisisAlertToTourists(admin, alertId, eventType =
           user_id: profile.id,
           title,
           message,
-          notification_type: isUpdate ? 'crisis_alert_updated' : 'crisis_alert',
+          notification_type: notificationType,
           priority,
           related_type: 'alert',
           related_id: alertId,

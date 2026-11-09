@@ -36,10 +36,10 @@ export function PublicPageContent({ children, className = "" }) {
 
 export function InfoPageHero({ title, description }) {
   return (
-    <div className={portalShell.pageIntro}>
-      <p className={`${typography.statLabel} text-blue-600 tracking-[0.2em] mb-1`}>Tourist & visitor</p>
+    <div className={portalShell.pageIntro} data-page-intro>
+      <p data-page-intro-kicker className={`${typography.statLabel} text-blue-600 tracking-[0.2em] mb-1`}>Tourist & visitor</p>
       <h1 className={`${typography.pageTitle} mb-1`}>{title}</h1>
-      {description ? <p className={portalShell.pageIntroDescription}>{description}</p> : null}
+      {description ? <p data-page-intro-description className={portalShell.pageIntroDescription}>{description}</p> : null}
     </div>
   );
 }

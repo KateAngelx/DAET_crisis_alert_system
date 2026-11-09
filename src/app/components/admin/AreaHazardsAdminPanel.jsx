@@ -6,6 +6,8 @@ import {
 } from "lucide-react";
 import { useDangerousLocationStore } from "@/app/store/dangerousLocationStore";
 import { notifyTouristsOfDangerousLocation } from "@/lib/notificationService";
+import { channelsFromDb } from "@/lib/alertChannels";
+import { BroadcastChannelToggles } from "@/app/components/admin/BroadcastChannelToggles";
 import { geocodeLocation } from "@/lib/geocodeLocation";
 import { DashboardPageHeader } from "@/app/components/dashboard/DashboardPageHeader";
 import { DashboardStatCard } from "@/app/components/dashboard/DashboardStatCard";
@@ -57,6 +59,7 @@ const EMPTY_FORM = {
   safety_instructions: "",
   latitude: null,
   longitude: null,
+  channels: { email: true, sms: true, app: true },
 };
 
 export function AreaHazardsAdminPanel({
@@ -153,6 +156,7 @@ export function AreaHazardsAdminPanel({
       safety_instructions: warning.safety_instructions || "",
       latitude: warning.latitude ?? null,
       longitude: warning.longitude ?? null,
+      channels: channelsFromDb(warning.channels),
     });
     if (warning.latitude && warning.longitude) {
       setMapCenter([Number(warning.latitude), Number(warning.longitude)]);
@@ -214,7 +218,8 @@ export function AreaHazardsAdminPanel({
       if (result.warning?.id && isCurrentAndPublic) {
         const notify = await notifyTouristsOfDangerousLocation(
           result.warning.id,
-          editingId ? "updated" : "created"
+          editingId ? "updated" : "created",
+          formData.channels
         );
         setToast(
           notify.success
@@ -240,14 +245,27 @@ export function AreaHazardsAdminPanel({
     const ok = await confirm({
       title: "Deactivate area hazard?",
       description:
-        "This removes the hazard from the public travel map. You can reactivate it later from the inactive list.",
+        "This removes the hazard from the public travel map and sends a cleared notice on the channels saved for this hazard. You can reactivate it later from the inactive list.",
       confirmLabel: "Deactivate",
       variant: "warning",
     });
     if (!ok) return;
     const result = await setWarningStatus(warning.id, "Inactive");
-    setToast(result.success ? "Area hazard deactivated." : result.error);
-    if (result.success) await fetchWarnings();
+    if (!result.success) {
+      setToast(result.error);
+      return;
+    }
+    const notify = await notifyTouristsOfDangerousLocation(warning.id, "cleared");
+    const reach = (notify.notified || 0) + (notify.emailQueued || 0) + (notify.smsQueued || 0);
+    setToast(notify.success
+      ? reach > 0
+        ? "Area hazard deactivated. Tourists were told it is cleared."
+        : "Area hazard deactivated. No cleared notice was delivered."
+      : `Hazard deactivated, but the cleared notice failed: ${notify.error}`);
+    if (notify.success && notify.warnings?.length) {
+      setToast("Hazard deactivated, but some cleared notices could not be delivered.");
+    }
+    await fetchWarnings();
   };
 
   const handleReactivate = async (warning) => {
@@ -498,6 +516,10 @@ export function AreaHazardsAdminPanel({
               <input className="w-full p-3 bg-zinc-50 border border-zinc-100 rounded-xl font-bold text-sm" placeholder="Current location (route start, optional)" value={formData.current_location} onChange={(e) => setFormData({ ...formData, current_location: e.target.value })} />
               <input required className="w-full p-3 bg-blue-50 border border-blue-100 rounded-xl font-bold text-sm text-blue-900" placeholder="Recommended alternative / safer route" value={formData.alternative_route} onChange={(e) => setFormData({ ...formData, alternative_route: e.target.value })} />
               <input required className="w-full p-3 bg-green-50 border border-green-100 rounded-xl font-bold text-sm text-green-900" placeholder="Destination" value={formData.destination} onChange={(e) => setFormData({ ...formData, destination: e.target.value })} />
+              <BroadcastChannelToggles
+                channels={formData.channels}
+                onChange={(channels) => setFormData({ ...formData, channels })}
+              />
               <CharCounterTextarea
                 rows={3}
                 smsGuide
@@ -519,7 +541,7 @@ export function AreaHazardsAdminPanel({
       <ConfirmDialog
         open={showConfirm}
         title={editingId ? "Update area hazard?" : "Publish area hazard?"}
-        description={`Tourists will be notified about ${formData.dangerous_location || "this area"} and the alternative route to ${formData.destination || "the safe destination"}.`}
+        description={`Tourists will be notified about ${formData.dangerous_location || "this area"} and the alternative route to ${formData.destination || "the safe destination"} on the channels left on.`}
         confirmLabel={editingId ? "Update" : "Publish & notify"}
         cancelLabel="Cancel"
         variant="danger"

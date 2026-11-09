@@ -324,7 +324,9 @@ export default function RoutesPageContent() {
       />
 
       <PublicPageContent>
-        <RoleContextBanner helper={ROLE_INTERFACE.public.routes.helper} tone="info" />
+        <div className="installed-app-hide">
+          <RoleContextBanner helper={ROLE_INTERFACE.public.routes.helper} tone="info" />
+        </div>
         <AsyncState
           loading={loading}
           error={error}
@@ -358,7 +360,7 @@ export default function RoutesPageContent() {
           }
         >
           <div className={portalLayout.stackPublic}>
-            <PublicPanel title="Overview" subtitle="Route and hazard counts">
+            <PublicPanel title="Overview" subtitle="Route and hazard counts" className="installed-app-hide">
               <div className="grid grid-cols-5 gap-1 sm:gap-2 md:gap-3 mb-4 min-w-0">
                 <PublicStatCard compact value={catalog.safe.length} label="Safe Routes" accent="green" />
                 <PublicStatCard compact value={catalog.active.length} label="Caution" accent="green" />
@@ -380,6 +382,15 @@ export default function RoutesPageContent() {
               )}
 
             </PublicPanel>
+
+            {urgentCount > 0 ? (
+              <div className="installed-app-show items-start gap-3 rounded-xl border border-orange-200 bg-orange-50 p-3">
+                <AlertTriangle className="mt-0.5 shrink-0 text-orange-600" size={18} />
+                <p className="text-sm font-medium text-orange-900">
+                  {urgentCount} item{urgentCount > 1 ? "s" : ""} need attention before you travel.
+                </p>
+              </div>
+            ) : null}
 
             <div className={portalLayout.splitGridPublic}>
               <PublicPanel

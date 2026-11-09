@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { AlertTriangle, CheckCircle2, FileText, HelpCircle, Home, Info, Menu, Route, User, X } from "lucide-react";
+import { AlertTriangle, CheckCircle2, FileText, HelpCircle, Home, Info, Menu, Phone, Route, User, UserPlus, X } from "lucide-react";
 import { BrandLogo } from "@/app/components/BrandLogo";
 import { siteInfo } from "@/lib/siteInfo";
 import { useAuthStore } from "../store/crisisStore";
@@ -13,22 +13,27 @@ import { isPublicNavActive } from "@/lib/navUtils";
 import { useInstalledApp } from "@/lib/useInstalledApp";
 import { usePublicVisibility } from "@/lib/usePublicVisibility";
 
-const GUEST_NAV = [
+const PRIMARY_NAV = [
   { name: "Home", short: "Home", href: "/", icon: Home },
   { name: "Crisis Hub", short: "Crisis", href: "/crisis", icon: AlertTriangle },
-  { name: "Resolved", short: "Resolved", href: "/crisis/resolved", icon: CheckCircle2 },
   { name: "Roads & Travel", short: "Roads", href: "/routes", icon: Route },
-  { name: "About", short: "About", href: "/about", icon: Info },
-  { name: "FAQs", short: "FAQ", href: "/faq", icon: HelpCircle },
 ];
 
-const AUTH_NAV = [
-  { name: "Home", short: "Home", href: "/", icon: Home },
-  { name: "Crisis Hub", short: "Crisis", href: "/crisis", icon: AlertTriangle },
-  { name: "Resolved", short: "Resolved", href: "/crisis/resolved", icon: CheckCircle2 },
-  { name: "Roads & Travel", short: "Roads", href: "/routes", icon: Route },
-  { name: "My Reports", short: "Reports", href: "/crisis/reports", icon: FileText },
-  { name: "FAQs", short: "FAQ", href: "/faq", icon: HelpCircle },
+const MORE_NAV = [
+  { name: "Resolved alerts", href: "/crisis/resolved", icon: CheckCircle2 },
+  { name: "FAQs", href: "/faq", icon: HelpCircle },
+  { name: "About", href: "/about", icon: Info },
+  { name: "Contact", href: "/contact", icon: Phone },
+];
+
+const ACCOUNT_LINKS = [
+  { name: "My Profile", href: "/profile" },
+  { name: "How to Use", href: "/how-to-use", touristOnly: true },
+  { name: "Feedback", href: "/crisis/feedback" },
+  { name: "Resolved alerts", href: "/crisis/resolved" },
+  { name: "FAQs", href: "/faq" },
+  { name: "About", href: "/about" },
+  { name: "Contact", href: "/contact" },
 ];
 
 export function PublicHeader() {
@@ -47,9 +52,14 @@ export function PublicHeader() {
     setMenuOpen(false);
   }, [pathname]);
 
-  const navItems = (mounted && isAuthenticated ? AUTH_NAV : GUEST_NAV).filter(
-    (item) => visibility.roadsAndHazards || item.href !== "/routes"
-  );
+  const signedIn = mounted && isAuthenticated;
+  const primaryNav = [
+    ...PRIMARY_NAV.filter((item) => visibility.roadsAndHazards || item.href !== "/routes"),
+    signedIn
+      ? { name: "My Reports", short: "Reports", href: "/crisis/reports", icon: FileText }
+      : { name: "Register", short: "Register", href: "/register", icon: UserPlus },
+  ];
+  const accountLinks = ACCOUNT_LINKS.filter((item) => !item.touristOnly || user?.role === "tourist");
 
   const linkClass = (href) => {
     const active = isPublicNavActive(pathname, href);
@@ -70,7 +80,7 @@ export function PublicHeader() {
       </Link>
       <Link
         href="/register"
-        className="inline-flex h-7 items-center justify-center rounded-full bg-blue-600 px-2.5 text-[10px] font-black uppercase tracking-wide text-white hover:bg-blue-700 transition-colors shadow-sm shadow-blue-600/20 whitespace-nowrap sm:h-8 sm:px-3"
+        className="inline-flex h-7 items-center justify-center rounded-full bg-blue-600 px-2.5 text-[10px] font-black uppercase tracking-wide text-white hover:bg-blue-700 transition-colors shadow-sm shadow-blue-600/20 whitespace-nowrap sm:h-8 sm:px-3 lg:hidden"
       >
         Register
       </Link>
@@ -119,7 +129,7 @@ export function PublicHeader() {
               </div>
 
               <nav className="col-start-2 hidden items-center justify-center gap-1 px-2 lg:flex" aria-label="Primary">
-                {navItems.map((item) => (
+                {primaryNav.map((item) => (
                   <Link
                     key={item.name}
                     href={item.href}
@@ -132,74 +142,85 @@ export function PublicHeader() {
               </nav>
 
               <div className="relative z-20 col-start-3 flex items-center justify-end gap-1.5 bg-white md:gap-2">
+                {installedApp ? (
+                  <a
+                    href="tel:911"
+                    className="inline-flex h-8 items-center rounded-full bg-red-600 px-2.5 text-[10px] font-black uppercase tracking-wide text-white"
+                  >
+                    911
+                  </a>
+                ) : null}
                 {mounted && isAuthenticated && <NotificationPanel />}
 
                 {showGuestActions ? guestActions : null}
 
                 {mounted && isAuthenticated ? (
-                  <div className="hidden lg:flex items-center gap-2">
-                    <Link
-                      href="/profile"
-                      className="flex items-center gap-2 bg-white/70 dark:bg-zinc-900 border border-white/80 dark:border-zinc-800 pl-2 pr-4 py-1.5 rounded-full hover:border-blue-200 transition-colors"
+                  <div className="relative">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setMenuOpen(false);
+                        setAccountOpen((open) => !open);
+                      }}
+                      className="inline-flex h-10 min-w-9 max-w-14 flex-col items-center justify-center gap-0.5 rounded-xl border border-zinc-200/90 bg-white px-1 text-zinc-700 hover:bg-zinc-50 transition-colors lg:h-auto lg:max-w-none lg:flex-row lg:gap-2 lg:rounded-full lg:py-1.5 lg:pl-2 lg:pr-3 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-200"
+                      aria-label="Account menu"
+                      aria-expanded={accountOpen}
                     >
-                      <div className="bg-blue-600 p-1.5 rounded-full text-white">
+                      <span className="flex h-7 w-7 items-center justify-center rounded-full bg-blue-600 text-white">
                         <User size={14} />
-                      </div>
-                      <div className="leading-none">
-                        <span className="text-[11px] font-black uppercase tracking-tight text-zinc-900 dark:text-zinc-100 block">
+                      </span>
+                      <span className="hidden text-left leading-none lg:block">
+                        <span className="block max-w-32 truncate text-[11px] font-black uppercase tracking-tight text-zinc-900 dark:text-zinc-100">
                           {user?.name}
                         </span>
                         <span className="text-[9px] font-bold uppercase tracking-widest text-blue-600">
                           {user?.role === "tourist" ? <HeaderPoints variant="inline" /> : (user?.role || "tourist")}
                         </span>
-                      </div>
-                    </Link>
-                    <button
-                      type="button"
-                      onClick={logout}
-                      className="text-[10px] font-black uppercase text-red-500 bg-red-50 dark:bg-red-950/30 px-4 py-2 rounded-full hover:bg-red-100 transition-all font-sans border border-red-100 dark:border-red-900/50"
-                    >
-                      Logout
+                      </span>
+                      <span className="lg:hidden">
+                        <HeaderPoints />
+                      </span>
                     </button>
-                  </div>
-                ) : null}
-
-                {mounted && isAuthenticated ? (
-                  <div className="relative lg:hidden">
-                    <button
-                      type="button"
-                      onClick={() => setAccountOpen((open) => !open)}
-                      className="inline-flex h-10 min-w-9 max-w-14 flex-col items-center justify-center gap-0.5 rounded-xl border border-zinc-200/90 bg-white px-1 text-zinc-700 hover:bg-zinc-50 transition-colors dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-200"
-                      aria-label="Account menu"
-                      aria-expanded={accountOpen}
-                    >
-                      <User size={16} />
-                      <HeaderPoints />
-                    </button>
-                    {accountOpen && (
-                      <div className="absolute right-0 top-full mt-2 w-52 rounded-2xl border border-white/70 bg-white/90 p-2 shadow-xl backdrop-blur-xl dark:border-zinc-800 dark:bg-zinc-950/90">
-                        <p className="px-3 py-2 text-[11px] font-black uppercase tracking-tight text-zinc-900 dark:text-zinc-100 truncate">
+                    {accountOpen ? (
+                      <div className="absolute right-0 top-full z-50 mt-2 w-56 rounded-2xl border border-zinc-200 bg-white p-2 shadow-xl dark:border-zinc-800 dark:bg-zinc-950">
+                        <p className="truncate px-3 py-2 text-[11px] font-black uppercase tracking-tight text-zinc-900 dark:text-zinc-100">
                           {user?.name}
                         </p>
-                        <p className="px-3 -mt-1 pb-2 text-[9px] font-bold uppercase tracking-widest text-blue-600">
+                        <p className="-mt-1 px-3 pb-2 text-[9px] font-bold uppercase tracking-widest text-blue-600">
                           {user?.role || "tourist"}
                         </p>
                         <HeaderPoints variant="menu" />
-                        <Link
-                          href="/profile"
-                          className="block px-3 py-2.5 rounded-xl text-[11px] font-black uppercase tracking-widest text-zinc-700 hover:bg-zinc-50 dark:text-zinc-200 dark:hover:bg-zinc-900"
+                        {accountLinks.map((item) => (
+                          <Link
+                            key={item.href}
+                            href={item.href}
+                            className="block rounded-xl px-3 py-2.5 text-[11px] font-black uppercase tracking-widest text-zinc-700 hover:bg-zinc-50 dark:text-zinc-200 dark:hover:bg-zinc-900"
+                            onClick={() => setAccountOpen(false)}
+                          >
+                            {item.name}
+                          </Link>
+                        ))}
+                        <a
+                          href="tel:911"
+                          className="block rounded-xl px-3 py-2.5 text-[11px] font-black uppercase tracking-widest text-red-600 hover:bg-red-50"
                         >
-                          My Profile
-                        </Link>
+                          911 emergency
+                        </a>
+                        <a
+                          href={`tel:${siteInfo.phoneTourismTel}`}
+                          className="block rounded-xl px-3 py-2.5 text-[11px] font-black uppercase tracking-widest text-zinc-700 hover:bg-zinc-50"
+                        >
+                          Tourism {siteInfo.phoneTourism}
+                        </a>
                         <button
                           type="button"
                           onClick={logout}
-                          className="w-full text-left px-3 py-2.5 rounded-xl text-[11px] font-black uppercase tracking-widest text-red-500 hover:bg-red-50"
+                          className="w-full rounded-xl px-3 py-2.5 text-left text-[11px] font-black uppercase tracking-widest text-red-500 hover:bg-red-50"
                         >
-                          Logout
+                          Sign out
                         </button>
                       </div>
-                    )}
+                    ) : null}
                   </div>
                 ) : null}
               </div>
@@ -223,7 +244,26 @@ export function PublicHeader() {
             className="fixed top-12 md:top-16 inset-x-0 z-50 max-h-[calc(100dvh-3rem)] overflow-y-auto border-b border-zinc-200 bg-white shadow-lg lg:hidden"
             aria-label="Pages"
           >
-            {navItems.map((item) => {
+            {primaryNav.map((item) => {
+              const Icon = item.icon;
+              const active = isPublicNavActive(pathname, item.href);
+              return (
+                <Link
+                  key={item.name}
+                  href={item.href}
+                  aria-current={active ? "page" : undefined}
+                  className={`flex items-center gap-3 border-b border-zinc-100 px-4 py-3 text-sm font-semibold ${
+                    active ? "bg-blue-50 text-blue-700" : "text-zinc-800"
+                  }`}
+                  onClick={() => setMenuOpen(false)}
+                >
+                  <Icon size={18} />
+                  {item.name}
+                </Link>
+              );
+            })}
+            <p className="px-4 pb-1 pt-3 text-[10px] font-black uppercase tracking-widest text-zinc-400">More</p>
+            {MORE_NAV.map((item) => {
               const Icon = item.icon;
               const active = isPublicNavActive(pathname, item.href);
               return (
@@ -248,7 +288,7 @@ export function PublicHeader() {
       {accountOpen && (
         <button
           type="button"
-          className="fixed inset-0 z-40 lg:hidden"
+          className="fixed inset-0 z-40"
           aria-label="Close account menu"
           onClick={() => setAccountOpen(false)}
         />
@@ -263,9 +303,9 @@ export function PublicHeader() {
         <div className="pointer-events-auto mx-auto max-w-lg rounded-2xl border border-zinc-200 bg-white shadow-[0_8px_28px_rgba(15,23,42,0.12)]">
           <div
             className="grid"
-            style={{ gridTemplateColumns: `repeat(${navItems.length}, minmax(0, 1fr))` }}
+            style={{ gridTemplateColumns: `repeat(${primaryNav.length}, minmax(0, 1fr))` }}
           >
-            {navItems.map((item) => {
+            {primaryNav.map((item) => {
               const Icon = item.icon;
               const active = isPublicNavActive(pathname, item.href);
               return (
@@ -273,7 +313,7 @@ export function PublicHeader() {
                   key={item.name}
                   href={item.href}
                   aria-current={active ? "page" : undefined}
-                  className={`flex flex-col items-center justify-center gap-0.5 min-h-[52px] px-0.5 py-2 text-[8px] sm:text-[9px] font-black uppercase tracking-tight leading-none transition-colors first:rounded-bl-2xl last:rounded-br-2xl ${
+                  className={`flex flex-col items-center justify-center gap-0.5 min-h-[52px] px-0.5 py-2 text-[10px] font-black uppercase tracking-tight leading-none transition-colors first:rounded-bl-2xl last:rounded-br-2xl ${
                     active ? "text-blue-600 bg-blue-50/90" : "text-zinc-600 hover:text-zinc-900"
                   }`}
                 >

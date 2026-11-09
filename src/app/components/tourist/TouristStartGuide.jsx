@@ -32,7 +32,7 @@ const STEPS = [
   },
   {
     title: "Feedback",
-    where: "The feedback form is on the home page.",
+    where: "Open Feedback from the account menu.",
     detail: "Use it for comments about public safety and crisis alerts.",
   },
   {
@@ -60,6 +60,7 @@ export function TouristStartGuide() {
   const pathname = usePathname();
   const { user, isAuthenticated } = useAuthStore();
   const [open, setOpen] = useState(false);
+  const [guideSettled, setGuideSettled] = useState(false);
   const [step, setStep] = useState(0);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
@@ -72,13 +73,16 @@ export function TouristStartGuide() {
   useEffect(() => {
     if (!isAuthenticated || user?.role !== "tourist" || !user?.id || onAuthScreen) {
       setOpen(false);
+      setGuideSettled(true);
       return undefined;
     }
     if (window.localStorage.getItem(skipKey(user.id)) === "1") {
       setOpen(false);
+      setGuideSettled(true);
       return undefined;
     }
 
+    setGuideSettled(false);
     let active = true;
     (async () => {
       try {
@@ -89,11 +93,17 @@ export function TouristStartGuide() {
           headers: { Authorization: `Bearer ${session.access_token}` },
         });
         const result = await response.json().catch(() => ({}));
-        if (!active || !response.ok || result.completed) return;
+        if (!active) return;
+        if (!response.ok || result.completed) {
+          setOpen(false);
+          return;
+        }
         setStep(0);
         setOpen(true);
       } catch {
         if (active) setOpen(false);
+      } finally {
+        if (active) setGuideSettled(true);
       }
     })();
 
@@ -101,6 +111,12 @@ export function TouristStartGuide() {
       active = false;
     };
   }, [isAuthenticated, onAuthScreen, user?.id, user?.role]);
+
+  useEffect(() => {
+    if (!guideSettled) return undefined;
+    window.dispatchEvent(new CustomEvent("daet:start-guide", { detail: { open, settled: true } }));
+    return undefined;
+  }, [guideSettled, open]);
 
   useEffect(() => {
     if (!open) return undefined;

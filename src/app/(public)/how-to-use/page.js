@@ -64,10 +64,10 @@ const GUIDE_SECTIONS = [
     title: "Send comments, feedback, or suggestions",
     summary: "Share information about public safety and crisis alerts.",
     steps: [
-      "Open the feedback form on the home page.",
-      "Choose a message type and submit your note. Submissions may be reviewed before they are shown publicly.",
+      "Open Feedback from the account menu.",
+      "Choose a message type and submit your note. The office reviews it before anyone else can see it.",
     ],
-    href: "/#community-feedback",
+    href: "/crisis/feedback",
     action: "Open Crisis Feedback",
   },
   {

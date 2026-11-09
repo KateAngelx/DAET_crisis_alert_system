@@ -58,12 +58,12 @@ export async function notifyTouristsOfCrisisAlert(alertId, eventType = 'created'
   }
 }
 
-export async function notifyTouristsOfDangerousLocation(warningId, eventType = 'created') {
+export async function notifyTouristsOfDangerousLocation(warningId, eventType = 'created', channels) {
   try {
     const res = await fetchWithFreshSession('/api/crisis/dangerous-locations/notify-tourists', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ warningId, eventType }),
+      body: JSON.stringify({ warningId, eventType, ...(channels ? { channels } : {}) }),
     });
     const data = await res.json();
 
@@ -75,6 +75,8 @@ export async function notifyTouristsOfDangerousLocation(warningId, eventType = '
       success: true,
       notified: data.notified || 0,
       skipped: data.skipped || 0,
+      emailQueued: data.emailQueued || 0,
+      smsQueued: data.smsQueued || 0,
       warnings: data.warnings || [],
     };
   } catch (err) {
@@ -82,12 +84,12 @@ export async function notifyTouristsOfDangerousLocation(warningId, eventType = '
   }
 }
 
-export async function notifyTouristsOfRouteAdvisory(advisoryId, eventType = 'created') {
+export async function notifyTouristsOfRouteAdvisory(advisoryId, eventType = 'created', channels) {
   try {
     const res = await fetchWithFreshSession('/api/crisis/route-advisories/notify-tourists', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ advisoryId, eventType }),
+      body: JSON.stringify({ advisoryId, eventType, ...(channels ? { channels } : {}) }),
     });
     const data = await res.json();
     if (!res.ok) return { success: false, error: data.error || 'Failed to notify tourists' };
@@ -95,8 +97,10 @@ export async function notifyTouristsOfRouteAdvisory(advisoryId, eventType = 'cre
       success: true,
       notified: data.notified || 0,
       skipped: data.skipped || 0,
+      emailQueued: data.emailQueued || 0,
+      smsQueued: data.smsQueued || 0,
       pushSent: data.pushSent || 0,
-      warnings: data.errors || [],
+      warnings: data.errors || data.warnings || [],
     };
   } catch (error) {
     return { success: false, error: error.message || 'Failed to notify tourists' };

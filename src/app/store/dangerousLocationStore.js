@@ -1,5 +1,6 @@
 import { create } from "zustand";
 import { supabase } from "@/lib/supabaseClient";
+import { isMissingChannelsColumn } from "@/lib/alertChannels";
 import { areaAdvisoryToWarning, warningPayloadToAreaAdvisory } from "@/lib/areaAdvisoryAdapter";
 import { sortRecordsNewestFirst } from "@/lib/recordSorting";
 
@@ -89,10 +90,15 @@ export const useDangerousLocationStore = create((set, get) => ({
   addWarning: async (payload) => {
     try {
       const insertPayload = warningPayloadToAreaAdvisory(payload);
-      const { data, error } = await supabase
+      let { data, error } = await supabase
         .from("route_advisories")
         .insert([insertPayload])
         .select();
+
+      if (error && isMissingChannelsColumn(error)) {
+        const { channels: _channels, ...withoutChannels } = insertPayload;
+        ({ data, error } = await supabase.from("route_advisories").insert([withoutChannels]).select());
+      }
 
       if (error) throw error;
       const warning = areaAdvisoryToWarning(data?.[0]);
@@ -105,12 +111,21 @@ export const useDangerousLocationStore = create((set, get) => ({
   updateWarning: async (id, payload) => {
     try {
       const updatePayload = warningPayloadToAreaAdvisory({ ...payload, status: payload.status || "Active" });
-      const { data, error } = await supabase
+      let { data, error } = await supabase
         .from("route_advisories")
         .update(updatePayload)
         .eq("id", id)
         .select()
         .single();
+      if (error && isMissingChannelsColumn(error)) {
+        const { channels: _channels, ...withoutChannels } = updatePayload;
+        ({ data, error } = await supabase
+          .from("route_advisories")
+          .update(withoutChannels)
+          .eq("id", id)
+          .select()
+          .single());
+      }
       if (error) throw error;
       return { success: true, warning: areaAdvisoryToWarning(data) };
     } catch (error) {

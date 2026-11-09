@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { requireAdmin } from "@/lib/adminAuth";
 import { API_RATE_LIMITS, enforceRateLimitByKey } from "@/lib/apiRateLimit";
+import { channelOverrideFromBody } from "@/lib/alertChannels";
 import { broadcastRouteAdvisoryToTourists } from "@/lib/routeAdvisoryBroadcast.server";
 
 export async function POST(request) {
@@ -22,13 +23,19 @@ export async function POST(request) {
     if (
       typeof advisoryId !== "string"
       || !/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(advisoryId)
-      || !["created", "updated"].includes(eventType)
+      || !["created", "updated", "cleared"].includes(eventType)
     ) {
       return NextResponse.json({ error: "advisoryId and a valid eventType are required" }, { status: 400 });
     }
 
-    const results = await broadcastRouteAdvisoryToTourists(auth.admin, advisoryId, eventType);
-    if (results.errors.length && results.notified === 0) {
+    const results = await broadcastRouteAdvisoryToTourists(
+      auth.admin,
+      advisoryId,
+      eventType,
+      channelOverrideFromBody(body.channels)
+    );
+    const reachCount = (results.notified || 0) + (results.emailQueued || 0) + (results.smsQueued || 0);
+    if (results.errors.length && reachCount === 0) {
       return NextResponse.json({ error: results.errors.join("; "), details: results.errors }, { status: 500 });
     }
     return NextResponse.json({ success: true, ...results });
