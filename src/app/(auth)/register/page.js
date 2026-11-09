@@ -78,6 +78,10 @@ export default function RegisterPage() {
         }
         setNeedsConfirmation(!!result.needsConfirmation);
         setNotificationResults(result.notifications);
+        if (result.signedIn && !result.needsConfirmation) {
+          router.replace("/");
+          return;
+        }
         setIsRegistered(true);
       } else {
         setRegError(result.error);

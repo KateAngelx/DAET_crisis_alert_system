@@ -6,6 +6,7 @@ import { AssignmentRequestHandler } from "@/app/components/tour/AssignmentReques
 import { NotificationArrivalListener } from "@/app/components/NotificationArrivalListener";
 import { PushEnablePrompt } from "@/app/components/PushEnablePrompt";
 import { RewardEarnedToast } from "@/app/components/RewardEarnedToast";
+import { TouristStartGuide } from "@/app/components/tourist/TouristStartGuide";
 import { ConfirmDialogProvider } from "@/app/components/ui/ConfirmDialogProvider";
 import { InstallPwaPrompt } from "@/app/components/InstallPwaPrompt";
 import { PwaSplashScreen } from "@/app/components/PwaSplashScreen";
@@ -61,6 +62,7 @@ export default function RootLayout({ children }) {
         <NotificationArrivalListener />
         <PushEnablePrompt />
         <RewardEarnedToast />
+        <TouristStartGuide />
         <ConfirmDialogProvider>{children}</ConfirmDialogProvider>
         <InstallPwaPrompt />
       </body>

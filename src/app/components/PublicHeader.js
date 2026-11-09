@@ -8,6 +8,7 @@ import { BrandLogo } from "@/app/components/BrandLogo";
 import { siteInfo } from "@/lib/siteInfo";
 import { useAuthStore } from "../store/crisisStore";
 import { NotificationPanel } from "@/app/components/NotificationPanel";
+import { HeaderPoints } from "@/app/components/HeaderPoints";
 import { isPublicNavActive } from "@/lib/navUtils";
 import { useInstalledApp } from "@/lib/useInstalledApp";
 import { usePublicVisibility } from "@/lib/usePublicVisibility";
@@ -84,7 +85,8 @@ export function PublicHeader() {
       >
         <div data-public-header-frame className="max-md:pt-[max(0.5rem,env(safe-area-inset-top))] max-md:px-3 sm:max-md:px-4 md:pt-0 md:px-0">
           <div data-public-header-shell className="max-md:rounded-xl max-md:bg-white max-md:border max-md:border-zinc-200 max-md:shadow-[0_4px_18px_rgba(15,23,42,0.08)] md:rounded-none md:bg-transparent md:shadow-none md:border-0">
-            <div className="w-full max-w-7xl mx-auto flex items-center gap-1.5 h-12 min-w-0 overflow-visible px-2 md:h-16 md:gap-2 md:px-6 lg:px-8">
+            <div className="mx-auto grid h-12 w-full max-w-7xl min-w-0 grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center gap-1.5 overflow-visible px-2 md:h-16 md:gap-2 md:px-6 lg:px-8">
+              <div className="col-start-1 flex min-w-0 items-center gap-1.5">
               {!installedApp ? (
                 <button
                   type="button"
@@ -101,7 +103,7 @@ export function PublicHeader() {
               ) : null}
               <Link
                 href="/"
-                className="flex min-w-0 flex-1 items-center gap-1.5"
+                className="flex min-w-0 items-center gap-1.5"
                 aria-label={`CONNECT-DAET — ${siteInfo.officeName} Home`}
               >
                 <span className="md:hidden">
@@ -114,8 +116,9 @@ export function PublicHeader() {
                   CONNECT-DAET
                 </span>
               </Link>
+              </div>
 
-              <nav className="hidden lg:flex min-w-0 flex-1 items-center justify-center gap-0.5 px-2" aria-label="Primary">
+              <nav className="col-start-2 hidden items-center justify-center gap-1 px-2 lg:flex" aria-label="Primary">
                 {navItems.map((item) => (
                   <Link
                     key={item.name}
@@ -128,7 +131,7 @@ export function PublicHeader() {
                 ))}
               </nav>
 
-              <div className="flex items-center gap-1.5 shrink-0 ml-auto md:gap-2">
+              <div className="relative z-20 col-start-3 flex items-center justify-end gap-1.5 bg-white md:gap-2">
                 {mounted && isAuthenticated && <NotificationPanel />}
 
                 {showGuestActions ? guestActions : null}
@@ -146,8 +149,8 @@ export function PublicHeader() {
                         <span className="text-[11px] font-black uppercase tracking-tight text-zinc-900 dark:text-zinc-100 block">
                           {user?.name}
                         </span>
-                        <span className="text-[9px] font-bold uppercase text-blue-600 tracking-widest">
-                          {user?.role || "tourist"}
+                        <span className="text-[9px] font-bold uppercase tracking-widest text-blue-600">
+                          {user?.role === "tourist" ? <HeaderPoints variant="inline" /> : (user?.role || "tourist")}
                         </span>
                       </div>
                     </Link>
@@ -166,11 +169,12 @@ export function PublicHeader() {
                     <button
                       type="button"
                       onClick={() => setAccountOpen((open) => !open)}
-                      className="p-2 rounded-full border border-zinc-200/90 bg-white text-zinc-700 hover:bg-zinc-50 transition-colors dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-200"
+                      className="inline-flex h-10 min-w-9 max-w-14 flex-col items-center justify-center gap-0.5 rounded-xl border border-zinc-200/90 bg-white px-1 text-zinc-700 hover:bg-zinc-50 transition-colors dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-200"
                       aria-label="Account menu"
                       aria-expanded={accountOpen}
                     >
-                      <User size={18} />
+                      <User size={16} />
+                      <HeaderPoints />
                     </button>
                     {accountOpen && (
                       <div className="absolute right-0 top-full mt-2 w-52 rounded-2xl border border-white/70 bg-white/90 p-2 shadow-xl backdrop-blur-xl dark:border-zinc-800 dark:bg-zinc-950/90">
@@ -180,6 +184,7 @@ export function PublicHeader() {
                         <p className="px-3 -mt-1 pb-2 text-[9px] font-bold uppercase tracking-widest text-blue-600">
                           {user?.role || "tourist"}
                         </p>
+                        <HeaderPoints variant="menu" />
                         <Link
                           href="/profile"
                           className="block px-3 py-2.5 rounded-xl text-[11px] font-black uppercase tracking-widest text-zinc-700 hover:bg-zinc-50 dark:text-zinc-200 dark:hover:bg-zinc-900"

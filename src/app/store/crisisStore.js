@@ -607,17 +607,24 @@ export const useAuthStore = create(
           }
 
           const session = await getActiveSession();
+          let signedIn = false;
           if (session) {
             try {
-              await syncProfileFromServer(session);
+              const profile = await syncProfileFromServer(session);
+              const userData = mapProfileToUser(profile);
+              if (userData) {
+                set({ user: userData, isAuthenticated: true, loading: false });
+                signedIn = true;
+              }
             } catch (syncError) {
               console.error("Could not sync profile after registration:", syncError.message);
             }
           }
 
-          set({ loading: false });
+          if (!signedIn) set({ loading: false });
           return {
             success: true,
+            signedIn,
             needsConfirmation: result.needsConfirmation,
             registrationReward: result.registrationReward || null,
             profileCompletionReward: result.profileCompletionReward || null,
