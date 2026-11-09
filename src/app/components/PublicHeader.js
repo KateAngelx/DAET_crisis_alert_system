@@ -84,7 +84,7 @@ export function PublicHeader() {
       >
         <div data-public-header-frame className="max-md:pt-[max(0.5rem,env(safe-area-inset-top))] max-md:px-3 sm:max-md:px-4 md:pt-0 md:px-0">
           <div data-public-header-shell className="max-md:rounded-xl max-md:bg-white max-md:border max-md:border-zinc-200 max-md:shadow-[0_4px_18px_rgba(15,23,42,0.08)] md:rounded-none md:bg-transparent md:shadow-none md:border-0">
-            <div className="w-full max-w-7xl mx-auto flex items-center gap-1.5 h-12 min-w-0 overflow-hidden px-2 md:h-16 md:gap-2 md:px-6 lg:px-8">
+            <div className="w-full max-w-7xl mx-auto flex items-center gap-1.5 h-12 min-w-0 overflow-visible px-2 md:h-16 md:gap-2 md:px-6 lg:px-8">
               {!installedApp ? (
                 <button
                   type="button"
