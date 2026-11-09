@@ -25,6 +25,7 @@ export default function NotificationsPage() {
   const { notifications, fetchNotifications, markAsRead, markAllAsRead, loading, error, clearNotifications } =
     useNotificationStore();
   const [sessionChecked, setSessionChecked] = useState(false);
+  const [page, setPage] = useState(1);
 
   useEffect(() => {
     let cancelled = false;
@@ -86,6 +87,10 @@ export default function NotificationsPage() {
   }
 
   const getRelatedLink = (n) => getNotificationHref(n, user?.role);
+  const pageSize = 10;
+  const pageCount = Math.max(1, Math.ceil(notifications.length / pageSize));
+  const safePage = Math.min(page, pageCount);
+  const visibleNotifications = notifications.slice((safePage - 1) * pageSize, safePage * pageSize);
 
   return (
     <PublicPageShell>
@@ -130,11 +135,6 @@ export default function NotificationsPage() {
             }
           >
             <ul className="divide-y divide-zinc-200 overflow-hidden rounded-lg border border-zinc-200 bg-white">
-              {notifications.map((n) => (
-                <li key={n.id}>
-                  <NotificationItemCard
-                    notification={n}
-                    variant="row"
               {visibleNotifications.map((n) => (
                 <li key={n.id}>
                   <NotificationItemCard
@@ -147,4 +147,9 @@ export default function NotificationsPage() {
               ))}
             </ul>
             <ListPager page={safePage} pageCount={pageCount} onPage={setPage} />
+          </AsyncState>
+        </PublicPanel>
+      </PublicPageContent>
+    </PublicPageShell>
+  );
 }
