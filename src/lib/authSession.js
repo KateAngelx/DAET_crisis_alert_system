@@ -65,3 +65,34 @@ export async function getActiveSession() {
     return null;
   }
 }
+
+/** Retry an authenticated request once with a refreshed token if the API rejects the current one. */
+export async function fetchWithFreshSession(url, options = {}) {
+  const session = await getActiveSession();
+  if (!session?.access_token) throw new Error("Not authenticated");
+
+  const send = (accessToken) => {
+    const headers = new Headers(options.headers || {});
+    headers.set("Authorization", `Bearer ${accessToken}`);
+    return fetch(url, { ...options, headers });
+  };
+
+  const response = await send(session.access_token);
+  if (response.status !== 401) return response;
+
+  try {
+    const { data, error } = await supabase.auth.refreshSession();
+    if (
+      error ||
+      !data.session?.access_token ||
+      data.session.user?.id !== session.user.id
+    ) {
+      if (isInvalidRefreshError(error)) await clearInvalidAuthSession();
+      return response;
+    }
+    return await send(data.session.access_token);
+  } catch (error) {
+    if (isInvalidRefreshError(error)) await clearInvalidAuthSession();
+    return response;
+  }
+}

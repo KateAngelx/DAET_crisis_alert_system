@@ -5,7 +5,22 @@ import { agentDebugLog } from '@/lib/agentDebugLog.server';
 
 const MAX_RETRIES = 3;
 const MAX_BATCH_SIZE = 20;
-const MAX_TOTAL_PROCESSED_PER_CALL = 40;
+const MAX_TOTAL_PROCESSED_PER_CALL = 80;
+const DELIVERY_CONCURRENCY = 5;
+
+async function mapWithConcurrency(items, limit, worker) {
+  const results = new Array(items.length);
+  let cursor = 0;
+  const runners = Array.from({ length: Math.min(limit, items.length) }, async () => {
+    while (cursor < items.length) {
+      const index = cursor;
+      cursor += 1;
+      results[index] = await worker(items[index]);
+    }
+  });
+  await Promise.all(runners);
+  return results;
+}
 
 async function processDelivery(supabase, delivery) {
   const maxRetries = delivery.max_retries ?? MAX_RETRIES;
@@ -122,18 +137,16 @@ export async function processNotificationDeliveries({ deliveryIds } = {}) {
   let remainingBudget = MAX_TOTAL_PROCESSED_PER_CALL;
 
   if (deliveryIds?.length) {
-    const ids = deliveryIds.slice(0, MAX_BATCH_SIZE);
+    const ids = deliveryIds.slice(0, MAX_TOTAL_PROCESSED_PER_CALL);
     const { data: deliveries, error } = await supabase
       .from('notification_deliveries')
       .select('*')
       .in('id', ids);
     if (error) throw error;
-    for (const delivery of deliveries || []) {
-      if (remainingBudget <= 0) break;
-      results.push(await processDelivery(supabase, delivery));
-      remainingBudget -= 1;
-    }
-    return { processed: results.length, results, capped: (deliveries?.length || 0) > ids.length };
+    const batch = (deliveries || []).slice(0, remainingBudget);
+    const delivered = await mapWithConcurrency(batch, DELIVERY_CONCURRENCY, (delivery) => processDelivery(supabase, delivery));
+    results.push(...delivered);
+    return { processed: results.length, results, capped: deliveryIds.length > ids.length };
   }
 
   while (remainingBudget > 0) {
@@ -147,10 +160,13 @@ export async function processNotificationDeliveries({ deliveryIds } = {}) {
     if (error) throw error;
     if (!deliveries?.length) break;
 
-    for (const delivery of deliveries) {
-      results.push(await processDelivery(supabase, delivery));
-      remainingBudget -= 1;
-    }
+    const delivered = await mapWithConcurrency(
+      deliveries,
+      DELIVERY_CONCURRENCY,
+      (delivery) => processDelivery(supabase, delivery)
+    );
+    results.push(...delivered);
+    remainingBudget -= delivered.length;
 
     if (deliveries.length < batchLimit) break;
   }

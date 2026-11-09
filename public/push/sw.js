@@ -2,27 +2,32 @@ self.addEventListener("install", (event) => {
   event.waitUntil(self.skipWaiting());
 });
 
-self.addEventListener("push", (event) => {
-  if (!event.data) return;
+self.addEventListener("activate", (event) => {
+  event.waitUntil(self.clients.claim());
+});
 
+function notificationOptions(payload) {
+  const options = {
+    body: payload.body || "You have a new notification.",
+    icon: "/icons/icon-192.png",
+    data: { url: payload.url || "/notifications" },
+  };
+  if (payload.id) options.tag = String(payload.id);
+  return options;
+}
+
+self.addEventListener("push", (event) => {
   event.waitUntil((async () => {
-    let payload;
-    try {
-      payload = event.data.json();
-    } catch {
-      payload = { title: "CONNECT-DAET update", body: event.data.text() };
+    let payload = {};
+    if (event.data) {
+      try {
+        payload = event.data.json();
+      } catch {
+        payload = { title: "CONNECT-DAET update", body: event.data.text() };
+      }
     }
 
-    await self.registration.showNotification(payload.title || "CONNECT-DAET update", {
-      body: payload.body || "You have a new notification.",
-      icon: "/icons/icon-192.png",
-      badge: "/icons/icon-192.png",
-      category: payload.priority === "CRITICAL" ? "emergency" : "update",
-      tag: payload.priority === "CRITICAL" ? `urgent:${payload.id || "emergency"}` : payload.id || undefined,
-      renotify: false,
-      requireInteraction: payload.priority === "CRITICAL",
-      data: { url: payload.url || "/notifications" },
-    });
+    await self.registration.showNotification(payload.title || "CONNECT-DAET update", notificationOptions(payload));
   })());
 });
 

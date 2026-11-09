@@ -2,7 +2,6 @@ import { getSupabaseAdmin } from '@/lib/supabaseAdmin';
 import { NOTIFICATION_CHANNELS } from '@/lib/constants';
 import { processNotificationDeliveries } from '@/lib/notificationQueue.server';
 import { channelsFromProfile, getDispatchChannelsForProfile } from '@/lib/userNotificationChannels';
-import { getSystemSettings } from '@/lib/systemSettings.server';
 
 export async function dispatchNotificationServer({
   userId,
@@ -42,7 +41,6 @@ export async function dispatchNotificationServer({
     return results;
   }
 
-  const settings = await getSystemSettings(admin);
   const emailTo = recipientEmail || recipient.email;
   const phoneTo = recipientPhone || recipient.phone;
   const effective = criticalEmergency
@@ -52,11 +50,15 @@ export async function dispatchNotificationServer({
         sms: channels.includes('sms') && Boolean(phoneTo) && channelsFromProfile(recipient).sms,
         push: (channels.includes('web') || channels.includes('app')) && channelsFromProfile(recipient).push,
       }
-    : getDispatchChannelsForProfile(
-        recipient,
-        channels,
-        settings.notification_audience
-      );
+    : getDispatchChannelsForProfile(recipient, channels);
+
+  if (
+    !criticalEmergency
+    && recipient.user_type === "admin"
+    && (channels.includes("web") || channels.includes("app"))
+  ) {
+    effective.app = true;
+  }
 
   try {
     let notification = null;

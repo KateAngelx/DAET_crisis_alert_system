@@ -72,7 +72,7 @@ export function InstallPwaPrompt() {
           <p className="text-sm font-bold text-slate-900 dark:text-white">Install {siteInfo.brandName}</p>
           <p className="mt-1 text-xs text-slate-600 dark:text-slate-300">
             {showIosHint
-              ? "Tap Share, then Add to Home Screen for quick access to crisis alerts."
+              ? "Tap Share, then Add to Home Screen. iPhone and iPad can receive push alerts only after you open CONNECT-DAET from that icon."
               : "Add this app to your home screen for faster alerts and offline access."}
           </p>
           <div className="mt-3 flex flex-wrap gap-2">

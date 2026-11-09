@@ -13,7 +13,6 @@ import { getSystemSettings } from '@/lib/systemSettings.server';
 import { formatCrisisAlertSms } from '@/lib/smsMessageFormat';
 import { normalizePhilippinePhone } from '@/lib/phoneUtils';
 import { isSmsSuspended } from '@/lib/userActivity';
-import { detectIProgPhoneNetwork } from '@/lib/smsService';
 import { sendWebPushToSubscriptions } from '@/lib/webPush.server';
 
 function emptySmsDiagnostics() {
@@ -136,19 +135,13 @@ export async function broadcastCrisisAlertToTourists(admin, alertId, eventType =
         skipReason = 'sms_pref_off';
       }
 
-      let network = null;
-      if (normalizedPhone) {
-        const net = await detectIProgPhoneNetwork(normalizedPhone);
-        network = net.network || null;
-      }
-
       results.smsPerRecipient.push({
         userId: profile.id,
         name: profile.full_name || 'Tourist',
         phoneMasked: normalizedPhone
           ? `${normalizedPhone.slice(0, 4)}…${normalizedPhone.slice(-3)}`
           : null,
-        network,
+        network: null,
         queued: Boolean(effective.sms && normalizedPhone),
         skipReason: effective.sms && normalizedPhone ? null : skipReason || 'not_eligible',
       });

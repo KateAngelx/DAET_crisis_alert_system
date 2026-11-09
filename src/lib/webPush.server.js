@@ -1,4 +1,18 @@
-import { sendNotification, setVapidDetails } from "web-push";
+import * as webPushNamespace from "web-push";
+import { getNotificationHref } from "@/lib/notificationLinks";
+
+function webPushApi() {
+  const namespace = typeof webPushNamespace.setVapidDetails === "function"
+    ? webPushNamespace
+    : webPushNamespace.default;
+  if (typeof namespace?.setVapidDetails !== "function" || typeof namespace?.sendNotification !== "function") {
+    throw new Error("Web Push library failed to load on the server.");
+  }
+  return {
+    setVapidDetails: (...args) => namespace.setVapidDetails(...args),
+    sendNotification: (...args) => namespace.sendNotification(...args),
+  };
+}
 
 function getWebPushEnv() {
   return {
@@ -9,30 +23,7 @@ function getWebPushEnv() {
 }
 
 function getNotificationPath(notification, userType) {
-  const { related_type: relatedType, related_id: relatedId } = notification;
-  if (relatedType === "alert") return "/crisis";
-  if (relatedType === "dangerous_location") return "/routes";
-  if (relatedType === "route_advisory") return "/crisis/roads";
-  if (relatedType === "incident") {
-    if (userType === "admin") return "/admin/incidents";
-    if (userType === "guide") return "/guide/reports";
-    return relatedId ? `/crisis/reports/${relatedId}` : "/crisis/reports";
-  }
-  if (relatedType === "tourist_guide_assistance") {
-    if (userType === "admin") return "/admin/guide-assistance";
-    if (userType === "guide") return "/guide/assistance";
-    return "/profile";
-  }
-  if (relatedType === "guide_emergency") {
-    return userType === "admin" ? "/crisis/command" : "/guide";
-  }
-  if (relatedType === "assignment") {
-    return userType === "guide" ? "/guide/groups" : "/profile";
-  }
-  if (relatedType === "crisis_feedback") {
-    return userType === "admin" ? "/admin/crisis-feedback" : "/crisis/feedback";
-  }
-  return "/notifications";
+  return getNotificationHref(notification, userType) || "/notifications";
 }
 
 function notificationPayload(notification, userType) {
@@ -50,7 +41,7 @@ function configureWebPush() {
   if (!publicKey || !privateKey || !subject) {
     throw new Error("Web Push is not configured. Set VAPID_PUBLIC_KEY, VAPID_PRIVATE_KEY, and WEB_PUSH_SUBJECT.");
   }
-  setVapidDetails(subject, publicKey, privateKey);
+  webPushApi().setVapidDetails(subject, publicKey, privateKey);
 }
 
 export async function sendWebPushToSubscriptions(admin, userId, notification, { userType } = {}) {
@@ -79,10 +70,11 @@ export async function sendWebPushToSubscriptions(admin, userId, notification, { 
     const options = {
       TTL: notification.priority === "CRITICAL" ? 86400 : 3600,
       urgency: notification.priority === "CRITICAL" || notification.priority === "HIGH" ? "high" : "normal",
+      contentEncoding: "aes128gcm",
     };
 
     try {
-      await sendNotification(subscription, payload, options);
+      await webPushApi().sendNotification(subscription, payload, options);
       return { id: row.id, sent: true };
     } catch (pushError) {
       if (pushError.statusCode === 404 || pushError.statusCode === 410) {
@@ -127,11 +119,21 @@ export function getWebPushPublicKey() {
   return getWebPushEnv().publicKey || null;
 }
 
-export function isWebPushConfigured() {
+export function getWebPushStatus() {
+  const { publicKey } = getWebPushEnv();
   try {
     configureWebPush();
-    return true;
-  } catch {
-    return false;
+    return { configured: true, publicKey, configurationError: null };
+  } catch (error) {
+    const configurationError = /failed to load/i.test(error.message || "")
+      ? "The push library failed to load on the server."
+      : publicKey
+        ? "The server push keys could not be used."
+        : null;
+    return { configured: false, publicKey: null, configurationError };
   }
+}
+
+export function isWebPushConfigured() {
+  return getWebPushStatus().configured;
 }

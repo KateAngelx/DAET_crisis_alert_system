@@ -2,7 +2,7 @@ import { createClient } from "@supabase/supabase-js";
 import { NextResponse } from "next/server";
 import { getSupabaseAdmin } from "@/lib/supabaseAdmin";
 import { enforceRateLimitByKey } from "@/lib/apiRateLimit";
-import { getWebPushPublicKey, isWebPushConfigured } from "@/lib/webPush.server";
+import { getWebPushStatus } from "@/lib/webPush.server";
 
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const SUPABASE_ANON_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
@@ -70,10 +70,12 @@ export async function GET(request) {
       deviceEnabled = subscription?.enabled === true;
     }
 
+    const pushStatus = getWebPushStatus();
     return NextResponse.json({
       success: true,
-      publicKey: getWebPushPublicKey(),
-      configured: isWebPushConfigured(),
+      publicKey: pushStatus.publicKey,
+      configured: pushStatus.configured,
+      configurationError: pushStatus.configurationError,
       enabled: Boolean(auth.profile.notification_channels?.push),
       deviceEnabled,
     }, { headers: { "Cache-Control": "no-store" } });

@@ -70,6 +70,8 @@ export function getEmailDiagnostics() {
   };
 }
 
+let smtpTransport = null;
+
 function createSmtpTransport() {
   return nodemailer.createTransport({
     host: SMTP_HOST,
@@ -80,10 +82,23 @@ function createSmtpTransport() {
       user: SMTP_USER,
       pass: SMTP_PASS,
     },
-    connectionTimeout: 15000,
-    greetingTimeout: 15000,
+    connectionTimeout: 10000,
+    greetingTimeout: 10000,
     socketTimeout: 20000,
+    pool: true,
+    maxConnections: 5,
   });
+}
+
+function getSmtpTransport() {
+  if (!smtpTransport) smtpTransport = createSmtpTransport();
+  return smtpTransport;
+}
+
+function resetSmtpTransport() {
+  const current = smtpTransport;
+  smtpTransport = null;
+  current?.close();
 }
 
 function formatSmtpError(err) {
@@ -100,9 +115,8 @@ function formatSmtpError(err) {
 }
 
 async function sendViaSmtp({ to, subject, body, html }) {
-  const transport = createSmtpTransport();
   try {
-    const info = await transport.sendMail({
+    const info = await getSmtpTransport().sendMail({
       from: EMAIL_FROM.includes("@") ? EMAIL_FROM : `"CONNECT-DAET" <${SMTP_USER}>`,
       to,
       replyTo: EMAIL_REPLY_TO || undefined,
@@ -112,14 +126,13 @@ async function sendViaSmtp({ to, subject, body, html }) {
     });
     return { success: true, messageId: info.messageId, provider: "smtp" };
   } catch (err) {
+    resetSmtpTransport();
     return {
       success: false,
       error: formatSmtpError(err),
       provider: "smtp",
       errorCode: err?.code || null,
     };
-  } finally {
-    transport.close();
   }
 }
 

@@ -3,7 +3,7 @@ import { persist } from 'zustand/middleware';
 import { supabase } from '@/lib/supabaseClient';
 import { useNotificationStore } from '@/app/store/notificationStore';
 import { channelsToDb, normalizeAlert } from '@/lib/alertChannels';
-import { getActiveSession } from '@/lib/authSession';
+import { fetchWithFreshSession, getActiveSession } from '@/lib/authSession';
 import { DEFAULT_USER_NOTIFICATION_CHANNELS } from '@/lib/userNotificationChannels';
 import { parseApiJson } from '@/lib/parseApiJson';
 import { sortRecordsNewestFirst } from '@/lib/recordSorting';
@@ -383,18 +383,36 @@ function mapProfileToUser(profile) {
   };
 }
 
-async function syncProfileFromServer(session, { loginEvent = false } = {}) {
-  const res = await fetch('/api/auth/ensure-profile', {
-    method: 'POST',
-    headers: {
-      Authorization: `Bearer ${session.access_token}`,
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify({ loginEvent }),
-  });
-  const result = await parseApiJson(res, 'Profile sync');
-  if (!res.ok) throw new Error(result.error || 'Failed to sync profile');
-  return result.profile;
+const profileSyncRequests = new Map();
+
+export async function syncProfileFromServer(session, { loginEvent = false } = {}) {
+  if (!session?.access_token || !session.user?.id) {
+    throw new Error('An active session is required for profile sync.');
+  }
+
+  const requestKey = `${session.user.id}:${session.expires_at || 'session'}`;
+  let request = profileSyncRequests.get(requestKey);
+  if (!request) {
+    request = (async () => {
+      const res = await fetchWithFreshSession('/api/auth/ensure-profile', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ loginEvent }),
+      });
+      const result = await parseApiJson(res, 'Profile sync');
+      if (!res.ok) throw new Error(result.error || 'Failed to sync profile');
+      return result.profile;
+    })();
+    profileSyncRequests.set(requestKey, request);
+  }
+
+  try {
+    return await request;
+  } finally {
+    if (profileSyncRequests.get(requestKey) === request) {
+      profileSyncRequests.delete(requestKey);
+    }
+  }
 }
 
 export const useAuthStore = create(

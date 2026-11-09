@@ -17,6 +17,17 @@ const nextConfig = {
   turbopack: {
     root: __dirname,
   },
+  async headers() {
+    return [
+      {
+        source: "/push/sw.js",
+        headers: [
+          { key: "Service-Worker-Allowed", value: "/" },
+          { key: "Cache-Control", value: "no-cache" },
+        ],
+      },
+    ];
+  },
   async redirects() {
     return [
       { source: "/crisis/admin/routes", destination: "/crisis/roads", permanent: false },

@@ -197,8 +197,6 @@ export async function sendSms({ to, message }) {
   const smsMessage = truncateForSms(message);
   let apiAttempts = 0;
 
-  const networkInfo = await detectIProgPhoneNetwork(localPhone);
-
   try {
     /** iProg JSON docs use 09XXXXXXXXX; try local first, then 639… if needed */
     const phoneFormats = [...new Set([localPhone, intlPhone].filter(Boolean))];
@@ -251,8 +249,7 @@ export async function sendSms({ to, message }) {
         sentLength: smsMessage.length,
         maxLength: getSmsMaxLength(),
         phoneFormat: usedPhoneFormat?.startsWith("0") ? "09xxxxxxxxxx" : "63xxxxxxxxxx",
-        detectedNetwork: networkInfo.network || null,
-        isSmartTnt: networkInfo.isSmartTnt,
+        detectedNetwork: null,
         errorMsg: result?.ok ? null : result?.error || null,
       },
     });
@@ -265,7 +262,7 @@ export async function sendSms({ to, message }) {
         mode: result.mode,
         apiMessage: result.apiMessage,
         normalizedPhone: localPhone,
-        detectedNetwork: networkInfo.network || null,
+        detectedNetwork: null,
         billed: true,
       };
     }
@@ -277,7 +274,7 @@ export async function sendSms({ to, message }) {
       errorCode: isIProgSenderNameError(result?.error) ? "IPROG_SENDER_NAME" : undefined,
       apiAttempts,
       billed: false,
-      detectedNetwork: networkInfo.network || null,
+      detectedNetwork: null,
     };
   } catch (err) {
     agentDebugLog({

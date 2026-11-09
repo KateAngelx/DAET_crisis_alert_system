@@ -1,5 +1,5 @@
 export const DEDICATED_PUSH_WORKER_PATH = "/push/sw.js";
-export const DEDICATED_PUSH_WORKER_SCOPE = "/push/";
+export const DEDICATED_PUSH_WORKER_SCOPE = "/";
 
 export function usesDedicatedPushWorker() {
   return process.env.NODE_ENV === "development";
@@ -7,6 +7,18 @@ export function usesDedicatedPushWorker() {
 
 export function pushWorkerPath() {
   return usesDedicatedPushWorker() ? DEDICATED_PUSH_WORKER_PATH : "/sw.js";
+}
+
+export function isIosDevice() {
+  if (typeof navigator === "undefined") return false;
+  const agent = navigator.userAgent || "";
+  if (/iphone|ipad|ipod/i.test(agent)) return true;
+  return /macintosh/i.test(agent) && navigator.maxTouchPoints > 1;
+}
+
+export function isStandaloneApp() {
+  if (typeof window === "undefined") return false;
+  return window.matchMedia("(display-mode: standalone)").matches || window.navigator.standalone === true;
 }
 
 export function supportsWebPush() {
@@ -78,11 +90,26 @@ function waitUntilActive(registration) {
 
 export async function registerPushServiceWorker() {
   const path = pushWorkerPath();
+  const dedicated = path === DEDICATED_PUSH_WORKER_PATH;
+  if (dedicated) {
+    const registrations = await navigator.serviceWorker.getRegistrations();
+    await Promise.all(registrations
+      .filter((registration) => {
+        if (scriptPath(registration) !== path) return false;
+        try {
+          return new URL(registration.scope).pathname !== "/";
+        } catch {
+          return false;
+        }
+      })
+      .map((registration) => registration.unregister()));
+  }
+
   const registration = await navigator.serviceWorker.register(
     path,
-    path === DEDICATED_PUSH_WORKER_PATH ? { scope: DEDICATED_PUSH_WORKER_SCOPE } : undefined
+    dedicated ? { scope: DEDICATED_PUSH_WORKER_SCOPE } : undefined
   );
-  if (path === DEDICATED_PUSH_WORKER_PATH) return waitUntilActive(registration);
+  if (dedicated) return waitUntilActive(registration);
   await navigator.serviceWorker.ready;
   return registration;
 }

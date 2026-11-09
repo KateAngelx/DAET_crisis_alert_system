@@ -1,14 +1,5 @@
-import { getActiveSession } from '@/lib/authSession';
+import { fetchWithFreshSession } from '@/lib/authSession';
 import { severityToPriority } from '@/lib/constants';
-
-async function getDispatchHeaders() {
-  const session = await getActiveSession();
-  if (!session?.access_token) return null;
-  return {
-    Authorization: `Bearer ${session.access_token}`,
-    'Content-Type': 'application/json',
-  };
-}
 
 export async function dispatchNotification(payload) {
   const results = { web: null, email: null, sms: null, errors: [] };
@@ -18,16 +9,10 @@ export async function dispatchNotification(payload) {
     return results;
   }
 
-  const headers = await getDispatchHeaders();
-  if (!headers) {
-    results.errors.push('Not authenticated — private notification not created');
-    return results;
-  }
-
   try {
-    const res = await fetch('/api/notifications/dispatch', {
+    const res = await fetchWithFreshSession('/api/notifications/dispatch', {
       method: 'POST',
-      headers,
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(payload),
     });
     const data = await res.json();
@@ -45,15 +30,10 @@ export async function dispatchNotification(payload) {
 }
 
 export async function notifyTouristsOfCrisisAlert(alertId, eventType = 'created') {
-  const headers = await getDispatchHeaders();
-  if (!headers) {
-    return { success: false, error: 'Not authenticated' };
-  }
-
   try {
-    const res = await fetch('/api/crisis/alerts/notify-tourists', {
+    const res = await fetchWithFreshSession('/api/crisis/alerts/notify-tourists', {
       method: 'POST',
-      headers,
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ alertId, eventType }),
     });
     const data = await res.json();
@@ -79,15 +59,10 @@ export async function notifyTouristsOfCrisisAlert(alertId, eventType = 'created'
 }
 
 export async function notifyTouristsOfDangerousLocation(warningId, eventType = 'created') {
-  const headers = await getDispatchHeaders();
-  if (!headers) {
-    return { success: false, error: 'Not authenticated' };
-  }
-
   try {
-    const res = await fetch('/api/crisis/dangerous-locations/notify-tourists', {
+    const res = await fetchWithFreshSession('/api/crisis/dangerous-locations/notify-tourists', {
       method: 'POST',
-      headers,
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ warningId, eventType }),
     });
     const data = await res.json();
@@ -108,13 +83,10 @@ export async function notifyTouristsOfDangerousLocation(warningId, eventType = '
 }
 
 export async function notifyTouristsOfRouteAdvisory(advisoryId, eventType = 'created') {
-  const headers = await getDispatchHeaders();
-  if (!headers) return { success: false, error: 'Not authenticated' };
-
   try {
-    const res = await fetch('/api/crisis/route-advisories/notify-tourists', {
+    const res = await fetchWithFreshSession('/api/crisis/route-advisories/notify-tourists', {
       method: 'POST',
-      headers,
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ advisoryId, eventType }),
     });
     const data = await res.json();

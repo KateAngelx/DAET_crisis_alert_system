@@ -176,7 +176,7 @@ export function GuideHeader() {
       </div>
 
       <div className="flex items-center gap-3">
-        <NotificationPanel linkPrefix="/guide" />
+        <NotificationPanel />
         <div className="flex items-center gap-2 px-3 py-2 bg-zinc-50 rounded-2xl border border-zinc-100">
           <div className="bg-purple-100 p-1.5 rounded-lg">
             <Users size={16} className="text-purple-600" />

@@ -8,10 +8,10 @@ import { useNotificationStore } from "@/app/store/notificationStore";
 import { NotificationPanelSkeleton } from "@/app/components/ui/Skeletons";
 import { NotificationItemCard } from "@/app/components/NotificationItemCard";
 import { getActiveSession } from "@/lib/authSession";
-import { getAreaHazardNotificationLink } from "@/lib/travelLinks";
+import { getNotificationHref, getNotificationInboxHref } from "@/lib/notificationLinks";
 import { iconSize } from "@/lib/designSystem";
 
-export function NotificationPanel({ linkPrefix = "" }) {
+export function NotificationPanel() {
   const { user, isAuthenticated } = useAuthStore();
   const {
     notifications,
@@ -57,28 +57,7 @@ export function NotificationPanel({ linkPrefix = "" }) {
 
   if (!isAuthenticated || !sessionReady || !user?.id) return null;
 
-  const getRelatedLink = (notification) => {
-    if (notification.related_type === "tourist_guide_assistance") {
-      if (user?.role === "admin") return "/admin/guide-assistance";
-      if (user?.role === "guide") return "/guide/assistance";
-      return null;
-    }
-    if (notification.related_type === "guide_emergency") {
-      if (user?.role === "admin") return "/crisis/command";
-      if (user?.role === "guide") return "/guide";
-      return null;
-    }
-    if (notification.related_type === "incident" && notification.related_id) {
-      return `${linkPrefix}/crisis/reports/${notification.related_id}`;
-    }
-    if (notification.related_type === "alert") {
-      return `${linkPrefix}/crisis`;
-    }
-    if (notification.related_type === "dangerous_location") {
-      return getAreaHazardNotificationLink(notification, { prefix: linkPrefix });
-    }
-    return null;
-  };
+  const getRelatedLink = (notification) => getNotificationHref(notification, user?.role);
 
   return (
     <div className="relative">
@@ -154,7 +133,7 @@ export function NotificationPanel({ linkPrefix = "" }) {
 
             <div className="px-2.5 py-1.5 border-t border-zinc-100 text-center">
               <Link
-                href={`${linkPrefix}/notifications`}
+                href={getNotificationInboxHref(user?.role)}
                 onClick={() => setOpen(false)}
                 className="text-[9px] font-black text-blue-600 uppercase tracking-widest hover:underline"
               >

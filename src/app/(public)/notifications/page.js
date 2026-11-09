@@ -16,7 +16,7 @@ import {
 import { AsyncState, EmptyState } from "@/app/components/ui/AsyncState";
 import { NotificationItemSkeleton, SessionInboxSkeleton } from "@/app/components/ui/Skeletons";
 import { getActiveSession } from "@/lib/authSession";
-import { getAreaHazardNotificationLink } from "@/lib/travelLinks";
+import { getNotificationHref } from "@/lib/notificationLinks";
 import { portalShell, portalLayout } from "@/lib/designSystem";
 import { PublicCardListPreview } from "@/app/components/shell/PublicCardListPreview";
 
@@ -85,14 +85,7 @@ export default function NotificationsPage() {
     );
   }
 
-  const getRelatedLink = (n) => {
-    if (n.related_type === "incident" && n.related_id) return `/crisis/reports/${n.related_id}`;
-    if (n.related_type === "alert") return `/crisis`;
-    if (n.related_type === "dangerous_location") {
-      return getAreaHazardNotificationLink(n) || "/routes";
-    }
-    return null;
-  };
+  const getRelatedLink = (n) => getNotificationHref(n, user?.role);
 
   return (
     <PublicPageShell>

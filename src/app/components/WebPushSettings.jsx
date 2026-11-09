@@ -6,6 +6,8 @@ import { useAuthStore } from "@/app/store/crisisStore";
 import { getActiveSession } from "@/lib/authSession";
 import {
   getPushServiceRegistration,
+  isIosDevice,
+  isStandaloneApp,
   registerPushServiceWorker,
   subscriptionUsesKey,
   supportsWebPush,
@@ -17,10 +19,12 @@ export function WebPushSettings() {
   const [available, setAvailable] = useState(false);
   const [loaded, setLoaded] = useState(false);
   const [configured, setConfigured] = useState(false);
+  const [configurationError, setConfigurationError] = useState("");
   const [publicKey, setPublicKey] = useState(null);
   const [enabled, setEnabled] = useState(false);
   const [deviceEnabled, setDeviceEnabled] = useState(false);
   const [permission, setPermission] = useState("default");
+  const [iosNeedsHomeScreen, setIosNeedsHomeScreen] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const [message, setMessage] = useState("");
@@ -35,12 +39,18 @@ export function WebPushSettings() {
   };
 
   const loadSettings = useCallback(async () => {
-    const supported = supportsWebPush();
+    const iosBrowserOnly = isIosDevice() && !isStandaloneApp();
+    setIosNeedsHomeScreen(iosBrowserOnly);
+    const supported = supportsWebPush() && !iosBrowserOnly;
     if (!supported) {
       setAvailable(false);
+      setLoaded(true);
       return;
     }
     setAvailable(true);
+    registerPushServiceWorker().catch(() => {
+      // The enable button reports a registration failure if this warm-up does not finish.
+    });
     setPermission(Notification.permission);
     try {
       const session = await getActiveSession();
@@ -61,6 +71,7 @@ export function WebPushSettings() {
       setAvailable(true);
       setPermission(Notification.permission);
       setConfigured(result.configured);
+      setConfigurationError(result.configurationError || "");
       setPublicKey(result.publicKey || null);
       setEnabled(result.enabled);
       setDeviceEnabled(result.deviceEnabled === true && subscriptionKeyMatches);
@@ -83,6 +94,9 @@ export function WebPushSettings() {
     setError("");
     setMessage("");
     try {
+      if (isIosDevice() && !isStandaloneApp()) {
+        throw new Error("On iPhone and iPad, add CONNECT-DAET to the Home Screen, open it from that icon, then enable push. Safari cannot show these alerts.");
+      }
       if (!supportsWebPush()) throw new Error("This browser or connection does not support Web Push notifications.");
       if (!configured || !publicKey) {
         throw new Error("Web Push is not configured by the service administrator yet.");
@@ -210,10 +224,14 @@ export function WebPushSettings() {
           {message ? <p role="status" className="mt-3 rounded-lg border border-green-200 bg-white p-2.5 text-sm font-bold text-green-800">{message}</p> : null}
           {!available ? (
             <p className="mt-3 text-xs font-semibold text-amber-900">
-              This browser or connection does not support Web Push. Use a supported browser on HTTPS; iPhone and iPad may require adding the site to the Home Screen.
+              {iosNeedsHomeScreen
+                ? "iPhone and iPad only receive push alerts from the installed app. Tap Share, choose Add to Home Screen, open CONNECT-DAET from that icon, then enable push there. Safari itself cannot show them."
+                : "This browser or connection does not support Web Push. Use a supported browser on HTTPS. A local network address such as 192.168.x.x is not secure enough for iPhone push."}
             </p>
           ) : !loaded ? (
             <p className="mt-3 text-xs font-semibold text-zinc-600">Checking push setup...</p>
+          ) : configurationError ? (
+            <p className="mt-3 text-xs font-semibold text-amber-900">{configurationError}</p>
           ) : !configured && !error ? (
             <p className="mt-3 text-xs font-semibold text-amber-900">
               Push notifications are not configured on the server yet.
@@ -229,8 +247,10 @@ export function WebPushSettings() {
               <button
                 type="button"
                 onClick={enablePush}
-                disabled={busy || !available || !loaded || !configured || permission === "denied"}
-                title={!loaded
+                disabled={busy || !available || !loaded || !configured || permission === "denied" || iosNeedsHomeScreen}
+                title={iosNeedsHomeScreen
+                  ? "Open the Home Screen app before enabling push."
+                  : !loaded
                   ? "Checking whether push alerts are configured."
                   : !configured
                   ? "Push alerts must be configured on the server first."

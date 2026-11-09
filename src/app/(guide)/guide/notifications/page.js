@@ -4,7 +4,7 @@ import React, { useEffect, useState } from "react";
 import Link from "next/link";
 import { Bell } from "lucide-react";
 import { NotificationItemCard } from "@/app/components/NotificationItemCard";
-import { getAreaHazardNotificationLink } from "@/lib/travelLinks";
+import { getNotificationHref } from "@/lib/notificationLinks";
 import { GuidePageHeader } from "@/app/components/guide/GuidePageHeader";
 import { AsyncState, EmptyState } from "@/app/components/ui/AsyncState";
 import { NotificationPanelSkeleton, SessionInboxSkeleton } from "@/app/components/ui/Skeletons";
@@ -44,15 +44,7 @@ export default function GuideNotificationsPage() {
     };
   }, [fetchNotifications, clearNotifications]);
 
-  const getRelatedLink = (n) => {
-    if (n.related_type === "tourist_guide_assistance") return "/guide/assistance";
-    if (n.related_type === "incident" && n.related_id) return `/guide/reports/${n.related_id}`;
-    if (n.related_type === "alert") return `/guide/crisis`;
-    if (n.related_type === "dangerous_location") {
-      return getAreaHazardNotificationLink(n, { prefix: "/guide" }) || "/guide/routes";
-    }
-    return null;
-  };
+  const getRelatedLink = (n) => getNotificationHref(n, "guide");
 
   if (!sessionChecked) {
     return (

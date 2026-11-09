@@ -1,9 +1,5 @@
 /** Per-user notification channel preferences (distinct from crisis alert broadcast channels) */
 
-import {
-  DEFAULT_NOTIFICATION_AUDIENCE,
-  isProfileInAudience,
-} from "@/lib/notificationAudience";
 import { isSmsSuspended } from "@/lib/userActivity";
 
 export const DEFAULT_USER_NOTIFICATION_CHANNELS = {
@@ -76,14 +72,10 @@ export function getEffectiveUserChannels(userChannels, requested = ["web", "emai
   };
 }
 
-/** Single-user dispatch — respects office audience settings + user channel prefs */
-export function getDispatchChannelsForProfile(
-  profile,
-  requestedChannels = [],
-  audience = DEFAULT_NOTIFICATION_AUDIENCE
-) {
-  if (!isProfileInAudience(profile, audience)) {
-    return { email: false, sms: false, app: false, push: false };
-  }
+/**
+ * Direct messages such as incident updates, guide assignments, and assistance.
+ * Office audience settings apply only to crisis and hazard broadcasts.
+ */
+export function getDispatchChannelsForProfile(profile, requestedChannels = []) {
   return getEffectiveUserChannels(channelsFromProfile(profile), requestedChannels);
 }
