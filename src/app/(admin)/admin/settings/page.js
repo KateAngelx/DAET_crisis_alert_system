@@ -992,7 +992,7 @@ export default function AdminSettingsPage() {
         <ul className="text-sm text-zinc-600 font-medium space-y-2 list-disc pl-5">
           <li>Crisis Command Center alert channels (email/SMS/app) control <em>how</em> an alert is sent; this page controls <em>who</em> receives it.</li>
           <li>
-            SMS uses iProg (<code className="text-xs bg-white px-1 rounded">IPROG_SMS_API_TOKEN</code>).
+            SMS uses iProg (<code className="text-xs bg-white px-1 rounded">IPROG_SMS_API_TOKEN</code>) on the 5-credit route.
             Smart/TNT numbers require an{" "}
             <a
               href="https://www.iprogsms.com/sender-names/new"

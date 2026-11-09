@@ -8,12 +8,12 @@ export { formatPhoneForIProgApi, normalizePhilippinePhone } from "@/lib/phoneUti
 const DEFAULT_IPROG_URL = "https://sms.iprogtech.com/api/v1/sms_messages";
 
 function getSmsConfig() {
-  const parsedProvider = parseInt(process.env.SMS_PROVIDER ?? "0", 10);
+  const parsedProvider = parseInt(process.env.SMS_PROVIDER ?? "2", 10);
   return {
     url: process.env.SMS_API_URL || DEFAULT_IPROG_URL,
     token: process.env.IPROG_SMS_API_TOKEN || process.env.SMS_API_KEY || "",
-    /** iProg default is 0 — avoid cycling 2/0/1 which charges credits per attempt */
-    provider: Number.isFinite(parsedProvider) ? parsedProvider : 0,
+    /** Provider 2 is iProg's all-network route: 5 credits per accepted SMS. */
+    provider: Number.isFinite(parsedProvider) ? parsedProvider : 2,
     allowQueryFallback: process.env.SMS_IPROG_QUERY_FALLBACK === "true",
   };
 }
