@@ -18,7 +18,6 @@ import { NotificationItemSkeleton, SessionInboxSkeleton } from "@/app/components
 import { getActiveSession } from "@/lib/authSession";
 import { getNotificationHref } from "@/lib/notificationLinks";
 import { portalShell, portalLayout } from "@/lib/designSystem";
-import { PublicCardListPreview } from "@/app/components/shell/PublicCardListPreview";
 
 export default function NotificationsPage() {
   const { user, isAuthenticated } = useAuthStore();
@@ -129,21 +128,18 @@ export default function NotificationsPage() {
               />
             }
           >
-            <PublicCardListPreview
-              items={notifications}
-              limit={notifications.length || 1}
-              modalTitle="Notifications"
-              modalSubtitle={`${notifications.length} total`}
-              scrollPaneClassName={portalLayout.listScrollPane}
-              renderItem={(n) => (
-                <NotificationItemCard
-                  notification={n}
-                  variant="list"
-                  relatedLink={getRelatedLink(n)}
-                  onMarkRead={markAsRead}
-                />
-              )}
-            />
+            <ul className="divide-y divide-zinc-200 overflow-hidden rounded-lg border border-zinc-200 bg-white">
+              {notifications.map((n) => (
+                <li key={n.id}>
+                  <NotificationItemCard
+                    notification={n}
+                    variant="row"
+                    relatedLink={getRelatedLink(n)}
+                    onMarkRead={markAsRead}
+                  />
+                </li>
+              ))}
+            </ul>
           </AsyncState>
         </PublicPanel>
       </PublicPageContent>

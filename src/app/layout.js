@@ -50,7 +50,7 @@ export const viewport = {
 
 export default function RootLayout({ children }) {
   return (
-    <html lang="en" className={`${geistSans.variable} ${geistMono.variable} h-full antialiased scrollbar-none`}>
+    <html lang="en" className={`${geistSans.variable} ${geistMono.variable} h-full antialiased scrollbar-none`} style={{ colorScheme: "light" }}>
       <body className="min-h-full flex flex-col relative scrollbar-none">
         <PwaSplashScreen />
         <DevServiceWorkerCleanup />

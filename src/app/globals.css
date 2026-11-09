@@ -1,5 +1,7 @@
 @import "tailwindcss";
 
+@custom-variant dark (&:where(.dark, .dark *));
+
 @utility scrollbar-none {
   -ms-overflow-style: none;
   scrollbar-width: none;
@@ -23,6 +25,7 @@
   --emergency: #dc2626;
   --radius-card: 1rem;
   --radius-button: 9999px;
+  color-scheme: light;
 }
 
 @theme inline {
@@ -32,24 +35,52 @@
   --font-mono: var(--font-geist-mono);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-    --surface-muted: #18181b;
-    --surface-border: #27272a;
-    --text-muted: #a1a1aa;
-  }
-}
-
 body {
-  background: var(--background);
+  background: #ffffff;
   color: var(--foreground);
   font-family: var(--font-geist-sans), Arial, Helvetica, sans-serif;
   overflow-x: hidden;
 }
 
 @media (max-width: 1023px) {
+  .public-mobile-dock {
+    display: none;
+  }
+
+  html:not([data-installed-app="true"]) [data-public-main] {
+    padding-bottom: 1.5rem;
+  }
+
+  html:not([data-installed-app="true"]) [data-public-main="default"] {
+    padding-top: calc(6.5rem + env(safe-area-inset-top));
+  }
+
+  html:not([data-installed-app="true"]) [data-public-footer] {
+    padding-bottom: 0;
+  }
+
+  html:not([data-installed-app="true"]) [data-landing-section="hero"] {
+    min-height: 0;
+    padding-top: calc(6.5rem + env(safe-area-inset-top));
+    padding-bottom: 2.5rem;
+  }
+
+  html:not([data-installed-app="true"]) [data-public-header] {
+    background: #ffffff;
+    border-bottom: 1px solid #e4e4e7;
+  }
+
+  html:not([data-installed-app="true"]) [data-public-header-frame] {
+    padding: 0;
+  }
+
+  html:not([data-installed-app="true"]) [data-public-header-shell] {
+    border: 0;
+    border-radius: 0;
+    background: transparent;
+    box-shadow: none;
+  }
+
   .installed-app-bottom-nav {
     display: none;
   }
@@ -58,14 +89,24 @@ body {
     padding-bottom: calc(4rem + env(safe-area-inset-bottom));
   }
 
-  html[data-installed-app="true"] .installed-app-bottom-nav {
+  html[data-installed-app="true"] .installed-app-bottom-nav,
+  html[data-installed-app="true"] .public-mobile-dock {
     display: block;
+  }
+
+  html[data-installed-app="true"] [data-public-browser-nav] {
+    display: none;
   }
 }
 
 @media (display-mode: standalone) and (max-width: 1023px) {
+  .public-mobile-dock,
   .installed-app-bottom-nav {
     display: block;
+  }
+
+  [data-public-browser-nav] {
+    display: none;
   }
 
   .installed-app-main {

@@ -9,6 +9,7 @@ import { siteInfo } from "@/lib/siteInfo";
 import { useAuthStore } from "../store/crisisStore";
 import { NotificationPanel } from "@/app/components/NotificationPanel";
 import { isPublicNavActive } from "@/lib/navUtils";
+import { useInstalledApp } from "@/lib/useInstalledApp";
 import { usePublicVisibility } from "@/lib/usePublicVisibility";
 
 const GUEST_NAV = [
@@ -35,6 +36,7 @@ export function PublicHeader() {
   const [mounted, setMounted] = useState(false);
   const { user, isAuthenticated, logout } = useAuthStore();
   const visibility = usePublicVisibility();
+  useInstalledApp();
 
   useEffect(() => setMounted(true), []);
 
@@ -78,10 +80,8 @@ export function PublicHeader() {
         data-public-header
         className="fixed top-0 inset-x-0 z-50 md:bg-white md:border-b md:border-zinc-200 md:dark:bg-zinc-950 md:dark:border-zinc-800 md:shadow-sm"
       >
-        <div
-          className={`max-md:pt-[max(0.5rem,env(safe-area-inset-top))] max-md:px-3 sm:max-md:px-4 md:pt-0 md:px-0`}
-        >
-          <div className="max-md:rounded-xl max-md:bg-white max-md:border max-md:border-zinc-200 max-md:shadow-[0_4px_18px_rgba(15,23,42,0.08)] md:rounded-none md:bg-transparent md:shadow-none md:border-0">
+        <div data-public-header-frame className="max-md:pt-[max(0.5rem,env(safe-area-inset-top))] max-md:px-3 sm:max-md:px-4 md:pt-0 md:px-0">
+          <div data-public-header-shell className="max-md:rounded-xl max-md:bg-white max-md:border max-md:border-zinc-200 max-md:shadow-[0_4px_18px_rgba(15,23,42,0.08)] md:rounded-none md:bg-transparent md:shadow-none md:border-0">
             <div className="w-full max-w-7xl mx-auto flex items-center justify-between gap-2 h-12 px-3 md:h-16 md:px-6 lg:px-8">
               <Link
                 href="/"
@@ -178,6 +178,26 @@ export function PublicHeader() {
                 ) : null}
               </div>
             </div>
+            <nav
+              data-public-browser-nav
+              className="flex gap-1 overflow-x-auto px-3 pb-2 lg:hidden"
+              aria-label="Pages"
+            >
+              {navItems.map((item) => (
+                <Link
+                  key={item.name}
+                  href={item.href}
+                  aria-current={isPublicNavActive(pathname, item.href) ? "page" : undefined}
+                  className={`shrink-0 rounded-full px-3 py-1.5 text-[10px] font-black uppercase tracking-wide ${
+                    isPublicNavActive(pathname, item.href)
+                      ? "bg-blue-600 text-white"
+                      : "bg-zinc-100 text-zinc-700"
+                  }`}
+                >
+                  {item.short}
+                </Link>
+              ))}
+            </nav>
           </div>
         </div>
       </header>
@@ -195,7 +215,7 @@ export function PublicHeader() {
 
       <nav
         data-public-mobile-nav
-        className="lg:hidden fixed z-50 bottom-[max(0.75rem,env(safe-area-inset-bottom))] inset-x-3 sm:inset-x-4 pointer-events-none"
+        className="public-mobile-dock lg:hidden fixed z-50 bottom-[max(0.75rem,env(safe-area-inset-bottom))] inset-x-3 sm:inset-x-4 pointer-events-none"
         aria-label="Mobile"
       >
         <div className="pointer-events-auto mx-auto max-w-lg rounded-2xl border border-zinc-200 bg-white shadow-[0_8px_28px_rgba(15,23,42,0.12)]">
