@@ -12,7 +12,8 @@ export default function ForgotPasswordPage() {
   const [email, setEmail] = useState("");
   const [error, setError] = useState(null);
   const [sent, setSent] = useState(false);
-  const { requestPasswordReset, loading } = useAuthStore();
+  const [submitting, setSubmitting] = useState(false);
+  const { requestPasswordReset } = useAuthStore();
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -23,11 +24,16 @@ export default function ForgotPasswordPage() {
       return;
     }
 
-    const result = await requestPasswordReset(email.trim());
-    if (result.success) {
-      setSent(true);
-    } else {
-      setError(result.error || "Could not send reset email. Please try again.");
+    setSubmitting(true);
+    try {
+      const result = await requestPasswordReset(email.trim());
+      if (result.success) {
+        setSent(true);
+      } else {
+        setError(result.error || "Could not send reset email. Please try again.");
+      }
+    } finally {
+      setSubmitting(false);
     }
   };
 
@@ -83,7 +89,7 @@ export default function ForgotPasswordPage() {
             type="email"
             required
             autoComplete="email"
-            disabled={loading}
+            disabled={submitting}
             placeholder="you@example.com"
             className={authForm.input}
             value={email}
@@ -91,8 +97,8 @@ export default function ForgotPasswordPage() {
           />
         </div>
 
-        <button type="submit" disabled={loading} className={authForm.submitBtn}>
-          {loading ? (
+        <button type="submit" disabled={submitting} className={authForm.submitBtn}>
+          {submitting ? (
             <>
               <Loader2 size={18} className="animate-spin" />
               Sending link...

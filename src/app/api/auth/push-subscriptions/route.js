@@ -54,6 +54,65 @@ function pushState(profile, deviceEnabled, count) {
   };
 }
 
+function missingColumn(error, column) {
+  return new RegExp(column, "i").test(error?.message || "");
+}
+
+async function subscriptionsForEndpoint(admin, endpoint) {
+  let result = await admin
+    .from("web_push_subscriptions")
+    .select("id, user_id, enabled, disabled_reason")
+    .eq("endpoint", endpoint);
+  if (result.error && missingColumn(result.error, "disabled_reason")) {
+    result = await admin
+      .from("web_push_subscriptions")
+      .select("id, user_id, enabled")
+      .eq("endpoint", endpoint);
+  }
+  if (result.error) throw result.error;
+  return result.data || [];
+}
+
+async function reconcilePushDevice(admin, userId, endpoint) {
+  const rows = await subscriptionsForEndpoint(admin, endpoint);
+  const otherIds = rows.filter((row) => row.user_id !== userId && row.enabled === true).map((row) => row.id);
+  if (otherIds.length) {
+    const updatedAt = new Date().toISOString();
+    let parked = await admin
+      .from("web_push_subscriptions")
+      .update({ enabled: false, disabled_reason: "account_switch", updated_at: updatedAt })
+      .in("id", otherIds);
+    if (parked.error && missingColumn(parked.error, "disabled_reason")) {
+      parked = await admin
+        .from("web_push_subscriptions")
+        .update({ enabled: false, updated_at: updatedAt })
+        .in("id", otherIds);
+    }
+    if (parked.error) throw parked.error;
+  }
+
+  const own = rows.find((row) => row.user_id === userId);
+  if (own && own.enabled !== true && own.disabled_reason === "account_switch") {
+    const updatedAt = new Date().toISOString();
+    let restored = await admin
+      .from("web_push_subscriptions")
+      .update({ enabled: true, disabled_reason: null, updated_at: updatedAt })
+      .eq("id", own.id)
+      .eq("user_id", userId);
+    if (restored.error && missingColumn(restored.error, "disabled_reason")) {
+      restored = await admin
+        .from("web_push_subscriptions")
+        .update({ enabled: true, updated_at: updatedAt })
+        .eq("id", own.id)
+        .eq("user_id", userId);
+    }
+    if (restored.error) throw restored.error;
+    return true;
+  }
+
+  return own?.enabled === true;
+}
+
 function isAllowedPushEndpoint(value) {
   try {
     const url = new URL(value);
@@ -150,26 +209,34 @@ export async function POST(request) {
     if (body?.action === "reconcile") {
       const endpoint = body?.subscription?.endpoint;
       if (typeof endpoint !== "string" || !isAllowedPushEndpoint(endpoint)) {
-        return NextResponse.json({ error: "Push subscription endpoint is invalid." }, { status: 400 });
+        return NextResponse.json({ success: false, deviceEnabled: false, enabledDeviceCount: 0 });
       }
-      const { data: deviceEnabled, error } = await auth.admin.rpc("reconcile_web_push_device", {
-        p_user_id: auth.user.id,
-        p_endpoint: endpoint,
-      });
-      if (error) {
+      try {
+        let deviceEnabled = false;
+        const { data, error } = await auth.admin.rpc("reconcile_web_push_device", {
+          p_user_id: auth.user.id,
+          p_endpoint: endpoint,
+        });
+        if (!error) {
+          deviceEnabled = data === true;
+        } else {
+          deviceEnabled = await reconcilePushDevice(auth.admin, auth.user.id, endpoint);
+        }
+        const count = await enabledDeviceCount(auth.admin, auth.user.id);
         return NextResponse.json({
-          error: /reconcile_web_push_device/i.test(error.message || "")
-            ? "Push devices could not be synced until database migration 042_web_push_account_devices.sql is applied."
-            : "Unable to sync this device.",
-        }, { status: 500 });
+          success: true,
+          enabled: count > 0,
+          deviceEnabled: deviceEnabled === true,
+          enabledDeviceCount: count,
+        });
+      } catch {
+        return NextResponse.json({
+          success: false,
+          enabled: Boolean(auth.profile.notification_channels?.push),
+          deviceEnabled: false,
+          enabledDeviceCount: 0,
+        });
       }
-      const count = await enabledDeviceCount(auth.admin, auth.user.id);
-      return NextResponse.json({
-        success: true,
-        enabled: count > 0,
-        deviceEnabled: deviceEnabled === true,
-        enabledDeviceCount: count,
-      });
     }
 
     const subscription = body?.subscription;

@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
 import { typography, iconSize } from "@/lib/designSystem";
+import { siteInfo } from "@/lib/siteInfo";
 
 export function AuthBackLink() {
   return (
@@ -25,7 +26,7 @@ export function AuthShell({ children }) {
 
       <footer className="shrink-0 py-3 text-center">
         <p className="text-[10px] font-bold uppercase tracking-widest text-zinc-400">
-          Official crisis alert system · Daet, Camarines Norte
+          Official crisis alert system · Daet, Camarines Norte · Version {siteInfo.version}
         </p>
       </footer>
     </div>

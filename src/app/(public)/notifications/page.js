@@ -131,6 +131,7 @@ export default function NotificationsPage() {
           >
             <PublicCardListPreview
               items={notifications}
+              limit={notifications.length || 1}
               modalTitle="Notifications"
               modalSubtitle={`${notifications.length} total`}
               scrollPaneClassName={portalLayout.listScrollPane}

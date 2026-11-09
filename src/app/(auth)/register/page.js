@@ -21,63 +21,69 @@ export default function RegisterPage() {
   });
 
   const [isRegistered, setIsRegistered] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
   const [needsConfirmation, setNeedsConfirmation] = useState(false);
   const [regError, setRegError] = useState(null);
   const [notificationResults, setNotificationResults] = useState(null);
   const [agreedToTerms, setAgreedToTerms] = useState(false);
   const [agreedToPrivacy, setAgreedToPrivacy] = useState(false);
 
-  const { register, loading } = useAuthStore();
+  const { register } = useAuthStore();
   const router = useRouter();
 
   const handleRegister = async (e) => {
     e.preventDefault();
     setRegError(null);
+    setSubmitting(true);
 
-    if (!formData.name || !formData.email || !formData.password || !formData.phone) {
-      setRegError("Please fill in all required fields.");
-      return;
-    }
-
-    if (!agreedToTerms || !agreedToPrivacy) {
-      setRegError("Please agree to the Terms of Service and Privacy Policy before creating an account.");
-      return;
-    }
-
-    if (formData.password.length < 8) {
-      setRegError("Password must be at least 8 characters.");
-      return;
-    }
-
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email.trim())) {
-      setRegError("Enter a valid email address.");
-      return;
-    }
-
-    const result = await register(
-      formData.name,
-      formData.email,
-      formData.password,
-      formData.phone,
-      formData.nationality
-    );
-
-    if (result.success) {
-      const earnedRewards = [
-        result.registrationReward,
-        result.profileCompletionReward,
-      ].filter(Boolean);
-      if (earnedRewards.length) {
-        notifyRewardEarned(
-          earnedRewards.reduce((total, reward) => total + reward.points, 0),
-          earnedRewards.map((reward) => reward.id).join(":")
-        );
+    try {
+      if (!formData.name || !formData.email || !formData.password || !formData.phone) {
+        setRegError("Please fill in all required fields.");
+        return;
       }
-      setNeedsConfirmation(!!result.needsConfirmation);
-      setNotificationResults(result.notifications);
-      setIsRegistered(true);
-    } else {
-      setRegError(result.error);
+
+      if (!agreedToTerms || !agreedToPrivacy) {
+        setRegError("Please agree to the Terms of Service and Privacy Policy before creating an account.");
+        return;
+      }
+
+      if (formData.password.length < 8) {
+        setRegError("Password must be at least 8 characters.");
+        return;
+      }
+
+      if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email.trim())) {
+        setRegError("Enter a valid email address.");
+        return;
+      }
+
+      const result = await register(
+        formData.name,
+        formData.email,
+        formData.password,
+        formData.phone,
+        formData.nationality
+      );
+
+      if (result.success) {
+        const earnedRewards = [
+          result.registrationReward,
+          result.profileCompletionReward,
+        ].filter(Boolean);
+        if (earnedRewards.length) {
+          notifyRewardEarned(
+            earnedRewards.reduce((total, reward) => total + reward.points, 0),
+            earnedRewards.map((reward) => reward.id).join(":")
+          );
+        }
+        setNeedsConfirmation(!!result.needsConfirmation);
+        setNotificationResults(result.notifications);
+        setIsRegistered(true);
+      } else {
+        setRegError(result.error);
+      }
+    } finally {
+      setSubmitting(false);
     }
   };
 
@@ -142,7 +148,7 @@ export default function RegisterPage() {
               id="register-name"
               required
               autoComplete="name"
-              disabled={loading}
+              disabled={submitting}
               placeholder="Juan Dela Cruz"
               className={authForm.input}
               value={formData.name}
@@ -159,7 +165,7 @@ export default function RegisterPage() {
               type="email"
               required
               autoComplete="email"
-              disabled={loading}
+              disabled={submitting}
               placeholder="you@example.com"
               className={authForm.input}
               value={formData.email}
@@ -177,7 +183,7 @@ export default function RegisterPage() {
             type="password"
             required
             autoComplete="new-password"
-            disabled={loading}
+            disabled={submitting}
             placeholder="Create a secure password"
             className={authForm.input}
             value={formData.password}
@@ -195,7 +201,7 @@ export default function RegisterPage() {
               type="tel"
               required
               autoComplete="tel"
-              disabled={loading}
+              disabled={submitting}
               placeholder="09123456789"
               className={authForm.input}
               value={formData.phone}
@@ -210,7 +216,7 @@ export default function RegisterPage() {
             <select
               id="register-nationality"
               required
-              disabled={loading}
+              disabled={submitting}
               className={`${authForm.input} appearance-none`}
               value={formData.nationality}
               onChange={(e) => setFormData({ ...formData, nationality: e.target.value })}
@@ -225,7 +231,7 @@ export default function RegisterPage() {
           <label className="flex items-start gap-2.5 cursor-pointer group">
             <input
               type="checkbox"
-              disabled={loading}
+              disabled={submitting}
               className="mt-0.5 size-4 rounded-md border-2 border-zinc-200 checked:bg-blue-600 checked:border-blue-600 shrink-0"
               checked={agreedToTerms}
               onChange={(e) => setAgreedToTerms(e.target.checked)}
@@ -241,7 +247,7 @@ export default function RegisterPage() {
           <label className="flex items-start gap-2.5 cursor-pointer group">
             <input
               type="checkbox"
-              disabled={loading}
+              disabled={submitting}
               className="mt-0.5 size-4 rounded-md border-2 border-zinc-200 checked:bg-blue-600 checked:border-blue-600 shrink-0"
               checked={agreedToPrivacy}
               onChange={(e) => setAgreedToPrivacy(e.target.checked)}
@@ -257,10 +263,10 @@ export default function RegisterPage() {
 
         <button
           type="submit"
-          disabled={loading || !agreedToTerms || !agreedToPrivacy}
+          disabled={submitting || !agreedToTerms || !agreedToPrivacy}
           className={authForm.submitBtn}
         >
-          {loading ? (
+          {submitting ? (
             <>
               <Loader2 className="animate-spin" size={18} />
               Creating account...

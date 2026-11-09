@@ -1,5 +1,6 @@
 /** Public-facing brand and contact details — Daet Municipal Tourism Office */
 export const siteInfo = {
+  version: "3.2",
   brandName: "DAET TOURISM",
   officeName: "Daet Municipal Tourism Office",
   systemName: "Daet Tourism Crisis Alert System",

@@ -70,7 +70,8 @@ export default function ResetPasswordPage() {
   const [checking, setChecking] = useState(true);
   const [error, setError] = useState(null);
   const [success, setSuccess] = useState(false);
-  const { updatePassword, loading } = useAuthStore();
+  const [submitting, setSubmitting] = useState(false);
+  const { updatePassword } = useAuthStore();
   const router = useRouter();
 
   useEffect(() => {
@@ -117,12 +118,17 @@ export default function ResetPasswordPage() {
       return;
     }
 
-    const result = await updatePassword(password);
-    if (result.success) {
-      setSuccess(true);
-      await supabase.auth.signOut();
-    } else {
-      setError(result.error || "Could not update password. Please try again.");
+    setSubmitting(true);
+    try {
+      const result = await updatePassword(password);
+      if (result.success) {
+        setSuccess(true);
+        await supabase.auth.signOut();
+      } else {
+        setError(result.error || "Could not update password. Please try again.");
+      }
+    } finally {
+      setSubmitting(false);
     }
   };
 
@@ -204,7 +210,7 @@ export default function ResetPasswordPage() {
               type={showPassword ? "text" : "password"}
               required
               autoComplete="new-password"
-              disabled={loading}
+              disabled={submitting}
               placeholder="At least 8 characters"
               className={authForm.input}
               value={password}
@@ -212,7 +218,7 @@ export default function ResetPasswordPage() {
             />
             <button
               type="button"
-              disabled={loading}
+              disabled={submitting}
               onClick={() => setShowPassword(!showPassword)}
               className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-zinc-600 transition-colors"
               aria-label={showPassword ? "Hide password" : "Show password"}
@@ -231,7 +237,7 @@ export default function ResetPasswordPage() {
             type={showPassword ? "text" : "password"}
             required
             autoComplete="new-password"
-            disabled={loading}
+            disabled={submitting}
             placeholder="Re-enter your password"
             className={authForm.input}
             value={confirmPassword}
@@ -239,8 +245,8 @@ export default function ResetPasswordPage() {
           />
         </div>
 
-        <button type="submit" disabled={loading} className={authForm.submitBtn}>
-          {loading ? (
+        <button type="submit" disabled={submitting} className={authForm.submitBtn}>
+          {submitting ? (
             <>
               <Loader2 size={18} className="animate-spin" />
               Updating...

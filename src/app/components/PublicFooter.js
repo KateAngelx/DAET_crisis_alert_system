@@ -141,6 +141,8 @@ export function PublicFooter() {
         <div className="border-t border-zinc-200 mt-5 md:mt-10 pt-4 md:pt-6 flex flex-col items-center gap-3 md:flex-row md:justify-between md:items-center">
           <p className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest text-center md:text-left">
             &copy; {currentYear} {siteInfo.officeName}
+            <span className="mx-2 text-zinc-300">·</span>
+            Version {siteInfo.version}
           </p>
           <div className="flex flex-wrap justify-center gap-4 text-[9px] font-bold uppercase tracking-[0.15em] text-zinc-400">
             <Link href="/privacy" className="hover:text-blue-600 transition-colors">Privacy</Link>

@@ -17,7 +17,8 @@ export default function LoginPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [rememberMe, setRememberMe] = useState(false);
   const [loginError, setLoginError] = useState(null);
-  const { login, loading } = useAuthStore();
+  const [submitting, setSubmitting] = useState(false);
+  const { login } = useAuthStore();
   const router = useRouter();
 
   const handleLogin = async (e) => {
@@ -27,11 +28,16 @@ export default function LoginPage() {
       setLoginError("Please enter your email and password.");
       return;
     }
-    const result = await login(email, password);
-    if (result.success) {
-      router.replace(getRedirectForRole(result.role));
-    } else {
-      setLoginError(result.error || "Invalid email or password. Please try again.");
+    setSubmitting(true);
+    try {
+      const result = await login(email, password);
+      if (result.success) {
+        router.replace(getRedirectForRole(result.role));
+      } else {
+        setLoginError(result.error || "Invalid email or password. Please try again.");
+      }
+    } finally {
+      setSubmitting(false);
     }
   };
 
@@ -66,7 +72,7 @@ export default function LoginPage() {
             type="email"
             required
             autoComplete="email"
-            disabled={loading}
+            disabled={submitting}
             placeholder="you@example.com"
             className={authForm.input}
             value={email}
@@ -92,7 +98,7 @@ export default function LoginPage() {
               type={showPassword ? "text" : "password"}
               required
               autoComplete="current-password"
-              disabled={loading}
+              disabled={submitting}
               placeholder="Enter your password"
               className={authForm.input}
               value={password}
@@ -100,7 +106,7 @@ export default function LoginPage() {
             />
             <button
               type="button"
-              disabled={loading}
+              disabled={submitting}
               onClick={() => setShowPassword(!showPassword)}
               className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-zinc-600 transition-colors"
               aria-label={showPassword ? "Hide password" : "Show password"}
@@ -113,7 +119,7 @@ export default function LoginPage() {
         <label className="flex items-center gap-2 cursor-pointer group">
           <input
             type="checkbox"
-            disabled={loading}
+            disabled={submitting}
             className="size-4 rounded-md border-2 border-zinc-200 checked:bg-blue-600 checked:border-blue-600"
             checked={rememberMe}
             onChange={(e) => setRememberMe(e.target.checked)}
@@ -123,8 +129,8 @@ export default function LoginPage() {
           </span>
         </label>
 
-        <button type="submit" disabled={loading} className={authForm.submitBtn}>
-          {loading ? (
+        <button type="submit" disabled={submitting} className={authForm.submitBtn}>
+          {submitting ? (
             <>
               <Loader2 size={18} className="animate-spin" />
               Signing in...

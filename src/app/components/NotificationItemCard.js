@@ -105,6 +105,9 @@ export function NotificationItemCard({
             ) : null}
           </div>
           <h3 className={`${typography.cardTitleBase} ${styles.title}`}>{notification.title}</h3>
+          {notification.message ? (
+            <p className="text-sm text-zinc-600 mt-2 leading-relaxed">{notification.message}</p>
+          ) : null}
           <p className="text-[10px] text-zinc-400 font-bold uppercase mt-2 flex items-center gap-1">
             <Clock size={iconSize.inlineSm} />
             {formatWhen(notification.created_at)}

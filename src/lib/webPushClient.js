@@ -88,26 +88,39 @@ function waitUntilActive(registration) {
   });
 }
 
-export async function reconcileAccountPushSubscription(accessToken) {
-  if (!accessToken || !supportsWebPush()) return null;
-  try {
-    const registration = await getPushServiceRegistration();
-    const subscription = await registration?.pushManager.getSubscription();
-    if (!subscription) return { deviceEnabled: false };
-    const response = await fetch("/api/auth/push-subscriptions", {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${accessToken}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({ action: "reconcile", subscription: subscription.toJSON() }),
-    });
-    const result = await response.json().catch(() => ({}));
-    if (!response.ok) return null;
-    return result;
-  } catch {
-    return null;
+const reconciledEndpoints = new Set();
+let reconcileTask = null;
+
+async function runReconcile(accessToken) {
+  const registration = await getPushServiceRegistration();
+  const subscription = await registration?.pushManager.getSubscription();
+  if (!subscription?.endpoint) return { deviceEnabled: false };
+  if (reconciledEndpoints.has(subscription.endpoint)) {
+    return { success: true, deviceEnabled: true, cached: true };
   }
+  const response = await fetch("/api/auth/push-subscriptions", {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${accessToken}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({ action: "reconcile", subscription: subscription.toJSON() }),
+  });
+  const result = await response.json().catch(() => ({}));
+  if (!response.ok) return null;
+  if (result.success !== false) reconciledEndpoints.add(subscription.endpoint);
+  return result;
+}
+
+export function reconcileAccountPushSubscription(accessToken) {
+  if (!accessToken || !supportsWebPush()) return Promise.resolve(null);
+  if (reconcileTask) return reconcileTask;
+  reconcileTask = runReconcile(accessToken)
+    .catch(() => null)
+    .finally(() => {
+      reconcileTask = null;
+    });
+  return reconcileTask;
 }
 
 export async function registerPushServiceWorker() {

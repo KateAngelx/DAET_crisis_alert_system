@@ -695,6 +695,18 @@ export const useAuthStore = create(
         }
       },
     }),
-    { name: 'connect-daet-auth' }
+    {
+      name: 'connect-daet-auth',
+      partialize: (state) => ({
+        user: state.user,
+        isAuthenticated: state.isAuthenticated,
+      }),
+      merge: (persisted, current) => ({
+        ...current,
+        user: persisted?.user ?? current.user,
+        isAuthenticated: Boolean(persisted?.isAuthenticated),
+        loading: false,
+      }),
+    }
   )
 );

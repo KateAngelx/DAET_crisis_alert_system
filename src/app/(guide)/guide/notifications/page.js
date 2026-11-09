@@ -104,7 +104,7 @@ export default function GuideNotificationsPage() {
               <li key={n.id}>
                 <NotificationItemCard
                   notification={n}
-                  compact
+                  variant="list"
                   relatedLink={getRelatedLink(n)}
                   onMarkRead={markAsRead}
                 />
