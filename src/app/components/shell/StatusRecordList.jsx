@@ -86,6 +86,7 @@ function ActionIcons({ actions }) {
 export function StatusRecordList({
   rows,
   emptyMessage = "Nothing is published in this category right now.",
+  columnLabels = ["Status", "Place", "Type", "When"],
 }) {
   if (!rows.length) {
     return (
@@ -100,7 +101,7 @@ export function StatusRecordList({
   return (
     <div className="rounded-xl border border-zinc-200 overflow-hidden bg-white">
       <div className={`${STATUS_RECORD_ROW} px-3 py-2 bg-zinc-50 border-b border-zinc-100`}>
-        {["Status", "Place", "Type", "When"].map((label) => (
+        {columnLabels.map((label) => (
           <span key={label} className="text-[9px] font-black uppercase tracking-wide text-zinc-400 leading-tight">
             {label}
           </span>
@@ -120,9 +121,15 @@ export function StatusRecordList({
               <span className={`inline-flex max-w-full min-w-0 text-[9px] font-black uppercase tracking-wide px-1 py-0.5 rounded leading-tight ${row.statusClass || "bg-zinc-100 text-zinc-600"}`}>
                 {row.status || "—"}
               </span>
-              <span className="min-w-0 line-clamp-2 break-words text-[11px] font-medium leading-snug text-zinc-700" title={row.place}>{row.place || "—"}</span>
-              <span className="min-w-0 line-clamp-2 break-words text-[11px] font-medium leading-snug text-zinc-700" title={row.type}>{row.type || "—"}</span>
-              <span className="min-w-0 line-clamp-2 break-words text-[11px] font-medium leading-snug text-zinc-700" title={row.when}>{row.when || "—"}</span>
+              <span
+                className={`min-w-0 line-clamp-2 wrap-break-word text-[11px] font-medium leading-snug text-zinc-700 ${row.placeAlign === "right" ? "text-right pr-1" : "pl-1"}`}
+                title={row.reference ? `${row.reference} · ${row.place || "—"}` : row.place}
+              >
+                {row.reference ? <span className="block font-mono text-[9px] font-black text-blue-700">{row.reference}</span> : null}
+                <span className={row.reference ? "block mt-0.5" : "block"}>{row.place || "—"}</span>
+              </span>
+              <span className="min-w-0 line-clamp-2 wrap-break-word text-[11px] font-medium leading-snug text-zinc-700" title={row.type}>{row.type || "—"}</span>
+              <span className="min-w-0 line-clamp-2 wrap-break-word text-[11px] font-medium leading-snug text-zinc-700" title={row.when}>{row.when || "—"}</span>
             </>
           );
 

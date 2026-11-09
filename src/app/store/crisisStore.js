@@ -6,6 +6,7 @@ import { channelsToDb, normalizeAlert } from '@/lib/alertChannels';
 import { getActiveSession } from '@/lib/authSession';
 import { DEFAULT_USER_NOTIFICATION_CHANNELS } from '@/lib/userNotificationChannels';
 import { parseApiJson } from '@/lib/parseApiJson';
+import { sortRecordsNewestFirst } from '@/lib/recordSorting';
 
 export const useCrisisStore = create((set, get) => ({
   alerts: [], 
@@ -23,10 +24,15 @@ export const useCrisisStore = create((set, get) => ({
       const { data, error } = await supabase
         .from('crisis_alerts')
         .select('*')
-        .order('created_at', { ascending: false });
+        .order('published_at', { ascending: false, nullsFirst: false })
+        .order('created_at', { ascending: false, nullsFirst: false })
+        .order('id', { ascending: false });
 
       if (!error) {
-        const normalizedAlerts = (data || []).map(normalizeAlert);
+        const normalizedAlerts = sortRecordsNewestFirst(
+          (data || []).map(normalizeAlert),
+          ['published_at', 'created_at']
+        );
         set({ alerts: normalizedAlerts, loading: false, error: null });
       } else {
         console.error("Fetch Error:", error.message);
@@ -66,11 +72,19 @@ export const useCrisisStore = create((set, get) => ({
               const alreadyExists = state.alerts.some((a) => a.id === payload.new.id);
               if (alreadyExists) return state; // Do nothing if it's already there
               
-              return { alerts: [normalizeAlert(payload.new), ...state.alerts] };
+              return {
+                alerts: sortRecordsNewestFirst(
+                  [...state.alerts, normalizeAlert(payload.new)],
+                  ['published_at', 'created_at']
+                ),
+              };
             });
           } else if (payload.eventType === 'UPDATE') {
             set((state) => ({
-              alerts: state.alerts.map((a) => (a.id === payload.new.id ? normalizeAlert(payload.new) : a)),
+              alerts: sortRecordsNewestFirst(
+                state.alerts.map((a) => (a.id === payload.new.id ? normalizeAlert(payload.new) : a)),
+                ['published_at', 'created_at']
+              ),
             }));
           } else if (payload.eventType === 'DELETE') {
             set((state) => ({
@@ -254,6 +268,7 @@ export const useCrisisStore = create((set, get) => ({
         location: alertData.location,
         status: 'Active',
         is_public: true,
+        rewards_eligible: alertData.rewards_eligible === true,
         channels: channelsToDb(alertData.channels || { email: true, sms: true, app: true })
       };
 
@@ -291,6 +306,7 @@ export const useCrisisStore = create((set, get) => ({
         type: updatedData.type,
         severity: updatedData.severity,
         location: updatedData.location,
+        rewards_eligible: updatedData.rewards_eligible === true,
         channels: channelsToDb(updatedData.channels),
         is_public: true
       };
@@ -361,6 +377,7 @@ function mapProfileToUser(profile) {
       email: Boolean(channels.email),
       sms: Boolean(channels.sms),
       app: Boolean(channels.app ?? channels.web ?? true),
+      push: Boolean(channels.push),
     },
     notification_channels_configured: Boolean(profile.notification_channels_configured),
   };
@@ -430,22 +447,28 @@ export const useAuthStore = create(
             throw new Error("Enter a valid Philippine mobile number (09XXXXXXXXX).");
           }
 
-          const { data, error } = await supabase
-            .from("profiles")
-            .update({ full_name, phone: normalizedPhone, nationality })
-            .eq("id", session.user.id)
-            .select()
-            .single();
-
-          if (error) throw error;
+          const response = await fetch("/api/auth/profile", {
+            method: "PATCH",
+            headers: {
+              Authorization: `Bearer ${session.access_token}`,
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({ full_name, phone: normalizedPhone, nationality }),
+          });
+          const result = await parseApiJson(response, "Profile update");
+          if (!response.ok) throw new Error(result.error || "Failed to update profile.");
 
           await supabase.auth.updateUser({
             data: { full_name, phone: normalizedPhone, nationality },
           });
 
-          const userData = mapProfileToUser(data);
+          const userData = mapProfileToUser(result.profile);
           set({ user: userData, isAuthenticated: true, loading: false });
-          return { success: true, profile: data };
+          return {
+            success: true,
+            profile: result.profile,
+            profileCompletionReward: result.profileCompletionReward || null,
+          };
         } catch (err) {
           set({ loading: false });
           return { success: false, error: err.message };
@@ -541,31 +564,46 @@ export const useAuthStore = create(
             return { success: false, error: "Enter a valid Philippine mobile number (09XXXXXXXXX)." };
           }
 
-          const { data, error } = await supabase.auth.signUp({
-            email,
-            password,
-            options: {
-              data: {
-                full_name: name,
-                phone: normalizedPhone,
-                nationality: nationality
-              }
-            }
+          const response = await fetch("/api/auth/register", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              name: name.trim(),
+              email: email.trim(),
+              password,
+              phone: normalizedPhone,
+              nationality,
+            }),
           });
-          if (error) throw error;
+          const result = await parseApiJson(response);
+          if (!response.ok || !result.success) {
+            throw new Error(result.error || "Could not complete registration.");
+          }
+
+          if (result.session?.access_token && result.session?.refresh_token) {
+            const { error } = await supabase.auth.setSession({
+              access_token: result.session.access_token,
+              refresh_token: result.session.refresh_token,
+            });
+            if (error) console.error("Could not establish the new registration session:", error.message);
+          }
 
           const session = await getActiveSession();
           if (session) {
-            await syncProfileFromServer(session);
+            try {
+              await syncProfileFromServer(session);
+            } catch (syncError) {
+              console.error("Could not sync profile after registration:", syncError.message);
+            }
           }
 
           set({ loading: false });
           return {
             success: true,
-            needsConfirmation: !session,
-            message: !session
-              ? 'Account created. Please confirm your email, then sign in.'
-              : 'Account created successfully.',
+            needsConfirmation: result.needsConfirmation,
+            registrationReward: result.registrationReward || null,
+            profileCompletionReward: result.profileCompletionReward || null,
+            notifications: result.notifications,
           };
         } catch (err) {
           set({ loading: false });

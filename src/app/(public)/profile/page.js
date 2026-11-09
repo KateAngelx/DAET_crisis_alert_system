@@ -1,24 +1,99 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
-import { User, Mail, Phone, Globe, Shield, Loader2, CheckCircle, MapPin, Navigation, Trash2, AlertTriangle } from "lucide-react";
+import { User, Mail, Phone, Globe, Shield, Loader2, CheckCircle, MapPin, Navigation, Trash2, AlertTriangle, Coins, History, ChevronLeft, ChevronRight, BookOpen } from "lucide-react";
 import { portalShell } from "@/lib/designSystem";
 import { DestinationModal } from "@/app/components/tour/DestinationModal";
 import { useAuthStore, useCrisisStore } from "@/app/store/crisisStore";
 import { useGuideStore } from "@/app/store/guideStore";
 import { InfoPageHero, PublicPageShell, PublicPageContent, PublicPanel } from "@/app/components/InfoPageHero";
 import { CommunicationChannelForm } from "@/app/components/CommunicationChannelSetup";
+import { WebPushSettings } from "@/app/components/WebPushSettings";
 import { ProfileSkeleton } from "@/app/components/ui/Skeletons";
 import { ErrorState } from "@/app/components/ui/AsyncState";
 import { formatTourRoute } from "@/lib/tourGroupRoute";
 import { useConfirm } from "@/app/components/ui/ConfirmDialogProvider";
+import { notifyRewardEarned } from "@/lib/rewardFeedback";
+import { PublicListModal } from "@/app/components/shell/PublicListModal";
+import { getActiveSession } from "@/lib/authSession";
+import { parseApiJson } from "@/lib/parseApiJson";
+
+const POINTS_HISTORY_PAGE_SIZE = 20;
 
 const ROLE_LABELS = {
   tourist: "Tourist",
   guide: "Tourism Guide",
   admin: "Administrator",
 };
+
+function formatPoints(value) {
+  return new Intl.NumberFormat().format(BigInt(value ?? 0));
+}
+
+function humanizeTransactionValue(value) {
+  return String(value || "")
+    .replace(/[_-]+/g, " ")
+    .replace(/\b\w/g, (letter) => letter.toUpperCase());
+}
+
+function getTransactionLabel(transaction) {
+  if (transaction.activity?.title) return `Safety activity · ${transaction.activity.title}`;
+  if (transaction.reason === "registration") return "Tourist registration reward";
+  if (transaction.reason === "profile_completion") return "Profile completion reward";
+  if (transaction.reason === "tourist_guide_completion") return "How to Use CONNECT-DAET guide completion";
+  if (transaction.reason === "alert_read") {
+    return transaction.alert?.title
+      ? `Advisory reading · ${transaction.alert.title}`
+      : "Eligible advisory reading";
+  }
+  if (transaction.reason === "road_view" || transaction.reason === "hazard_view") {
+    const type = transaction.reason === "road_view" ? "Road advisory" : "Hazard advisory";
+    return transaction.advisory?.title
+      ? `${type} · ${transaction.advisory.title}`
+      : `${type} viewing reward`;
+  }
+  if (transaction.reason === "crisis_feedback") {
+    const type = transaction.feedback?.submission_type;
+    return type ? `Crisis feedback · ${humanizeTransactionValue(type)}` : "Crisis feedback reward";
+  }
+  if (transaction.reason === "incident_report") {
+    const report = transaction.incident;
+    const detail = [report?.reference_number, report?.category].filter(Boolean).join(" · ");
+    return detail ? `Incident report · ${detail}` : "Incident report reward";
+  }
+  if (transaction.transaction_type === "spent") {
+    return transaction.redemption?.reward_name_snapshot || "Reward redemption";
+  }
+  if (transaction.transaction_type === "adjustment") {
+    return transaction.reason ? humanizeTransactionValue(transaction.reason) : "Points adjustment";
+  }
+  if (transaction.activity_completion_id) return "Approved safety activity";
+  return "Points earned";
+}
+
+function getTransactionStatus(transaction) {
+  const statuses = [humanizeTransactionValue(transaction.transaction_type)];
+  if (transaction.activity?.status) statuses.push(humanizeTransactionValue(transaction.activity.status));
+  if (transaction.feedback?.status) statuses.push(humanizeTransactionValue(transaction.feedback.status));
+  if (transaction.feedback?.reward_status) statuses.push(humanizeTransactionValue(transaction.feedback.reward_status));
+  if (transaction.incident?.status) statuses.push(humanizeTransactionValue(transaction.incident.status));
+  if (transaction.redemption?.status) statuses.push(humanizeTransactionValue(transaction.redemption.status));
+  return [...new Set(statuses)].join(" · ");
+}
+
+async function fetchPointsData(page, pageSize, action) {
+  const session = await getActiveSession();
+  if (!session?.access_token) throw new Error("Your session expired. Sign in again to view points.");
+
+  const response = await fetch(`/api/tourist/points?page=${page}&pageSize=${pageSize}`, {
+    cache: "no-store",
+    headers: { Authorization: `Bearer ${session.access_token}` },
+  });
+  const result = await parseApiJson(response, action);
+  if (!response.ok) throw new Error(result.error || `${action} failed.`);
+  return result;
+}
 
 export default function ProfilePage() {
   const { confirm } = useConfirm();
@@ -35,6 +110,22 @@ export default function ProfilePage() {
   const [showDestination, setShowDestination] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [deleteError, setDeleteError] = useState(null);
+  const [points, setPoints] = useState({ balance: 0, transactions: [] });
+  const [pointsUserId, setPointsUserId] = useState(null);
+  const [pointsLoading, setPointsLoading] = useState(true);
+  const [pointsError, setPointsError] = useState(null);
+  const [pointsRetry, setPointsRetry] = useState(0);
+  const [pointsHistoryOpen, setPointsHistoryOpen] = useState(false);
+  const [pointsHistoryPage, setPointsHistoryPage] = useState(1);
+  const [pointsHistoryRetry, setPointsHistoryRetry] = useState(0);
+  const [pointsHistoryState, setPointsHistoryState] = useState({ requestKey: null, count: 0, transactions: [], error: null });
+
+  const refreshPoints = useCallback((showLoading = true) => {
+    if (showLoading) setPointsLoading(true);
+    setPointsError(null);
+    setPointsRetry((count) => count + 1);
+    if (pointsHistoryOpen) setPointsHistoryRetry((count) => count + 1);
+  }, [pointsHistoryOpen]);
 
   useEffect(() => {
     if (!isAuthenticated) return;
@@ -73,6 +164,82 @@ export default function ProfilePage() {
   }, [isAuthenticated, user?.id, user?.role, fetchTouristActiveGroup]);
 
   useEffect(() => {
+    if (!isAuthenticated || !user?.id || user?.role !== "tourist") return undefined;
+
+    let cancelled = false;
+
+    async function loadPoints() {
+      try {
+        const result = await fetchPointsData(1, 3, "Load points");
+        if (cancelled) return;
+
+        setPoints({
+          balance: result.balance ?? 0,
+          transactions: result.transactions || [],
+        });
+        setPointsUserId(user.id);
+        setPointsError(null);
+      } catch (error) {
+        if (!cancelled) {
+          setPointsUserId(user.id);
+          setPointsError(error.message || "Unable to load your points.");
+        }
+      } finally {
+        if (!cancelled) setPointsLoading(false);
+      }
+    }
+
+    loadPoints();
+    return () => {
+      cancelled = true;
+    };
+  }, [isAuthenticated, user?.id, user?.role, pointsRetry]);
+
+  useEffect(() => {
+    if (!isAuthenticated || !user?.id || user?.role !== "tourist") return undefined;
+    const refreshIfVisible = () => {
+      if (document.visibilityState === "visible") refreshPoints(false);
+    };
+    window.addEventListener("focus", refreshIfVisible);
+    document.addEventListener("visibilitychange", refreshIfVisible);
+    const timer = window.setInterval(refreshIfVisible, 60_000);
+    return () => {
+      window.removeEventListener("focus", refreshIfVisible);
+      document.removeEventListener("visibilitychange", refreshIfVisible);
+      window.clearInterval(timer);
+    };
+  }, [isAuthenticated, user?.id, user?.role, refreshPoints]);
+
+  const pointsHistoryRequestKey = `${user?.id || ""}:${pointsHistoryPage}:${pointsHistoryRetry}`;
+  useEffect(() => {
+    if (!pointsHistoryOpen || !isAuthenticated || !user?.id || user?.role !== "tourist") return undefined;
+    let cancelled = false;
+    const requestKey = `${user.id}:${pointsHistoryPage}:${pointsHistoryRetry}`;
+
+    fetchPointsData(pointsHistoryPage, POINTS_HISTORY_PAGE_SIZE, "Load points history")
+      .then((result) => {
+        if (!cancelled) {
+          setPoints((current) => ({ ...current, balance: result.balance ?? current.balance }));
+          setPointsHistoryState({ requestKey, count: result.count, transactions: result.transactions, error: null });
+        }
+      })
+      .catch((error) => {
+        if (!cancelled) {
+          setPointsHistoryState({ requestKey, count: 0, transactions: [], error: error.message || "Unable to load point history." });
+        }
+      });
+
+    return () => { cancelled = true; };
+  }, [pointsHistoryOpen, isAuthenticated, user?.id, user?.role, pointsHistoryPage, pointsHistoryRetry]);
+
+  const pointsHistoryIsCurrent = pointsHistoryState.requestKey === pointsHistoryRequestKey;
+  const pointsHistoryLoading = pointsHistoryOpen && !pointsHistoryIsCurrent;
+  const pointsHistoryError = pointsHistoryIsCurrent ? pointsHistoryState.error : null;
+  const pointsHistoryTransactions = pointsHistoryIsCurrent ? pointsHistoryState.transactions : [];
+  const pointsHistoryCount = pointsHistoryIsCurrent ? pointsHistoryState.count : 0;
+  const pointsHistoryPages = Math.max(1, Math.ceil(pointsHistoryCount / POINTS_HISTORY_PAGE_SIZE));
+
+  useEffect(() => {
     fetchAlerts();
   }, [fetchAlerts]);
 
@@ -92,6 +259,13 @@ export default function ProfilePage() {
     });
 
     if (result.success) {
+      if (result.profileCompletionReward) {
+        notifyRewardEarned(
+          result.profileCompletionReward.points,
+          `profile-completion:${result.profileCompletionReward.id}`
+        );
+        refreshPoints();
+      }
       setMessage({ type: "success", text: "Profile updated successfully." });
     } else {
       setMessage({ type: "error", text: result.error || "Failed to update profile." });
@@ -211,6 +385,79 @@ export default function ProfilePage() {
               </button>
             </PublicPanel>
           )}
+          {user?.role === "tourist" && (
+            <PublicPanel title="My Points" subtitle="Your current balance and rewards activity" bodyClassName="bg-blue-50/20">
+              {pointsLoading || pointsUserId !== user.id ? (
+                <p className="flex items-center gap-2 text-sm font-medium text-zinc-500" role="status">
+                  <Loader2 size={16} className="animate-spin" /> Loading your points...
+                </p>
+              ) : pointsError ? (
+                <ErrorState
+                  title="Could not load your points"
+                  message={pointsError}
+                  onRetry={refreshPoints}
+                />
+              ) : (
+                <div className="grid gap-4 lg:grid-cols-[minmax(220px,0.75fr)_minmax(0,1.25fr)]">
+                  <div className="rounded-xl border border-blue-100 bg-white p-5">
+                    <div className="flex items-center gap-2 text-xs font-black uppercase tracking-widest text-blue-700">
+                      <Coins size={16} /> Current balance
+                    </div>
+                    <p className="mt-3 text-3xl font-black tracking-tight text-zinc-900">
+                      {formatPoints(points.balance)}
+                    </p>
+                    <p className="mt-1 text-xs font-medium text-zinc-500">points available</p>
+                  </div>
+
+                  <div className="min-w-0">
+                    <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
+                      <h3 className="flex items-center gap-2 text-xs font-black uppercase tracking-widest text-zinc-500">
+                        <History size={15} /> Recent points activity
+                      </h3>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setPointsHistoryPage(1);
+                          setPointsHistoryRetry((count) => count + 1);
+                          setPointsHistoryOpen(true);
+                          refreshPoints();
+                        }}
+                        className={portalShell.btnGhost}
+                      >
+                        <History size={14} /> View Points History
+                      </button>
+                    </div>
+                    {points.transactions.length === 0 ? (
+                      <p className="rounded-xl border border-dashed border-zinc-200 bg-white p-4 text-sm text-zinc-500">
+                        No point transactions yet.
+                      </p>
+                    ) : (
+                      <ul className="divide-y divide-zinc-100 rounded-xl border border-zinc-200 bg-white">
+                        {points.transactions.map((transaction) => {
+                          const positive = BigInt(transaction.points_delta) > 0n;
+                          return (
+                            <li key={transaction.id} className="flex items-center justify-between gap-4 p-3">
+                              <div className="min-w-0">
+                                <p className="truncate text-sm font-bold text-zinc-800">
+                                  {getTransactionLabel(transaction)}
+                                </p>
+                                <p className="mt-1 text-xs text-zinc-500">
+                                  {new Date(transaction.created_at).toLocaleString()}
+                                </p>
+                              </div>
+                              <span className={`shrink-0 text-sm font-black ${positive ? "text-emerald-700" : "text-red-700"}`}>
+                                {positive ? "+" : ""}{formatPoints(transaction.points_delta)}
+                              </span>
+                            </li>
+                          );
+                        })}
+                      </ul>
+                    )}
+                  </div>
+                </div>
+              )}
+            </PublicPanel>
+          )}
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             <PublicPanel title="Account summary" className="lg:col-span-1" bodyClassName="bg-zinc-50/50">
               <div className="flex items-center gap-4 mb-6">
@@ -244,6 +491,9 @@ export default function ProfilePage() {
                 </Link>
                 <Link href="/crisis/reports" className="block text-xs font-black uppercase text-blue-600 tracking-widest hover:underline">
                   My Reports
+                </Link>
+                <Link href="/how-to-use" className="inline-flex items-center gap-1.5 text-xs font-black uppercase text-blue-600 tracking-widest hover:underline">
+                  <BookOpen size={13} /> How to Use CONNECT-DAET
                 </Link>
               </div>
             </PublicPanel>
@@ -371,6 +621,10 @@ export default function ProfilePage() {
             </PublicPanel>
           )}
 
+          <PublicPanel title="Browser push notifications" subtitle="Optional system banners for phone and desktop">
+            <WebPushSettings />
+          </PublicPanel>
+
           {user?.role !== "admin" ? (
             <PublicPanel title="Delete account" subtitle="Permanent — cannot be undone" bodyClassName="bg-red-50/20">
               <p className="text-sm text-zinc-600 font-medium mb-4 flex items-start gap-2">
@@ -397,6 +651,94 @@ export default function ProfilePage() {
           </>
         )}
       </PublicPageContent>
+
+      <PublicListModal
+        open={pointsHistoryOpen}
+        onClose={() => setPointsHistoryOpen(false)}
+        title="Points history"
+        subtitle={pointsHistoryIsCurrent ? `${pointsHistoryCount} database transactions` : "Loading your transaction history"}
+      >
+        {pointsHistoryError ? (
+          <ErrorState
+            title="Could not load points history"
+            message={pointsHistoryError}
+            onRetry={refreshPoints}
+          />
+        ) : pointsHistoryLoading ? (
+          <p role="status" className="flex items-center gap-2 text-sm font-medium text-zinc-500">
+            <Loader2 size={16} className="animate-spin" /> Loading points history...
+          </p>
+        ) : pointsHistoryTransactions.length === 0 ? (
+          <p className="rounded-xl border border-dashed border-zinc-200 bg-zinc-50 p-4 text-sm font-medium text-zinc-500">
+            No point transactions have been recorded.
+          </p>
+        ) : (
+          <div className="space-y-3">
+            <ul className="divide-y divide-zinc-100 rounded-xl border border-zinc-200 bg-white">
+              {pointsHistoryTransactions.map((transaction) => {
+                const positive = BigInt(transaction.points_delta) > 0n;
+                const statusTone = transaction.transaction_type === "earned"
+                  ? "bg-emerald-50 text-emerald-700"
+                  : transaction.transaction_type === "spent"
+                    ? "bg-red-50 text-red-700"
+                    : "bg-zinc-100 text-zinc-700";
+                return (
+                  <li key={transaction.id} className="flex items-start justify-between gap-3 p-3 sm:p-4">
+                    <div className="min-w-0">
+                      <p className="wrap-break-word text-sm font-bold text-zinc-900">
+                        {getTransactionLabel(transaction)}
+                      </p>
+                      <div className="mt-1.5 flex flex-wrap items-center gap-x-2 gap-y-1">
+                        <span className={`rounded-full px-2 py-0.5 text-[9px] font-black uppercase ${statusTone}`}>
+                          {getTransactionStatus(transaction)}
+                        </span>
+                        <time className="text-[10px] font-medium text-zinc-500">
+                          {new Date(transaction.created_at).toLocaleString()}
+                        </time>
+                      </div>
+                      <p className="mt-1 text-[10px] font-medium text-zinc-400">
+                        Balance after: {formatPoints(transaction.balance_after)} points
+                      </p>
+                    </div>
+                    <span className={`shrink-0 text-sm font-black tabular-nums ${positive ? "text-emerald-700" : "text-red-700"}`}>
+                      {positive ? "+" : ""}{formatPoints(transaction.points_delta)}
+                      <span className="ml-1 text-[10px] font-bold">pts</span>
+                    </span>
+                  </li>
+                );
+              })}
+            </ul>
+            {pointsHistoryCount > POINTS_HISTORY_PAGE_SIZE ? (
+              <div className="flex items-center justify-between gap-3 border-t border-zinc-100 pt-3">
+                <p className="text-[10px] font-medium text-zinc-500">
+                  Showing {(pointsHistoryPage - 1) * POINTS_HISTORY_PAGE_SIZE + 1}–{Math.min(pointsHistoryPage * POINTS_HISTORY_PAGE_SIZE, pointsHistoryCount)} of {pointsHistoryCount}
+                </p>
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setPointsHistoryPage((page) => Math.max(1, page - 1))}
+                    disabled={pointsHistoryPage === 1}
+                    className={portalShell.btnIcon}
+                    aria-label="Previous points history page"
+                  >
+                    <ChevronLeft size={16} />
+                  </button>
+                  <span className="text-[10px] font-bold text-zinc-600">{pointsHistoryPage} / {pointsHistoryPages}</span>
+                  <button
+                    type="button"
+                    onClick={() => setPointsHistoryPage((page) => Math.min(pointsHistoryPages, page + 1))}
+                    disabled={pointsHistoryPage >= pointsHistoryPages}
+                    className={portalShell.btnIcon}
+                    aria-label="Next points history page"
+                  >
+                    <ChevronRight size={16} />
+                  </button>
+                </div>
+              </div>
+            ) : null}
+          </div>
+        )}
+      </PublicListModal>
 
       {user?.role === "tourist" && touristActiveGroup?.tour_group && (
         <DestinationModal

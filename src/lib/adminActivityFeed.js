@@ -1,4 +1,5 @@
 import { formatIncidentAuditAction } from "@/lib/incidentAuditUtils";
+import { sortRecordsNewestFirst } from "@/lib/recordSorting";
 
 /** Normalize incident_history + crisis alerts into one sorted feed. */
 export function mergeAdminActivityFeed({ incidentHistory = [], alerts = [] }) {
@@ -25,7 +26,9 @@ export function mergeAdminActivityFeed({ incidentHistory = [], alerts = [] }) {
     return {
       id: `alert-${a.id}-${isResolved ? "resolved" : "created"}`,
       source: "crisis_alert",
-      at: isResolved ? a.updated_at || a.created_at : a.created_at,
+      at: isResolved
+        ? a.resolved_at || a.updated_at || a.published_at || a.created_at
+        : a.published_at || a.created_at,
       action: isResolved ? "alert_resolved" : "alert_broadcast",
       actionLabel: isResolved ? "Crisis alert resolved" : "Crisis alert broadcast",
       title: a.title || "Untitled alert",
@@ -38,9 +41,7 @@ export function mergeAdminActivityFeed({ incidentHistory = [], alerts = [] }) {
     };
   });
 
-  return [...incidentItems, ...alertItems].sort(
-    (a, b) => new Date(b.at).getTime() - new Date(a.at).getTime()
-  );
+  return sortRecordsNewestFirst([...incidentItems, ...alertItems], ["at"]);
 }
 
 export function filterActivityFeed(items, { search = "", source = "All" }) {

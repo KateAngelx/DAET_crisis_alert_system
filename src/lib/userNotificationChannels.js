@@ -10,6 +10,7 @@ export const DEFAULT_USER_NOTIFICATION_CHANNELS = {
   email: true,
   sms: true,
   app: true,
+  push: false,
 };
 
 export function channelsFromProfile(profile) {
@@ -20,6 +21,7 @@ export function channelsFromProfile(profile) {
       email: Boolean(raw.email),
       sms: Boolean(raw.sms),
       app: Boolean(raw.app ?? raw.web ?? true),
+      push: Boolean(raw.push),
     };
   } else {
     channels = { ...DEFAULT_USER_NOTIFICATION_CHANNELS };
@@ -42,6 +44,7 @@ export function getEffectiveAlertChannels(alertChannels, userChannels) {
     email: Boolean(alertChannels?.email && userChannels.email),
     sms: Boolean(alertChannels?.sms && userChannels.sms),
     app: Boolean(alertChannels?.app && userChannels.app),
+    push: Boolean(alertChannels?.app && userChannels.push),
   };
 }
 
@@ -55,6 +58,7 @@ export function getBroadcastAlertChannels(alertChannels, userChannels) {
     email: Boolean(alertChannels?.email),
     sms: Boolean(alertChannels?.sms && userChannels.sms),
     app: Boolean(alertChannels?.app && userChannels.app),
+    push: Boolean(alertChannels?.app && userChannels.push),
   };
 }
 
@@ -68,6 +72,7 @@ export function getEffectiveUserChannels(userChannels, requested = ["web", "emai
     email: requested.includes("email") && userChannels.email,
     sms: requested.includes("sms") && userChannels.sms,
     app: (requested.includes("web") || requested.includes("app")) && userChannels.app,
+    push: (requested.includes("web") || requested.includes("app")) && userChannels.push,
   };
 }
 
@@ -78,7 +83,7 @@ export function getDispatchChannelsForProfile(
   audience = DEFAULT_NOTIFICATION_AUDIENCE
 ) {
   if (!isProfileInAudience(profile, audience)) {
-    return { email: false, sms: false, app: false };
+    return { email: false, sms: false, app: false, push: false };
   }
   return getEffectiveUserChannels(channelsFromProfile(profile), requestedChannels);
 }

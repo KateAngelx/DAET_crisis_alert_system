@@ -6,6 +6,7 @@ import {
   Route, Plus, X, MapPin, Ban, CheckCircle, Navigation, Loader2, Radio, Archive, FileWarning,
 } from "lucide-react";
 import { useRouteAdvisoryStore } from "@/app/store/routeAdvisoryStore";
+import { notifyTouristsOfRouteAdvisory } from "@/lib/notificationService";
 import {
   buildRoutePathFromLocations,
   hasRoutePath,
@@ -280,9 +281,22 @@ function RouteAdvisoriesAdminPanel({
       : await addAdvisory(payload);
 
     if (result.success) {
+      const advisoryId = editingId || result.advisory?.id;
       setToast(editingId ? "Route advisory updated." : "Route advisory published.");
       setShowModal(false);
       await fetchAdvisories();
+      const isCurrentAndPublic =
+        payload.is_public !== false
+        && (!payload.warning_starts_at || new Date(payload.warning_starts_at).getTime() <= Date.now())
+        && (!payload.warning_ends_at || new Date(payload.warning_ends_at).getTime() >= Date.now());
+      if (advisoryId && isCurrentAndPublic) {
+        const notify = await notifyTouristsOfRouteAdvisory(
+          advisoryId,
+          editingId ? "updated" : "created"
+        );
+        if (!notify.success) setToast(`Route saved, but notification failed: ${notify.error}`);
+        else if (notify.warnings?.length) setToast("Route saved, but some notifications could not be delivered.");
+      }
     } else {
       setToast(`Error: ${result.error}`);
     }
@@ -312,8 +326,26 @@ function RouteAdvisoriesAdminPanel({
     });
     if (!ok) return;
     const result = await setAdvisoryStatus(advisory.id, "Active");
-    setToast(result.success ? "Route advisory reactivated." : result.error);
-    if (result.success) await fetchAdvisories();
+    if (result.success) {
+      const isCurrentAndPublic =
+        advisory.is_public !== false
+        && (!advisory.warning_starts_at || new Date(advisory.warning_starts_at).getTime() <= Date.now())
+        && (!advisory.warning_ends_at || new Date(advisory.warning_ends_at).getTime() >= Date.now());
+      if (isCurrentAndPublic) {
+        const notify = await notifyTouristsOfRouteAdvisory(advisory.id, "updated");
+        setToast(notify.success
+          ? `Route advisory reactivated. ${notify.notified} notification${notify.notified === 1 ? "" : "s"} sent.`
+          : `Route reactivated, but notification failed: ${notify.error}`);
+        if (notify.success && notify.warnings?.length) {
+          setToast("Route advisory reactivated, but some notifications could not be delivered.");
+        }
+      } else {
+        setToast("Route advisory reactivated; notifications will be sent when it becomes public and active.");
+      }
+      await fetchAdvisories();
+    } else {
+      setToast(result.error);
+    }
   };
 
   const handleDelete = async (id) => {

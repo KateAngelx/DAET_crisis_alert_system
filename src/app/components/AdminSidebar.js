@@ -5,7 +5,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useAuthStore } from "@/app/store/crisisStore";
 import {
-  LayoutDashboard, Users, AlertTriangle, FileWarning, LogOut, Archive, ClipboardList,
+  LayoutDashboard, Users, AlertTriangle, FileWarning, LogOut, Archive, ClipboardList, MessageSquare, Compass,
 } from "lucide-react";
 import { BrandLogo } from "@/app/components/BrandLogo";
 import { ADMIN_NAV, isNavActive } from "@/lib/dashboardNav";
@@ -17,6 +17,8 @@ const ICONS = {
   Users,
   "Command Center": AlertTriangle,
   "Incident Reports": FileWarning,
+  "Tourist Guide Assistance": Compass,
+  "Crisis Feedback": MessageSquare,
   "Archive & History": Archive,
 };
 

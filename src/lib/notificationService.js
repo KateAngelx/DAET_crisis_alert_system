@@ -44,7 +44,7 @@ export async function dispatchNotification(payload) {
   }
 }
 
-export async function notifyTouristsOfCrisisAlert(alertId) {
+export async function notifyTouristsOfCrisisAlert(alertId, eventType = 'created') {
   const headers = await getDispatchHeaders();
   if (!headers) {
     return { success: false, error: 'Not authenticated' };
@@ -54,7 +54,7 @@ export async function notifyTouristsOfCrisisAlert(alertId) {
     const res = await fetch('/api/crisis/alerts/notify-tourists', {
       method: 'POST',
       headers,
-      body: JSON.stringify({ alertId }),
+      body: JSON.stringify({ alertId, eventType }),
     });
     const data = await res.json();
 
@@ -78,7 +78,7 @@ export async function notifyTouristsOfCrisisAlert(alertId) {
   }
 }
 
-export async function notifyTouristsOfDangerousLocation(warningId) {
+export async function notifyTouristsOfDangerousLocation(warningId, eventType = 'created') {
   const headers = await getDispatchHeaders();
   if (!headers) {
     return { success: false, error: 'Not authenticated' };
@@ -88,7 +88,7 @@ export async function notifyTouristsOfDangerousLocation(warningId) {
     const res = await fetch('/api/crisis/dangerous-locations/notify-tourists', {
       method: 'POST',
       headers,
-      body: JSON.stringify({ warningId }),
+      body: JSON.stringify({ warningId, eventType }),
     });
     const data = await res.json();
 
@@ -104,6 +104,30 @@ export async function notifyTouristsOfDangerousLocation(warningId) {
     };
   } catch (err) {
     return { success: false, error: err.message || 'Failed to notify tourists' };
+  }
+}
+
+export async function notifyTouristsOfRouteAdvisory(advisoryId, eventType = 'created') {
+  const headers = await getDispatchHeaders();
+  if (!headers) return { success: false, error: 'Not authenticated' };
+
+  try {
+    const res = await fetch('/api/crisis/route-advisories/notify-tourists', {
+      method: 'POST',
+      headers,
+      body: JSON.stringify({ advisoryId, eventType }),
+    });
+    const data = await res.json();
+    if (!res.ok) return { success: false, error: data.error || 'Failed to notify tourists' };
+    return {
+      success: true,
+      notified: data.notified || 0,
+      skipped: data.skipped || 0,
+      pushSent: data.pushSent || 0,
+      warnings: data.errors || [],
+    };
+  } catch (error) {
+    return { success: false, error: error.message || 'Failed to notify tourists' };
   }
 }
 

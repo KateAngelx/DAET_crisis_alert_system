@@ -17,6 +17,7 @@ import {
   AdminDashboardQuickNavRow,
 } from "@/app/components/admin/AdminDashboardQuickNavLink";
 import { AdminTablePanel } from "@/app/components/admin/AdminTablePanel";
+import { GuideEmergencyReportsPanel } from "@/app/components/admin/GuideEmergencyReportsPanel";
 import { StatCardSkeleton, AlertCardSkeletonList, MapSkeleton, TableSkeleton } from "@/app/components/ui/Skeletons";
 import { ErrorState } from "@/app/components/ui/AsyncState";
 import { DashboardPageHeader } from "@/app/components/dashboard/DashboardPageHeader";
@@ -47,6 +48,12 @@ const TileLayer = dynamic(() => import('react-leaflet').then(mod => mod.TileLaye
 const Marker = dynamic(() => import('react-leaflet').then(mod => mod.Marker), { ssr: false });
 const Popup = dynamic(() => import('react-leaflet').then(mod => mod.Popup), { ssr: false });
 
+const isAlertEligibleForReadingPoints = ({ severity, type, title, message }) =>
+  ["low", "medium"].includes(String(severity || "").trim().toLowerCase()) &&
+  ["general", "weather", "health"].includes(String(type || "").trim().toLowerCase()) &&
+  !/(emergency|evacuat|warning|911|117|assistance|assist|urgent|immediate danger|rescue|shelter|call police|call the police|call fire|call ambulance)/i
+    .test(`${title || ""} ${message || ""} ${type || ""}`);
+
 const ChangeMapView = dynamic(() => Promise.resolve(({ center }) => {
   const { useMap: useLeafletMap } = require('react-leaflet');
   const map = useLeafletMap();
@@ -57,6 +64,18 @@ const ChangeMapView = dynamic(() => Promise.resolve(({ center }) => {
   }, [center, map]);
   return null;
 }), { ssr: false });
+
+const createEmptyAlertFormData = () => ({
+  title: "",
+  message: "",
+  type: "General",
+  severity: "Low",
+  location: "",
+  latitude: null,
+  longitude: null,
+  rewards_eligible: false,
+  channels: { email: true, sms: true, app: true },
+});
 
 export default function CrisisAdminPage() {
   const { alerts, addAlert, updateAlert, updateAlertStatus, fetchAlerts, deleteAlert, userStats, fetchUserStats, loading, error } = useCrisisStore();
@@ -85,11 +104,7 @@ export default function CrisisAdminPage() {
   const [auditLogExpanded, setAuditLogExpanded] = useState(false);
   const [logSearchTerm, setLogSearchTerm] = useState("");
 
-  const [formData, setFormData] = useState({
-    title: "", message: "", type: "General", severity: "Low", location: "",
-    latitude: null, longitude: null,
-    channels: { email: true, sms: true, app: true }
-  });
+  const [formData, setFormData] = useState(createEmptyAlertFormData);
 
   const [isSearchingLocation, setIsSearchingLocation] = useState(false);
   const [modalMapCenter, setModalMapCenter] = useState([14.1122, 122.9553]);
@@ -177,33 +192,34 @@ export default function CrisisAdminPage() {
   const confirmAndBroadcast = async () => {
     setIsPublishing(true);
 
-    let broadcastPayload = { ...formData };
-    if (broadcastPayload.latitude == null || broadcastPayload.longitude == null) {
-      const coords = await geocodeLocation(broadcastPayload.location);
-      if (coords) {
-        broadcastPayload = { ...broadcastPayload, latitude: coords[0], longitude: coords[1] };
-        setModalMapCenter(coords);
-      }
-    }
-
-    const result = await addAlert(broadcastPayload);
+    const result = await addAlert(formData);
 
     if (result.success) {
-      const notifyResult = result.alert?.id
-        ? await notifyTouristsOfCrisisAlert(result.alert.id)
-        : { success: false, error: "Alert saved but notification dispatch could not start." };
-
-      if (notifyResult.success) {
-        setToastMessage(formatBroadcastNotifyToast(notifyResult));
-      } else {
-        setToastMessage(`Alert saved, but tourist notifications failed: ${notifyResult.error}`);
-      }
-
+      setToastMessage("Alert published. Tourist notifications are processing in the background.");
       setShowToast(true);
       setShowCreateModal(false);
-      setFormData({ title: "", message: "", type: "General", severity: "Low", location: "", latitude: null, longitude: null, channels: { email: true, sms: true, app: true } });
+      setFormData(createEmptyAlertFormData());
       setAuditLogExpanded(false);
-      await fetchAlerts();
+      void fetchAlerts();
+
+      if (result.alert?.id) {
+        notifyTouristsOfCrisisAlert(result.alert.id)
+          .then((notifyResult) => {
+            setToastMessage(
+              notifyResult.success
+                ? formatBroadcastNotifyToast(notifyResult)
+                : `Alert published, but tourist notifications failed: ${notifyResult.error}`
+            );
+            setShowToast(true);
+          })
+          .catch((error) => {
+            setToastMessage(`Alert published, but tourist notifications failed: ${error.message}`);
+            setShowToast(true);
+          });
+      } else {
+        setToastMessage("Alert published, but tourist notification dispatch could not start.");
+        setShowToast(true);
+      }
     } else {
       setToastMessage(`Error: ${result.error}`);
       setShowToast(true);
@@ -228,6 +244,7 @@ export default function CrisisAdminPage() {
       location: alert.location || "",
       latitude: alert.latitude ?? null,
       longitude: alert.longitude ?? null,
+      rewards_eligible: alert.rewards_eligible === true,
       channels: alert.channels || { email: true, sms: true, app: true }
     });
     setIsEditModalOpen(true);
@@ -243,6 +260,7 @@ export default function CrisisAdminPage() {
       type: formData.type,
       severity: formData.severity,
       location: formData.location,
+      rewards_eligible: formData.rewards_eligible,
       latitude: formData.latitude,
       longitude: formData.longitude,
       channels: formData.channels
@@ -258,11 +276,24 @@ export default function CrisisAdminPage() {
     const result = await updateAlert(selectedAlert.id, updatedPayload);
     
     if (result.success) {
-      setToastMessage("Log Entry updated successfully.");
+      setToastMessage("Log Entry updated. Tourist notifications are processing.");
       setShowToast(true);
       setIsEditModalOpen(false);
       setSelectedAlert(null);
       await fetchAlerts();
+      notifyTouristsOfCrisisAlert(selectedAlert.id, "updated")
+        .then((notifyResult) => {
+          if (!notifyResult.success || notifyResult.warnings?.length) {
+            setToastMessage(notifyResult.success
+              ? "Alert updated, but some notifications could not be delivered."
+              : `Alert updated, but notifications failed: ${notifyResult.error}`);
+            setShowToast(true);
+          }
+        })
+        .catch((notifyError) => {
+          setToastMessage(`Alert updated, but notifications failed: ${notifyError.message}`);
+          setShowToast(true);
+        });
     } else {
       setToastMessage(`Update Failed: ${result.error}`);
       setShowToast(true);
@@ -277,11 +308,24 @@ export default function CrisisAdminPage() {
   const confirmResolve = async () => {
     const result = await updateAlertStatus(selectedAlert.id, "Resolved");
     setShowResolveConfirm(false);
-    
+
     if (result && result.error) {
       setToastMessage(`Error: ${result.error}`);
     } else {
       setToastMessage("Alert marked as resolved.");
+      notifyTouristsOfCrisisAlert(selectedAlert.id, "updated")
+        .then((notifyResult) => {
+          if (!notifyResult.success || notifyResult.warnings?.length) {
+            setToastMessage(notifyResult.success
+              ? "Alert resolved, but some notifications could not be delivered."
+              : `Alert resolved, but notifications failed: ${notifyResult.error}`);
+            setShowToast(true);
+          }
+        })
+        .catch((notifyError) => {
+          setToastMessage(`Alert resolved, but notifications failed: ${notifyError.message}`);
+          setShowToast(true);
+        });
     }
     
     setShowToast(true);
@@ -402,13 +446,16 @@ export default function CrisisAdminPage() {
               <button onClick={() => setIsEditModalOpen(false)}><X size={24}/></button>
             </div>
             <form onSubmit={onUpdateSubmit} className="space-y-4">
-              <input required className="w-full p-4 bg-zinc-50 dark:bg-zinc-900 border border-zinc-100 dark:border-white/5 rounded-2xl font-bold text-sm outline-none focus:ring-2 focus:ring-blue-500" value={formData.title} onChange={e => setFormData({...formData, title: e.target.value})} placeholder="Title" />
+              <input required className="w-full p-4 bg-zinc-50 dark:bg-zinc-900 border border-zinc-100 dark:border-white/5 rounded-2xl font-bold text-sm outline-none focus:ring-2 focus:ring-blue-500" value={formData.title} onChange={e => { const title = e.target.value; setFormData({...formData, title, rewards_eligible: formData.rewards_eligible && isAlertEligibleForReadingPoints({ ...formData, title })}); }} placeholder="Title" />
               <div className="grid grid-cols-2 gap-4">
-                <select className="w-full p-4 bg-zinc-50 dark:bg-zinc-900 border border-zinc-100 dark:border-white/5 rounded-2xl font-bold text-xs" value={formData.severity} onChange={e => setFormData({...formData, severity: e.target.value})}>
+                <select aria-label="Alert type" className="w-full p-4 bg-zinc-50 dark:bg-zinc-900 border border-zinc-100 dark:border-white/5 rounded-2xl font-bold text-xs" value={formData.type} onChange={e => setFormData({...formData, type: e.target.value, rewards_eligible: formData.rewards_eligible && isAlertEligibleForReadingPoints({ ...formData, type: e.target.value })})}>
+                  <option>Weather</option><option>Health</option><option>Security</option><option>General</option>
+                </select>
+                <select aria-label="Alert severity" className="w-full p-4 bg-zinc-50 dark:bg-zinc-900 border border-zinc-100 dark:border-white/5 rounded-2xl font-bold text-xs" value={formData.severity} onChange={e => setFormData({...formData, severity: e.target.value, rewards_eligible: formData.rewards_eligible && isAlertEligibleForReadingPoints({ ...formData, severity: e.target.value })})}>
                   <option>Low</option><option>Medium</option><option>High</option><option>Critical</option>
                 </select>
-                <input required className="w-full p-4 bg-zinc-50 dark:bg-zinc-900 border border-zinc-100 dark:border-white/5 rounded-2xl font-bold text-sm" value={formData.location} onChange={e => setFormData({...formData, location: e.target.value})} placeholder="Location" />
               </div>
+              <input required className="w-full p-4 bg-zinc-50 dark:bg-zinc-900 border border-zinc-100 dark:border-white/5 rounded-2xl font-bold text-sm" value={formData.location} onChange={e => setFormData({...formData, location: e.target.value})} placeholder="Location" />
               <div className="flex gap-2">
                 {['email', 'sms', 'app'].map(ch => (
                   <button key={ch} type="button" onClick={() => setFormData({...formData, channels: {...formData.channels, [ch]: !formData.channels[ch]}})} className={`flex-1 p-3 rounded-xl border flex items-center justify-center gap-2 transition-all ${formData.channels[ch] ? 'bg-blue-600 text-white' : 'bg-zinc-50 dark:bg-zinc-800 text-zinc-400'}`}>
@@ -416,6 +463,25 @@ export default function CrisisAdminPage() {
                   </button>
                 ))}
               </div>
+              <label className={`flex items-start gap-3 p-4 rounded-2xl border ${
+                formData.rewards_eligible ? "bg-blue-50 border-blue-200" : "bg-zinc-50 border-zinc-200"
+              }`}>
+                <input
+                  type="checkbox"
+                  checked={formData.rewards_eligible}
+                  disabled={!isAlertEligibleForReadingPoints(formData)}
+                  onChange={(event) => setFormData({ ...formData, rewards_eligible: event.target.checked })}
+                  className="mt-0.5 size-4 accent-blue-600"
+                />
+                <span>
+                  <span className="block text-xs font-black uppercase tracking-wide text-zinc-800">
+                    Eligible for advisory-reading points
+                  </span>
+                  <span className="block mt-1 text-[11px] leading-relaxed text-zinc-500">
+                    Only Low or Medium General, Weather, or Health advisories without emergency, warning, evacuation, or assistance instructions qualify.
+                  </span>
+                </span>
+              </label>
               <CharCounterTextarea
                 required
                 rows={4}
@@ -428,7 +494,7 @@ export default function CrisisAdminPage() {
                 }).length}
                 className="w-full p-4 bg-zinc-50 dark:bg-zinc-900 border border-zinc-100 dark:border-white/5 rounded-2xl font-bold text-sm outline-none focus:ring-2 focus:ring-blue-500"
                 value={formData.message}
-                onChange={(e) => setFormData({ ...formData, message: e.target.value })}
+                onChange={(e) => { const message = e.target.value; setFormData({ ...formData, message, rewards_eligible: formData.rewards_eligible && isAlertEligibleForReadingPoints({ ...formData, message }) }); }}
                 placeholder="Instructions"
               />
               <div className="flex gap-3 pt-4">
@@ -489,11 +555,30 @@ export default function CrisisAdminPage() {
                       Email reaches all registered tourists with an email on file (see Admin → Settings → Notification Audience).
                     </p>
                   )}
-                  <input required className="w-full p-4 bg-zinc-50 border border-gray-100 rounded-xl font-bold text-sm outline-none focus:ring-2 focus:ring-blue-500 transition-all" placeholder="Alert Title" value={formData.title} onChange={e => setFormData({...formData, title: e.target.value})} />
+                  <input required className="w-full p-4 bg-zinc-50 border border-gray-100 rounded-xl font-bold text-sm outline-none focus:ring-2 focus:ring-blue-500 transition-all" placeholder="Alert Title" value={formData.title} onChange={e => { const title = e.target.value; setFormData({...formData, title, rewards_eligible: formData.rewards_eligible && isAlertEligibleForReadingPoints({ ...formData, title })}); }} />
                   <div className="grid grid-cols-2 gap-4">
-                    <select className="w-full p-4 bg-zinc-50 border border-gray-100 rounded-xl font-bold text-xs outline-none focus:ring-2 focus:ring-blue-500" value={formData.type} onChange={e => setFormData({...formData, type: e.target.value})}><option>Weather</option><option>Health</option><option>Security</option><option>General</option></select>
-                    <select className="w-full p-4 bg-zinc-50 border border-gray-100 rounded-xl font-bold text-xs outline-none focus:ring-2 focus:ring-blue-500" value={formData.severity} onChange={e => setFormData({...formData, severity: e.target.value})}><option>Low</option><option>Medium</option><option>High</option><option>Critical</option></select>
+                    <select className="w-full p-4 bg-zinc-50 border border-gray-100 rounded-xl font-bold text-xs outline-none focus:ring-2 focus:ring-blue-500" value={formData.type} onChange={e => setFormData({...formData, type: e.target.value, rewards_eligible: formData.rewards_eligible && isAlertEligibleForReadingPoints({ ...formData, type: e.target.value })})}><option>Weather</option><option>Health</option><option>Security</option><option>General</option></select>
+                    <select className="w-full p-4 bg-zinc-50 border border-gray-100 rounded-xl font-bold text-xs outline-none focus:ring-2 focus:ring-blue-500" value={formData.severity} onChange={e => setFormData({...formData, severity: e.target.value, rewards_eligible: formData.rewards_eligible && isAlertEligibleForReadingPoints({ ...formData, severity: e.target.value })})}><option>Low</option><option>Medium</option><option>High</option><option>Critical</option></select>
                   </div>
+                  <label className={`flex items-start gap-3 p-4 rounded-xl border ${
+                    formData.rewards_eligible ? "bg-blue-50 border-blue-200" : "bg-zinc-50 border-zinc-200"
+                  }`}>
+                    <input
+                      type="checkbox"
+                      checked={formData.rewards_eligible}
+                      disabled={!isAlertEligibleForReadingPoints(formData)}
+                      onChange={(event) => setFormData({ ...formData, rewards_eligible: event.target.checked })}
+                      className="mt-0.5 size-4 accent-blue-600"
+                    />
+                    <span>
+                      <span className="block text-xs font-black uppercase tracking-wide text-zinc-800">
+                        Eligible for advisory-reading points
+                      </span>
+                      <span className="block mt-1 text-[11px] leading-relaxed text-zinc-500">
+                        Only Low or Medium General, Weather, or Health advisories without emergency, warning, evacuation, or assistance instructions qualify.
+                      </span>
+                    </span>
+                  </label>
                   <CharCounterTextarea
                     required
                     rows={4}
@@ -507,7 +592,7 @@ export default function CrisisAdminPage() {
                     className="w-full p-4 bg-zinc-50 border border-gray-100 rounded-xl font-bold leading-relaxed text-sm outline-none focus:ring-2 focus:ring-blue-500"
                     placeholder="Instructions..."
                     value={formData.message}
-                    onChange={(e) => setFormData({ ...formData, message: e.target.value })}
+                    onChange={(e) => { const message = e.target.value; setFormData({ ...formData, message, rewards_eligible: formData.rewards_eligible && isAlertEligibleForReadingPoints({ ...formData, message }) }); }}
                   />
                   <button type="submit" disabled={isPublishing} className={`w-full py-4 ${adminShell.btnDanger} !text-sm !py-4 disabled:opacity-50`}>
                      {isPublishing ? "Broadcasting..." : (<><AlertTriangle size={20}/> Broadcast Alert Now</>)}
@@ -524,7 +609,7 @@ export default function CrisisAdminPage() {
               action={
                 <button
                   type="button"
-                  onClick={() => setShowCreateModal(true)}
+                  onClick={() => { setFormData(createEmptyAlertFormData()); setShowCreateModal(true); }}
                   className={adminShell.btnDanger}
                 >
                   <Plus size={18} /> New Broadcast
@@ -533,6 +618,8 @@ export default function CrisisAdminPage() {
             />
 
             <RoleContextBanner helper={ROLE_INTERFACE.admin.commandCenter.helper} tone="info" />
+
+            <GuideEmergencyReportsPanel />
 
             {error && (
               <ErrorState message={error} onRetry={fetchAlerts} title="Could not load alerts" />
@@ -715,8 +802,8 @@ export default function CrisisAdminPage() {
                           statusClass: alert.status === "Active" ? "bg-red-100 text-red-700" : "bg-green-100 text-green-700",
                           place: alert.location || alert.title,
                           type: [alert.severity, alert.type || "General", channels.join(", ")].filter(Boolean).join(" · "),
-                          when: alert.updated_at || alert.created_at
-                            ? new Date(alert.updated_at || alert.created_at).toLocaleString()
+                          when: alert.published_at || alert.created_at
+                            ? new Date(alert.published_at || alert.created_at).toLocaleString()
                             : "",
                           actions: [
                             { label: "View", onClick: () => handleViewClick(alert) },

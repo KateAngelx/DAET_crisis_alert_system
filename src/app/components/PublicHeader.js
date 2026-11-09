@@ -59,13 +59,13 @@ export function PublicHeader() {
     <div className="flex items-center gap-1 sm:gap-2.5 shrink-0">
       <Link
         href="/login"
-        className="hidden min-[360px]:inline-flex items-center justify-center min-h-11 px-2 sm:px-3 rounded-full border border-zinc-200 bg-zinc-50 text-[10px] font-black uppercase tracking-widest text-zinc-700 hover:bg-zinc-100 transition-colors"
+        className="hidden min-[360px]:inline-flex w-[72px] sm:w-20 items-center justify-center min-h-11 rounded-full border border-zinc-200 bg-zinc-50 text-[10px] font-black uppercase tracking-widest text-zinc-700 hover:bg-zinc-100 transition-colors"
       >
         Login
       </Link>
       <Link
         href="/register"
-        className="inline-flex min-h-11 items-center justify-center px-2 sm:px-3 rounded-full bg-blue-600 text-[10px] font-black uppercase tracking-widest text-white hover:bg-blue-700 transition-colors shadow-sm shadow-blue-600/20 whitespace-nowrap"
+        className="inline-flex w-[84px] sm:w-24 items-center justify-center min-h-11 rounded-full bg-blue-600 text-[10px] font-black uppercase tracking-widest text-white hover:bg-blue-700 transition-colors shadow-sm shadow-blue-600/20 whitespace-nowrap"
       >
         Register
       </Link>
@@ -85,22 +85,22 @@ export function PublicHeader() {
             <div className="w-full max-w-7xl mx-auto flex items-center justify-between gap-2 h-12 px-3 md:h-16 md:px-6 lg:px-8">
               <Link
                 href="/"
-                className="flex min-w-0 flex-1 items-center gap-1.5"
+                className="flex min-w-0 shrink-0 items-center gap-1.5"
                 aria-label={`CONNECT-DAET — ${siteInfo.officeName} Home`}
               >
-                <BrandLogo size={24} className="h-6 w-6 shrink-0 md:h-8 md:w-8" />
+                <BrandLogo size={30} className="h-[30px] w-[30px] shrink-0" />
                 <span className="truncate text-[14px] sm:text-[16px] lg:text-[20px] font-black uppercase tracking-wide text-blue-600">
                   CONNECT-DAET
                 </span>
               </Link>
 
-              <nav className="hidden lg:flex items-center gap-1 flex-1 justify-center px-4" aria-label="Primary">
+              <nav className="hidden lg:flex min-w-0 flex-1 items-center justify-center gap-0.5 px-2" aria-label="Primary">
                 {navItems.map((item) => (
                   <Link
                     key={item.name}
                     href={item.href}
                     aria-current={isPublicNavActive(pathname, item.href) ? "page" : undefined}
-                    className={`px-3 lg:px-4 py-2 rounded-full text-[11px] lg:text-xs font-black uppercase tracking-widest transition-all ${linkClass(item.href)}`}
+                    className={`shrink-0 whitespace-nowrap rounded-full px-2 py-2 text-[10px] lg:text-[11px] font-black uppercase tracking-wider transition-all ${linkClass(item.href)}`}
                   >
                     <span className="font-sans leading-none">{item.name}</span>
                   </Link>

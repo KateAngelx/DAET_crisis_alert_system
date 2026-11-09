@@ -128,7 +128,8 @@ export const useGuideStore = create((set, get) => ({
           *,
           reporter:profiles!incident_reports_reporter_id_fkey(id, full_name, phone)
         `)
-        .order('created_at', { ascending: false });
+        .order('created_at', { ascending: false, nullsFirst: false })
+        .order('id', { ascending: false });
 
       if (touristIds.length > 0) {
         query = query.or(

@@ -55,10 +55,13 @@ export async function assertDispatchAuthorized(admin, caller, payload) {
   }
 
   if (callerRole === "guide") {
+    if (TOURIST_TO_ADMIN_TYPES.has(notificationType) && targetProfile.user_type === "admin") {
+      return { allowed: true };
+    }
     if (GUIDE_TOURIST_TYPES.has(notificationType) && targetProfile.user_type === "tourist") {
       return { allowed: true };
     }
-    return { allowed: false, reason: "Guides may only notify tourists for assignment workflows" };
+    return { allowed: false, reason: "Guides may notify admins (incidents) or tourists for assignment workflows" };
   }
 
   if (ADMIN_TO_USER_TYPES.has(notificationType)) {

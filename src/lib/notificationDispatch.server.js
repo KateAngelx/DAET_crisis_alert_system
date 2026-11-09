@@ -1,7 +1,7 @@
 import { getSupabaseAdmin } from '@/lib/supabaseAdmin';
 import { NOTIFICATION_CHANNELS } from '@/lib/constants';
 import { processNotificationDeliveries } from '@/lib/notificationQueue.server';
-import { getDispatchChannelsForProfile } from '@/lib/userNotificationChannels';
+import { channelsFromProfile, getDispatchChannelsForProfile } from '@/lib/userNotificationChannels';
 import { getSystemSettings } from '@/lib/systemSettings.server';
 
 export async function dispatchNotificationServer({
@@ -12,9 +12,11 @@ export async function dispatchNotificationServer({
   priority = 'NORMAL',
   relatedType = null,
   relatedId = null,
+  eventKey = null,
   channels = ['web', 'email'],
   recipientEmail = null,
   recipientPhone = null,
+  criticalEmergency = false,
 }) {
   const results = { web: null, email: null, sms: null, errors: [] };
   const admin = getSupabaseAdmin();
@@ -31,7 +33,7 @@ export async function dispatchNotificationServer({
 
   const { data: recipient, error: recipientError } = await admin
     .from('profiles')
-    .select('id, user_type, notification_channels, email, phone')
+    .select('id, user_type, notification_channels, email, phone, sms_suspended_at')
     .eq('id', userId)
     .maybeSingle();
 
@@ -41,18 +43,25 @@ export async function dispatchNotificationServer({
   }
 
   const settings = await getSystemSettings(admin);
-  const effective = getDispatchChannelsForProfile(
-    recipient,
-    channels,
-    settings.notification_audience
-  );
   const emailTo = recipientEmail || recipient.email;
   const phoneTo = recipientPhone || recipient.phone;
+  const effective = criticalEmergency
+    ? {
+        app: channels.includes('web') || channels.includes('app'),
+        email: channels.includes('email') && Boolean(emailTo),
+        sms: channels.includes('sms') && Boolean(phoneTo) && channelsFromProfile(recipient).sms,
+        push: (channels.includes('web') || channels.includes('app')) && channelsFromProfile(recipient).push,
+      }
+    : getDispatchChannelsForProfile(
+        recipient,
+        channels,
+        settings.notification_audience
+      );
 
   try {
     let notification = null;
 
-    if (effective.app) {
+    if (effective.app || effective.push) {
       const { data: inserted, error: notifError } = await admin
         .from('notifications')
         .insert({
@@ -63,16 +72,29 @@ export async function dispatchNotificationServer({
           priority,
           related_type: relatedType,
           related_id: relatedId,
+          event_key: eventKey,
         })
         .select()
         .single();
 
       if (notifError) {
+        if (notifError.code === '23505' && eventKey) {
+          results.duplicate = true;
+          return results;
+        }
         results.errors.push(`Web notification failed: ${notifError.message}`);
       } else {
         notification = inserted;
         results.web = inserted;
       }
+    }
+
+    if (notification && effective.push) {
+      const { sendWebPushToSubscriptions } = await import('@/lib/webPush.server');
+      results.push = await sendWebPushToSubscriptions(admin, userId, notification, {
+        userType: recipient.user_type,
+      });
+      if (results.push.errors?.length) results.errors.push(...results.push.errors);
     }
 
     const deliveryRecords = [];
@@ -87,7 +109,7 @@ export async function dispatchNotificationServer({
         subject: title,
         body: message,
         priority,
-        idempotency_key: generateIdempotencyKey(userId, notificationType, relatedId, 'email'),
+        idempotency_key: generateIdempotencyKey(userId, notificationType, relatedId, 'email', eventKey),
       });
     }
 
@@ -101,7 +123,7 @@ export async function dispatchNotificationServer({
         subject: title,
         body: message,
         priority,
-        idempotency_key: generateIdempotencyKey(userId, notificationType, relatedId, 'sms'),
+        idempotency_key: generateIdempotencyKey(userId, notificationType, relatedId, 'sms', eventKey),
       });
     }
 
@@ -127,6 +149,6 @@ export async function dispatchNotificationServer({
   return results;
 }
 
-function generateIdempotencyKey(userId, type, relatedId, channel) {
-  return `${userId}-${type}-${relatedId || 'none'}-${channel}-${Date.now()}`;
+function generateIdempotencyKey(userId, type, relatedId, channel, eventKey) {
+  return `${userId}-${type}-${relatedId || 'none'}-${channel}-${eventKey || Date.now()}`;
 }

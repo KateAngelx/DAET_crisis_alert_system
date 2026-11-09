@@ -7,6 +7,11 @@ import {
 } from '@/lib/notificationService';
 import { severityToPriority } from '@/lib/constants';
 import { INCIDENT_QUEUE_EXCLUDED_STATUSES } from '@/lib/incidentAuditUtils';
+import {
+  fallbackIncidentStatusForDbConstraint,
+  isIncidentReportsStatusCheckError,
+  incidentMatchesStatusFilter,
+} from '@/lib/incidentStatusUtils';
 
 export const useIncidentStore = create((set, get) => ({
   incidents: [],
@@ -15,6 +20,7 @@ export const useIncidentStore = create((set, get) => ({
   auditLog: [],
   auditLogLoading: false,
   loading: false,
+  submitting: false,
   error: null,
   filters: { status: 'All', category: 'All', severity: 'All', search: '' },
 
@@ -31,7 +37,8 @@ export const useIncidentStore = create((set, get) => ({
           assignee:profiles!incident_reports_assigned_to_fkey(id, full_name, phone),
           attachments:incident_attachments(*)
         `)
-        .order('created_at', { ascending: false });
+        .order('created_at', { ascending: false, nullsFirst: false })
+        .order('id', { ascending: false });
 
       if (options.reporterId) query = query.eq('reporter_id', options.reporterId);
       if (options.assignedTo) query = query.eq('assigned_to', options.assignedTo);
@@ -80,7 +87,7 @@ export const useIncidentStore = create((set, get) => ({
   },
 
   submitReport: async (reportData, files = []) => {
-    set({ loading: true, error: null });
+    set({ submitting: true, error: null });
     try {
       const refResponse = await supabase.rpc('generate_incident_reference');
       const referenceNumber = refResponse.data || `INC-${Date.now()}`;
@@ -112,13 +119,15 @@ export const useIncidentStore = create((set, get) => ({
       });
 
       if (files.length > 0) {
-        for (const file of files) {
-          const filePath = `${reportData.reporterId}/${incident.id}/${Date.now()}-${file.name}`;
-          const { error: uploadError } = await supabase.storage
-            .from('incident-attachments')
-            .upload(filePath, file);
+        await Promise.all(
+          files.map(async (file, index) => {
+            const filePath = `${reportData.reporterId}/${incident.id}/${Date.now()}-${index}-${file.name}`;
+            const { error: uploadError } = await supabase.storage
+              .from('incident-attachments')
+              .upload(filePath, file);
 
-          if (!uploadError) {
+            if (uploadError) return;
+
             const { data: urlData } = supabase.storage.from('incident-attachments').getPublicUrl(filePath);
             await supabase.from('incident_attachments').insert({
               incident_id: incident.id,
@@ -127,47 +136,86 @@ export const useIncidentStore = create((set, get) => ({
               file_type: file.type,
               file_size: file.size,
             });
+          })
+        );
+      }
+
+      const enrichedIncident = { ...incident, reference_number: referenceNumber };
+      set({ submitting: false });
+
+      void (async () => {
+        try {
+          const { data: admins } = await supabase
+            .from('profiles')
+            .select('id, email, phone')
+            .eq('user_type', 'admin');
+          if (admins?.length) {
+            await notifyAdminsOfIncident(enrichedIncident, admins);
           }
+
+          await dispatchNotification({
+            userId: reportData.reporterId,
+            title: 'Incident Report Submitted',
+            message: `Your report ${referenceNumber} has been submitted successfully. We will review it shortly.`,
+            notificationType: 'incident_submitted',
+            priority: severityToPriority(reportData.severity),
+            relatedType: 'incident',
+            relatedId: incident.id,
+            channels: ['web'],
+          });
+        } catch {
+          // Submission already succeeded; notification failures are retried via delivery queue or manual review.
         }
-      }
+      })();
 
-      const { data: admins } = await supabase.from('profiles').select('*').eq('user_type', 'admin');
-      if (admins?.length) {
-        await notifyAdminsOfIncident({ ...incident, reference_number: referenceNumber }, admins);
-      }
-
-      await dispatchNotification({
-        userId: reportData.reporterId,
-        title: 'Incident Report Submitted',
-        message: `Your report ${referenceNumber} has been submitted successfully. We will review it shortly.`,
-        notificationType: 'incident_submitted',
-        priority: severityToPriority(reportData.severity),
-        relatedType: 'incident',
-        relatedId: incident.id,
-        channels: ['web'],
-      });
-
-      set({ loading: false });
-      return { success: true, incident: { ...incident, reference_number: referenceNumber } };
+      return { success: true, incident: enrichedIncident };
     } catch (err) {
-      set({ loading: false, error: err.message });
-      return { success: false, error: 'We could not process your request right now. Please try again.' };
+      set({ submitting: false, error: err.message });
+      const message = err?.message || 'We could not process your request right now. Please try again.';
+      return { success: false, error: message };
     }
   },
 
   updateIncidentStatus: async (id, status, adminData = {}) => {
     try {
-      const { data: incident, error } = await supabase
-        .from('incident_reports')
-        .update({
-          status,
-          assigned_to: adminData.assignedTo || undefined,
-          admin_notes: adminData.adminNotes || undefined,
-          response_actions: adminData.responseActions || undefined,
-        })
-        .eq('id', id)
-        .select('*, reporter:profiles!incident_reports_reporter_id_fkey(*)')
-        .single();
+      const buildPatch = (statusValue) => {
+        const patch = { status: statusValue };
+        if (adminData.assignedTo !== undefined) {
+          patch.assigned_to = adminData.assignedTo;
+        }
+        if (adminData.adminNotes !== undefined) {
+          patch.admin_notes = adminData.adminNotes;
+        }
+        if (adminData.responseActions !== undefined) {
+          patch.response_actions = adminData.responseActions;
+        }
+        return patch;
+      };
+
+      const persistUpdate = async (statusValue) => {
+        return supabase
+          .from('incident_reports')
+          .update(buildPatch(statusValue))
+          .eq('id', id)
+          .select(`
+            *,
+            reporter:profiles!incident_reports_reporter_id_fkey(id, full_name, phone, email, nationality),
+            assignee:profiles!incident_reports_assigned_to_fkey(id, full_name, phone),
+            attachments:incident_attachments(*)
+          `)
+          .single();
+      };
+
+      let statusPersisted = status;
+      let { data: incident, error } = await persistUpdate(statusPersisted);
+
+      if (error && isIncidentReportsStatusCheckError(error)) {
+        const fallback = fallbackIncidentStatusForDbConstraint(status);
+        if (fallback && fallback !== status) {
+          statusPersisted = fallback;
+          ({ data: incident, error } = await persistUpdate(statusPersisted));
+        }
+      }
 
       if (error) throw error;
 
@@ -177,7 +225,7 @@ export const useIncidentStore = create((set, get) => ({
           changed_by: adminData.changedBy,
           action: adminData.action || 'status_update',
           old_status: adminData.oldStatus,
-          new_status: status,
+          new_status: statusPersisted,
           notes: adminData.notes || adminData.adminNotes,
         });
       }
@@ -241,7 +289,7 @@ export const useIncidentStore = create((set, get) => ({
       if (filters.status === 'All' && INCIDENT_QUEUE_EXCLUDED_STATUSES.includes(inc.status)) {
         return false;
       }
-      if (filters.status !== 'All' && inc.status !== filters.status) return false;
+      if (filters.status !== 'All' && !incidentMatchesStatusFilter(filters.status, inc.status)) return false;
       if (filters.category !== 'All' && inc.category !== filters.category) return false;
       if (filters.severity !== 'All' && inc.severity !== filters.severity) return false;
       if (filters.search) {

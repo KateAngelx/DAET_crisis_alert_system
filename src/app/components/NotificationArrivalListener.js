@@ -46,7 +46,9 @@ export function NotificationArrivalListener() {
     if (playedNotificationIds.has(latestArrival.id)) return;
 
     playedNotificationIds.add(latestArrival.id);
-    playCrisisNotificationSound();
+    const pushCanPlaySystemSound =
+      user?.notification_channels?.push && typeof Notification !== "undefined" && Notification.permission === "granted";
+    if (!pushCanPlaySystemSound) playCrisisNotificationSound();
 
     if (dismissTimerRef.current) clearTimeout(dismissTimerRef.current);
     dismissTimerRef.current = setTimeout(() => dismissLatestArrival(), 10000);
@@ -54,7 +56,7 @@ export function NotificationArrivalListener() {
     return () => {
       if (dismissTimerRef.current) clearTimeout(dismissTimerRef.current);
     };
-  }, [latestArrival, isAuthenticated, user?.role, dismissLatestArrival]);
+  }, [latestArrival, isAuthenticated, user?.role, user?.notification_channels?.push, dismissLatestArrival]);
 
   if (!latestArrival || !isAuthenticated || user?.role !== "tourist") return null;
   if (!isUrgentTouristNotification(latestArrival)) return null;

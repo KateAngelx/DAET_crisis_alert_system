@@ -8,6 +8,7 @@ export const API_RATE_LIMITS = {
   feedbackPost: { limit: 8, windowMs: 60 * 60_000 },
   pageView: { limit: 120, windowMs: 60 * 60_000 },
   forgotPassword: { limit: 5, windowMs: 60 * 60_000 },
+  register: { limit: 8, windowMs: 60 * 60_000 },
   ensureProfile: { limit: 40, windowMs: 60_000 },
   heartbeat: { limit: 24, windowMs: 60 * 60_000 },
   dispatch: { limit: 40, windowMs: 60_000 },
@@ -18,6 +19,7 @@ export const API_RATE_LIMITS = {
   adminExport: { limit: 10, windowMs: 60_000 },
   deleteAccount: { limit: 3, windowMs: 60 * 60_000 },
   notificationChannels: { limit: 30, windowMs: 60_000 },
+  guideAssistanceRequest: { limit: 5, windowMs: 60 * 60_000 },
 };
 
 function rateLimitJson(retryAfterSec, message = "Too many requests. Please try again later.") {

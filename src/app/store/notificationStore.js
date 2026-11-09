@@ -3,12 +3,14 @@ import { supabase } from '@/lib/supabaseClient';
 import { getActiveSession } from '@/lib/authSession';
 
 let activeChannel = null;
+let activeChannelUserId = null;
 
 function removeActiveChannel() {
   if (activeChannel) {
     supabase.removeChannel(activeChannel);
     activeChannel = null;
   }
+  activeChannelUserId = null;
 }
 
 function countUnread(notifications) {
@@ -86,7 +88,7 @@ export const useNotificationStore = create((set, get) => ({
       set({ loading: false, error: error.message });
     }
 
-    if (get().isSubscribed && get().sessionUserId === authenticatedUserId) return;
+    if (get().sessionUserId === authenticatedUserId && (get().isSubscribed || activeChannelUserId === authenticatedUserId)) return;
 
     removeActiveChannel();
     set({ isSubscribed: false });
@@ -130,6 +132,7 @@ export const useNotificationStore = create((set, get) => ({
       .subscribe((status) => {
         if (status === 'SUBSCRIBED') set({ isSubscribed: true });
       });
+    activeChannelUserId = authenticatedUserId;
 
     return () => {
       removeActiveChannel();

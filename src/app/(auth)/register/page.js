@@ -9,6 +9,7 @@ import { UserPlus, CheckCircle, ArrowRight, User, Mail, Phone, Globe, Lock, Load
 import Link from "next/link";
 import { BrandLogo } from "@/app/components/BrandLogo";
 import { typography, iconSize, authForm } from "@/lib/designSystem";
+import { notifyRewardEarned } from "@/lib/rewardFeedback";
 
 export default function RegisterPage() {
   const [formData, setFormData] = useState({
@@ -22,6 +23,7 @@ export default function RegisterPage() {
   const [isRegistered, setIsRegistered] = useState(false);
   const [needsConfirmation, setNeedsConfirmation] = useState(false);
   const [regError, setRegError] = useState(null);
+  const [notificationResults, setNotificationResults] = useState(null);
   const [agreedToTerms, setAgreedToTerms] = useState(false);
   const [agreedToPrivacy, setAgreedToPrivacy] = useState(false);
 
@@ -47,6 +49,11 @@ export default function RegisterPage() {
       return;
     }
 
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email.trim())) {
+      setRegError("Enter a valid email address.");
+      return;
+    }
+
     const result = await register(
       formData.name,
       formData.email,
@@ -56,7 +63,18 @@ export default function RegisterPage() {
     );
 
     if (result.success) {
+      const earnedRewards = [
+        result.registrationReward,
+        result.profileCompletionReward,
+      ].filter(Boolean);
+      if (earnedRewards.length) {
+        notifyRewardEarned(
+          earnedRewards.reduce((total, reward) => total + reward.points, 0),
+          earnedRewards.map((reward) => reward.id).join(":")
+        );
+      }
       setNeedsConfirmation(!!result.needsConfirmation);
+      setNotificationResults(result.notifications);
       setIsRegistered(true);
     } else {
       setRegError(result.error);
@@ -75,9 +93,15 @@ export default function RegisterPage() {
           <h1 className={`${typography.heroTitle} mb-2`}>Welcome, {formData.name.split(" ")[0]}!</h1>
           <p className="text-zinc-500 text-xs mb-5 leading-relaxed">
             {needsConfirmation
-              ? "Check your email to confirm your account, then sign in."
+              ? "Your registration is complete. Check your email for an account verification link before signing in."
               : "Your account is ready. You can now receive alerts and submit reports through DAET TOURISM."}
           </p>
+          {notificationResults ? (
+            <div className="text-left text-xs text-zinc-600 mb-5 space-y-1" role="status">
+              <p>Email confirmation: {notificationResults.email?.status || "not confirmed"}.</p>
+              <p>SMS confirmation: {notificationResults.sms?.status || "not confirmed"}.</p>
+            </div>
+          ) : null}
           <button
             type="button"
             onClick={() => router.push("/login")}

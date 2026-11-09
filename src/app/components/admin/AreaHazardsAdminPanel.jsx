@@ -206,13 +206,24 @@ export function AreaHazardsAdminPanel({
       : await addWarning(payload);
 
     if (result.success) {
-      if (!editingId && result.warning?.id) {
-        const notify = await notifyTouristsOfDangerousLocation(result.warning.id);
+      const isCurrentAndPublic =
+        result.warning?.status === "Active"
+        && result.warning?.is_public !== false
+        && (!result.warning?.warning_starts_at || new Date(result.warning.warning_starts_at).getTime() <= Date.now())
+        && (!result.warning?.warning_ends_at || new Date(result.warning.warning_ends_at).getTime() >= Date.now());
+      if (result.warning?.id && isCurrentAndPublic) {
+        const notify = await notifyTouristsOfDangerousLocation(
+          result.warning.id,
+          editingId ? "updated" : "created"
+        );
         setToast(
           notify.success
-            ? `Area hazard published. ${notify.notified} tourist${notify.notified === 1 ? "" : "s"} notified.`
+            ? `Area hazard ${editingId ? "updated" : "published"}. ${notify.notified} tourist${notify.notified === 1 ? "" : "s"} notified.`
             : "Hazard saved, but tourist notifications could not be sent."
         );
+        if (notify.success && notify.warnings?.length) {
+          setToast("Area hazard saved, but some notifications could not be delivered.");
+        }
       } else {
         setToast(editingId ? "Area hazard updated." : "Area hazard published.");
       }
@@ -249,8 +260,21 @@ export function AreaHazardsAdminPanel({
     if (!ok) return;
     const result = await setWarningStatus(warning.id, "Active");
     if (result.success) {
-      await notifyTouristsOfDangerousLocation(warning.id);
-      setToast("Area hazard reactivated and tourists notified.");
+      const isCurrentAndPublic =
+        warning.is_public !== false
+        && (!warning.warning_starts_at || new Date(warning.warning_starts_at).getTime() <= Date.now())
+        && (!warning.warning_ends_at || new Date(warning.warning_ends_at).getTime() >= Date.now());
+      if (isCurrentAndPublic) {
+        const notify = await notifyTouristsOfDangerousLocation(warning.id, "updated");
+        setToast(notify.success
+          ? "Area hazard reactivated and tourists notified."
+          : `Hazard reactivated, but notification failed: ${notify.error}`);
+        if (notify.success && notify.warnings?.length) {
+          setToast("Area hazard reactivated, but some notifications could not be delivered.");
+        }
+      } else {
+        setToast("Area hazard reactivated; notifications will be sent when it becomes public and active.");
+      }
       await fetchWarnings();
     } else {
       setToast(result.error);

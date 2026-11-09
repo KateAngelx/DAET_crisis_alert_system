@@ -10,6 +10,7 @@ import {
 import { audienceToUserTypes, isProfileInAudience } from "@/lib/notificationAudience";
 import { getSystemSettings } from "@/lib/systemSettings.server";
 import { formatAreaHazardSms } from "@/lib/smsMessageFormat";
+import { sendWebPushToSubscriptions } from "@/lib/webPush.server";
 
 async function loadAreaHazard(admin, warningId) {
   const { data: advisory } = await admin
@@ -31,8 +32,8 @@ async function loadAreaHazard(admin, warningId) {
   return legacy;
 }
 
-export async function broadcastDangerousLocationToTourists(admin, warningId) {
-  const results = { notified: 0, skipped: 0, emailQueued: 0, smsQueued: 0, errors: [] };
+export async function broadcastDangerousLocationToTourists(admin, warningId, eventType = "created") {
+  const results = { notified: 0, skipped: 0, emailQueued: 0, smsQueued: 0, pushSent: 0, errors: [] };
 
   const warning = await loadAreaHazard(admin, warningId);
 
@@ -47,7 +48,11 @@ export async function broadcastDangerousLocationToTourists(admin, warningId) {
   }
 
   const priority = dangerSeverityToPriority(warning.severity);
-  const title = `${warning.severity === "Caution" ? "Route Caution" : "Area Hazard"}: ${warning.dangerous_location}`;
+  const isUpdate = eventType === "updated";
+  const eventKey = isUpdate
+    ? `area-hazard:${warning.id}:updated:${warning.updated_at}`
+    : `area-hazard:${warning.id}:created`;
+  const title = `${warning.severity === "Caution" ? "Route Caution" : "Area Hazard"}${isUpdate ? " Updated" : ""}: ${warning.dangerous_location}`;
   const message = `${warning.danger_type} reported at ${warning.dangerous_location}. Use alternative route: ${warning.alternative_route} → ${warning.destination}. ${warning.safety_instructions || ""}`.trim();
   const smsBody = formatAreaHazardSms(warning);
 
@@ -60,11 +65,13 @@ export async function broadcastDangerousLocationToTourists(admin, warningId) {
     return results;
   }
 
-  const { data: existing, error: existingError } = await admin
+  let existingQuery = admin
     .from("notifications")
     .select("user_id")
     .eq("related_type", "dangerous_location")
     .eq("related_id", warningId);
+  if (isUpdate) existingQuery = existingQuery.eq("event_key", eventKey);
+  const { data: existing, error: existingError } = await existingQuery;
 
   if (existingError) {
     results.errors.push(existingError.message);
@@ -101,35 +108,58 @@ export async function broadcastDangerousLocationToTourists(admin, warningId) {
     const effective = getBroadcastAlertChannels(hazardChannelFlags, userChannels);
     const sendEmail = effective.email && hasProfileEmail(profile);
 
-    if (!sendEmail && !effective.sms && !effective.app) {
+    if (!sendEmail && !effective.sms && !effective.app && !effective.push) {
       results.skipped += 1;
       continue;
     }
 
     let notificationId = null;
 
-    if (effective.app) {
+    if (effective.app || effective.push) {
       const { data: notification, error: notifError } = await admin
         .from("notifications")
         .insert({
           user_id: profile.id,
           title,
           message,
-          notification_type: "dangerous_location",
+          notification_type: isUpdate ? "dangerous_location_updated" : "dangerous_location",
           priority,
           related_type: "dangerous_location",
           related_id: warningId,
+          event_key: eventKey,
         })
         .select("id")
         .single();
 
       if (notifError) {
+        if (notifError.code === "23505") {
+          results.skipped += 1;
+          continue;
+        }
         results.errors.push(notifError.message);
         continue;
       }
 
       notificationId = notification.id;
       results.notified += 1;
+    }
+
+    if (effective.push && notificationId) {
+      const pushResult = await sendWebPushToSubscriptions(
+        admin,
+        profile.id,
+        {
+          id: notificationId,
+          title,
+          message,
+          priority,
+          related_type: "dangerous_location",
+          related_id: warningId,
+        },
+        { userType: profile.user_type }
+      );
+      results.pushSent += pushResult.sent || 0;
+      results.errors.push(...(pushResult.errors || []));
     }
 
     if (sendEmail) {
@@ -142,7 +172,7 @@ export async function broadcastDangerousLocationToTourists(admin, warningId) {
         subject: title,
         body: message,
         priority,
-        idempotency_key: `${profile.id}-dangerous_location-${warningId}-email`,
+        idempotency_key: `${profile.id}-${eventKey}-email`,
       });
     }
 
@@ -156,7 +186,7 @@ export async function broadcastDangerousLocationToTourists(admin, warningId) {
         subject: title,
         body: smsBody,
         priority,
-        idempotency_key: `${profile.id}-dangerous_location-${warningId}-sms`,
+        idempotency_key: `${profile.id}-${eventKey}-sms`,
       });
     }
   }

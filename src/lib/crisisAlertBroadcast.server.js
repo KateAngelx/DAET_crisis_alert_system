@@ -1,3 +1,4 @@
+import { createHash } from 'node:crypto';
 import { channelsFromDb } from '@/lib/alertChannels';
 import { NOTIFICATION_CHANNELS, severityToPriority } from '@/lib/constants';
 import { processNotificationDeliveries } from '@/lib/notificationQueue.server';
@@ -13,6 +14,7 @@ import { formatCrisisAlertSms } from '@/lib/smsMessageFormat';
 import { normalizePhilippinePhone } from '@/lib/phoneUtils';
 import { isSmsSuspended } from '@/lib/userActivity';
 import { detectIProgPhoneNetwork } from '@/lib/smsService';
+import { sendWebPushToSubscriptions } from '@/lib/webPush.server';
 
 function emptySmsDiagnostics() {
   return {
@@ -26,12 +28,13 @@ function emptySmsDiagnostics() {
   };
 }
 
-export async function broadcastCrisisAlertToTourists(admin, alertId) {
+export async function broadcastCrisisAlertToTourists(admin, alertId, eventType = 'created') {
   const results = {
     notified: 0,
     skipped: 0,
     emailQueued: 0,
     smsQueued: 0,
+    pushSent: 0,
     errors: [],
     smsDiagnostics: emptySmsDiagnostics(),
     smsPerRecipient: [],
@@ -50,7 +53,14 @@ export async function broadcastCrisisAlertToTourists(admin, alertId) {
 
   const alertChannelFlags = channelsFromDb(alert.channels);
   const priority = severityToPriority(alert.severity);
-  const title = `${alert.severity} Crisis Alert: ${alert.title}`;
+  const isUpdate = eventType === 'updated';
+  const alertVersion = createHash('sha256').update(JSON.stringify(alert)).digest('hex');
+  const eventKey = isUpdate
+    ? `crisis-alert:${alert.id}:updated:${alertVersion}`
+    : `crisis-alert:${alert.id}:created`;
+  const title = isUpdate
+    ? `${alert.severity} Crisis Alert Updated: ${alert.title}`
+    : `${alert.severity} Crisis Alert: ${alert.title}`;
   const message = `${alert.type} alert for ${alert.location}. ${alert.message}`;
   const smsBody = formatCrisisAlertSms(alert);
 
@@ -63,11 +73,13 @@ export async function broadcastCrisisAlertToTourists(admin, alertId) {
     return results;
   }
 
-  const { data: existing, error: existingError } = await admin
+  let existingQuery = admin
     .from('notifications')
     .select('user_id')
     .eq('related_type', 'alert')
     .eq('related_id', alertId);
+  if (isUpdate) existingQuery = existingQuery.eq('event_key', eventKey);
+  const { data: existing, error: existingError } = await existingQuery;
 
   if (existingError) {
     results.errors.push(existingError.message);
@@ -142,35 +154,58 @@ export async function broadcastCrisisAlertToTourists(admin, alertId) {
       });
     }
 
-    if (!sendEmail && !effective.sms && !effective.app) {
+    if (!sendEmail && !effective.sms && !effective.app && !effective.push) {
       results.skipped += 1;
       continue;
     }
 
     let notificationId = null;
 
-    if (effective.app) {
+    if (effective.app || effective.push) {
       const { data: notification, error: notifError } = await admin
         .from('notifications')
         .insert({
           user_id: profile.id,
           title,
           message,
-          notification_type: 'crisis_alert',
+          notification_type: isUpdate ? 'crisis_alert_updated' : 'crisis_alert',
           priority,
           related_type: 'alert',
           related_id: alertId,
+          event_key: eventKey,
         })
         .select('id')
         .single();
 
       if (notifError) {
+        if (notifError.code === '23505') {
+          results.skipped += 1;
+          continue;
+        }
         results.errors.push(notifError.message);
         continue;
       }
 
       notificationId = notification.id;
       results.notified += 1;
+    }
+
+    if (effective.push && notificationId) {
+      const pushResult = await sendWebPushToSubscriptions(
+        admin,
+        profile.id,
+        {
+          id: notificationId,
+          title,
+          message,
+          priority,
+          related_type: 'alert',
+          related_id: alertId,
+        },
+        { userType: profile.user_type }
+      );
+      results.pushSent += pushResult.sent || 0;
+      results.errors.push(...(pushResult.errors || []));
     }
 
     if (sendEmail) {
@@ -183,7 +218,7 @@ export async function broadcastCrisisAlertToTourists(admin, alertId) {
         subject: title,
         body: message,
         priority,
-        idempotency_key: `${profile.id}-crisis_alert-${alertId}-email`,
+        idempotency_key: `${profile.id}-${eventKey}-email`,
       });
     }
 
@@ -197,7 +232,7 @@ export async function broadcastCrisisAlertToTourists(admin, alertId) {
         subject: title,
         body: smsBody,
         priority,
-        idempotency_key: `${profile.id}-crisis_alert-${alertId}-sms`,
+        idempotency_key: `${profile.id}-${eventKey}-sms`,
       });
       if (isTourist) results.smsDiagnostics.touristSmsQueued += 1;
       else results.smsDiagnostics.guideSmsQueued += 1;

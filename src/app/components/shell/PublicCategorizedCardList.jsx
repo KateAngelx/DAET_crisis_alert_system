@@ -6,6 +6,7 @@ import { publicLayout } from "@/app/components/InfoPageHero";
 import { PublicCardListPreview, PUBLIC_CARD_LIST_LIMIT } from "@/app/components/shell/PublicCardListPreview";
 import { PublicListModal } from "@/app/components/shell/PublicListModal";
 import { portalShell } from "@/lib/designSystem";
+import { sortRecordsNewestFirst } from "@/lib/recordSorting";
 
 export {
   DEFAULT_SEVERITY_ORDER,
@@ -17,23 +18,15 @@ import {
   FilterPill,
 } from "@/app/components/shell/PublicCategorizedCardFilters";
 
-function severityRank(severity, order) {
-  const idx = order.indexOf(severity);
-  return idx === -1 ? order.length : idx;
-}
-
-export function groupItemsByCategory(items, getCategory, getSeverity, severityOrder = DEFAULT_SEVERITY_ORDER) {
+export function groupItemsByCategory(items, getCategory) {
   const groups = new Map();
   for (const item of items) {
     const cat = getCategory(item) || "Other";
     if (!groups.has(cat)) groups.set(cat, []);
     groups.get(cat).push(item);
   }
-  for (const list of groups.values()) {
-    list.sort(
-      (a, b) =>
-        severityRank(getSeverity(a), severityOrder) - severityRank(getSeverity(b), severityOrder)
-    );
+  for (const [category, list] of groups) {
+    groups.set(category, sortRecordsNewestFirst(list, ["published_at", "submitted_at", "created_at"]));
   }
   return [...groups.entries()].sort(([a], [b]) => a.localeCompare(b));
 }

@@ -10,6 +10,8 @@ export const ADMIN_NAV = {
     { path: "/crisis/command", label: "Command Center" },
     { path: "/crisis/roads", label: "Roads & Hazards" },
     { path: "/admin/incidents", label: "Incident Reports" },
+    { path: "/admin/guide-assistance", label: "Tourist Guide Assistance" },
+    { path: "/admin/crisis-feedback", label: "Crisis Feedback" },
     { path: "/admin/archive", label: "Archive & History" },
   ],
 };
@@ -19,6 +21,7 @@ export const GUIDE_NAV = {
     { path: "/guide", label: "Dashboard" },
     { path: "/guide/groups", label: "Tour Groups" },
     { path: "/guide/completed", label: "Completed Tours" },
+    { path: "/guide/assistance", label: "Guide Assistance Requests" },
     { path: "/guide/history", label: "History & Records" },
     { path: "/guide/tourists", label: "Active Tourists" },
     { path: "/guide/notifications", label: "Notifications" },

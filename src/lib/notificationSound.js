@@ -52,3 +52,31 @@ export function playCrisisNotificationSound() {
     // Visual notification still works if audio fails.
   }
 }
+
+export function playRewardSuccessSound() {
+  const ctx = getAudioContext();
+  if (!ctx || !soundUnlocked) return;
+
+  try {
+    const start = ctx.currentTime;
+    [523.25, 659.25, 783.99].forEach((frequency, index) => {
+      const oscillator = ctx.createOscillator();
+      const gain = ctx.createGain();
+      const noteStart = start + index * 0.08;
+
+      oscillator.type = "sine";
+      oscillator.frequency.setValueAtTime(frequency, noteStart);
+      oscillator.connect(gain);
+      gain.connect(ctx.destination);
+
+      gain.gain.setValueAtTime(0.0001, noteStart);
+      gain.gain.exponentialRampToValueAtTime(0.11, noteStart + 0.02);
+      gain.gain.exponentialRampToValueAtTime(0.0001, noteStart + 0.3);
+
+      oscillator.start(noteStart);
+      oscillator.stop(noteStart + 0.32);
+    });
+  } catch {
+    // The reward toast still confirms the award if audio is unavailable.
+  }
+}

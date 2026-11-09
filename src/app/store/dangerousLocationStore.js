@@ -1,20 +1,23 @@
 import { create } from "zustand";
 import { supabase } from "@/lib/supabaseClient";
 import { areaAdvisoryToWarning, warningPayloadToAreaAdvisory } from "@/lib/areaAdvisoryAdapter";
+import { sortRecordsNewestFirst } from "@/lib/recordSorting";
 
 async function fetchAreaAdvisoryRows() {
   const { data, error } = await supabase
     .from("route_advisories")
     .select("*")
     .eq("advisory_kind", "area")
-    .order("created_at", { ascending: false });
+    .order("created_at", { ascending: false, nullsFirst: false })
+    .order("id", { ascending: false });
 
   if (!error) return { rows: data || [], source: "route_advisories" };
 
   const legacy = await supabase
     .from("dangerous_location_warnings")
     .select("*")
-    .order("created_at", { ascending: false });
+    .order("created_at", { ascending: false, nullsFirst: false })
+    .order("id", { ascending: false });
 
   if (legacy.error) throw legacy.error;
   return { rows: legacy.data || [], source: "legacy" };
@@ -35,7 +38,7 @@ export const useDangerousLocationStore = create((set, get) => ({
           ? rows.map(areaAdvisoryToWarning).filter(Boolean)
           : rows;
 
-      set({ warnings, loading: false, error: null });
+      set({ warnings: sortRecordsNewestFirst(warnings), loading: false, error: null });
     } catch (err) {
       set({ loading: false, error: err.message || "Could not load area hazards." });
       return;
@@ -64,12 +67,14 @@ export const useDangerousLocationStore = create((set, get) => ({
             const warning = areaAdvisoryToWarning(payload.new);
             set((state) => {
               if (state.warnings.some((w) => w.id === warning.id)) return state;
-              return { warnings: [warning, ...state.warnings] };
+              return { warnings: sortRecordsNewestFirst([...state.warnings, warning]) };
             });
           } else if (payload.eventType === "UPDATE" && payload.new?.advisory_kind === "area") {
             const warning = areaAdvisoryToWarning(payload.new);
             set((state) => ({
-              warnings: state.warnings.map((w) => (w.id === warning.id ? warning : w)),
+              warnings: sortRecordsNewestFirst(
+                state.warnings.map((w) => (w.id === warning.id ? warning : w))
+              ),
             }));
           } else if (payload.eventType === "DELETE") {
             set((state) => ({
@@ -100,9 +105,14 @@ export const useDangerousLocationStore = create((set, get) => ({
   updateWarning: async (id, payload) => {
     try {
       const updatePayload = warningPayloadToAreaAdvisory({ ...payload, status: payload.status || "Active" });
-      const { error } = await supabase.from("route_advisories").update(updatePayload).eq("id", id);
+      const { data, error } = await supabase
+        .from("route_advisories")
+        .update(updatePayload)
+        .eq("id", id)
+        .select()
+        .single();
       if (error) throw error;
-      return { success: true };
+      return { success: true, warning: areaAdvisoryToWarning(data) };
     } catch (error) {
       return { success: false, error: error.message };
     }

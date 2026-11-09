@@ -9,6 +9,8 @@ import {
 } from "@/lib/feedbackConstants";
 import { typography } from "@/lib/designSystem";
 import { FeedbackWallSkeleton } from "@/app/components/ui/Skeletons";
+import { useAuthStore } from "@/app/store/crisisStore";
+import { getActiveSession } from "@/lib/authSession";
 
 const TYPE_OPTIONS = [
   { value: "feedback", label: "Feedback", icon: Heart },
@@ -74,6 +76,8 @@ function MarqueeRow({ items, reverse = false, rowOffset = 0 }) {
 }
 
 export function PublicFeedbackSection() {
+  const { user, isAuthenticated } = useAuthStore();
+  const canSubmit = isAuthenticated && user?.role === "tourist";
   const [items, setItems] = useState([]);
   const [loadingList, setLoadingList] = useState(true);
   const [name, setName] = useState("");
@@ -85,10 +89,14 @@ export function PublicFeedbackSection() {
 
   const loadFeedback = useCallback(async () => {
     try {
-      const res = await fetch("/api/feedback");
+      const res = await fetch("/api/crisis-feedback");
       const data = await res.json();
       if (Array.isArray(data.items)) {
-        setItems(data.items);
+        setItems(data.items.map((item) => ({
+          ...item,
+          feedback_type: item.submission_type,
+          name: item.display_name,
+        })));
       }
     } catch {
       setItems([]);
@@ -109,6 +117,11 @@ export function PublicFeedbackSection() {
     setFormError(null);
     setFormSuccess(null);
 
+    if (!canSubmit) {
+      setFormError("Please log in or register as a tourist to submit comments, feedback, or suggestions.");
+      return;
+    }
+
     if (!message.trim()) {
       setFormError("Please share your feedback, comment, or suggestion.");
       return;
@@ -116,13 +129,21 @@ export function PublicFeedbackSection() {
 
     setSubmitting(true);
     try {
-      const res = await fetch("/api/feedback", {
+      const headers = { "Content-Type": "application/json" };
+      const session = await getActiveSession();
+      if (session?.access_token) {
+        headers.Authorization = `Bearer ${session.access_token}`;
+      } else {
+        throw new Error("Your session expired. Please sign in again before submitting.");
+      }
+
+      const res = await fetch("/api/crisis-feedback", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers,
         body: JSON.stringify({
-          name: name.trim() || "Anonymous",
+          display_name: name.trim(),
           message: message.trim(),
-          feedback_type: feedbackType,
+          submission_type: feedbackType,
         }),
       });
       const data = await res.json();
@@ -131,15 +152,10 @@ export function PublicFeedbackSection() {
         return;
       }
 
-      if (data.item) {
-        setItems((prev) => [data.item, ...prev].slice(0, 24));
-      } else {
-        await loadFeedback();
-      }
       setMessage("");
-      setFormSuccess("Thank you! Your message has been added to the community wall.");
-    } catch {
-      setFormError("Could not submit feedback. Please try again.");
+      setFormSuccess("Thank you! Your message is pending review and will appear after it is approved.");
+    } catch (error) {
+      setFormError(error.message || "Could not submit feedback. Please try again.");
     } finally {
       setSubmitting(false);
     }
@@ -160,7 +176,7 @@ export function PublicFeedbackSection() {
           <p className="text-sm text-zinc-500 font-medium max-w-xl mx-auto leading-relaxed">
             {items.length > 0
               ? "Share how DAET TOURISM helps you, or suggest improvements. Tap any note below to tilt it — everyone can read and contribute."
-              : "Be the first to share feedback, a comment, or a suggestion for the Daet Municipal Tourism Office. Your message will appear here for others to read."}
+              : "Be the first to share feedback, a comment, or a suggestion for the Daet Municipal Tourism Office. Approved messages will appear here for others to read."}
           </p>
         </div>
 
@@ -200,8 +216,11 @@ export function PublicFeedbackSection() {
                 key={value}
                 type="button"
                 onClick={() => setFeedbackType(value)}
+                disabled={!canSubmit || submitting}
                 className={`inline-flex items-center gap-2 px-4 py-2 rounded-full text-[10px] font-black uppercase tracking-widest border transition-all ${
-                  feedbackType === value
+                  !canSubmit
+                    ? "cursor-not-allowed border-zinc-200 bg-zinc-100 text-zinc-400"
+                    : feedbackType === value
                     ? "bg-blue-600 text-white border-blue-600 shadow-lg shadow-blue-600/20"
                     : "bg-zinc-50 text-zinc-500 border-zinc-200 hover:border-blue-200"
                 }`}
@@ -221,16 +240,22 @@ export function PublicFeedbackSection() {
                 id="feedback-name"
                 type="text"
                 maxLength={80}
-                disabled={submitting}
-                placeholder="Anonymous"
-                className="mt-1 w-full p-3 bg-zinc-50 border border-zinc-100 rounded-xl font-bold text-sm outline-none focus:ring-2 focus:ring-blue-500"
+                disabled={!canSubmit || submitting}
+                placeholder="Your name (optional)"
+                className={`mt-1 w-full p-3 border rounded-xl font-bold text-sm outline-none ${
+                  canSubmit
+                    ? "bg-zinc-50 border-zinc-100 focus:ring-2 focus:ring-blue-500"
+                    : "cursor-not-allowed bg-zinc-100 border-zinc-200 text-zinc-400"
+                }`}
                 value={name}
                 onChange={(e) => setName(e.target.value)}
               />
             </div>
             <div className="sm:col-span-1 flex items-end">
-              <p className="text-[10px] text-zinc-400 font-medium pb-3">
-                No login required — your message may appear in the marquee above.
+              <p className={`text-[10px] font-medium pb-3 ${canSubmit ? "text-zinc-400" : "text-zinc-500"}`}>
+                {canSubmit
+                  ? "Your message will be reviewed before it may appear in the marquee above."
+                  : "Please log in or register as a tourist to submit comments, feedback, or suggestions."}
               </p>
             </div>
           </div>
@@ -244,9 +269,13 @@ export function PublicFeedbackSection() {
               required
               maxLength={500}
               rows={4}
-              disabled={submitting}
+              disabled={!canSubmit || submitting}
               placeholder="Share feedback, a comment, or a suggestion for the Daet Municipal Tourism Office..."
-              className="mt-1 w-full p-3 bg-zinc-50 border border-zinc-100 rounded-xl font-medium text-sm outline-none focus:ring-2 focus:ring-blue-500 resize-none"
+              className={`mt-1 w-full p-3 border rounded-xl font-medium text-sm outline-none resize-none ${
+                canSubmit
+                  ? "bg-zinc-50 border-zinc-100 focus:ring-2 focus:ring-blue-500"
+                  : "cursor-not-allowed bg-zinc-100 border-zinc-200 text-zinc-400"
+              }`}
               value={message}
               onChange={(e) => setMessage(e.target.value)}
             />
@@ -264,8 +293,12 @@ export function PublicFeedbackSection() {
 
           <button
             type="submit"
-            disabled={submitting || !message.trim()}
-            className="w-full py-3.5 bg-blue-600 text-white rounded-xl font-black uppercase text-xs tracking-[0.2em] shadow-xl shadow-blue-100 hover:bg-blue-700 transition-all flex items-center justify-center gap-2 disabled:bg-blue-300"
+            disabled={!canSubmit || submitting || !message.trim()}
+            className={`w-full py-3.5 rounded-xl font-black uppercase text-xs tracking-[0.2em] shadow-xl transition-all flex items-center justify-center gap-2 ${
+              canSubmit
+                ? "bg-blue-600 text-white shadow-blue-100 hover:bg-blue-700 disabled:bg-blue-300"
+                : "cursor-not-allowed bg-zinc-300 text-zinc-500 shadow-none"
+            }`}
           >
             {submitting ? (
               <>

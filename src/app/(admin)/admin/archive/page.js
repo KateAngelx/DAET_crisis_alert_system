@@ -42,6 +42,7 @@ import {
   incidentStatusBadgeClass,
   normalizeIncidentStatusLabel,
 } from "@/lib/incidentStatusUtils";
+import { sortRecordsNewestFirst } from "@/lib/recordSorting";
 
 export default function AdminArchivePage() {
   const { alerts, fetchAlerts, loading: alertsLoading } = useCrisisStore();
@@ -63,9 +64,10 @@ export default function AdminArchivePage() {
 
   const resolvedAlerts = useMemo(
     () =>
-      alerts
-        .filter((a) => a.status === "Resolved")
-        .sort((a, b) => new Date(b.updated_at || b.created_at) - new Date(a.updated_at || a.created_at)),
+      sortRecordsNewestFirst(
+        alerts.filter((a) => a.status === "Resolved"),
+        ["published_at", "created_at"]
+      ),
     [alerts]
   );
 
@@ -85,16 +87,17 @@ export default function AdminArchivePage() {
       ? `${alert.title} · ${alert.location}`
       : alert.title || alert.location || "—",
     type: alert.type || "General",
-    when: new Date(alert.updated_at || alert.created_at).toLocaleString(),
+    when: new Date(alert.published_at || alert.created_at).toLocaleString(),
     onSelect: () => setSelectedAlert(alert),
     ariaLabel: "View resolved alert",
   }));
 
   const closedIncidents = useMemo(
     () =>
-      incidents
-        .filter((i) => ARCHIVE_INCIDENT_STATUSES.includes(i.status))
-        .sort((a, b) => new Date(b.updated_at || b.created_at) - new Date(a.updated_at || a.created_at)),
+      sortRecordsNewestFirst(
+        incidents.filter((i) => ARCHIVE_INCIDENT_STATUSES.includes(i.status)),
+        ["created_at"]
+      ),
     [incidents]
   );
 

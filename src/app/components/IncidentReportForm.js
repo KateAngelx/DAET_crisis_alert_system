@@ -13,10 +13,21 @@ const INITIAL_FORM = {
   severity: "Medium",
 };
 
-export function IncidentReportForm({ onSuccess, onCancel, compact = false }) {
+export function IncidentReportForm({
+  onSuccess,
+  onCancel,
+  compact = false,
+  categoryOverride,
+  categories = INCIDENT_CATEGORIES,
+  introductoryInfo,
+  availabilityMessage,
+}) {
   const { user } = useAuthStore();
-  const { submitReport, loading } = useIncidentStore();
-  const [form, setForm] = useState(INITIAL_FORM);
+  const { submitReport, submitting } = useIncidentStore();
+  const [form, setForm] = useState(() => ({
+    ...INITIAL_FORM,
+    category: categoryOverride || INITIAL_FORM.category,
+  }));
   const [files, setFiles] = useState([]);
   const [error, setError] = useState(null);
 
@@ -24,15 +35,23 @@ export function IncidentReportForm({ onSuccess, onCancel, compact = false }) {
     e.preventDefault();
     setError(null);
 
+    if (!user?.id) {
+      setError("Sign in to submit a report.");
+      return;
+    }
+
     if (!form.description.trim() || !form.location.trim()) {
       setError("Please provide a description and location.");
       return;
     }
 
-    const result = await submitReport({ ...form, reporterId: user.id }, files);
+    const result = await submitReport(
+      { ...form, reporterId: user.id, reporterRole: user.role },
+      files
+    );
 
     if (result.success) {
-      setForm(INITIAL_FORM);
+      setForm({ ...INITIAL_FORM, category: categoryOverride || INITIAL_FORM.category });
       setFiles([]);
       onSuccess?.(result.incident);
     } else {
@@ -42,6 +61,16 @@ export function IncidentReportForm({ onSuccess, onCancel, compact = false }) {
 
   return (
     <form onSubmit={handleSubmit} className={`space-y-5 ${compact ? "" : ""}`}>
+      {introductoryInfo ? (
+        <div className="rounded-xl border border-blue-100 bg-blue-50 p-4 text-sm font-medium leading-relaxed text-blue-900">
+          {introductoryInfo}
+        </div>
+      ) : null}
+      {availabilityMessage ? (
+        <div className="rounded-xl border border-amber-100 bg-amber-50 p-3 text-xs font-semibold leading-relaxed text-amber-900">
+          {availabilityMessage}
+        </div>
+      ) : null}
       {error && (
         <div className="bg-red-50 border border-red-200 text-red-700 p-4 rounded-2xl text-sm font-bold">
           {error}
@@ -50,15 +79,21 @@ export function IncidentReportForm({ onSuccess, onCancel, compact = false }) {
 
       <div>
         <label className="text-[10px] font-black uppercase tracking-widest text-gray-400">Category</label>
-        <select
-          value={form.category}
-          onChange={(e) => setForm({ ...form, category: e.target.value })}
-          className="w-full mt-1 p-3 bg-gray-50 border border-gray-100 rounded-xl font-bold text-sm"
-        >
-          {INCIDENT_CATEGORIES.map((c) => (
-            <option key={c} value={c}>{c}</option>
-          ))}
-        </select>
+        {categoryOverride ? (
+          <p className="mt-1 rounded-xl border border-zinc-100 bg-zinc-50 p-3 text-sm font-bold text-zinc-800">
+            {categoryOverride}
+          </p>
+        ) : (
+          <select
+            value={form.category}
+            onChange={(e) => setForm({ ...form, category: e.target.value })}
+            className="w-full mt-1 p-3 bg-gray-50 border border-gray-100 rounded-xl font-bold text-sm"
+          >
+            {categories.map((c) => (
+              <option key={c} value={c}>{c}</option>
+            ))}
+          </select>
+        )}
       </div>
 
       <div>
@@ -88,6 +123,7 @@ export function IncidentReportForm({ onSuccess, onCancel, compact = false }) {
         <textarea
           required
           rows={4}
+          maxLength={5000}
           value={form.description}
           onChange={(e) => setForm({ ...form, description: e.target.value })}
           placeholder="Describe what happened..."
@@ -101,6 +137,7 @@ export function IncidentReportForm({ onSuccess, onCancel, compact = false }) {
         </label>
         <input
           required
+          maxLength={500}
           value={form.location}
           onChange={(e) => setForm({ ...form, location: e.target.value })}
           placeholder="e.g. Bagasbas Beach, Daet"
@@ -136,10 +173,10 @@ export function IncidentReportForm({ onSuccess, onCancel, compact = false }) {
         )}
         <button
           type="submit"
-          disabled={loading}
+          disabled={submitting}
           className={`${onCancel ? "flex-1" : "w-full"} py-4 bg-red-600 text-white rounded-2xl font-black uppercase text-xs tracking-widest flex items-center justify-center gap-2 hover:bg-red-700 disabled:opacity-50`}
         >
-          {loading ? <><Loader2 size={18} className="animate-spin" /> Submitting...</> : <><Send size={18} /> Submit Report</>}
+          {submitting ? <><Loader2 size={18} className="animate-spin" /> Submitting...</> : <><Send size={18} /> Submit Report</>}
         </button>
       </div>
     </form>

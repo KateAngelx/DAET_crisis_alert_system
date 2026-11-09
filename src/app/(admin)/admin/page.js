@@ -32,6 +32,7 @@ import { AdminDashboardActivityPanel } from "@/app/components/dashboard/AdminDas
 import { PublicCardListPreview } from "@/app/components/shell/PublicCardListPreview";
 import { AdminQuickActions } from "@/app/components/admin/AdminQuickActions";
 import { AdminPanel } from "@/app/components/admin/AdminPanel";
+import { sortRecordsNewestFirst } from "@/lib/recordSorting";
 
 const PENDING_STATUSES = ["Submitted", "Approved", "Received", "Under Review"];
 const ACTION_STATUSES = ["Assigned", "Responding"];
@@ -141,13 +142,7 @@ export default function AdminDashboard() {
       latestActivity,
       recentAlerts: alerts.slice(0, 5),
       recentIncidents: incidents.slice(0, 5),
-      recentlyResolved: [...resolvedIncidents]
-        .sort(
-          (a, b) =>
-            new Date(b.updated_at || b.created_at).getTime() -
-            new Date(a.updated_at || a.created_at).getTime()
-        )
-        .slice(0, 5),
+      recentlyResolved: sortRecordsNewestFirst(resolvedIncidents, ["created_at"]).slice(0, 5),
       incidentStats: getDashboardStats(),
     };
   }, [alerts, incidents, warnings, getDashboardStats]);
@@ -302,7 +297,7 @@ export default function AdminDashboard() {
                         {inc.status}
                       </span>
                       <span className="text-[9px] font-bold text-zinc-400">
-                        {formatRelativeTime(inc.updated_at || inc.created_at)}
+                        {formatRelativeTime(inc.created_at)}
                       </span>
                     </div>
                   </div>
@@ -329,6 +324,13 @@ export default function AdminDashboard() {
               title: "Manage Incidents",
               sub: `${metrics.pendingReports.length} pending · ${metrics.actionRequired.length} in progress`,
               color: "text-orange-600",
+            },
+            {
+              href: "/admin/guide-assistance",
+              icon: Users,
+              title: "Guide Assistance",
+              sub: "Review tourist assistance requests",
+              color: "text-purple-600",
             },
             {
               href: "/admin/users",

@@ -18,6 +18,7 @@ const ICONS = {
   Dashboard: LayoutDashboard,
   "Tour Groups": Compass,
   "Completed Tours": CheckCircle,
+  "Guide Assistance Requests": Compass,
   "History & Records": History,
   "Active Tourists": Users,
   Notifications: Bell,
@@ -30,8 +31,8 @@ const ICONS = {
 const GUIDE_BOTTOM_NAV = [
   { href: "/guide", short: "Home", icon: LayoutDashboard },
   { href: "/guide/groups", short: "Groups", icon: Compass },
+  { href: "/guide/assistance", short: "Assistance", icon: Users },
   { href: "/guide/crisis", short: "Crisis", icon: ShieldCheck },
-  { href: "/guide/history", short: "History", icon: History },
 ];
 
 function Logo() {

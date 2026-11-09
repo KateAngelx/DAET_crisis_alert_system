@@ -30,6 +30,7 @@ import { RoleContextBanner } from "@/app/components/dashboard/RoleContextBanner"
 import { GuideDashboardQuickActions } from "@/app/components/guide/GuideDashboardQuickActions";
 import { PublicCategorizedCardList } from "@/app/components/shell/PublicCategorizedCardList";
 import { INCIDENT_SEVERITIES } from "@/lib/constants";
+import { sortRecordsNewestFirst } from "@/lib/recordSorting";
 
 export default function GuideCrisisHubPage() {
   const { user } = useAuthStore();
@@ -66,20 +67,12 @@ export default function GuideCrisisHubPage() {
   );
 
   const filteredAlerts = useMemo(() => {
-    return activeAlerts
-      .filter((alert) => {
+    return sortRecordsNewestFirst(activeAlerts.filter((alert) => {
         const type = alert.type || "General";
         if (categoryFilter !== "all" && type !== categoryFilter) return false;
         if (severityFilter !== "all" && alert.severity !== severityFilter) return false;
         return true;
-      })
-      .sort((a, b) => {
-        const rankA = DEFAULT_SEVERITY_ORDER.indexOf(a.severity);
-        const rankB = DEFAULT_SEVERITY_ORDER.indexOf(b.severity);
-        const severityDiff = (rankA === -1 ? 99 : rankA) - (rankB === -1 ? 99 : rankB);
-        if (severityDiff !== 0) return severityDiff;
-        return new Date(b.created_at || 0) - new Date(a.created_at || 0);
-      });
+      }), ["published_at", "created_at"]);
   }, [activeAlerts, categoryFilter, severityFilter]);
 
   const alertRows = filteredAlerts.map((alert) => ({
@@ -90,7 +83,9 @@ export default function GuideCrisisHubPage() {
       ? `${alert.title} · ${alert.location}`
       : alert.title || alert.location || "—",
     type: alert.type || "General",
-    when: alert.created_at ? new Date(alert.created_at).toLocaleString() : "—",
+    when: alert.published_at || alert.created_at
+      ? new Date(alert.published_at || alert.created_at).toLocaleString()
+      : "—",
     onSelect: () => setSelectedAlert(alert),
     ariaLabel: "View alert details",
   }));
@@ -102,7 +97,12 @@ export default function GuideCrisisHubPage() {
     activeGroups.forEach((group) => {
       getRelevantRouteAdvisoriesForGroup(catalog.published, group).forEach((a) => ids.add(a.id));
     });
-    return [...catalog.active, ...catalog.affected, ...catalog.alternative].filter((r) => ids.has(r.advisoryId));
+    return sortRecordsNewestFirst(
+      [...catalog.active, ...catalog.affected, ...catalog.alternative]
+        .filter((r) => ids.has(r.advisoryId))
+        .map((route) => ({ ...route, created_at: route.advisory?.created_at })),
+      ["created_at"]
+    );
   }, [activeGroups, catalog.published, catalog.active, catalog.affected, catalog.alternative]);
 
   const routeRows = relevantRouteAdvisories.map((route) => ({

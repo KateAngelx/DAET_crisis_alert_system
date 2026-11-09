@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
-  Menu, X, LayoutDashboard, Users, AlertTriangle, FileWarning,
+  Menu, X, LayoutDashboard, Users, AlertTriangle, FileWarning, MessageSquare, Compass,
 } from "lucide-react";
 import { BrandLogo } from "@/app/components/BrandLogo";
 import { ADMIN_NAV, isNavActive } from "@/lib/dashboardNav";
@@ -13,6 +13,8 @@ const ICONS = {
   Users,
   "Command Center": AlertTriangle,
   "Incident Reports": FileWarning,
+  "Tourist Guide Assistance": Compass,
+  "Crisis Feedback": MessageSquare,
 };
 
 export function MobileAdminMenu({ open, onOpen, onClose }) {

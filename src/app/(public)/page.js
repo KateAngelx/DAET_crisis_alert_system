@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
   ArrowRight, ShieldCheck, Bell, MapPin, PhoneCall, Radio, FileText, Users, Navigation,
-  Sun, Cloud, CloudFog, CloudRain, CloudLightning, ChevronDown, Mail, MessageSquare,
+  Sun, Cloud, CloudFog, CloudRain, CloudLightning, ChevronDown, Mail, MessageSquare, Compass,
   UserPlus, Settings, AlertTriangle, Activity
 } from "lucide-react";
 import { useCrisisStore, useAuthStore } from "@/app/store/crisisStore";
@@ -19,6 +19,8 @@ import { siteInfo } from "@/lib/siteInfo";
 import { fetchPublicStatsCached, invalidatePublicStatsCache } from "@/lib/publicStatsClient";
 import { MobilePopStack, MobilePopStackItem } from "@/app/components/landing/MobilePopStack";
 import { usePublicVisibility } from "@/lib/usePublicVisibility";
+import { sortRecordsNewestFirst } from "@/lib/recordSorting";
+import { GuideAssistanceRequestForm } from "@/app/components/tourist/GuideAssistanceRequestForm";
 
 const CHANNELS = [
   {
@@ -233,6 +235,9 @@ export default function Home() {
   const visibility = usePublicVisibility();
   const { unreadCount, fetchNotifications } = useNotificationStore();
   const [mounted, setMounted] = useState(false);
+  const [guideAssistance, setGuideAssistance] = useState(null);
+  const [guideRequestOpen, setGuideRequestOpen] = useState(false);
+  const [guideRequestSubmitted, setGuideRequestSubmitted] = useState(false);
   const router = useRouter();
   
   useEffect(() => {
@@ -245,6 +250,23 @@ export default function Home() {
     fetchNotifications(user.id);
   }, [mounted, isAuthenticated, user?.id, fetchNotifications]);
 
+  useEffect(() => {
+    if (!isAuthenticated || user?.role !== "tourist") return undefined;
+    let active = true;
+    fetch("/api/tourist/guide-assistance", { cache: "no-store" })
+      .then(async (response) => {
+        const result = await response.json();
+        if (!response.ok) throw new Error(result.error || "Unable to load service availability.");
+        if (active) setGuideAssistance(result.assistance);
+      })
+      .catch(() => {
+        if (active) setGuideAssistance(null);
+      });
+    return () => {
+      active = false;
+    };
+  }, [isAuthenticated, user?.role]);
+
   useLayoutEffect(() => {
     if (!mounted || !isAuthenticated) return;
     if (user?.role === 'admin') router.replace('/admin');
@@ -253,14 +275,10 @@ export default function Home() {
 
   if (!mounted || (isAuthenticated && (user?.role === 'admin' || user?.role === 'guide'))) return null;
 
-  // Filter alerts by Active & Public, then sort so Critical alerts appear first
-  const activeAlerts = alerts
-    .filter((a) => a.status === "Active" && a.is_public)
-    .sort((a, b) => {
-      if (a.severity === "Critical" && b.severity !== "Critical") return -1;
-      if (a.severity !== "Critical" && b.severity === "Critical") return 1;
-      return 0;
-    });
+  const activeAlerts = sortRecordsNewestFirst(
+    alerts.filter((a) => a.status === "Active" && a.is_public),
+    ["published_at", "created_at"]
+  );
     
   const criticalCount = activeAlerts.filter((a) => a.severity === "Critical").length;
 
@@ -309,7 +327,7 @@ export default function Home() {
         className="relative w-full min-h-[100dvh] md:min-h-[640px] overflow-hidden flex flex-col justify-end md:justify-center bg-cover bg-center bg-no-repeat pt-[calc(3.75rem+env(safe-area-inset-top))] pb-[calc(6.25rem+env(safe-area-inset-bottom))] md:py-20 lg:py-24"
         style={{ backgroundImage: "url('/images/hero-bg.jpg')" }} 
       >
-        <div className="absolute inset-0 bg-gradient-to-b from-zinc-950/85 via-blue-950/70 to-zinc-950/90 md:bg-gradient-to-r md:from-zinc-950/90 md:via-blue-950/55 md:to-zinc-900/20" aria-hidden="true"></div>
+        <div className="absolute inset-0 bg-gradient-to-b from-slate-950/80 via-blue-900/55 to-indigo-950/85 md:bg-gradient-to-r md:from-slate-950/85 md:via-blue-900/55 md:to-cyan-900/20" aria-hidden="true"></div>
         <div className="absolute -left-16 top-16 h-64 w-64 rounded-full bg-blue-500/35 blur-3xl" aria-hidden="true"></div>
         <div className="absolute bottom-10 right-10 h-48 w-48 rounded-full bg-sky-400/20 blur-3xl" aria-hidden="true"></div>
 
@@ -325,7 +343,7 @@ export default function Home() {
 
             {isAuthenticated && (
               <div className="animate-in fade-in slide-in-from-bottom-2 duration-700 w-full mb-3 md:mb-6">
-                <h2 className={`${typography.pageTitle} text-blue-400 leading-none mb-1.5`}>
+                <h2 className="text-2xl md:text-[28px] font-black tracking-tight text-white leading-none mb-1.5">
                   Mabuhay, {user?.name || 'Traveler'}!
                 </h2>
                 <p className="text-sm text-zinc-300 font-medium">
@@ -539,6 +557,60 @@ export default function Home() {
           </div>
         </section>
       )}
+
+      {isAuthenticated && user?.role === "tourist" && guideAssistance?.enabled === true && (
+        <section id="guide-assistance" className="border-b border-purple-100 bg-white py-8 md:py-12">
+          <div className="mx-auto max-w-7xl px-3 sm:px-6">
+            <div className="rounded-2xl border border-purple-200 bg-gradient-to-br from-purple-50 via-white to-blue-50 p-5 shadow-sm sm:p-7">
+              <div className="flex flex-col gap-5 md:flex-row md:items-center md:justify-between">
+                <div className="max-w-3xl">
+                  <div className="mb-2 flex items-center gap-2 text-purple-700">
+                    <Compass size={18} />
+                    <span className="text-[10px] font-black uppercase tracking-widest">Tourism assistance</span>
+                  </div>
+                  <h2 className="text-xl font-black tracking-tight text-zinc-900 sm:text-2xl">
+                    Need Help from a Local Tourist Guide?
+                  </h2>
+                  <p className="mt-2 text-sm leading-relaxed text-zinc-700">
+                    Request assistance from an accredited local tourist guide for tourism-related concerns and destination assistance in Daet.
+                  </p>
+                  {guideAssistance.introductoryInformation ? (
+                    <p className="mt-3 whitespace-pre-wrap text-sm leading-relaxed text-zinc-600">
+                      {guideAssistance.introductoryInformation}
+                    </p>
+                  ) : null}
+                  <p className="mt-3 text-xs font-semibold leading-relaxed text-zinc-600">
+                    {guideAssistance.availabilityMessage || "Availability depends on local guide schedules and Tourism Office coordination."}
+                    {" "}This is not an emergency service. For emergencies, contact local emergency services.
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setGuideRequestSubmitted(false);
+                    setGuideRequestOpen(true);
+                  }}
+                  className="inline-flex min-h-12 shrink-0 items-center justify-center gap-2 rounded-xl bg-purple-700 px-5 py-3 text-sm font-black text-white shadow-sm hover:bg-purple-800"
+                >
+                  <Compass size={17} /> Request Guide Assistance
+                </button>
+              </div>
+              {guideRequestSubmitted ? (
+                <p role="status" className="mt-4 rounded-xl border border-green-200 bg-green-50 p-3 text-sm font-bold text-green-800">
+                  Your request was submitted successfully. It is now Pending and the Tourism Office will coordinate based on guide availability.
+                </p>
+              ) : null}
+            </div>
+          </div>
+        </section>
+      )}
+      {guideRequestOpen && guideAssistance?.enabled === true ? (
+        <GuideAssistanceRequestForm
+          assistance={guideAssistance}
+          onClose={() => setGuideRequestOpen(false)}
+          onSubmitted={() => setGuideRequestSubmitted(true)}
+        />
+      ) : null}
 
       {/* 4. CORE FEATURES SECTION (What You Can Check Here) - CAROUSEL ON MOBILE */}
       {!isAuthenticated && (

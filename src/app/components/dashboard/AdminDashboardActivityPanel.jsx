@@ -136,10 +136,10 @@ export function AdminDashboardActivityPanel({
                     </div>
                     <time
                       className="text-[9px] font-bold text-zinc-400 shrink-0 tabular-nums"
-                      dateTime={alert.created_at}
-                      title={alert.created_at ? new Date(alert.created_at).toLocaleString() : undefined}
+                      dateTime={alert.published_at || alert.created_at}
+                      title={alert.published_at || alert.created_at ? new Date(alert.published_at || alert.created_at).toLocaleString() : undefined}
                     >
-                      {formatRelativeTime(alert.created_at)}
+                      {formatRelativeTime(alert.published_at || alert.created_at)}
                     </time>
                   </div>
                   <p className="font-bold text-zinc-900 text-sm leading-snug line-clamp-2">{alert.title}</p>

@@ -10,6 +10,7 @@ import { getPrimaryMapsLink, getRouteMapsLinks } from "@/lib/routeMapsLinks";
 import { buildGpxFromAdvisory, downloadGpx, hasRoutePath, parseRoutePath } from "@/lib/routeGeometryUtils";
 import { useResolvedRouteAdvisories } from "@/lib/useResolvedRouteAdvisories";
 import { iconSize, typography } from "@/lib/designSystem";
+import { TravelAdvisoryViewReward } from "@/app/components/rewards/TravelAdvisoryViewReward";
 
 function advisoryToAltDisplay(advisory) {
   if (!advisory) return null;
@@ -42,16 +43,17 @@ function MapsActionButton({ href, label, variant = "primary" }) {
 }
 
 export function RouteDetailContent({ route, catalog, onSelectRoute }) {
+  const advisory = route?.advisory || route?.warning;
+  const resolvedAdvisories = useResolvedRouteAdvisories(advisory ? [advisory] : []);
+  const resolvedAdvisory = resolvedAdvisories[0] || advisory;
+  const pathPoints = useMemo(() => parseRoutePath(resolvedAdvisory), [resolvedAdvisory]);
+  const pathCenter = pathPoints[0] || null;
+
   if (!route) return null;
 
   const styles = getRouteStatusStyles(route.status);
   const mapsLinks = getRouteMapsLinks(route);
   const primaryMapsLink = getPrimaryMapsLink(route);
-  const advisory = route.advisory || route.warning;
-  const resolvedAdvisories = useResolvedRouteAdvisories(advisory ? [advisory] : []);
-  const resolvedAdvisory = resolvedAdvisories[0] || advisory;
-  const pathPoints = useMemo(() => parseRoutePath(resolvedAdvisory), [resolvedAdvisory]);
-  const pathCenter = pathPoints[0] || null;
   const linkedAlternatives =
     catalog && route.advisoryId && route.view !== "alternative"
       ? getLinkedAlternatives(catalog, route.advisoryId)
@@ -244,11 +246,21 @@ export function RouteDetailContent({ route, catalog, onSelectRoute }) {
 }
 
 export function RouteDetailModal({ open, route, catalog, onClose, onSelectRoute }) {
-  const scrollLoggedRef = useRef(false);
+  const detailBodyRef = useRef(null);
+  const [viewedRouteKey, setViewedRouteKey] = React.useState(null);
+  const routeId = route?.advisoryId || route?.id;
+  const routeKey = open && routeId ? `road:${routeId}` : null;
 
   useEffect(() => {
-    scrollLoggedRef.current = false;
-  }, [open, route?.advisoryId, route?.id]);
+    if (!open || !routeId) return undefined;
+    const frame = requestAnimationFrame(() => {
+      const body = detailBodyRef.current;
+      if (body && body.scrollHeight <= body.clientHeight + 4) {
+        setViewedRouteKey(routeKey);
+      }
+    });
+    return () => cancelAnimationFrame(frame);
+  }, [open, routeId, routeKey]);
 
   useEffect(() => {
     if (!open) return undefined;
@@ -292,13 +304,25 @@ export function RouteDetailModal({ open, route, catalog, onClose, onSelectRoute 
             </button>
           </div>
           <div
+            ref={detailBodyRef}
             className="flex-1 overflow-y-auto p-6 bg-white"
             onScroll={(e) => {
+              const body = e.currentTarget;
+              if (body.scrollTop + body.clientHeight >= body.scrollHeight - 8) {
+                setViewedRouteKey(routeKey);
+              }
             }}
           >
             <RouteDetailContent route={route} catalog={catalog} onSelectRoute={onSelectRoute} />
           </div>
           <div className="shrink-0 bg-white rounded-b-2xl border-t border-zinc-100 p-4">
+            <div className="mb-3">
+              <TravelAdvisoryViewReward
+                advisoryId={routeId}
+                activityType="road_view"
+                viewed={viewedRouteKey === routeKey}
+              />
+            </div>
             <button
               type="button"
               onClick={onClose}

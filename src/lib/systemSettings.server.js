@@ -15,6 +15,28 @@ export function getDefaultSystemSettings() {
     id: SETTINGS_ID,
     notification_audience: { ...DEFAULT_NOTIFICATION_AUDIENCE },
     public_visibility: { ...DEFAULT_PUBLIC_VISIBILITY },
+    rewards_enabled: true,
+    registration_points_enabled: true,
+    registration_points_value: 10,
+    profile_completion_points_enabled: true,
+    profile_completion_points_value: 10,
+    alert_reading_points_enabled: true,
+    alert_reading_points_value: 5,
+    road_viewing_points_enabled: true,
+    road_viewing_points_value: 5,
+    hazard_viewing_points_enabled: true,
+    hazard_viewing_points_value: 5,
+    crisis_feedback_points_enabled: true,
+    crisis_feedback_points_min_value: 1,
+    crisis_feedback_points_value: 5,
+    crisis_feedback_points_max_value: 100,
+    crisis_feedback_daily_submission_cap: 1,
+    incident_report_points_enabled: false,
+    incident_report_points_value: 5,
+    tourist_guide_completion_points_enabled: true,
+    tourist_guide_assistance_enabled: false,
+    tourist_guide_assistance_intro: "",
+    tourist_guide_assistance_availability: "",
     updated_at: null,
     updated_by: null,
   };
@@ -26,14 +48,14 @@ export async function getSystemSettings(adminClient) {
 
   const { data, error } = await client
     .from("system_settings")
-    .select("id, notification_audience, public_visibility, updated_at, updated_by")
+    .select("id, notification_audience, public_visibility, rewards_enabled, registration_points_enabled, registration_points_value, profile_completion_points_enabled, profile_completion_points_value, alert_reading_points_enabled, alert_reading_points_value, road_viewing_points_enabled, road_viewing_points_value, hazard_viewing_points_enabled, hazard_viewing_points_value, crisis_feedback_points_enabled, crisis_feedback_points_min_value, crisis_feedback_points_value, crisis_feedback_points_max_value, crisis_feedback_daily_submission_cap, incident_report_points_enabled, incident_report_points_value, tourist_guide_completion_points_enabled, tourist_guide_assistance_enabled, tourist_guide_assistance_intro, tourist_guide_assistance_availability, updated_at, updated_by")
     .eq("id", SETTINGS_ID)
     .maybeSingle();
 
   if (error) {
     const fallback = await client
       .from("system_settings")
-      .select("id, notification_audience, updated_at, updated_by")
+      .select("id, notification_audience, rewards_enabled, registration_points_enabled, registration_points_value, profile_completion_points_enabled, profile_completion_points_value, alert_reading_points_enabled, alert_reading_points_value, road_viewing_points_enabled, road_viewing_points_value, hazard_viewing_points_enabled, hazard_viewing_points_value, crisis_feedback_points_enabled, crisis_feedback_points_min_value, crisis_feedback_points_value, crisis_feedback_points_max_value, crisis_feedback_daily_submission_cap, incident_report_points_enabled, incident_report_points_value, updated_at, updated_by")
       .eq("id", SETTINGS_ID)
       .maybeSingle();
     if (fallback.error || !fallback.data) return getDefaultSystemSettings();
@@ -41,6 +63,28 @@ export async function getSystemSettings(adminClient) {
       ...fallback.data,
       notification_audience: normalizeNotificationAudience(fallback.data.notification_audience),
       public_visibility: { ...DEFAULT_PUBLIC_VISIBILITY },
+      rewards_enabled: fallback.data.rewards_enabled ?? true,
+      registration_points_enabled: fallback.data.registration_points_enabled ?? true,
+      registration_points_value: fallback.data.registration_points_value ?? 10,
+      profile_completion_points_enabled: fallback.data.profile_completion_points_enabled ?? true,
+      profile_completion_points_value: fallback.data.profile_completion_points_value ?? 10,
+      alert_reading_points_enabled: fallback.data.alert_reading_points_enabled ?? true,
+      alert_reading_points_value: fallback.data.alert_reading_points_value ?? 5,
+      road_viewing_points_enabled: fallback.data.road_viewing_points_enabled ?? true,
+      road_viewing_points_value: fallback.data.road_viewing_points_value ?? 5,
+      hazard_viewing_points_enabled: fallback.data.hazard_viewing_points_enabled ?? true,
+      hazard_viewing_points_value: fallback.data.hazard_viewing_points_value ?? 5,
+      crisis_feedback_points_enabled: fallback.data.crisis_feedback_points_enabled ?? true,
+      crisis_feedback_points_min_value: fallback.data.crisis_feedback_points_min_value ?? 1,
+      crisis_feedback_points_value: fallback.data.crisis_feedback_points_value ?? 5,
+      crisis_feedback_points_max_value: fallback.data.crisis_feedback_points_max_value ?? 100,
+      crisis_feedback_daily_submission_cap: fallback.data.crisis_feedback_daily_submission_cap ?? 1,
+      incident_report_points_enabled: fallback.data.incident_report_points_enabled ?? false,
+      incident_report_points_value: fallback.data.incident_report_points_value ?? 5,
+      tourist_guide_completion_points_enabled: false,
+      tourist_guide_assistance_enabled: false,
+      tourist_guide_assistance_intro: "",
+      tourist_guide_assistance_availability: "",
     };
   }
 
@@ -50,10 +94,58 @@ export async function getSystemSettings(adminClient) {
     ...data,
     notification_audience: normalizeNotificationAudience(data.notification_audience),
     public_visibility: normalizePublicVisibility(data.public_visibility),
+    rewards_enabled: data.rewards_enabled ?? true,
+    registration_points_enabled: data.registration_points_enabled ?? true,
+    registration_points_value: data.registration_points_value ?? 10,
+    profile_completion_points_enabled: data.profile_completion_points_enabled ?? true,
+    profile_completion_points_value: data.profile_completion_points_value ?? 10,
+    alert_reading_points_enabled: data.alert_reading_points_enabled ?? true,
+    alert_reading_points_value: data.alert_reading_points_value ?? 5,
+    road_viewing_points_enabled: data.road_viewing_points_enabled ?? true,
+    road_viewing_points_value: data.road_viewing_points_value ?? 5,
+    hazard_viewing_points_enabled: data.hazard_viewing_points_enabled ?? true,
+    hazard_viewing_points_value: data.hazard_viewing_points_value ?? 5,
+    crisis_feedback_points_enabled: data.crisis_feedback_points_enabled ?? true,
+    crisis_feedback_points_min_value: data.crisis_feedback_points_min_value ?? 1,
+    crisis_feedback_points_value: data.crisis_feedback_points_value ?? 5,
+    crisis_feedback_points_max_value: data.crisis_feedback_points_max_value ?? 100,
+    crisis_feedback_daily_submission_cap: data.crisis_feedback_daily_submission_cap ?? 1,
+    incident_report_points_enabled: data.incident_report_points_enabled ?? false,
+    incident_report_points_value: data.incident_report_points_value ?? 5,
+    tourist_guide_completion_points_enabled: data.tourist_guide_completion_points_enabled ?? true,
+    tourist_guide_assistance_enabled: data.tourist_guide_assistance_enabled ?? false,
+    tourist_guide_assistance_intro: data.tourist_guide_assistance_intro ?? "",
+    tourist_guide_assistance_availability: data.tourist_guide_assistance_availability ?? "",
   };
 }
 
-export async function updateSystemSettings(adminClient, { notification_audience, public_visibility, updatedBy }) {
+export async function updateSystemSettings(adminClient, {
+  notification_audience,
+  public_visibility,
+  rewards_enabled,
+  registration_points_enabled,
+  registration_points_value,
+  profile_completion_points_enabled,
+  profile_completion_points_value,
+  alert_reading_points_enabled,
+  alert_reading_points_value,
+  road_viewing_points_enabled,
+  road_viewing_points_value,
+  hazard_viewing_points_enabled,
+  hazard_viewing_points_value,
+  crisis_feedback_points_enabled,
+  crisis_feedback_points_min_value,
+  crisis_feedback_points_value,
+  crisis_feedback_points_max_value,
+  crisis_feedback_daily_submission_cap,
+  incident_report_points_enabled,
+  incident_report_points_value,
+  tourist_guide_completion_points_enabled,
+  tourist_guide_assistance_enabled,
+  tourist_guide_assistance_intro,
+  tourist_guide_assistance_availability,
+  updatedBy,
+}) {
   const client = adminClient || getSupabaseAdmin();
   if (!client) {
     throw new Error("SUPABASE_SERVICE_ROLE_KEY required");
@@ -69,10 +161,74 @@ export async function updateSystemSettings(adminClient, { notification_audience,
   if (public_visibility) {
     payload.public_visibility = normalizePublicVisibility(public_visibility);
   }
+  if (rewards_enabled !== undefined) payload.rewards_enabled = rewards_enabled;
+  if (registration_points_enabled !== undefined) {
+    payload.registration_points_enabled = registration_points_enabled;
+  }
+  if (registration_points_value !== undefined) {
+    payload.registration_points_value = registration_points_value;
+  }
+  if (profile_completion_points_enabled !== undefined) {
+    payload.profile_completion_points_enabled = profile_completion_points_enabled;
+  }
+  if (profile_completion_points_value !== undefined) {
+    payload.profile_completion_points_value = profile_completion_points_value;
+  }
+  if (alert_reading_points_enabled !== undefined) {
+    payload.alert_reading_points_enabled = alert_reading_points_enabled;
+  }
+  if (alert_reading_points_value !== undefined) {
+    payload.alert_reading_points_value = alert_reading_points_value;
+  }
+  if (road_viewing_points_enabled !== undefined) {
+    payload.road_viewing_points_enabled = road_viewing_points_enabled;
+  }
+  if (road_viewing_points_value !== undefined) {
+    payload.road_viewing_points_value = road_viewing_points_value;
+  }
+  if (hazard_viewing_points_enabled !== undefined) {
+    payload.hazard_viewing_points_enabled = hazard_viewing_points_enabled;
+  }
+  if (hazard_viewing_points_value !== undefined) {
+    payload.hazard_viewing_points_value = hazard_viewing_points_value;
+  }
+  if (crisis_feedback_points_enabled !== undefined) {
+    payload.crisis_feedback_points_enabled = crisis_feedback_points_enabled;
+  }
+  if (crisis_feedback_points_min_value !== undefined) {
+    payload.crisis_feedback_points_min_value = crisis_feedback_points_min_value;
+  }
+  if (crisis_feedback_points_value !== undefined) {
+    payload.crisis_feedback_points_value = crisis_feedback_points_value;
+  }
+  if (crisis_feedback_points_max_value !== undefined) {
+    payload.crisis_feedback_points_max_value = crisis_feedback_points_max_value;
+  }
+  if (crisis_feedback_daily_submission_cap !== undefined) {
+    payload.crisis_feedback_daily_submission_cap = crisis_feedback_daily_submission_cap;
+  }
+  if (incident_report_points_enabled !== undefined) {
+    payload.incident_report_points_enabled = incident_report_points_enabled;
+  }
+  if (incident_report_points_value !== undefined) {
+    payload.incident_report_points_value = incident_report_points_value;
+  }
+  if (tourist_guide_completion_points_enabled !== undefined) {
+    payload.tourist_guide_completion_points_enabled = tourist_guide_completion_points_enabled;
+  }
+  if (tourist_guide_assistance_enabled !== undefined) {
+    payload.tourist_guide_assistance_enabled = tourist_guide_assistance_enabled;
+  }
+  if (tourist_guide_assistance_intro !== undefined) {
+    payload.tourist_guide_assistance_intro = tourist_guide_assistance_intro?.trim() || null;
+  }
+  if (tourist_guide_assistance_availability !== undefined) {
+    payload.tourist_guide_assistance_availability = tourist_guide_assistance_availability?.trim() || null;
+  }
 
   const row = { id: SETTINGS_ID, ...payload };
-  const withVisibility = "id, notification_audience, public_visibility, updated_at, updated_by";
-  const withoutVisibility = "id, notification_audience, updated_at, updated_by";
+  const withVisibility = "id, notification_audience, public_visibility, rewards_enabled, registration_points_enabled, registration_points_value, profile_completion_points_enabled, profile_completion_points_value, alert_reading_points_enabled, alert_reading_points_value, road_viewing_points_enabled, road_viewing_points_value, hazard_viewing_points_enabled, hazard_viewing_points_value, crisis_feedback_points_enabled, crisis_feedback_points_min_value, crisis_feedback_points_value, crisis_feedback_points_max_value, crisis_feedback_daily_submission_cap, incident_report_points_enabled, incident_report_points_value, tourist_guide_completion_points_enabled, tourist_guide_assistance_enabled, tourist_guide_assistance_intro, tourist_guide_assistance_availability, updated_at, updated_by";
+  const withoutVisibility = "id, notification_audience, rewards_enabled, registration_points_enabled, registration_points_value, profile_completion_points_enabled, profile_completion_points_value, alert_reading_points_enabled, alert_reading_points_value, road_viewing_points_enabled, road_viewing_points_value, hazard_viewing_points_enabled, hazard_viewing_points_value, crisis_feedback_points_enabled, crisis_feedback_points_min_value, crisis_feedback_points_value, crisis_feedback_points_max_value, crisis_feedback_daily_submission_cap, incident_report_points_enabled, incident_report_points_value, tourist_guide_completion_points_enabled, tourist_guide_assistance_enabled, tourist_guide_assistance_intro, tourist_guide_assistance_availability, updated_at, updated_by";
 
   const { data, error } = await client
     .from("system_settings")
@@ -91,6 +247,27 @@ export async function updateSystemSettings(adminClient, { notification_audience,
       ...retry.data,
       notification_audience: normalizeNotificationAudience(retry.data.notification_audience),
       public_visibility: { ...DEFAULT_PUBLIC_VISIBILITY },
+      rewards_enabled: retry.data.rewards_enabled ?? true,
+      registration_points_enabled: retry.data.registration_points_enabled ?? true,
+      registration_points_value: retry.data.registration_points_value ?? 10,
+      profile_completion_points_enabled: retry.data.profile_completion_points_enabled ?? true,
+      profile_completion_points_value: retry.data.profile_completion_points_value ?? 10,
+      alert_reading_points_enabled: retry.data.alert_reading_points_enabled ?? true,
+      alert_reading_points_value: retry.data.alert_reading_points_value ?? 5,
+      road_viewing_points_enabled: retry.data.road_viewing_points_enabled ?? true,
+      road_viewing_points_value: retry.data.road_viewing_points_value ?? 5,
+      hazard_viewing_points_enabled: retry.data.hazard_viewing_points_enabled ?? true,
+      hazard_viewing_points_value: retry.data.hazard_viewing_points_value ?? 5,
+      crisis_feedback_points_enabled: retry.data.crisis_feedback_points_enabled ?? true,
+      crisis_feedback_points_min_value: retry.data.crisis_feedback_points_min_value ?? 1,
+      crisis_feedback_points_value: retry.data.crisis_feedback_points_value ?? 5,
+      crisis_feedback_points_max_value: retry.data.crisis_feedback_points_max_value ?? 100,
+      crisis_feedback_daily_submission_cap: retry.data.crisis_feedback_daily_submission_cap ?? 1,
+      incident_report_points_enabled: retry.data.incident_report_points_enabled ?? false,
+      incident_report_points_value: retry.data.incident_report_points_value ?? 5,
+      tourist_guide_assistance_enabled: retry.data.tourist_guide_assistance_enabled ?? false,
+      tourist_guide_assistance_intro: retry.data.tourist_guide_assistance_intro ?? "",
+      tourist_guide_assistance_availability: retry.data.tourist_guide_assistance_availability ?? "",
     };
   }
 
@@ -106,5 +283,26 @@ export async function updateSystemSettings(adminClient, { notification_audience,
     ...data,
     notification_audience: normalizeNotificationAudience(data.notification_audience),
     public_visibility: normalizePublicVisibility(data.public_visibility),
+    rewards_enabled: data.rewards_enabled ?? true,
+    registration_points_enabled: data.registration_points_enabled ?? true,
+    registration_points_value: data.registration_points_value ?? 10,
+    profile_completion_points_enabled: data.profile_completion_points_enabled ?? true,
+    profile_completion_points_value: data.profile_completion_points_value ?? 10,
+    alert_reading_points_enabled: data.alert_reading_points_enabled ?? true,
+    alert_reading_points_value: data.alert_reading_points_value ?? 5,
+    road_viewing_points_enabled: data.road_viewing_points_enabled ?? true,
+    road_viewing_points_value: data.road_viewing_points_value ?? 5,
+    hazard_viewing_points_enabled: data.hazard_viewing_points_enabled ?? true,
+    hazard_viewing_points_value: data.hazard_viewing_points_value ?? 5,
+    crisis_feedback_points_enabled: data.crisis_feedback_points_enabled ?? true,
+    crisis_feedback_points_min_value: data.crisis_feedback_points_min_value ?? 1,
+    crisis_feedback_points_value: data.crisis_feedback_points_value ?? 5,
+    crisis_feedback_points_max_value: data.crisis_feedback_points_max_value ?? 100,
+    crisis_feedback_daily_submission_cap: data.crisis_feedback_daily_submission_cap ?? 1,
+    incident_report_points_enabled: data.incident_report_points_enabled ?? false,
+    incident_report_points_value: data.incident_report_points_value ?? 5,
+    tourist_guide_assistance_enabled: data.tourist_guide_assistance_enabled ?? false,
+    tourist_guide_assistance_intro: data.tourist_guide_assistance_intro ?? "",
+    tourist_guide_assistance_availability: data.tourist_guide_assistance_availability ?? "",
   };
 }

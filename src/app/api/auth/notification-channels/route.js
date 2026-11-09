@@ -6,7 +6,7 @@ import { API_RATE_LIMITS, enforceRateLimitByKey } from "@/lib/apiRateLimit";
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
-const DEFAULT_CHANNELS = { email: true, sms: true, app: true };
+const DEFAULT_CHANNELS = { email: true, sms: true, app: true, push: false };
 
 export async function POST(request) {
   try {
@@ -78,7 +78,7 @@ export async function POST(request) {
     }
 
     const channels = body.channels;
-    if (!channels?.email && !channels?.sms && !channels?.app) {
+    if (!channels?.email && !channels?.sms && !channels?.app && !channels?.push) {
       return NextResponse.json(
         { error: "Enable at least one communication channel" },
         { status: 400 }
@@ -92,6 +92,7 @@ export async function POST(request) {
           email: Boolean(channels.email),
           sms: Boolean(channels.sms),
           app: Boolean(channels.app),
+          push: Boolean(channels.push ?? existing.notification_channels?.push),
         },
         notification_channels_configured: true,
       })

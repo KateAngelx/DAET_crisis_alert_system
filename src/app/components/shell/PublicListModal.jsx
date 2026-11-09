@@ -4,7 +4,10 @@ import React, { useEffect } from "react";
 import { X } from "lucide-react";
 import { portalShell, typography } from "@/lib/designSystem";
 
-export function PublicListModal({ open, onClose, title, subtitle, children }) {
+export function PublicListModal({ open, onClose, title, subtitle, children, footer, onContentViewed, viewKey }) {
+  const detailBodyRef = React.useRef(null);
+  const reportedViewRef = React.useRef(null);
+
   useEffect(() => {
     if (!open) return undefined;
     const prev = document.body.style.overflow;
@@ -13,6 +16,20 @@ export function PublicListModal({ open, onClose, title, subtitle, children }) {
       document.body.style.overflow = prev;
     };
   }, [open]);
+
+  useEffect(() => {
+    reportedViewRef.current = null;
+    if (!open || !onContentViewed || !viewKey) return undefined;
+
+    const frame = requestAnimationFrame(() => {
+      const body = detailBodyRef.current;
+      if (body && body.scrollHeight <= body.clientHeight + 4) {
+        reportedViewRef.current = viewKey;
+        onContentViewed(viewKey);
+      }
+    });
+    return () => cancelAnimationFrame(frame);
+  }, [open, onContentViewed, viewKey]);
 
   if (!open) return null;
 
@@ -41,7 +58,25 @@ export function PublicListModal({ open, onClose, title, subtitle, children }) {
             <X size={18} />
           </button>
         </div>
-        <div className={`${portalShell.panelBody} overflow-y-auto overscroll-contain flex-1 min-h-0`}>{children}</div>
+        <div
+          ref={detailBodyRef}
+          className={`${portalShell.panelBody} overflow-y-auto overscroll-contain flex-1 min-h-0`}
+          onScroll={(event) => {
+            const body = event.currentTarget;
+            if (
+              onContentViewed &&
+              viewKey &&
+              body.scrollTop + body.clientHeight >= body.scrollHeight - 8 &&
+              reportedViewRef.current !== viewKey
+            ) {
+              reportedViewRef.current = viewKey;
+              onContentViewed(viewKey);
+            }
+          }}
+        >
+          {children}
+        </div>
+        {footer ? <div className="shrink-0 border-t border-zinc-100 bg-white p-4">{footer}</div> : null}
       </div>
     </div>
   );

@@ -4,6 +4,7 @@ import React, { useCallback, useEffect, useState } from "react";
 import { SettingsPanelSkeleton } from "@/app/components/ui/Skeletons";
 import {
   Users, FileText, Download, Bell, Loader2, CheckCircle, AlertCircle, Mail, MessageSquare, Map, Route,
+  Coins, Gift, Compass,
 } from "lucide-react";
 import { AdminPanel } from "@/app/components/admin/AdminPanel";
 import { DashboardPageHeader } from "@/app/components/dashboard/DashboardPageHeader";
@@ -29,9 +30,37 @@ async function authFetch(url, options = {}) {
 export default function AdminSettingsPage() {
   const [audience, setAudience] = useState({ tourists: true, guides: true, admins: false });
   const [visibility, setVisibility] = useState({ map: true, roadsAndHazards: true });
+  const [guideAssistance, setGuideAssistance] = useState({
+    enabled: false,
+    introductoryInformation: "",
+    availabilityMessage: "",
+  });
+  const [rewardsSettings, setRewardsSettings] = useState({
+    rewards_enabled: true,
+    registration_points_enabled: true,
+    registration_points_value: "",
+    profile_completion_points_enabled: true,
+    profile_completion_points_value: "",
+    alert_reading_points_enabled: true,
+    alert_reading_points_value: "",
+    road_viewing_points_enabled: true,
+    road_viewing_points_value: "",
+    hazard_viewing_points_enabled: true,
+    hazard_viewing_points_value: "",
+    crisis_feedback_points_enabled: true,
+    crisis_feedback_points_min_value: 1,
+    crisis_feedback_points_value: "",
+    crisis_feedback_points_max_value: 100,
+    crisis_feedback_daily_submission_cap: 1,
+    incident_report_points_enabled: false,
+    incident_report_points_value: 5,
+    tourist_guide_completion_points_enabled: true,
+  });
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [savingVisibility, setSavingVisibility] = useState(false);
+  const [savingGuideAssistance, setSavingGuideAssistance] = useState(false);
+  const [savingRewards, setSavingRewards] = useState(false);
   const [exporting, setExporting] = useState(null);
   const [testingEmail, setTestingEmail] = useState(false);
   const [testingSms, setTestingSms] = useState(false);
@@ -50,6 +79,32 @@ export default function AdminSettingsPage() {
       if (!res.ok) throw new Error(data.error || "Failed to load settings");
       setAudience(data.settings.notification_audience);
       if (data.settings.public_visibility) setVisibility(data.settings.public_visibility);
+      setGuideAssistance({
+        enabled: data.settings.tourist_guide_assistance_enabled === true,
+        introductoryInformation: data.settings.tourist_guide_assistance_intro || "",
+        availabilityMessage: data.settings.tourist_guide_assistance_availability || "",
+      });
+      setRewardsSettings({
+        rewards_enabled: data.settings.rewards_enabled,
+        registration_points_enabled: data.settings.registration_points_enabled,
+        registration_points_value: data.settings.registration_points_value,
+        profile_completion_points_enabled: data.settings.profile_completion_points_enabled,
+        profile_completion_points_value: data.settings.profile_completion_points_value,
+        alert_reading_points_enabled: data.settings.alert_reading_points_enabled,
+        alert_reading_points_value: data.settings.alert_reading_points_value,
+        road_viewing_points_enabled: data.settings.road_viewing_points_enabled,
+        road_viewing_points_value: data.settings.road_viewing_points_value,
+        hazard_viewing_points_enabled: data.settings.hazard_viewing_points_enabled,
+        hazard_viewing_points_value: data.settings.hazard_viewing_points_value,
+        crisis_feedback_points_enabled: data.settings.crisis_feedback_points_enabled,
+        crisis_feedback_points_min_value: data.settings.crisis_feedback_points_min_value,
+        crisis_feedback_points_value: data.settings.crisis_feedback_points_value,
+        crisis_feedback_points_max_value: data.settings.crisis_feedback_points_max_value,
+        crisis_feedback_daily_submission_cap: data.settings.crisis_feedback_daily_submission_cap,
+        incident_report_points_enabled: data.settings.incident_report_points_enabled,
+        incident_report_points_value: data.settings.incident_report_points_value,
+        tourist_guide_completion_points_enabled: data.settings.tourist_guide_completion_points_enabled,
+      });
       setUpdatedAt(data.settings.updated_at);
     } catch (err) {
       setMessage({ type: "error", text: err.message });
@@ -112,6 +167,74 @@ export default function AdminSettingsPage() {
       setMessage({ type: "error", text: err.message });
     } finally {
       setSavingVisibility(false);
+    }
+  };
+
+  const handleSaveGuideAssistance = async () => {
+    setSavingGuideAssistance(true);
+    setMessage(null);
+    try {
+      const res = await authFetch("/api/admin/settings", {
+        method: "PATCH",
+        body: JSON.stringify({
+          tourist_guide_assistance_enabled: guideAssistance.enabled,
+          tourist_guide_assistance_intro: guideAssistance.introductoryInformation,
+          tourist_guide_assistance_availability: guideAssistance.availabilityMessage,
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Failed to save Tourist Guide Assistance settings");
+      setGuideAssistance({
+        enabled: data.settings.tourist_guide_assistance_enabled === true,
+        introductoryInformation: data.settings.tourist_guide_assistance_intro || "",
+        availabilityMessage: data.settings.tourist_guide_assistance_availability || "",
+      });
+      setUpdatedAt(data.settings.updated_at);
+      setMessage({ type: "success", text: "Tourist Guide Assistance settings saved." });
+    } catch (err) {
+      setMessage({ type: "error", text: err.message });
+    } finally {
+      setSavingGuideAssistance(false);
+    }
+  };
+
+  const handleSaveRewards = async () => {
+    setSavingRewards(true);
+    setMessage(null);
+    try {
+      const res = await authFetch("/api/admin/settings", {
+        method: "PATCH",
+        body: JSON.stringify(rewardsSettings),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Failed to save rewards settings");
+      setRewardsSettings({
+        rewards_enabled: data.settings.rewards_enabled,
+        registration_points_enabled: data.settings.registration_points_enabled,
+        registration_points_value: data.settings.registration_points_value,
+        profile_completion_points_enabled: data.settings.profile_completion_points_enabled,
+        profile_completion_points_value: data.settings.profile_completion_points_value,
+        alert_reading_points_enabled: data.settings.alert_reading_points_enabled,
+        alert_reading_points_value: data.settings.alert_reading_points_value,
+        road_viewing_points_enabled: data.settings.road_viewing_points_enabled,
+        road_viewing_points_value: data.settings.road_viewing_points_value,
+        hazard_viewing_points_enabled: data.settings.hazard_viewing_points_enabled,
+        hazard_viewing_points_value: data.settings.hazard_viewing_points_value,
+        crisis_feedback_points_enabled: data.settings.crisis_feedback_points_enabled,
+        crisis_feedback_points_min_value: data.settings.crisis_feedback_points_min_value,
+        crisis_feedback_points_value: data.settings.crisis_feedback_points_value,
+        crisis_feedback_points_max_value: data.settings.crisis_feedback_points_max_value,
+        crisis_feedback_daily_submission_cap: data.settings.crisis_feedback_daily_submission_cap,
+        incident_report_points_enabled: data.settings.incident_report_points_enabled,
+        incident_report_points_value: data.settings.incident_report_points_value,
+        tourist_guide_completion_points_enabled: data.settings.tourist_guide_completion_points_enabled,
+      });
+      setUpdatedAt(data.settings.updated_at);
+      setMessage({ type: "success", text: "Rewards activity settings saved." });
+    } catch (err) {
+      setMessage({ type: "error", text: err.message });
+    } finally {
+      setSavingRewards(false);
     }
   };
 
@@ -244,6 +367,100 @@ export default function AdminSettingsPage() {
       )}
 
       <AdminPanel
+        title="Tourist Guide Assistance"
+        subtitle="Control whether registered tourists can submit guide assistance requests."
+      >
+        {loading ? (
+          <SettingsPanelSkeleton rows={3} />
+        ) : (
+          <>
+            <button
+              type="button"
+              role="switch"
+              aria-checked={guideAssistance.enabled}
+              onClick={() => {
+                setGuideAssistance((current) => ({ ...current, enabled: !current.enabled }));
+                setMessage(null);
+              }}
+              className={`mb-5 flex w-full items-start gap-4 rounded-2xl border p-4 text-left transition-all ${
+                guideAssistance.enabled
+                  ? "border-blue-200 bg-blue-50"
+                  : "border-zinc-100 bg-zinc-50 opacity-75"
+              }`}
+            >
+              <Compass
+                size={18}
+                className={guideAssistance.enabled ? "mt-0.5 shrink-0 text-blue-600" : "mt-0.5 shrink-0 text-zinc-400"}
+              />
+              <span className="flex-1">
+                <span className="block text-sm font-black uppercase tracking-wide text-zinc-900">
+                  Tourist guide requests
+                </span>
+                <span className="mt-1 block text-xs font-medium text-zinc-500">
+                  When off, the request card is hidden and the server rejects new tourist requests. Existing reports remain available to administrators.
+                </span>
+              </span>
+              <span className={`shrink-0 text-[10px] font-black uppercase tracking-widest ${
+                guideAssistance.enabled ? "text-blue-600" : "text-zinc-400"
+              }`}>
+                {guideAssistance.enabled ? "On" : "Off"}
+              </span>
+            </button>
+            <label className="mb-5 block">
+              <span className="mb-2 block text-xs font-black uppercase tracking-widest text-zinc-600">
+                Introductory information (optional)
+              </span>
+              <textarea
+                rows={3}
+                maxLength={2000}
+                value={guideAssistance.introductoryInformation}
+                onChange={(event) => {
+                  setGuideAssistance((current) => ({
+                    ...current,
+                    introductoryInformation: event.target.value,
+                  }));
+                  setMessage(null);
+                }}
+                placeholder="Explain what tourists can request from a guide."
+                className="w-full rounded-xl border border-zinc-200 bg-white px-4 py-3 text-sm font-medium text-zinc-900 focus:border-blue-400 focus:outline-none"
+              />
+              <span className="mt-1 block text-xs text-zinc-500">Up to 2,000 characters.</span>
+            </label>
+            <label className="mb-5 block">
+              <span className="mb-2 block text-xs font-black uppercase tracking-widest text-zinc-600">
+                Service availability message (optional)
+              </span>
+              <input
+                type="text"
+                maxLength={500}
+                value={guideAssistance.availabilityMessage}
+                onChange={(event) => {
+                  setGuideAssistance((current) => ({
+                    ...current,
+                    availabilityMessage: event.target.value,
+                  }));
+                  setMessage(null);
+                }}
+                placeholder="For example: Guide requests are reviewed daily, 8 AM–5 PM."
+                className="w-full rounded-xl border border-zinc-200 bg-white px-4 py-3 text-sm font-medium text-zinc-900 focus:border-blue-400 focus:outline-none"
+              />
+              <span className="mt-1 block text-xs text-zinc-500">Up to 500 characters.</span>
+            </label>
+            <button
+              type="button"
+              onClick={handleSaveGuideAssistance}
+              disabled={savingGuideAssistance}
+              className={`${adminShell.btnPrimary} w-full py-3.5 disabled:opacity-50`}
+            >
+              {savingGuideAssistance
+                ? <><Loader2 size={16} className="animate-spin" /> Saving...</>
+                : "Save Tourist Guide Assistance"}
+            </button>
+          </>
+        )}
+      </AdminPanel>
+
+      <AdminPanel
         title="Public visibility"
         subtitle="Turn these off to hide them from visitors. Admin and guide screens stay the same."
       >
@@ -297,6 +514,315 @@ export default function AdminSettingsPage() {
               className={`${adminShell.btnPrimary} w-full py-3.5 disabled:opacity-50`}
             >
               {savingVisibility ? <><Loader2 size={16} className="animate-spin" /> Saving...</> : "Save public visibility"}
+            </button>
+          </>
+        )}
+      </AdminPanel>
+
+      <AdminPanel
+        title="Rewards program"
+        subtitle="Configure the program and optional one-time point awards for tourists."
+      >
+        {loading ? (
+          <SettingsPanelSkeleton rows={3} />
+        ) : (
+          <>
+            <div className="space-y-3 mb-5">
+              {[
+                {
+                  key: "rewards_enabled",
+                  label: "Rewards program",
+                  description: "When off, no reward points are awarded.",
+                  icon: Gift,
+                },
+                {
+                  key: "registration_points_enabled",
+                  label: "Registration points",
+                  description: "Award points once when a new tourist profile is created.",
+                  icon: Coins,
+                },
+                {
+                  key: "profile_completion_points_enabled",
+                  label: "Profile completion points",
+                  description: "Award points once when a tourist first completes all required profile fields.",
+                  icon: Users,
+                },
+                {
+                  key: "alert_reading_points_enabled",
+                  label: "Alert reading points",
+                  description: "Allow points for reading explicitly eligible public advisories.",
+                  icon: Bell,
+                },
+                {
+                  key: "road_viewing_points_enabled",
+                  label: "Viewing road information",
+                  description: "Allow points for viewing published road advisory details.",
+                  icon: Route,
+                },
+                {
+                  key: "hazard_viewing_points_enabled",
+                  label: "Viewing hazard information",
+                  description: "Allow points for viewing published area hazard details.",
+                  icon: Map,
+                },
+                {
+                  key: "crisis_feedback_points_enabled",
+                  label: "Crisis feedback rewards",
+                  description: "Allow optional point awards for approved registered-tourist submissions. Approval itself never awards points.",
+                  icon: MessageSquare,
+                },
+                {
+                  key: "incident_report_points_enabled",
+                  label: "Incident reporting rewards",
+                  description: "Allow optional points for eligible tourist incident reports after an administrator approves the points decision. Incident response is never delayed by this setting.",
+                  icon: FileText,
+                },
+                {
+                  key: "tourist_guide_completion_points_enabled",
+                  label: "Tourist guide completion reward",
+                  description: "Award exactly 10 points once when a tourist marks the How to Use guide as completed.",
+                  icon: CheckCircle,
+                },
+              ].map(({ key, label, description, icon: Icon }) => (
+                <button
+                  key={key}
+                  type="button"
+                  role="switch"
+                  aria-checked={rewardsSettings[key]}
+                  onClick={() => {
+                    setRewardsSettings((prev) => ({ ...prev, [key]: !prev[key] }));
+                    setMessage(null);
+                  }}
+                  className={`w-full flex items-start gap-4 p-4 rounded-2xl border text-left transition-all ${
+                    rewardsSettings[key]
+                      ? "bg-blue-50 border-blue-200"
+                      : "bg-zinc-50 border-zinc-100 opacity-75"
+                  }`}
+                >
+                  <Icon size={18} className={rewardsSettings[key] ? "text-blue-600 shrink-0 mt-0.5" : "text-zinc-400 shrink-0 mt-0.5"} />
+                  <div className="flex-1">
+                    <p className="font-black text-sm uppercase tracking-wide text-zinc-900">{label}</p>
+                    <p className="text-xs text-zinc-500 mt-1 font-medium">{description}</p>
+                  </div>
+                  <span className={`text-[10px] font-black uppercase tracking-widest shrink-0 ${rewardsSettings[key] ? "text-blue-600" : "text-zinc-400"}`}>
+                    {rewardsSettings[key] ? "On" : "Off"}
+                  </span>
+                </button>
+              ))}
+            </div>
+
+            <label className="block mb-5">
+              <span className="block text-xs font-black uppercase tracking-widest text-zinc-600 mb-2">
+                Points for registration
+              </span>
+              <input
+                type="number"
+                min="0"
+                max="1000000"
+                step="1"
+                value={rewardsSettings.registration_points_value}
+                onChange={(event) => {
+                  const value = event.target.value;
+                  setRewardsSettings((prev) => ({
+                    ...prev,
+                    registration_points_value: value === "" ? "" : Number(value),
+                  }));
+                  setMessage(null);
+                }}
+                className="w-full sm:max-w-xs rounded-xl border border-zinc-200 bg-white px-4 py-3 text-sm font-bold text-zinc-900 focus:border-blue-400 focus:outline-none"
+              />
+              <span className="block text-xs text-zinc-500 mt-2">
+                Enter a whole number from 0 to 1,000,000. Set to 0 to disable the award without disabling the program.
+              </span>
+            </label>
+
+            <label className="block mb-5">
+              <span className="block text-xs font-black uppercase tracking-widest text-zinc-600 mb-2">
+                Points for completing a tourist profile
+              </span>
+              <input
+                type="number"
+                min="0"
+                max="1000000"
+                step="1"
+                value={rewardsSettings.profile_completion_points_value}
+                onChange={(event) => {
+                  const value = event.target.value;
+                  setRewardsSettings((prev) => ({
+                    ...prev,
+                    profile_completion_points_value: value === "" ? "" : Number(value),
+                  }));
+                  setMessage(null);
+                }}
+                className="w-full sm:max-w-xs rounded-xl border border-zinc-200 bg-white px-4 py-3 text-sm font-bold text-zinc-900 focus:border-blue-400 focus:outline-none"
+              />
+              <span className="block text-xs text-zinc-500 mt-2">
+                Enter a whole number from 0 to 1,000,000. The award is issued only on first completion.
+              </span>
+            </label>
+
+            <label className="block mb-5">
+              <span className="block text-xs font-black uppercase tracking-widest text-zinc-600 mb-2">
+                Points for reading an eligible advisory
+              </span>
+              <input
+                type="number"
+                min="0"
+                max="1000000"
+                step="1"
+                value={rewardsSettings.alert_reading_points_value}
+                onChange={(event) => {
+                  const value = event.target.value;
+                  setRewardsSettings((prev) => ({
+                    ...prev,
+                    alert_reading_points_value: value === "" ? "" : Number(value),
+                  }));
+                  setMessage(null);
+                }}
+                className="w-full sm:max-w-xs rounded-xl border border-zinc-200 bg-white px-4 py-3 text-sm font-bold text-zinc-900 focus:border-blue-400 focus:outline-none"
+              />
+              <span className="block text-xs text-zinc-500 mt-2">
+                Enter a whole number from 0 to 1,000,000. Registration points have separate controls.
+              </span>
+            </label>
+
+            <label className="block mb-5">
+              <span className="block text-xs font-black uppercase tracking-widest text-zinc-600 mb-2">
+                Points for viewing road information
+              </span>
+              <input
+                type="number"
+                min="0"
+                max="1000000"
+                step="1"
+                value={rewardsSettings.road_viewing_points_value}
+                onChange={(event) => {
+                  const value = event.target.value;
+                  setRewardsSettings((prev) => ({
+                    ...prev,
+                    road_viewing_points_value: value === "" ? "" : Number(value),
+                  }));
+                  setMessage(null);
+                }}
+                className="w-full sm:max-w-xs rounded-xl border border-zinc-200 bg-white px-4 py-3 text-sm font-bold text-zinc-900 focus:border-blue-400 focus:outline-none"
+              />
+              <span className="block text-xs text-zinc-500 mt-2">
+                Enter a whole number from 0 to 1,000,000. Only published road advisory details qualify.
+              </span>
+            </label>
+
+            <div className="mb-5 grid gap-4 sm:grid-cols-2">
+              {[
+                {
+                  key: "crisis_feedback_points_min_value",
+                  label: "Minimum points per award",
+                  min: 1,
+                  helper: "Lowest amount an admin may award.",
+                },
+                {
+                  key: "crisis_feedback_points_value",
+                  label: "Suggested default points",
+                  min: 1,
+                  helper: "Prefills the award form; it never triggers an automatic award.",
+                },
+                {
+                  key: "crisis_feedback_points_max_value",
+                  label: "Maximum points per award",
+                  min: 1,
+                  helper: "Highest amount an admin may award.",
+                },
+                {
+                  key: "crisis_feedback_daily_submission_cap",
+                  label: "Daily submissions rewarded per tourist",
+                  min: 1,
+                  helper: "Maximum number of submissions rewarded per tourist per Asia/Manila calendar day.",
+                },
+              ].map(({ key, label, min, helper }) => (
+                <label key={key} className="block">
+                  <span className="mb-2 block text-xs font-black uppercase tracking-widest text-zinc-600">
+                    {label}
+                  </span>
+                  <input
+                    type="number"
+                    min={min}
+                    max="1000000"
+                    step="1"
+                    value={rewardsSettings[key]}
+                    onChange={(event) => {
+                      const value = event.target.value;
+                      setRewardsSettings((prev) => ({
+                        ...prev,
+                        [key]: value === "" ? "" : Number(value),
+                      }));
+                      setMessage(null);
+                    }}
+                    className="w-full rounded-xl border border-zinc-200 bg-white px-4 py-3 text-sm font-bold text-zinc-900 focus:border-blue-400 focus:outline-none"
+                  />
+                  <span className="mt-2 block text-xs text-zinc-500">{helper}</span>
+                </label>
+              ))}
+            </div>
+            <p className="mb-5 text-xs font-medium text-zinc-500">
+              Award limits must satisfy minimum ≤ default ≤ maximum. Daily limits count awarded submissions, not points.
+            </p>
+
+            <label className="block mb-5">
+              <span className="block text-xs font-black uppercase tracking-widest text-zinc-600 mb-2">
+                Points for an approved incident report
+              </span>
+              <input
+                type="number"
+                min="0"
+                max="1000000"
+                step="1"
+                value={rewardsSettings.incident_report_points_value}
+                onChange={(event) => {
+                  const value = event.target.value;
+                  setRewardsSettings((prev) => ({
+                    ...prev,
+                    incident_report_points_value: value === "" ? "" : Number(value),
+                  }));
+                  setMessage(null);
+                }}
+                className="w-full sm:max-w-xs rounded-xl border border-zinc-200 bg-white px-4 py-3 text-sm font-bold text-zinc-900 focus:border-blue-400 focus:outline-none"
+              />
+              <span className="block text-xs text-zinc-500 mt-2">
+                Enter a whole number from 0 to 1,000,000. Points are awarded only after an administrator explicitly approves the separate points decision; the global rewards switch also applies.
+              </span>
+            </label>
+
+            <label className="block mb-5">
+              <span className="block text-xs font-black uppercase tracking-widest text-zinc-600 mb-2">
+                Points for viewing hazard information
+              </span>
+              <input
+                type="number"
+                min="0"
+                max="1000000"
+                step="1"
+                value={rewardsSettings.hazard_viewing_points_value}
+                onChange={(event) => {
+                  const value = event.target.value;
+                  setRewardsSettings((prev) => ({
+                    ...prev,
+                    hazard_viewing_points_value: value === "" ? "" : Number(value),
+                  }));
+                  setMessage(null);
+                }}
+                className="w-full sm:max-w-xs rounded-xl border border-zinc-200 bg-white px-4 py-3 text-sm font-bold text-zinc-900 focus:border-blue-400 focus:outline-none"
+              />
+              <span className="block text-xs text-zinc-500 mt-2">
+                Enter a whole number from 0 to 1,000,000. Only published area hazard details qualify.
+              </span>
+            </label>
+
+            <button
+              type="button"
+              onClick={handleSaveRewards}
+              disabled={savingRewards}
+              className={`${adminShell.btnPrimary} w-full py-3.5 disabled:opacity-50`}
+            >
+              {savingRewards ? <><Loader2 size={16} className="animate-spin" /> Saving...</> : "Save rewards settings"}
             </button>
           </>
         )}

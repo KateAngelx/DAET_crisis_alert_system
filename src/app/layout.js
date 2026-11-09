@@ -4,6 +4,8 @@ import { AuthSessionSync } from "@/app/components/AuthSessionSync";
 import { PasswordRecoveryRedirect } from "@/app/components/PasswordRecoveryRedirect";
 import { AssignmentRequestHandler } from "@/app/components/tour/AssignmentRequestHandler";
 import { NotificationArrivalListener } from "@/app/components/NotificationArrivalListener";
+import { PushEnablePrompt } from "@/app/components/PushEnablePrompt";
+import { RewardEarnedToast } from "@/app/components/RewardEarnedToast";
 import { ConfirmDialogProvider } from "@/app/components/ui/ConfirmDialogProvider";
 import { InstallPwaPrompt } from "@/app/components/InstallPwaPrompt";
 import { PwaSplashScreen } from "@/app/components/PwaSplashScreen";
@@ -57,6 +59,8 @@ export default function RootLayout({ children }) {
         <AssignmentRequestHandler />
         <GlobalEmergencyBanner />
         <NotificationArrivalListener />
+        <PushEnablePrompt />
+        <RewardEarnedToast />
         <ConfirmDialogProvider>{children}</ConfirmDialogProvider>
         <InstallPwaPrompt />
       </body>

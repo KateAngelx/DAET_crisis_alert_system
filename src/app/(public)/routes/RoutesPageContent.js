@@ -28,6 +28,8 @@ import { portalLayout, portalShell } from "@/lib/designSystem";
 import { ROUTES_MAP_LEGEND } from "@/lib/mapPinUtils";
 import { PublicListModal } from "@/app/components/shell/PublicListModal";
 import { usePublicVisibility } from "@/lib/usePublicVisibility";
+import { TravelAdvisoryViewReward } from "@/app/components/rewards/TravelAdvisoryViewReward";
+import { sortRecordsNewestFirst } from "@/lib/recordSorting";
 
 const FILTERS = [
   { id: "all", label: "All" },
@@ -147,11 +149,12 @@ export default function RoutesPageContent() {
   const [mapReady, setMapReady] = useState(false);
   const [selectedRoute, setSelectedRoute] = useState(null);
   const [selectedHazard, setSelectedHazard] = useState(null);
+  const [viewedHazardId, setViewedHazardId] = useState(null);
   const [activeFilter, setActiveFilter] = useState("all");
-  const [highlightedHazardId, setHighlightedHazardId] = useState(null);
   const searchParams = useSearchParams();
   const router = useRouter();
   const visibility = usePublicVisibility();
+  const highlightedHazardId = searchParams.get("hazard") || null;
 
   const loading = routesLoading || hazardsLoading;
   const error = routesError || hazardsError;
@@ -162,7 +165,8 @@ export default function RoutesPageContent() {
   }, [fetchAdvisories, fetchWarnings]);
 
   useEffect(() => {
-    setMapReady(true);
+    const frame = requestAnimationFrame(() => setMapReady(true));
+    return () => cancelAnimationFrame(frame);
   }, []);
 
   const catalog = useMemo(() => buildRouteCatalog(advisories), [advisories]);
@@ -189,7 +193,6 @@ export default function RoutesPageContent() {
   const focusAreas = useCallback(() => {
     setActiveFilter("areas");
   }, []);
-
   useTravelDeepLinks({
     loading,
     publishedAdvisoryIds,
@@ -197,11 +200,6 @@ export default function RoutesPageContent() {
     basePath: "/routes",
     onFocusAreas: focusAreas,
   });
-
-  useEffect(() => {
-    const hazardId = searchParams.get("hazard");
-    setHighlightedHazardId(hazardId || null);
-  }, [searchParams]);
 
   const openRoute = useCallback((route) => setSelectedRoute(route), []);
 
@@ -217,25 +215,28 @@ export default function RoutesPageContent() {
     const viewParam = searchParams.get("view");
     if (!routeId || loading) return;
 
-    const view =
-      viewParam === "alternative"
-        ? "alternative"
-        : viewParam === "safe"
-          ? "safe"
-          : viewParam === "caution"
-            ? "caution"
-            : null;
+    const frame = requestAnimationFrame(() => {
+      const view =
+        viewParam === "alternative"
+          ? "alternative"
+          : viewParam === "safe"
+            ? "safe"
+            : viewParam === "caution"
+              ? "caution"
+              : null;
 
-    const fromCatalog = findRouteItem(catalog, routeId, view || undefined);
-    if (fromCatalog) {
-      setSelectedRoute(fromCatalog);
-      return;
-    }
+      const fromCatalog = findRouteItem(catalog, routeId, view || undefined);
+      if (fromCatalog) {
+        setSelectedRoute(fromCatalog);
+        return;
+      }
 
-    const advisory = catalog.published.find((a) => a.id === routeId);
-    if (advisory) {
-      setSelectedRoute(getRouteItemFromAdvisory(advisory, view || resolveRouteItemView(advisory)));
-    }
+      const advisory = catalog.published.find((a) => a.id === routeId);
+      if (advisory) {
+        setSelectedRoute(getRouteItemFromAdvisory(advisory, view || resolveRouteItemView(advisory)));
+      }
+    });
+    return () => cancelAnimationFrame(frame);
   }, [searchParams, catalog, loading]);
 
   const mapBlocked = !!selectedRoute;
@@ -275,12 +276,16 @@ export default function RoutesPageContent() {
       },
   ].filter(Boolean);
 
-  const listItems = [...attentionGroups, ...openGroups].flatMap((group) =>
-    group.items.map((item, index) => ({
-      key: `${group.key}-${item?.id ?? index}`,
-      kind: group.key === "areas" ? "hazard" : "route",
-      item,
-    }))
+  const listItems = sortRecordsNewestFirst(
+    [...attentionGroups, ...openGroups].flatMap((group) =>
+      group.items.map((item, index) => ({
+        key: `${group.key}-${item?.id ?? index}`,
+        kind: group.key === "areas" ? "hazard" : "route",
+        item,
+        created_at: item?.created_at || item?.advisory?.created_at,
+      }))
+    ),
+    ["created_at"]
   );
 
   const visibleRouteIds = new Set(
@@ -368,7 +373,7 @@ export default function RoutesPageContent() {
                   <div>
                     <p className="text-xs font-black uppercase text-orange-700 tracking-widest">Check before you travel</p>
                     <p className="text-sm text-orange-900 font-medium mt-0.5">
-                      {urgentCount} item{urgentCount > 1 ? "s" : ""} need attention. Those are listed first under Advisories.
+                      {urgentCount} item{urgentCount > 1 ? "s" : ""} need attention. Review the advisories below before traveling.
                     </p>
                   </div>
                 </div>
@@ -447,6 +452,15 @@ export default function RoutesPageContent() {
         onClose={() => setSelectedHazard(null)}
         title="Area hazard"
         subtitle={selectedHazard?.dangerous_location}
+        viewKey={selectedHazard?.id}
+        onContentViewed={setViewedHazardId}
+        footer={
+          <TravelAdvisoryViewReward
+            advisoryId={selectedHazard?.id}
+            activityType="hazard_view"
+            viewed={viewedHazardId === selectedHazard?.id}
+          />
+        }
       >
         {selectedHazard ? <DangerousLocationCard warning={selectedHazard} /> : null}
       </PublicListModal>

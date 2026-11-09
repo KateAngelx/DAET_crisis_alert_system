@@ -58,6 +58,16 @@ export function NotificationPanel({ linkPrefix = "" }) {
   if (!isAuthenticated || !sessionReady || !user?.id) return null;
 
   const getRelatedLink = (notification) => {
+    if (notification.related_type === "tourist_guide_assistance") {
+      if (user?.role === "admin") return "/admin/guide-assistance";
+      if (user?.role === "guide") return "/guide/assistance";
+      return null;
+    }
+    if (notification.related_type === "guide_emergency") {
+      if (user?.role === "admin") return "/crisis/command";
+      if (user?.role === "guide") return "/guide";
+      return null;
+    }
     if (notification.related_type === "incident" && notification.related_id) {
       return `${linkPrefix}/crisis/reports/${notification.related_id}`;
     }

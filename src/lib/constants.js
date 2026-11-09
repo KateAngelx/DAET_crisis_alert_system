@@ -1,3 +1,5 @@
+import { incidentReportEligibleForGuideAssignment } from '@/lib/incidentGuideEligibility';
+
 export const ROLES = {
   ADMIN: 'admin',
   TOURIST: 'tourist',
@@ -16,6 +18,13 @@ export const INCIDENT_CATEGORIES = [
   'Weather-Related Incident',
   'Other',
 ];
+
+/** Categories from `incident_reports.category` where a tourism guide may be assigned. */
+export const INCIDENT_CATEGORIES_WITH_GUIDE_ASSIGNMENT = ['Tourist Assistance'];
+
+export function incidentSupportsGuideAssignment(categoryOrIncident) {
+  return incidentReportEligibleForGuideAssignment(categoryOrIncident);
+}
 
 export const INCIDENT_SEVERITIES = ['Low', 'Medium', 'High', 'Critical'];
 

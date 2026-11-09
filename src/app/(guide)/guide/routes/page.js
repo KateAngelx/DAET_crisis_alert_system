@@ -36,6 +36,7 @@ import { iconSize, statGrid } from "@/lib/designSystem";
 import { ROLE_INTERFACE } from "@/lib/roleInterfaceCopy";
 import { RoleContextBanner } from "@/app/components/dashboard/RoleContextBanner";
 import { GuideDashboardQuickActions } from "@/app/components/guide/GuideDashboardQuickActions";
+import { sortRecordsNewestFirst } from "@/lib/recordSorting";
 
 export default function GuideRoutesPage() {
   const { user } = useAuthStore();
@@ -173,13 +174,23 @@ export default function GuideRoutesPage() {
     ? activeAreaHazards.filter((warning) => warning.severity !== "Caution")
     : activeAreaHazards;
 
-  const listItems = [
-    showClosed && relevantAffected.length > 0 && { key: "closed", kind: "route", items: relevantAffected },
-    showCaution && relevantActive.length > 0 && { key: "caution", kind: "route", items: relevantActive },
-    showAreas && areaItems.length > 0 && { key: "areas", kind: "hazard", items: areaItems },
-    showDetours && relevantAlternative.length > 0 && { key: "detours", kind: "route", items: relevantAlternative },
-    showSafe && relevantSafe.length > 0 && { key: "safe", kind: "route", items: relevantSafe },
-  ].filter(Boolean).flatMap((group) => group.items.map((item) => ({ key: `${group.key}-${item.id}`, kind: group.kind, item })));
+  const listItems = sortRecordsNewestFirst(
+    [
+      showClosed && relevantAffected.length > 0 && { key: "closed", kind: "route", items: relevantAffected },
+      showCaution && relevantActive.length > 0 && { key: "caution", kind: "route", items: relevantActive },
+      showAreas && areaItems.length > 0 && { key: "areas", kind: "hazard", items: areaItems },
+      showDetours && relevantAlternative.length > 0 && { key: "detours", kind: "route", items: relevantAlternative },
+      showSafe && relevantSafe.length > 0 && { key: "safe", kind: "route", items: relevantSafe },
+    ].filter(Boolean).flatMap((group) =>
+      group.items.map((item) => ({
+        key: `${group.key}-${item.id}`,
+        kind: group.kind,
+        item,
+        created_at: item?.created_at || item?.advisory?.created_at,
+      }))
+    ),
+    ["created_at"]
+  );
 
   const visibleRouteIds = new Set(
     listItems.filter((entry) => entry.kind === "route").map((entry) => entry.item.advisoryId)

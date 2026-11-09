@@ -23,9 +23,10 @@ import { ROLE_INTERFACE } from "@/lib/roleInterfaceCopy";
 import { RoleContextBanner } from "@/app/components/dashboard/RoleContextBanner";
 import { CategoryFilterSelect, StatusRecordList } from "@/app/components/shell/StatusRecordList";
 import { AlertDetailModal } from "@/app/(subsystems)/crisis/(public)/_components/AlertDetailModal";
+import { sortRecordsNewestFirst } from "@/lib/recordSorting";
 
 function formatResolvedAt(alert) {
-  const date = alert.updated_at || alert.created_at;
+  const date = alert.published_at || alert.created_at;
   if (!date) return "—";
   return new Date(date).toLocaleString(undefined, {
     month: "short",
@@ -53,21 +54,18 @@ export default function ResolvedAlertsPage() {
     };
   }, [fetchAlerts]);
 
-  const resolvedAlerts = alerts
-    .filter((a) => a.status === "Resolved" && a.is_public)
-    .sort(
-      (a, b) =>
-        new Date(b.updated_at || b.created_at).getTime() -
-        new Date(a.updated_at || a.created_at).getTime()
-    );
+  const resolvedAlerts = sortRecordsNewestFirst(
+    alerts.filter((a) => a.status === "Resolved" && a.is_public),
+    ["published_at", "created_at"]
+  );
 
   const recentCount = resolvedAlerts.filter((a) => {
-    const t = new Date(a.updated_at || a.created_at).getTime();
+    const t = new Date(a.resolved_at || a.updated_at || a.published_at || a.created_at).getTime();
     return Date.now() - t < 7 * 24 * 60 * 60 * 1000;
   }).length;
 
   const monthCount = resolvedAlerts.filter((a) => {
-    const t = new Date(a.updated_at || a.created_at).getTime();
+    const t = new Date(a.resolved_at || a.updated_at || a.published_at || a.created_at).getTime();
     return Date.now() - t < 30 * 24 * 60 * 60 * 1000;
   }).length;
 

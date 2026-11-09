@@ -45,6 +45,7 @@ export default function GuideNotificationsPage() {
   }, [fetchNotifications, clearNotifications]);
 
   const getRelatedLink = (n) => {
+    if (n.related_type === "tourist_guide_assistance") return "/guide/assistance";
     if (n.related_type === "incident" && n.related_id) return `/guide/reports/${n.related_id}`;
     if (n.related_type === "alert") return `/guide/crisis`;
     if (n.related_type === "dangerous_location") {

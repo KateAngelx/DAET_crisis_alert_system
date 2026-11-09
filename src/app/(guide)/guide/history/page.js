@@ -67,7 +67,7 @@ export default function GuideHistoryPage() {
       ? `${alert.title} · ${alert.location}`
       : alert.title || alert.location || "—",
     type: alert.type || "General",
-    when: new Date(alert.updated_at || alert.created_at).toLocaleString(),
+    when: new Date(alert.published_at || alert.created_at).toLocaleString(),
     onSelect: () => setSelectedAlert(alert),
     ariaLabel: "View resolved alert",
   }));

@@ -22,6 +22,7 @@ import { formatTourRoute, getRelevantRouteAdvisoriesForGroup } from "@/lib/tourG
 import { ROLE_INTERFACE } from "@/lib/roleInterfaceCopy";
 import { CompletedToursPanel } from "@/app/components/tour/CompletedToursPanel";
 import { GuideDashboardQuickActions } from "@/app/components/guide/GuideDashboardQuickActions";
+import { GuideEmergencyReporting } from "@/app/components/guide/GuideEmergencyReporting";
 import { PublicCardListPreview } from "@/app/components/shell/PublicCardListPreview";
 import { PublicCategorizedCardList } from "@/app/components/shell/PublicCategorizedCardList";
 import { INCIDENT_SEVERITIES } from "@/lib/constants";
@@ -99,6 +100,8 @@ export default function GuideDashboard() {
         }
       />
 
+      <GuideEmergencyReporting />
+
       {statsLoading ? (
         <StatCardSkeletonGrid count={4} className={statGrid.dashboard} />
       ) : (
@@ -109,6 +112,22 @@ export default function GuideDashboard() {
           <DashboardStatCard compact label="Open Reports" value={openIncidents.length} icon={<FileText size={iconSize.stat} />} accent="orange" href="/guide/reports" hrefLabel="View" />
         </div>
       )}
+
+      <GuidePanel
+        title="Guide Assistance Requests"
+        action={
+          <Link href="/guide/assistance" className="text-[10px] font-black uppercase tracking-widest text-blue-600 hover:underline">
+            View requests
+          </Link>
+        }
+      >
+        <p className="text-sm font-medium text-zinc-600">
+          Review requests selected for you by the Tourism Office, respond to pending assignments, and coordinate accepted assistance.
+        </p>
+        <Link href="/guide/assistance" className={`${guideShell.btnGuide} mt-4 no-underline`}>
+          Open Guide Assistance Requests <ArrowRight size={15} />
+        </Link>
+      </GuidePanel>
 
       {criticalAlerts.length > 0 && (
         <GuidePanel title="Critical alert active" bodyClassName="bg-red-50/60">
@@ -314,4 +333,3 @@ export default function GuideDashboard() {
     </>
   );
 }
-

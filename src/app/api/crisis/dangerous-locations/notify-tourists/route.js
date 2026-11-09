@@ -14,14 +14,22 @@ export async function POST(request) {
     });
     if (limited) return limited;
 
-    const body = await request.json().catch(() => ({}));
+    const body = await request.json().catch(() => null);
+    if (!body || typeof body !== "object" || Array.isArray(body)) {
+      return NextResponse.json({ error: "A valid JSON object is required" }, { status: 400 });
+    }
     const warningId = body.warningId;
+    const eventType = body.eventType || "created";
 
-    if (!warningId) {
-      return NextResponse.json({ error: "warningId is required" }, { status: 400 });
+    if (
+      typeof warningId !== "string"
+      || !/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(warningId)
+      || !["created", "updated"].includes(eventType)
+    ) {
+      return NextResponse.json({ error: "warningId and a valid eventType are required" }, { status: 400 });
     }
 
-    const results = await broadcastDangerousLocationToTourists(auth.admin, warningId);
+    const results = await broadcastDangerousLocationToTourists(auth.admin, warningId, eventType);
 
     if (results.errors.length && results.notified === 0) {
       return NextResponse.json({ error: results.errors.join("; ") }, { status: 500 });

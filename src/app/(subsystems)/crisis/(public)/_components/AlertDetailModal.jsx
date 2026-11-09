@@ -1,19 +1,32 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
-import { X, MapPin } from "lucide-react";
+import React, { useEffect, useRef, useState } from "react";
+import { X, MapPin, Loader2, CheckCircle2 } from "lucide-react";
 import { Card } from "@/app/components/ui/Card";
 import { CardIconBox } from "@/app/components/ui/CardIconBox";
 import { AlertSeverityIcon, AlertTypeIcon } from "@/app/components/ui/cardTypeIcons";
 import { CrisisHubMap } from "@/app/components/maps/CrisisHubMap";
 import { geocodeLocation } from "@/lib/geocodeLocation";
 import { getSeverityOutline, iconSize } from "@/lib/designSystem";
+import { useAuthStore } from "@/app/store/crisisStore";
+import { getActiveSession } from "@/lib/authSession";
+import { supabase } from "@/lib/supabaseClient";
+import { notifyRewardEarned } from "@/lib/rewardFeedback";
 
 const DAET_CENTER = [14.1122, 122.9553];
 
 export function AlertDetailModal({ alert, onClose }) {
   const [mapCenter, setMapCenter] = useState(DAET_CENTER);
   const [mapReady, setMapReady] = useState(false);
+  const [viewedAlertId, setViewedAlertId] = useState(null);
+  const [submittingAlertId, setSubmittingAlertId] = useState(null);
+  const [readStatus, setReadStatus] = useState(null);
+  const [readResult, setReadResult] = useState(null);
+  const [readError, setReadError] = useState(null);
+  const detailBodyRef = useRef(null);
+  const { user, isAuthenticated } = useAuthStore();
+  const alertId = alert?.id;
+  const userAlertKey = user?.id && alertId ? `${user.id}:${alertId}` : null;
 
   const styles = alert ? getSeverityOutline(alert.severity) : null;
   const alertStatus = String(alert?.status || "Unknown");
@@ -70,7 +83,118 @@ export function AlertDetailModal({ alert, onClose }) {
     };
   }, [alert]);
 
+  useEffect(() => {
+    if (!alertId) return undefined;
+    const frame = requestAnimationFrame(() => {
+      const body = detailBodyRef.current;
+      if (body && body.scrollHeight <= body.clientHeight + 4) {
+        setViewedAlertId(alertId);
+      }
+    });
+    return () => cancelAnimationFrame(frame);
+  }, [alertId]);
+
+  useEffect(() => {
+    if (!userAlertKey || !isAuthenticated || user?.role !== "tourist") {
+      return undefined;
+    }
+
+    let cancelled = false;
+    setReadStatus({ key: userAlertKey, status: "checking" });
+
+    (async () => {
+      try {
+        const { data, error } = await supabase
+          .from("point_transactions")
+          .select("id")
+          .eq("user_id", user.id)
+          .eq("crisis_alert_id", alertId)
+          .eq("transaction_type", "earned")
+          .eq("reason", "alert_read")
+          .maybeSingle();
+
+        if (cancelled) return;
+        if (error) {
+          console.error("[Rewards] Could not check advisory read status:", error.message);
+          setReadStatus({ key: userAlertKey, status: "unknown" });
+          return;
+        }
+
+        setReadStatus({ key: userAlertKey, status: data ? "read" : "unread" });
+      } catch (error) {
+        if (cancelled) return;
+        console.error("[Rewards] Could not check advisory read status:", error.message);
+        setReadStatus({ key: userAlertKey, status: "unknown" });
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [alertId, isAuthenticated, user?.id, user?.role, userAlertKey]);
+
   if (!alert || !styles) return null;
+
+  const emergencyLanguage =
+    /(emergency|evacuat|warning|911|117|assistance|assist|urgent|immediate danger|rescue|shelter|call police|call the police|call fire|call ambulance)/i;
+  const canOfferReadPoints =
+    isAuthenticated &&
+    user?.role === "tourist" &&
+    alert.rewards_eligible === true &&
+    alert.is_public !== false &&
+    String(alert.status || "").toLowerCase() === "active" &&
+    ["low", "medium"].includes(String(alert.severity || "").toLowerCase()) &&
+    ["general", "weather", "health"].includes(String(alert.type || "").toLowerCase()) &&
+    !emergencyLanguage.test(`${alert.title || ""} ${alert.message || ""} ${alert.type || ""}`);
+  const hasViewedContent = viewedAlertId === alert.id;
+  const hasAlreadyRead = readStatus?.key === userAlertKey && readStatus.status === "read";
+  const canShowReadState = canOfferReadPoints || hasAlreadyRead;
+  const isCheckingReadStatus =
+    canOfferReadPoints &&
+    (readStatus?.key !== userAlertKey || readStatus.status === "checking");
+  const resultForThisAlert = readResult?.key === userAlertKey ? readResult.result : null;
+  const errorForThisAlert = readError?.key === userAlertKey ? readError.message : null;
+
+  const handleDetailScroll = () => {
+    const body = detailBodyRef.current;
+    if (body && body.scrollTop + body.clientHeight >= body.scrollHeight - 8) {
+      setViewedAlertId(alert.id);
+    }
+  };
+
+  const handleReadAdvisory = async () => {
+    if (!hasViewedContent || !canOfferReadPoints || hasAlreadyRead || submittingAlertId) return;
+    setSubmittingAlertId(alert.id);
+    setReadError(null);
+    try {
+      const session = await getActiveSession();
+      if (!session?.access_token) throw new Error("Sign in again to record this advisory.");
+
+      const response = await fetch("/api/rewards/alerts/read", {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${session.access_token}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ alertId: alert.id }),
+      });
+      const payload = await response.json();
+      if (!response.ok || !payload.success) {
+        throw new Error(payload.error || "Could not record this advisory as read.");
+      }
+      setReadResult({ key: userAlertKey, result: payload.result });
+      if (["awarded", "already_awarded"].includes(payload.result?.status)) {
+        setReadStatus({ key: userAlertKey, status: "read" });
+      }
+      if (payload.result?.status === "awarded") {
+        notifyRewardEarned(payload.result.points, `alert-read:${userAlertKey}`);
+      }
+    } catch (error) {
+      setReadError({ key: userAlertKey, message: error.message });
+    } finally {
+      setSubmittingAlertId(null);
+    }
+  };
 
   return (
     <div
@@ -106,7 +230,11 @@ export function AlertDetailModal({ alert, onClose }) {
           </div>
         </div>
 
-        <div className="p-6 sm:p-8 space-y-5 bg-white text-left overflow-y-auto flex-1">
+        <div
+          ref={detailBodyRef}
+          onScroll={handleDetailScroll}
+          className="p-6 sm:p-8 space-y-5 bg-white text-left overflow-y-auto flex-1"
+        >
           <p className="text-sm font-medium leading-relaxed text-zinc-700">{alert.message}</p>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">
@@ -164,6 +292,72 @@ export function AlertDetailModal({ alert, onClose }) {
         </div>
 
         <div className="shrink-0 bg-white rounded-b-2xl border-t border-zinc-100 p-4">
+          {canShowReadState && (
+            <div className="mb-3">
+              {hasAlreadyRead ? (
+                <>
+                  <button
+                    type="button"
+                    disabled
+                    className="mb-3 w-full rounded-2xl border border-emerald-200 bg-emerald-50 py-3 text-emerald-700 font-black uppercase text-[10px] tracking-widest disabled:opacity-100"
+                  >
+                    Already Read ✓
+                  </button>
+                  {resultForThisAlert?.status === "awarded" ? (
+                    <p className="flex items-center justify-center gap-2 text-sm font-bold text-green-700" role="status">
+                      <CheckCircle2 size={16} />
+                      {resultForThisAlert.points} points added to your balance.
+                    </p>
+                  ) : (
+                    <p className="text-center text-xs font-medium text-zinc-500" role="status">
+                      You have already earned points for this advisory.
+                    </p>
+                  )}
+                </>
+              ) : ["rewards_disabled", "activity_disabled", "not_eligible"].includes(resultForThisAlert?.status) ? (
+                <p className="text-center text-xs font-medium text-zinc-500" role="status">
+                  {resultForThisAlert.status === "rewards_disabled"
+                    ? "The Rewards Program is currently turned off."
+                    : resultForThisAlert.status === "activity_disabled"
+                      ? "Alert reading points are currently turned off."
+                      : "This advisory is not eligible for points."}
+                </p>
+              ) : (
+                <>
+                  {errorForThisAlert && (
+                    <p className="mb-2 text-center text-xs font-medium text-red-600" role="alert">
+                      {errorForThisAlert}
+                    </p>
+                  )}
+                  {readStatus?.key === userAlertKey && readStatus.status === "unknown" && (
+                    <p className="mb-2 text-center text-[10px] font-medium text-amber-700" role="status">
+                      Could not check whether you have read this advisory. The server will still prevent duplicate awards.
+                    </p>
+                  )}
+                  {hasViewedContent && !isCheckingReadStatus ? (
+                    <button
+                      type="button"
+                      onClick={handleReadAdvisory}
+                      disabled={submittingAlertId === alert.id}
+                      className="mb-3 w-full rounded-2xl border border-blue-200 bg-blue-50 py-3 text-blue-700 font-black uppercase text-[10px] tracking-widest hover:bg-blue-100 disabled:opacity-50"
+                    >
+                      {submittingAlertId === alert.id ? (
+                        <><Loader2 size={14} className="inline animate-spin mr-2" />Recording...</>
+                      ) : (
+                        "I have read this advisory"
+                      )}
+                    </button>
+                  ) : (
+                    <p className="mb-3 text-center text-[10px] font-bold text-zinc-500">
+                      {isCheckingReadStatus
+                        ? "Checking whether you have already read this advisory..."
+                        : "Read through the advisory above to unlock this optional action."}
+                    </p>
+                  )}
+                </>
+              )}
+            </div>
+          )}
           <button
             type="button"
             onClick={onClose}

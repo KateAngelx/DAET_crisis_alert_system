@@ -1,6 +1,7 @@
 import { create } from "zustand";
 import { supabase } from "@/lib/supabaseClient";
 import { isRouteAdvisoryRow } from "@/lib/areaAdvisoryAdapter";
+import { sortRecordsNewestFirst } from "@/lib/recordSorting";
 export const useRouteAdvisoryStore = create((set, get) => ({
   advisories: [],
   loading: false,
@@ -13,10 +14,14 @@ export const useRouteAdvisoryStore = create((set, get) => ({
       const { data, error } = await supabase
         .from("route_advisories")
         .select("*")
-        .order("created_at", { ascending: false });
+        .order("created_at", { ascending: false, nullsFirst: false })
+        .order("id", { ascending: false });
 
       if (error) throw error;
-      const advisories = (data || []).filter(isRouteAdvisoryRow);
+      const advisories = sortRecordsNewestFirst(
+        (data || []).filter(isRouteAdvisoryRow),
+        ["created_at"]
+      );
       set({ advisories, loading: false, error: null });    } catch (err) {
       set({ loading: false, error: err.message || "Could not load route advisories." });
       return;
@@ -43,12 +48,12 @@ export const useRouteAdvisoryStore = create((set, get) => ({
 
           if (payload.eventType === "INSERT") {            set((state) => {
               if (state.advisories.some((a) => a.id === payload.new.id)) return state;
-              return { advisories: [payload.new, ...state.advisories] };
+              return { advisories: sortRecordsNewestFirst([...state.advisories, payload.new]) };
             });
           } else if (payload.eventType === "UPDATE") {
             set((state) => ({
-              advisories: state.advisories.map((a) =>
-                a.id === payload.new.id ? payload.new : a
+              advisories: sortRecordsNewestFirst(
+                state.advisories.map((a) => a.id === payload.new.id ? payload.new : a)
               ),
             }));
           } else if (payload.eventType === "DELETE") {

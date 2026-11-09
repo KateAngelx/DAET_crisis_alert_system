@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useMemo } from "react";
+import Link from "next/link";
 import { Info, Shield } from "lucide-react";
 import { useCrisisStore, useAuthStore } from "@/app/store/crisisStore";
 import { InfoPageHero, PublicPageShell, PublicPageContent, PublicPanel } from "@/app/components/InfoPageHero";
@@ -9,6 +10,7 @@ import { PublicStatCardSkeleton, AlertCardSkeletonList, MapSkeleton } from "@/ap
 import { PublicStatCard } from "@/app/components/dashboard/PublicStatCard";
 import { getSeverityOutline, portalLayout, portalShell, statGrid } from "@/lib/designSystem";
 import { AlertDetailModal } from "@/app/(subsystems)/crisis/(public)/_components/AlertDetailModal";
+import { sortRecordsNewestFirst } from "@/lib/recordSorting";
 import { CrisisHubMap } from "@/app/components/maps/CrisisHubMap";
 import { ROLE_INTERFACE } from "@/lib/roleInterfaceCopy";
 import { usePublicVisibility } from "@/lib/usePublicVisibility";
@@ -76,19 +78,11 @@ export default function CrisisPublicPage() {
   const criticalAlerts = activeAlerts.filter((alert) => alert.severity === "Critical");
 
   const filteredAlerts = useMemo(() => {
-    return activeAlerts
-      .filter((alert) => {
+    return sortRecordsNewestFirst(activeAlerts.filter((alert) => {
         if (categoryFilter !== "all" && (alert.type || "General") !== categoryFilter) return false;
         if (severityFilter !== "all" && alert.severity !== severityFilter) return false;
         return true;
-      })
-      .sort((a, b) => {
-        const rankA = DEFAULT_SEVERITY_ORDER.indexOf(a.severity);
-        const rankB = DEFAULT_SEVERITY_ORDER.indexOf(b.severity);
-        const severityDiff = (rankA === -1 ? 99 : rankA) - (rankB === -1 ? 99 : rankB);
-        if (severityDiff !== 0) return severityDiff;
-        return new Date(b.created_at || 0) - new Date(a.created_at || 0);
-      });
+      }), ["published_at", "created_at"]);
   }, [activeAlerts, categoryFilter, severityFilter]);
 
   const handleViewAlert = (alertId) => {
@@ -106,7 +100,9 @@ export default function CrisisPublicPage() {
       ? `${alert.title} · ${alert.location}`
       : alert.title || alert.location || "—",
     type: alert.type || "General",
-    when: alert.created_at ? new Date(alert.created_at).toLocaleString() : "—",
+    when: alert.published_at || alert.created_at
+      ? new Date(alert.published_at || alert.created_at).toLocaleString()
+      : "—",
     onSelect: () => handleViewAlert(alert.id),
     ariaLabel: "View alert details",
   }));
@@ -129,6 +125,19 @@ export default function CrisisPublicPage() {
           }
           tone="info"
         />
+        <PublicPanel title="Share crisis and alert feedback" subtitle="Your message is reviewed before it is shown publicly.">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <p className="max-w-2xl text-sm font-medium text-zinc-600">
+              Send a comment, feedback, or suggestion about public crisis information. This does not replace emergency reporting.
+            </p>
+            <Link
+              href={selectedAlert ? `/crisis/feedback?alertId=${encodeURIComponent(selectedAlert)}` : "/crisis/feedback"}
+              className="inline-flex min-h-11 shrink-0 items-center justify-center rounded-xl bg-blue-600 px-4 py-3 text-xs font-black uppercase tracking-widest text-white hover:bg-blue-700"
+            >
+              Open feedback form
+            </Link>
+          </div>
+        </PublicPanel>
         <div className={portalLayout.stackPublic}>
           <PublicPanel title="Overview" subtitle="Alert counts">
             {loading ? (
@@ -146,7 +155,7 @@ export default function CrisisPublicPage() {
                 <div>
                   <p className="text-xs font-black uppercase text-red-700 tracking-widest">Critical alerts active</p>
                   <p className="text-sm text-red-900 font-medium mt-0.5">
-                    {criticalAlerts.length} alert{criticalAlerts.length > 1 ? "s" : ""} need immediate attention. Those are listed first under Active announcements.
+                    {criticalAlerts.length} alert{criticalAlerts.length > 1 ? "s" : ""} need immediate attention. Review the active announcements below.
                   </p>
                 </div>
               </div>
