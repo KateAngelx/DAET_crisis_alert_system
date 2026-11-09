@@ -36,7 +36,7 @@ export function PublicHeader() {
   const [mounted, setMounted] = useState(false);
   const { user, isAuthenticated, logout } = useAuthStore();
   const visibility = usePublicVisibility();
-  useInstalledApp();
+  const installedApp = useInstalledApp();
 
   useEffect(() => setMounted(true), []);
 
@@ -213,6 +213,7 @@ export function PublicHeader() {
         />
       )}
 
+      {installedApp ? (
       <nav
         data-public-mobile-nav
         className="public-mobile-dock lg:hidden fixed z-50 bottom-[max(0.75rem,env(safe-area-inset-bottom))] inset-x-3 sm:inset-x-4 pointer-events-none"
@@ -243,6 +244,7 @@ export function PublicHeader() {
           </div>
         </div>
       </nav>
+      ) : null}
     </>
   );
 }

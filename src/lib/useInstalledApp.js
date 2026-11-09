@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 
 export function isInstalledApp() {
   if (typeof window === "undefined") return false;
@@ -12,11 +12,14 @@ export function isInstalledApp() {
 
 /** Synchronizes installed-app mode with the document root for responsive navigation styles. */
 export function useInstalledApp() {
+  const [installed, setInstalled] = useState(false);
+
   useEffect(() => {
     const media = window.matchMedia("(display-mode: standalone)");
     const update = () => {
       const isInstalled = isInstalledApp();
       document.documentElement.dataset.installedApp = String(isInstalled);
+      setInstalled(isInstalled);
     };
     update();
     media.addEventListener?.("change", update);
@@ -25,4 +28,6 @@ export function useInstalledApp() {
       delete document.documentElement.dataset.installedApp;
     };
   }, []);
+
+  return installed;
 }

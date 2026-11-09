@@ -4,9 +4,13 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Menu } from "lucide-react";
 import { isNavActive } from "@/lib/dashboardNav";
+import { useInstalledApp } from "@/lib/useInstalledApp";
 
 export function InstalledBottomNav({ items, onMore, menuOpen = false }) {
   const pathname = usePathname();
+  const installedApp = useInstalledApp();
+
+  if (!installedApp) return null;
 
   return (
     <nav
