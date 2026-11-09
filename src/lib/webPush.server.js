@@ -1,5 +1,6 @@
 import * as webPushNamespace from "web-push";
 import { getNotificationHref } from "@/lib/notificationLinks";
+import { runPushDeliveries, subscriptionsForRecipient } from "@/lib/webPushTargets.mjs";
 
 function webPushApi() {
   const namespace = typeof webPushNamespace.setVapidDetails === "function"
@@ -14,12 +15,35 @@ function webPushApi() {
   };
 }
 
+function subjectIsUsable(subject) {
+  if (!subject || subject.length > 200) return false;
+  try {
+    const url = new URL(subject);
+    return url.protocol === "mailto:" || url.protocol === "https:";
+  } catch {
+    return false;
+  }
+}
+
 function getWebPushEnv() {
-  return {
-    publicKey: process.env.VAPID_PUBLIC_KEY || process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY || "",
-    privateKey: process.env.VAPID_PRIVATE_KEY || "",
-    subject: process.env.WEB_PUSH_SUBJECT || "",
-  };
+  const publicKey = process.env.VAPID_PUBLIC_KEY || process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY || "";
+  const privateKey = process.env.VAPID_PRIVATE_KEY || "";
+  const subject = process.env.WEB_PUSH_SUBJECT || "";
+  const missing = [];
+  if (!publicKey) missing.push("VAPID_PUBLIC_KEY");
+  if (!privateKey) missing.push("VAPID_PRIVATE_KEY");
+  if (!subject) missing.push("WEB_PUSH_SUBJECT");
+  return { publicKey, privateKey, subject, missing };
+}
+
+function configurationErrorFor(env) {
+  if (env.missing.length) {
+    return `Push notifications are not configured on the server yet. Add ${env.missing.join(", ")} to the server environment, then redeploy.`;
+  }
+  if (!subjectIsUsable(env.subject)) {
+    return "Push notifications are not configured on the server yet. WEB_PUSH_SUBJECT must be a mailto: or https: contact.";
+  }
+  return null;
 }
 
 function getNotificationPath(notification, userType) {
@@ -37,15 +61,36 @@ function notificationPayload(notification, userType) {
 }
 
 function configureWebPush() {
-  const { publicKey, privateKey, subject } = getWebPushEnv();
-  if (!publicKey || !privateKey || !subject) {
-    throw new Error("Web Push is not configured. Set VAPID_PUBLIC_KEY, VAPID_PRIVATE_KEY, and WEB_PUSH_SUBJECT.");
+  const env = getWebPushEnv();
+  const configurationError = configurationErrorFor(env);
+  if (configurationError) throw new Error(configurationError);
+  try {
+    webPushApi().setVapidDetails(env.subject, env.publicKey, env.privateKey);
+  } catch {
+    throw new Error("Push notifications are not configured on the server yet. The server push keys could not be used. Check VAPID_PUBLIC_KEY, VAPID_PRIVATE_KEY, and WEB_PUSH_SUBJECT, then redeploy.");
   }
-  webPushApi().setVapidDetails(subject, publicKey, privateKey);
+}
+
+async function disableExpiredSubscriptions(admin, userId, ids) {
+  if (!ids.length) return null;
+  const updatedAt = new Date().toISOString();
+  let { error } = await admin
+    .from("web_push_subscriptions")
+    .update({ enabled: false, disabled_reason: "expired", updated_at: updatedAt })
+    .in("id", ids)
+    .eq("user_id", userId);
+  if (error && /disabled_reason/i.test(error.message || "")) {
+    ({ error } = await admin
+      .from("web_push_subscriptions")
+      .update({ enabled: false, updated_at: updatedAt })
+      .in("id", ids)
+      .eq("user_id", userId));
+  }
+  return error;
 }
 
 export async function sendWebPushToSubscriptions(admin, userId, notification, { userType } = {}) {
-  const result = { sent: 0, failed: 0, skipped: false, errors: [] };
+  const result = { sent: 0, failed: 0, expired: 0, skipped: false, errors: [] };
   try {
     configureWebPush();
   } catch (error) {
@@ -54,50 +99,37 @@ export async function sendWebPushToSubscriptions(admin, userId, notification, { 
 
   const { data: subscriptions, error } = await admin
     .from("web_push_subscriptions")
-    .select("id, endpoint, p256dh, auth, expiration_time")
+    .select("id, user_id, endpoint, p256dh, auth, expiration_time, enabled")
     .eq("user_id", userId)
     .eq("enabled", true);
   if (error) return { ...result, errors: [error.message] };
-  if (!subscriptions?.length) return { ...result, skipped: true };
+
+  const targets = subscriptionsForRecipient(subscriptions, userId);
+  if (!targets.length) return { ...result, skipped: true };
 
   const payload = notificationPayload(notification, userType);
-  const deliveries = await Promise.allSettled(subscriptions.map(async (row) => {
+  const { summary } = await runPushDeliveries(targets, async (row) => {
     const subscription = {
       endpoint: row.endpoint,
       expirationTime: row.expiration_time ? new Date(row.expiration_time).getTime() : null,
       keys: { p256dh: row.p256dh, auth: row.auth },
     };
-    const options = {
+    await webPushApi().sendNotification(subscription, payload, {
       TTL: notification.priority === "CRITICAL" ? 86400 : 3600,
       urgency: notification.priority === "CRITICAL" || notification.priority === "HIGH" ? "high" : "normal",
       contentEncoding: "aes128gcm",
-    };
+    });
+  });
 
-    try {
-      await webPushApi().sendNotification(subscription, payload, options);
-      return { id: row.id, sent: true };
-    } catch (pushError) {
-      if (pushError.statusCode === 404 || pushError.statusCode === 410) {
-        const { error: disableError } = await admin
-          .from("web_push_subscriptions")
-          .update({ enabled: false, updated_at: new Date().toISOString() })
-          .eq("id", row.id);
-        if (disableError) throw new Error(`Expired subscription cleanup failed: ${disableError.message}`);
-        return { id: row.id, expired: true };
-      }
-      throw new Error(pushError.message || "Web Push delivery failed");
-    }
-  }));
+  result.sent = summary.sent;
+  result.failed = summary.failed;
+  result.expired = summary.expired;
+  result.errors.push(...summary.errors);
 
-  for (const delivery of deliveries) {
-    if (delivery.status === "fulfilled" && delivery.value.sent) result.sent += 1;
-    else if (delivery.status === "fulfilled" && delivery.value.expired) result.expired = (result.expired || 0) + 1;
-    else if (delivery.status === "rejected") {
-      result.failed += 1;
-      result.errors.push(delivery.reason?.message || "Web Push delivery failed");
-    }
-  }
-  if (deliveries.some((delivery) => delivery.status === "fulfilled" && delivery.value.expired)) {
+  if (summary.expiredIds.length) {
+    const disableError = await disableExpiredSubscriptions(admin, userId, summary.expiredIds);
+    if (disableError) result.errors.push(`Expired subscription cleanup failed: ${disableError.message}`);
+
     const { count, error: countError } = await admin
       .from("web_push_subscriptions")
       .select("id", { count: "exact", head: true })
@@ -105,10 +137,16 @@ export async function sendWebPushToSubscriptions(admin, userId, notification, { 
       .eq("enabled", true);
     if (countError) result.errors.push(`Could not check remaining push subscriptions: ${countError.message}`);
     else if (!count) {
-      const { error: preferenceError } = await admin.rpc("set_web_push_enabled", {
+      let { error: preferenceError } = await admin.rpc("set_web_push_account_preference", {
         p_user_id: userId,
         p_enabled: false,
       });
+      if (preferenceError && /set_web_push_account_preference/i.test(preferenceError.message || "")) {
+        ({ error: preferenceError } = await admin.rpc("set_web_push_enabled", {
+          p_user_id: userId,
+          p_enabled: false,
+        }));
+      }
       if (preferenceError) result.errors.push(`Could not disable expired push preference: ${preferenceError.message}`);
     }
   }
@@ -116,21 +154,24 @@ export async function sendWebPushToSubscriptions(admin, userId, notification, { 
 }
 
 export function getWebPushPublicKey() {
-  return getWebPushEnv().publicKey || null;
+  const env = getWebPushEnv();
+  return configurationErrorFor(env) ? null : env.publicKey || null;
 }
 
 export function getWebPushStatus() {
-  const { publicKey } = getWebPushEnv();
+  const env = getWebPushEnv();
+  const preliminary = configurationErrorFor(env);
+  if (preliminary) {
+    return { configured: false, publicKey: null, configurationError: preliminary, missingEnv: env.missing };
+  }
   try {
     configureWebPush();
-    return { configured: true, publicKey, configurationError: null };
+    return { configured: true, publicKey: env.publicKey, configurationError: null, missingEnv: [] };
   } catch (error) {
     const configurationError = /failed to load/i.test(error.message || "")
-      ? "The push library failed to load on the server."
-      : publicKey
-        ? "The server push keys could not be used."
-        : null;
-    return { configured: false, publicKey: null, configurationError };
+      ? "Push notifications are not configured on the server yet. The push library failed to load on the server."
+      : error.message || "Push notifications are not configured on the server yet.";
+    return { configured: false, publicKey: null, configurationError, missingEnv: [] };
   }
 }
 

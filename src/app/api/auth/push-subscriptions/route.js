@@ -36,6 +36,24 @@ async function authorize(request) {
   return { admin, user, profile };
 }
 
+async function enabledDeviceCount(admin, userId) {
+  const { count, error } = await admin
+    .from("web_push_subscriptions")
+    .select("id", { count: "exact", head: true })
+    .eq("user_id", userId)
+    .eq("enabled", true);
+  if (error) throw error;
+  return count || 0;
+}
+
+function pushState(profile, deviceEnabled, count) {
+  return {
+    enabled: Boolean(profile.notification_channels?.push) || count > 0,
+    deviceEnabled,
+    enabledDeviceCount: count,
+  };
+}
+
 function isAllowedPushEndpoint(value) {
   try {
     const url = new URL(value);
@@ -70,14 +88,14 @@ export async function GET(request) {
       deviceEnabled = subscription?.enabled === true;
     }
 
+    const count = await enabledDeviceCount(auth.admin, auth.user.id);
     const pushStatus = getWebPushStatus();
     return NextResponse.json({
       success: true,
       publicKey: pushStatus.publicKey,
       configured: pushStatus.configured,
       configurationError: pushStatus.configurationError,
-      enabled: Boolean(auth.profile.notification_channels?.push),
-      deviceEnabled,
+      ...pushState(auth.profile, deviceEnabled, count),
     }, { headers: { "Cache-Control": "no-store" } });
   } catch (error) {
     return NextResponse.json({ error: error.message || "Unable to load push settings." }, { status: 500 });
@@ -88,21 +106,70 @@ export async function POST(request) {
   try {
     const auth = await authorize(request);
     if (auth.error) return auth.error;
+    const body = await request.json().catch(() => null);
+    const reconciling = body?.action === "reconcile";
     const limited = enforceRateLimitByKey(auth.user.id, {
-      name: "web-push-subscriptions",
-      limit: 12,
+      name: reconciling ? "web-push-reconcile" : "web-push-subscriptions",
+      limit: reconciling ? 30 : 12,
       windowMs: 60_000,
     });
     if (limited) return limited;
-
-    const body = await request.json().catch(() => null);
     if (body?.action === "disable") {
       const { error } = await auth.admin.rpc("set_web_push_enabled", {
         p_user_id: auth.user.id,
         p_enabled: false,
       });
       if (error) throw error;
-      return NextResponse.json({ success: true, enabled: false });
+      return NextResponse.json({ success: true, enabled: false, deviceEnabled: false, enabledDeviceCount: 0 });
+    }
+
+    if (body?.action === "disable-device") {
+      if (typeof body.endpoint !== "string" || !isAllowedPushEndpoint(body.endpoint)) {
+        return NextResponse.json({ error: "Push subscription endpoint is invalid." }, { status: 400 });
+      }
+      const { data: remaining, error } = await auth.admin.rpc("disable_web_push_device", {
+        p_user_id: auth.user.id,
+        p_endpoint: body.endpoint,
+      });
+      if (error) {
+        return NextResponse.json({
+          error: /disable_web_push_device/i.test(error.message || "")
+            ? "This device could not be updated until database migration 042_web_push_account_devices.sql is applied."
+            : "Unable to turn off push on this device.",
+        }, { status: 500 });
+      }
+      const enabledDeviceCount = Number.isInteger(remaining) ? remaining : await enabledDeviceCount(auth.admin, auth.user.id);
+      return NextResponse.json({
+        success: true,
+        enabled: enabledDeviceCount > 0,
+        deviceEnabled: false,
+        enabledDeviceCount,
+      });
+    }
+
+    if (body?.action === "reconcile") {
+      const endpoint = body?.subscription?.endpoint;
+      if (typeof endpoint !== "string" || !isAllowedPushEndpoint(endpoint)) {
+        return NextResponse.json({ error: "Push subscription endpoint is invalid." }, { status: 400 });
+      }
+      const { data: deviceEnabled, error } = await auth.admin.rpc("reconcile_web_push_device", {
+        p_user_id: auth.user.id,
+        p_endpoint: endpoint,
+      });
+      if (error) {
+        return NextResponse.json({
+          error: /reconcile_web_push_device/i.test(error.message || "")
+            ? "Push devices could not be synced until database migration 042_web_push_account_devices.sql is applied."
+            : "Unable to sync this device.",
+        }, { status: 500 });
+      }
+      const count = await enabledDeviceCount(auth.admin, auth.user.id);
+      return NextResponse.json({
+        success: true,
+        enabled: count > 0,
+        deviceEnabled: deviceEnabled === true,
+        enabledDeviceCount: count,
+      });
     }
 
     const subscription = body?.subscription;
@@ -152,7 +219,8 @@ export async function POST(request) {
       p_expiration_time: expirationTime,
     });
     if (error) throw error;
-    return NextResponse.json({ success: true, enabled: true });
+    const count = await enabledDeviceCount(auth.admin, auth.user.id);
+    return NextResponse.json({ success: true, enabled: true, deviceEnabled: true, enabledDeviceCount: count });
   } catch (error) {
     return NextResponse.json({ error: error.message || "Unable to update push preferences." }, { status: 500 });
   }

@@ -92,7 +92,7 @@ export async function POST(request) {
           email: Boolean(channels.email),
           sms: Boolean(channels.sms),
           app: Boolean(channels.app),
-          push: Boolean(channels.push ?? existing.notification_channels?.push),
+          push: Boolean(existing.notification_channels?.push),
         },
         notification_channels_configured: true,
       })

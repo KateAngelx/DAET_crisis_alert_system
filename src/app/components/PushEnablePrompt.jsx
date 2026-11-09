@@ -8,6 +8,7 @@ import { getActiveSession } from "@/lib/authSession";
 import { portalShell } from "@/lib/designSystem";
 import {
   getPushServiceRegistration,
+  reconcileAccountPushSubscription,
   subscriptionUsesKey,
   supportsWebPush,
   urlBase64ToUint8Array,
@@ -37,6 +38,7 @@ export function PushEnablePrompt() {
         if (!session?.access_token) return;
         const registration = await getPushServiceRegistration();
         const subscription = await registration?.pushManager.getSubscription();
+        if (subscription) await reconcileAccountPushSubscription(session.access_token);
         const query = subscription?.endpoint ? `?endpoint=${encodeURIComponent(subscription.endpoint)}` : "";
         const response = await fetch(`/api/auth/push-subscriptions${query}`, {
           cache: "no-store",
@@ -48,10 +50,14 @@ export function PushEnablePrompt() {
         const subscriptionMatches = !subscription || !result.publicKey
           || subscriptionUsesKey(subscription, urlBase64ToUint8Array(result.publicKey));
         const deviceEnabled = Boolean(subscription && result.deviceEnabled && subscriptionMatches);
+        const registeredElsewhere = Math.max(
+          0,
+          (Number(result.enabledDeviceCount) || 0) - (result.deviceEnabled === true ? 1 : 0)
+        );
         if (active) {
           setPrompt(
             result.configured && !deviceEnabled && Notification.permission !== "denied"
-              ? { userId: user.id, enabledElsewhere: result.enabled === true }
+              ? { userId: user.id, otherDevices: registeredElsewhere }
               : null
           );
         }
@@ -92,8 +98,8 @@ export function PushEnablePrompt() {
         <div className="min-w-0 flex-1">
           <p className="text-sm font-black text-zinc-900">Enable push alerts on this device?</p>
           <p className="mt-1 text-xs leading-relaxed text-zinc-600">
-            {prompt.enabledElsewhere
-              ? "Push alerts are enabled on another device. You can enable this device separately in Profile."
+            {prompt.otherDevices > 0
+              ? `This device is off. This account already receives push on ${prompt.otherDevices} other device${prompt.otherDevices === 1 ? "" : "s"}. Enable this device in Profile to receive the same alerts here.`
               : "Get supported system banners for CONNECT-DAET alerts. You can manage this any time in Profile."}
           </p>
           <Link

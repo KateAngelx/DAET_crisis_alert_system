@@ -60,7 +60,7 @@ See `.env.local` comments or Admin → Settings for SMS/email testing.
 Run SQL files in `supabase/migrations/` **in numeric order** in the Supabase SQL Editor.
 Tourist Guide Assistance uses migrations `035_tourist_guide_assistance_requests.sql` and `036_tourist_guide_assistance_workflow.sql`; apply both before enabling the feature in Admin Settings.
 Guide emergency reporting uses migration `037_guide_emergency_reports.sql`; apply it to enable direct emergency reporting from the Guide Dashboard and review in the Crisis Command Center.
-Web Push subscriptions and notification event de-duplication use migration `038_web_push_subscriptions.sql`; apply it before enabling push notifications. Apply `041_web_push_per_device_registration.sql` to update per-device re-registration behavior.
+Web Push subscriptions and notification event de-duplication use migration `038_web_push_subscriptions.sql`; apply it before enabling push notifications. Apply `041_web_push_per_device_registration.sql` and `042_web_push_account_devices.sql` so each browser keeps its own subscription and one account can receive the same alert on every device that enabled push. In Vercel, set `VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY`, and `WEB_PUSH_SUBJECT` for Production, then redeploy. Use the same key pair already used by existing devices. Profile names any missing variable and does not show key values.
 
 Optional daily cron:
 

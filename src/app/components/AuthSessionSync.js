@@ -5,6 +5,7 @@ import { supabase } from "@/lib/supabaseClient";
 import { syncProfileFromServer, useAuthStore } from "@/app/store/crisisStore";
 import { useNotificationStore } from "@/app/store/notificationStore";
 import { clearInvalidAuthSession, fetchWithFreshSession, isInvalidRefreshError } from "@/lib/authSession";
+import { reconcileAccountPushSubscription } from "@/lib/webPushClient";
 
 async function sendHeartbeat() {
   await fetchWithFreshSession("/api/auth/heartbeat", {
@@ -98,6 +99,7 @@ export function AuthSessionSync() {
 
       if (session?.user && (event === "SIGNED_IN" || event === "INITIAL_SESSION")) {
         deferUntilAuthCallbackReturns(() => {
+          void reconcileAccountPushSubscription(session.access_token);
           void syncProfile(session, event);
         });
       } else if (event === "INITIAL_SESSION" && !session) {

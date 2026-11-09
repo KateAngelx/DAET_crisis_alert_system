@@ -88,6 +88,28 @@ function waitUntilActive(registration) {
   });
 }
 
+export async function reconcileAccountPushSubscription(accessToken) {
+  if (!accessToken || !supportsWebPush()) return null;
+  try {
+    const registration = await getPushServiceRegistration();
+    const subscription = await registration?.pushManager.getSubscription();
+    if (!subscription) return { deviceEnabled: false };
+    const response = await fetch("/api/auth/push-subscriptions", {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ action: "reconcile", subscription: subscription.toJSON() }),
+    });
+    const result = await response.json().catch(() => ({}));
+    if (!response.ok) return null;
+    return result;
+  } catch {
+    return null;
+  }
+}
+
 export async function registerPushServiceWorker() {
   const path = pushWorkerPath();
   const dedicated = path === DEDICATED_PUSH_WORKER_PATH;

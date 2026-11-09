@@ -8,6 +8,7 @@ import {
   getPushServiceRegistration,
   isIosDevice,
   isStandaloneApp,
+  reconcileAccountPushSubscription,
   registerPushServiceWorker,
   subscriptionUsesKey,
   supportsWebPush,
@@ -21,8 +22,9 @@ export function WebPushSettings() {
   const [configured, setConfigured] = useState(false);
   const [configurationError, setConfigurationError] = useState("");
   const [publicKey, setPublicKey] = useState(null);
-  const [enabled, setEnabled] = useState(false);
   const [deviceEnabled, setDeviceEnabled] = useState(false);
+  const [enabledDeviceCount, setEnabledDeviceCount] = useState(0);
+  const [currentEndpoint, setCurrentEndpoint] = useState(null);
   const [permission, setPermission] = useState("default");
   const [iosNeedsHomeScreen, setIosNeedsHomeScreen] = useState(false);
   const [busy, setBusy] = useState(false);
@@ -57,6 +59,7 @@ export function WebPushSettings() {
       if (!session?.access_token) throw new Error("Sign in again to manage browser push notifications.");
       const registration = await getPushServiceRegistration();
       const currentSubscription = await registration?.pushManager.getSubscription();
+      if (currentSubscription) await reconcileAccountPushSubscription(session.access_token);
       const query = currentSubscription?.endpoint
         ? `?endpoint=${encodeURIComponent(currentSubscription.endpoint)}`
         : "";
@@ -73,7 +76,8 @@ export function WebPushSettings() {
       setConfigured(result.configured);
       setConfigurationError(result.configurationError || "");
       setPublicKey(result.publicKey || null);
-      setEnabled(result.enabled);
+      setCurrentEndpoint(currentSubscription?.endpoint || null);
+      setEnabledDeviceCount(Number(result.enabledDeviceCount) || 0);
       setDeviceEnabled(result.deviceEnabled === true && subscriptionKeyMatches);
       setLoaded(true);
     } catch (loadError) {
@@ -159,12 +163,45 @@ export function WebPushSettings() {
       const result = await response.json().catch(() => ({}));
       if (!response.ok) throw new Error(result.error || "Unable to enable push notifications.");
       setConfigured(true);
-      setEnabled(true);
       setDeviceEnabled(true);
+      setCurrentEndpoint(subscription.endpoint);
+      setEnabledDeviceCount(Number(result.enabledDeviceCount) || 1);
       updateStoredPreference(true);
-      setMessage("Push alerts are enabled for this account and device. You can turn them off here anytime.");
+      setMessage("Push alerts are on for this device. Every device that has enabled them for this account receives the same alerts.");
     } catch (enableError) {
       setError(enableError.message || "Unable to enable push notifications.");
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const disableThisDevice = async () => {
+    setBusy(true);
+    setError("");
+    setMessage("");
+    try {
+      if (!currentEndpoint) throw new Error("This browser does not have a push subscription to turn off.");
+      const session = await getActiveSession();
+      if (!session?.access_token) throw new Error("Your session expired. Please sign in again.");
+      const response = await fetch("/api/auth/push-subscriptions", {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${session.access_token}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ action: "disable-device", endpoint: currentEndpoint }),
+      });
+      const result = await response.json().catch(() => ({}));
+      if (!response.ok) throw new Error(result.error || "Unable to turn off push on this device.");
+      const count = Number(result.enabledDeviceCount) || 0;
+      setDeviceEnabled(false);
+      setEnabledDeviceCount(count);
+      updateStoredPreference(count > 0);
+      setMessage(count > 0
+        ? "Push alerts are off on this device. Other devices for this account are unchanged."
+        : "Push alerts are off on this device.");
+    } catch (disableError) {
+      setError(disableError.message || "Unable to turn off push on this device.");
     } finally {
       setBusy(false);
     }
@@ -187,8 +224,8 @@ export function WebPushSettings() {
       });
       const result = await response.json().catch(() => ({}));
       if (!response.ok) throw new Error(result.error || "Unable to disable push notifications.");
-      setEnabled(false);
       setDeviceEnabled(false);
+      setEnabledDeviceCount(0);
       try {
         if (user?.id) window.localStorage.setItem(`daet-push-prompt-dismissed:${user.id}`, "1");
       } catch {
@@ -207,7 +244,7 @@ export function WebPushSettings() {
     <div className="rounded-2xl border border-blue-200 bg-blue-50/60 p-4 sm:p-5">
       <div className="flex items-start gap-3">
         <span className="rounded-xl border border-blue-200 bg-white p-2.5 text-blue-700">
-          {enabled ? <BellRing size={19} /> : <BellOff size={19} />}
+          {deviceEnabled ? <BellRing size={19} /> : <BellOff size={19} />}
         </span>
         <div className="min-w-0 flex-1">
           <h3 className="font-black text-zinc-900">Browser and desktop push alerts</h3>
@@ -236,13 +273,31 @@ export function WebPushSettings() {
             <p className="mt-3 text-xs font-semibold text-amber-900">
               Push notifications are not configured on the server yet.
             </p>
+          ) : loaded && configured ? (
+            <p className="mt-3 text-xs font-bold text-zinc-700">
+              {deviceEnabled ? "This device is on." : "This device is off."}
+              {" "}
+              {enabledDeviceCount === 0
+                ? "No devices on this account are receiving push alerts."
+                : `${enabledDeviceCount} ${enabledDeviceCount === 1 ? "device" : "devices"} on this account can receive push alerts.`}
+              {!deviceEnabled && enabledDeviceCount > 0
+                ? " This browser will not show them until you enable it here."
+                : ""}
+            </p>
           ) : null}
           <div className="mt-4 flex flex-wrap items-center gap-3">
             {deviceEnabled ? (
-              <button type="button" onClick={disablePush} disabled={busy} className="rounded-xl border border-blue-300 bg-white px-4 py-2.5 text-xs font-black uppercase tracking-wide text-blue-800 disabled:opacity-50">
-                {busy ? <Loader2 size={15} className="inline animate-spin" /> : <BellOff size={15} className="mr-1 inline" />}
-                Turn off on all devices
-              </button>
+              <>
+                <button type="button" onClick={disableThisDevice} disabled={busy || !currentEndpoint} className="rounded-xl border border-blue-300 bg-white px-4 py-2.5 text-xs font-black uppercase tracking-wide text-blue-800 disabled:opacity-50">
+                  {busy ? <Loader2 size={15} className="inline animate-spin" /> : <BellOff size={15} className="mr-1 inline" />}
+                  Turn off this device
+                </button>
+                {enabledDeviceCount > 1 ? (
+                  <button type="button" onClick={disablePush} disabled={busy} className="rounded-xl border border-blue-300 bg-white px-4 py-2.5 text-xs font-black uppercase tracking-wide text-blue-800 disabled:opacity-50">
+                    Turn off all devices
+                  </button>
+                ) : null}
+              </>
             ) : (
               <button
                 type="button"
@@ -263,10 +318,10 @@ export function WebPushSettings() {
                 Enable browser push
               </button>
             )}
-            {deviceEnabled ? (
-              <span className="text-xs font-bold text-green-800">Enabled on this device</span>
-            ) : enabled ? (
-              <span className="text-xs font-bold text-zinc-600">Enabled on another device</span>
+            {loaded && configured ? (
+              <span className={`text-xs font-bold ${deviceEnabled ? "text-green-800" : "text-zinc-600"}`}>
+                {deviceEnabled ? "On for this device" : "Off for this device"}
+              </span>
             ) : null}
           </div>
         </div>
