@@ -1,14 +1,84 @@
 import { NextResponse } from 'next/server';
 import { requireAdmin, VALID_USER_ROLES } from '@/lib/adminAuth';
 
-const PATCHABLE_FIELDS = ['user_type', 'full_name', 'phone', 'nationality', 'is_active'];
+function missingRelation(error) {
+  const message = error?.message || "";
+  return /does not exist|schema cache|Could not find the/i.test(message);
+}
+
+async function clearReference(admin, table, column, userId) {
+  const { error } = await admin.from(table).update({ [column]: null }).eq(column, userId);
+  if (error && !missingRelation(error)) throw error;
+}
+
+async function deleteWhere(admin, table, column, value) {
+  const { error } = await admin.from(table).delete().eq(column, value);
+  if (error && !missingRelation(error)) throw error;
+}
+
+async function deleteWhereIn(admin, table, column, values) {
+  if (!values.length) return;
+  const { error } = await admin.from(table).delete().in(column, values);
+  if (error && !missingRelation(error)) throw error;
+}
+
+async function removeIncidentFiles(admin, userId) {
+  const bucket = admin.storage.from("incident-attachments");
+  const { data: entries, error } = await bucket.list(userId, { limit: 1000 });
+  if (error || !entries?.length) return;
+
+  const paths = [];
+  for (const entry of entries) {
+    const folder = `${userId}/${entry.name}`;
+    const { data: files } = await bucket.list(folder, { limit: 1000 });
+    const filePaths = (files || [])
+      .filter((file) => file.id)
+      .map((file) => `${folder}/${file.name}`);
+    if (filePaths.length) paths.push(...filePaths);
+    else if (entry.id) paths.push(folder);
+  }
+
+  if (!paths.length) return;
+  const { error: removeError } = await bucket.remove(paths);
+  if (removeError && !missingRelation(removeError)) throw removeError;
+}
+
+async function releaseUserForDeletion(admin, userId) {
+  await removeIncidentFiles(admin, userId);
+  await deleteWhere(admin, "point_transactions", "user_id", userId);
+  await clearReference(admin, "guide_assignments", "assigned_by", userId);
+  await clearReference(admin, "incident_reports", "assigned_to", userId);
+  await clearReference(admin, "incident_history", "changed_by", userId);
+
+  const { data: reports, error: reportsError } = await admin
+    .from("incident_reports")
+    .select("id")
+    .eq("reporter_id", userId);
+  if (reportsError && !missingRelation(reportsError)) throw reportsError;
+  const reportIds = (reports || []).map((report) => report.id);
+
+  await deleteWhereIn(admin, "point_transactions", "incident_report_id", reportIds);
+  await deleteWhereIn(admin, "incident_report_reward_decisions", "incident_report_id", reportIds);
+  await deleteWhereIn(admin, "incident_reports", "id", reportIds);
+  await deleteWhere(admin, "incident_report_reward_decisions", "decided_by", userId);
+  await deleteWhere(admin, "incident_report_reward_decisions", "awarded_by", userId);
+
+  const { data: emergencies, error: emergencyError } = await admin
+    .from("guide_emergency_reports")
+    .select("id")
+    .eq("reporter_id", userId);
+  if (emergencyError && !missingRelation(emergencyError)) throw emergencyError;
+  const emergencyIds = (emergencies || []).map((report) => report.id);
+  await deleteWhereIn(admin, "guide_emergency_report_history", "report_id", emergencyIds);
+  await deleteWhereIn(admin, "guide_emergency_reports", "id", emergencyIds);
+}
 
 export async function PATCH(request, { params }) {
   try {
     const auth = await requireAdmin(request);
     if (auth.error) return auth.error;
 
-    const { admin, user: caller } = auth;
+    const { admin } = auth;
     const { id: targetUserId } = await params;
 
     if (!targetUserId) {
@@ -41,28 +111,6 @@ export async function PATCH(request, { params }) {
         );
       }
       updates.user_type = body.user_type;
-    }
-
-    if (body.full_name !== undefined) {
-      updates.full_name = String(body.full_name).trim() || targetProfile.full_name;
-    }
-
-    if (body.phone !== undefined) {
-      updates.phone = body.phone ? String(body.phone).trim() : null;
-    }
-
-    if (body.nationality !== undefined) {
-      updates.nationality = String(body.nationality).trim() || 'Filipino';
-    }
-
-    if (body.is_active !== undefined) {
-      if (targetUserId === caller.id && body.is_active === false) {
-        return NextResponse.json(
-          { error: 'You cannot deactivate your own account.' },
-          { status: 400 }
-        );
-      }
-      updates.is_active = Boolean(body.is_active);
     }
 
     const hasUpdates = Object.keys(updates).length > 0;
@@ -125,9 +173,21 @@ export async function DELETE(request, { params }) {
       return NextResponse.json({ error: 'User not found' }, { status: 404 });
     }
 
+    try {
+      await releaseUserForDeletion(admin, targetUserId);
+    } catch (releaseError) {
+      return NextResponse.json(
+        { error: releaseError.message || "Linked records could not be cleared before deleting this user." },
+        { status: 500 }
+      );
+    }
+
     const { error: deleteError } = await admin.auth.admin.deleteUser(targetUserId);
     if (deleteError) {
-      return NextResponse.json({ error: deleteError.message }, { status: 500 });
+      const message = deleteError.message === "Database error deleting user"
+        ? "This user is still linked to records that could not be removed."
+        : deleteError.message;
+      return NextResponse.json({ error: message }, { status: 500 });
     }
 
     return NextResponse.json({ success: true });

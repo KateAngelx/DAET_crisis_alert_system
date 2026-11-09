@@ -172,51 +172,39 @@ function UserAdminCard({ user, currentUserId, onChanged }) {
   const { updateUser, deleteUser } = useCrisisStore();
   const router = useRouter();
   const [editing, setEditing] = useState(false);
-  const [form, setForm] = useState({
-    full_name: user.full_name || "",
-    phone: user.phone || "",
-    nationality: user.nationality || "Filipino",
-    user_type: user.user_type || "tourist",
-    is_active: user.is_active !== false,
-  });
+  const [role, setRole] = useState(user.user_type || "tourist");
   const [saving, setSaving] = useState(false);
   const [feedback, setFeedback] = useState(null);
   const { confirm } = useConfirm();
 
   const isSelf = currentUserId === user.id;
-  const role = ROLE_LABELS[user.user_type] || ROLE_LABELS.tourist;
+  const roleStyle = ROLE_LABELS[user.user_type] || ROLE_LABELS.tourist;
   const online = isUserOnline(user);
   const inactiveDays = getInactiveDays(user);
   const isInactive = inactiveDays !== null && inactiveDays >= INACTIVE_THRESHOLD_DAYS;
 
   useEffect(() => {
-    setForm({
-      full_name: user.full_name || "",
-      phone: user.phone || "",
-      nationality: user.nationality || "Filipino",
-      user_type: user.user_type || "tourist",
-      is_active: user.is_active !== false,
-    });
+    setRole(user.user_type || "tourist");
   }, [user]);
 
   const handleSave = async () => {
     const ok = await confirm({
-      title: "Save user changes?",
-      description: `Update profile and role settings for ${user.full_name}. Active status and contact details will take effect immediately.`,
-      confirmLabel: "Save changes",
+      title: "Change user role?",
+      description: `Change ${user.full_name} to ${ROLE_OPTIONS.find((option) => option.value === role)?.label || role}. Name, email, and phone stay as the user entered them.`,
+      confirmLabel: "Save role",
       variant: "info",
     });
     if (!ok) return;
     setSaving(true);
     setFeedback(null);
-    const result = await updateUser(user.id, form);
+    const result = await updateUser(user.id, { user_type: role });
     setSaving(false);
     if (result.success) {
-      setFeedback({ type: "success", text: "User updated." });
+      setFeedback({ type: "success", text: "Role updated." });
       setEditing(false);
       onChanged?.();
-      if (isSelf && form.user_type !== "admin") {
-        router.replace(getRedirectForRole(form.user_type));
+      if (isSelf && role !== "admin") {
+        router.replace(getRedirectForRole(role));
       }
     } else {
       setFeedback({ type: "error", text: result.error });
@@ -227,7 +215,7 @@ function UserAdminCard({ user, currentUserId, onChanged }) {
     if (isSelf) return;
     const ok = await confirm({
       title: "Delete user permanently?",
-      description: `This removes ${user.full_name} from the system and cannot be undone. Their reports and assignment history may remain for audit purposes.`,
+      description: `This permanently removes ${user.full_name} and the reports they submitted.`,
       confirmLabel: "Delete user",
       variant: "danger",
     });
@@ -245,7 +233,7 @@ function UserAdminCard({ user, currentUserId, onChanged }) {
   return (
     <div className={!user.is_active ? "opacity-60" : undefined}>
       <div className="flex items-center gap-2 px-2 py-1.5 hover:bg-zinc-50/90 transition-colors">
-        <div className={`size-6 rounded-md flex items-center justify-center shrink-0 ${role.className}`}>
+        <div className={`size-6 rounded-md flex items-center justify-center shrink-0 ${roleStyle.className}`}>
           <User size={12} />
         </div>
         <div className="flex-1 min-w-0 leading-tight">
@@ -266,7 +254,7 @@ function UserAdminCard({ user, currentUserId, onChanged }) {
             type="button"
             onClick={() => setEditing((v) => !v)}
             className={`${adminShell.btnIcon} !p-1.5 !min-h-0`}
-            aria-label={editing ? "Cancel edit" : "Edit user"}
+            aria-label={editing ? "Cancel role change" : "Change role"}
           >
             <Pencil size={12} />
           </button>
@@ -286,49 +274,18 @@ function UserAdminCard({ user, currentUserId, onChanged }) {
 
       {editing ? (
         <div className="px-2 pb-2 pt-1 space-y-1.5 bg-zinc-50/80 border-t border-zinc-100">
-          <input
-            value={form.full_name}
-            onChange={(e) => setForm({ ...form, full_name: e.target.value })}
-            className={`${adminShell.input} !py-2 !text-xs`}
-            placeholder="Full name"
-          />
-          <input
-            value={form.phone}
-            onChange={(e) => setForm({ ...form, phone: e.target.value })}
-            className={`${adminShell.input} !py-2 !text-xs`}
-            placeholder="Phone"
-          />
-          <div className="grid grid-cols-2 gap-1.5">
+          <label className="block text-[9px] font-black uppercase tracking-widest text-zinc-400">
+            Role
             <select
-              value={form.nationality}
-              onChange={(e) => setForm({ ...form, nationality: e.target.value })}
-              className={`${adminShell.select} !py-2 !text-xs`}
-            >
-              <option value="Filipino">Filipino</option>
-              <option value="Foreigner">Foreigner</option>
-            </select>
-            <select
-              value={form.user_type}
-              onChange={(e) => setForm({ ...form, user_type: e.target.value })}
-              className={`${adminShell.select} !py-2 !text-xs`}
+              value={role}
+              onChange={(event) => setRole(event.target.value)}
+              className={`${adminShell.select} !py-2 !text-xs mt-1`}
             >
               {ROLE_OPTIONS.map((opt) => (
                 <option key={opt.value} value={opt.value}>{opt.label}</option>
               ))}
             </select>
-          </div>
-          <label className="flex items-center gap-2 text-[10px] font-bold text-zinc-600">
-            <input
-              type="checkbox"
-              checked={form.is_active}
-              disabled={isSelf}
-              onChange={(e) => setForm({ ...form, is_active: e.target.checked })}
-            />
-            Active
           </label>
-          {isSelf ? (
-            <p className="text-[9px] text-amber-600 font-medium">You cannot deactivate your own account.</p>
-          ) : null}
           <button
             type="button"
             onClick={handleSave}

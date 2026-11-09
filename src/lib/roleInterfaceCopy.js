@@ -75,7 +75,7 @@ export const ROLE_INTERFACE = {
     },
     users: {
       title: "User Management",
-      description: "Monitor registrations, online activity, and inactive accounts. Create, edit, deactivate, or delete users.",
+      description: "Monitor registrations, online activity, and inactive accounts. Create users, change roles, or delete users.",
       helper: "Users inactive 30+ days have SMS paused until they sign in again and re-enable it. Inactive notices are sent in-app and by email when RESEND_API_KEY is configured.",
     },
     settings: {
