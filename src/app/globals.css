@@ -51,9 +51,6 @@ body {
     padding-bottom: 1.5rem;
   }
 
-  html:not([data-installed-app="true"]) [data-public-main="default"] {
-    padding-top: calc(6.5rem + env(safe-area-inset-top));
-  }
 
   html:not([data-installed-app="true"]) [data-public-footer] {
     padding-bottom: 0;
@@ -61,7 +58,6 @@ body {
 
   html:not([data-installed-app="true"]) [data-landing-section="hero"] {
     min-height: 0;
-    padding-top: calc(6.5rem + env(safe-area-inset-top));
     padding-bottom: 2.5rem;
   }
 

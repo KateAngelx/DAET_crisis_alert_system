@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { AlertTriangle, CheckCircle2, FileText, HelpCircle, Home, Info, Route, User } from "lucide-react";
+import { AlertTriangle, CheckCircle2, FileText, HelpCircle, Home, Info, Menu, Route, User, X } from "lucide-react";
 import { BrandLogo } from "@/app/components/BrandLogo";
 import { siteInfo } from "@/lib/siteInfo";
 import { useAuthStore } from "../store/crisisStore";
@@ -33,6 +33,7 @@ const AUTH_NAV = [
 export function PublicHeader() {
   const pathname = usePathname();
   const [accountOpen, setAccountOpen] = useState(false);
+  const [menuOpen, setMenuOpen] = useState(false);
   const [mounted, setMounted] = useState(false);
   const { user, isAuthenticated, logout } = useAuthStore();
   const visibility = usePublicVisibility();
@@ -42,6 +43,7 @@ export function PublicHeader() {
 
   useEffect(() => {
     setAccountOpen(false);
+    setMenuOpen(false);
   }, [pathname]);
 
   const navItems = (mounted && isAuthenticated ? AUTH_NAV : GUEST_NAV).filter(
@@ -83,6 +85,20 @@ export function PublicHeader() {
         <div data-public-header-frame className="max-md:pt-[max(0.5rem,env(safe-area-inset-top))] max-md:px-3 sm:max-md:px-4 md:pt-0 md:px-0">
           <div data-public-header-shell className="max-md:rounded-xl max-md:bg-white max-md:border max-md:border-zinc-200 max-md:shadow-[0_4px_18px_rgba(15,23,42,0.08)] md:rounded-none md:bg-transparent md:shadow-none md:border-0">
             <div className="w-full max-w-7xl mx-auto flex items-center justify-between gap-2 h-12 px-3 md:h-16 md:px-6 lg:px-8">
+              {!installedApp ? (
+                <button
+                  type="button"
+                  className="lg:hidden -ml-1 inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-lg text-zinc-700 hover:bg-zinc-100"
+                  aria-label={menuOpen ? "Close menu" : "Open menu"}
+                  aria-expanded={menuOpen}
+                  onClick={() => {
+                    setAccountOpen(false);
+                    setMenuOpen((open) => !open);
+                  }}
+                >
+                  {menuOpen ? <X size={22} /> : <Menu size={22} />}
+                </button>
+              ) : null}
               <Link
                 href="/"
                 className="flex min-w-0 shrink-0 items-center gap-1.5"
@@ -178,31 +194,46 @@ export function PublicHeader() {
                 ) : null}
               </div>
             </div>
-            <nav
-              data-public-browser-nav
-              className="flex gap-1 overflow-x-auto px-3 pb-2 lg:hidden"
-              aria-label="Pages"
-            >
-              {navItems.map((item) => (
-                <Link
-                  key={item.name}
-                  href={item.href}
-                  aria-current={isPublicNavActive(pathname, item.href) ? "page" : undefined}
-                  className={`shrink-0 rounded-full px-3 py-1.5 text-[10px] font-black uppercase tracking-wide ${
-                    isPublicNavActive(pathname, item.href)
-                      ? "bg-blue-600 text-white"
-                      : "bg-zinc-100 text-zinc-700"
-                  }`}
-                >
-                  {item.short}
-                </Link>
-              ))}
-            </nav>
           </div>
         </div>
       </header>
 
       <div className="hidden md:block h-16 shrink-0" aria-hidden="true" />
+
+      {menuOpen && !installedApp ? (
+        <>
+          <button
+            type="button"
+            className="fixed inset-0 z-40 bg-black/40 lg:hidden"
+            aria-label="Close menu"
+            onClick={() => setMenuOpen(false)}
+          />
+          <nav
+            data-public-browser-nav
+            className="fixed top-12 md:top-16 inset-x-0 z-50 max-h-[calc(100dvh-3rem)] overflow-y-auto border-b border-zinc-200 bg-white shadow-lg lg:hidden"
+            aria-label="Pages"
+          >
+            {navItems.map((item) => {
+              const Icon = item.icon;
+              const active = isPublicNavActive(pathname, item.href);
+              return (
+                <Link
+                  key={item.name}
+                  href={item.href}
+                  aria-current={active ? "page" : undefined}
+                  className={`flex items-center gap-3 border-b border-zinc-100 px-4 py-3 text-sm font-semibold ${
+                    active ? "bg-blue-50 text-blue-700" : "text-zinc-800"
+                  }`}
+                  onClick={() => setMenuOpen(false)}
+                >
+                  <Icon size={18} />
+                  {item.name}
+                </Link>
+              );
+            })}
+          </nav>
+        </>
+      ) : null}
 
       {accountOpen && (
         <button
