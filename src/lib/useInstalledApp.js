@@ -10,11 +10,14 @@ export function isInstalledApp() {
   );
 }
 
+let installedSubscribers = 0;
+
 /** Synchronizes installed-app mode with the document root for responsive navigation styles. */
 export function useInstalledApp() {
   const [installed, setInstalled] = useState(false);
 
   useEffect(() => {
+    installedSubscribers += 1;
     const media = window.matchMedia("(display-mode: standalone)");
     const update = () => {
       const isInstalled = isInstalledApp();
@@ -25,7 +28,10 @@ export function useInstalledApp() {
     media.addEventListener?.("change", update);
     return () => {
       media.removeEventListener?.("change", update);
-      delete document.documentElement.dataset.installedApp;
+      installedSubscribers = Math.max(0, installedSubscribers - 1);
+      if (installedSubscribers === 0) {
+        delete document.documentElement.dataset.installedApp;
+      }
     };
   }, []);
 

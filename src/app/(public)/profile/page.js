@@ -328,7 +328,7 @@ export default function ProfilePage() {
         description="View and update your account details for alerts and incident reporting."
       />
 
-      <PublicPageContent className="installed-profile-stack">
+      <PublicPageContent className="installed-profile-stack !gap-8">
         {!initialized && loading ? (
           <ProfileSkeleton />
         ) : loadError ? (
@@ -400,8 +400,8 @@ export default function ProfilePage() {
                   onRetry={refreshPoints}
                 />
               ) : (
-                <div className="grid gap-4 lg:grid-cols-[minmax(220px,0.75fr)_minmax(0,1.25fr)]">
-                  <div className="rounded-xl border border-blue-100 bg-white p-5">
+                <div className="flex flex-wrap items-center justify-between gap-4">
+                  <div>
                     <div className="flex items-center gap-2 text-xs font-black uppercase tracking-widest text-blue-700">
                       <Coins size={16} /> Current balance
                     </div>
@@ -410,60 +410,24 @@ export default function ProfilePage() {
                     </p>
                     <p className="mt-1 text-xs font-medium text-zinc-500">points available</p>
                   </div>
-
-                  <div className="min-w-0">
-                    <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
-                      <h3 className="installed-app-hide flex items-center gap-2 text-xs font-black uppercase tracking-widest text-zinc-500">
-                        <History size={15} /> Recent points activity
-                      </h3>
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setPointsHistoryPage(1);
-                          setPointsHistoryRetry((count) => count + 1);
-                          setPointsHistoryOpen(true);
-                          refreshPoints();
-                        }}
-                        className={portalShell.btnGhost}
-                      >
-                        <History size={14} /> View Points History
-                      </button>
-                    </div>
-                    <div className="installed-app-hide">
-                    {points.transactions.length === 0 ? (
-                      <p className="rounded-xl border border-dashed border-zinc-200 bg-white p-4 text-sm text-zinc-500">
-                        No point transactions yet.
-                      </p>
-                    ) : (
-                      <ul className="divide-y divide-zinc-100 rounded-xl border border-zinc-200 bg-white">
-                        {points.transactions.map((transaction) => {
-                          const positive = BigInt(transaction.points_delta) > 0n;
-                          return (
-                            <li key={transaction.id} className="flex items-center justify-between gap-4 p-3">
-                              <div className="min-w-0">
-                                <p className="truncate text-sm font-bold text-zinc-800">
-                                  {getTransactionLabel(transaction)}
-                                </p>
-                                <p className="mt-1 text-xs text-zinc-500">
-                                  {new Date(transaction.created_at).toLocaleString()}
-                                </p>
-                              </div>
-                              <span className={`shrink-0 text-sm font-black ${positive ? "text-emerald-700" : "text-red-700"}`}>
-                                {positive ? "+" : ""}{formatPoints(transaction.points_delta)}
-                              </span>
-                            </li>
-                          );
-                        })}
-                      </ul>
-                    )}
-                    </div>
-                  </div>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setPointsHistoryPage(1);
+                      setPointsHistoryRetry((count) => count + 1);
+                      setPointsHistoryOpen(true);
+                      refreshPoints();
+                    }}
+                    className={portalShell.btnGhost}
+                  >
+                    <History size={14} /> View Points History
+                  </button>
                 </div>
               )}
             </PublicPanel>
           )}
-          <div data-profile-section="account" className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            <PublicPanel title="Account summary" className="lg:col-span-1" bodyClassName="bg-zinc-50/50">
+          <div data-profile-section="account" className="flex flex-col gap-8">
+            <PublicPanel title="Account summary" bodyClassName="bg-zinc-50/50">
               <div className="flex items-center gap-4 mb-6">
                 <div className="bg-blue-600 p-3 rounded-2xl text-white">
                   <User size={24} />
@@ -502,7 +466,7 @@ export default function ProfilePage() {
               </div>
             </PublicPanel>
 
-            <PublicPanel title="Account details" className="lg:col-span-2">
+            <PublicPanel title="Account details">
               {message && (
                 <div className={`mb-6 p-4 rounded-2xl flex items-start gap-3 text-sm font-medium ${
                   message.type === "success"

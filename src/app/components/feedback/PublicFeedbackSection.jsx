@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useCallback, useEffect, useMemo, useState } from "react";
-import { Loader2, MessageCircle, Lightbulb, Heart, Send, Sparkles } from "lucide-react";
+import { Loader2, MessageCircle, Lightbulb, Heart, Send } from "lucide-react";
 import {
   FEEDBACK_BASE_TILTS,
   FEEDBACK_TILT_BUMPS,
@@ -167,16 +167,10 @@ export function PublicFeedbackSection() {
       <div className="absolute bottom-0 left-0 w-64 h-64 bg-purple-100/30 rounded-full blur-3xl pointer-events-none" />
 
       <div className="relative max-w-6xl mx-auto px-4 sm:px-6">
-        <div className="text-center mb-8 sm:mb-10">
-          <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-blue-50 border border-blue-100 mb-4">
-            <Sparkles size={14} className="text-blue-600" />
-            <span className="text-[10px] font-black uppercase tracking-[0.2em] text-blue-600">Community Voice</span>
-          </div>
-          <h2 className={`${typography.heroTitle} mb-2`}>Feedback & Suggestions</h2>
-          <p className="text-sm text-zinc-500 font-medium max-w-xl mx-auto leading-relaxed">
-            {items.length > 0
-              ? "Share how CONNECT-DAET helps you, or suggest improvements. Tap any note below to tilt it — everyone can read and contribute."
-              : "Be the first to share feedback, a comment, or a suggestion for the Daet Municipal Tourism Office. Approved messages will appear here for others to read."}
+        <div className="mb-6 text-left">
+          <h2 className={typography.pageTitle}>Feedback and suggestions</h2>
+          <p className={`${typography.description} mt-1 max-w-2xl`}>
+            Send a comment, a suggestion, or feedback. Approved notes show below.
           </p>
         </div>
 

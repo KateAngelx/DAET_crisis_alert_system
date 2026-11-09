@@ -46,34 +46,22 @@ const ACCOUNT_SECTIONS = [
       { name: "Resolved alerts", href: "/crisis/resolved", icon: CheckCircle2 },
     ],
   },
-  {
-    title: "Help",
-    tone: "text-blue-600",
-    items: [
-      { name: "FAQs", href: "/faq", icon: HelpCircle },
-      { name: "About", href: "/about", icon: Info },
-      { name: "Contact", href: "/contact", icon: Phone },
-    ],
-  },
 ];
 
 export function PublicHeader() {
   const pathname = usePathname();
   const [accountOpen, setAccountOpen] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
-  const [mounted, setMounted] = useState(false);
   const { user, isAuthenticated, logout } = useAuthStore();
   const visibility = usePublicVisibility();
   const installedApp = useInstalledApp();
-
-  useEffect(() => setMounted(true), []);
 
   useEffect(() => {
     setAccountOpen(false);
     setMenuOpen(false);
   }, [pathname]);
 
-  const signedIn = mounted && isAuthenticated;
+  const signedIn = isAuthenticated;
   const primaryNav = [
     ...PRIMARY_NAV.filter((item) => visibility.roadsAndHazards || item.href !== "/routes"),
     signedIn
@@ -92,7 +80,7 @@ export function PublicHeader() {
       : "text-zinc-600 hover:bg-white/80 dark:hover:bg-zinc-800";
   };
 
-  const showGuestActions = !mounted || !isAuthenticated;
+  const showGuestActions = !isAuthenticated;
 
   const guestActions = (
     <div className="flex items-center gap-1 shrink-0">
@@ -174,11 +162,11 @@ export function PublicHeader() {
                     911
                   </a>
                 ) : null}
-                {mounted && isAuthenticated && <NotificationPanel />}
+                {isAuthenticated && <NotificationPanel />}
 
                 {showGuestActions ? guestActions : null}
 
-                {mounted && isAuthenticated ? (
+                {isAuthenticated ? (
                   <div className="relative">
                     <button
                       type="button"
@@ -206,7 +194,7 @@ export function PublicHeader() {
                       </span>
                     </button>
                     {accountOpen ? (
-                      <div className="absolute right-0 top-full z-50 mt-2 max-h-[min(70dvh,32rem)] w-64 overflow-y-auto rounded-2xl border border-zinc-200 bg-white p-2 shadow-xl dark:border-zinc-800 dark:bg-zinc-950">
+                      <div className="absolute right-0 top-full z-50 mt-2 w-64 rounded-2xl border border-zinc-200 bg-white p-2 shadow-xl dark:border-zinc-800 dark:bg-zinc-950">
                         <p className="truncate px-3 py-2 text-[11px] font-black uppercase tracking-tight text-zinc-900 dark:text-zinc-100">
                           {user?.name}
                         </p>
@@ -239,23 +227,6 @@ export function PublicHeader() {
                             })}
                           </div>
                         ))}
-                        <p className="px-3 pb-1 pt-3 text-[10px] font-black uppercase tracking-[0.2em] text-red-600">
-                          Emergency
-                        </p>
-                        <a
-                          href="tel:911"
-                          className="flex items-center gap-3 rounded-xl px-3 py-2.5 text-[11px] font-black uppercase tracking-widest text-red-600 hover:bg-red-50"
-                        >
-                          <Phone size={16} className="shrink-0" />
-                          911 emergency
-                        </a>
-                        <a
-                          href={`tel:${siteInfo.phoneTourismTel}`}
-                          className="flex items-center gap-3 rounded-xl px-3 py-2.5 text-[11px] font-black uppercase tracking-widest text-blue-700 hover:bg-blue-50"
-                        >
-                          <Phone size={16} className="shrink-0" />
-                          Tourism {siteInfo.phoneTourism}
-                        </a>
                         <div className="mt-2 border-t border-zinc-100 pt-2">
                           <button
                             type="button"

@@ -1,6 +1,7 @@
 "use client";
 
-import React, { useState, useEffect, useMemo } from "react";
+import React, { useState, useEffect, useMemo, useRef } from "react";
+import { useRouter } from "next/navigation";
 import { Info, Shield } from "lucide-react";
 import { useCrisisStore, useAuthStore } from "@/app/store/crisisStore";
 import { InfoPageHero, PublicPageShell, PublicPageContent, PublicPanel } from "@/app/components/InfoPageHero";
@@ -54,6 +55,8 @@ export default function CrisisPublicPage() {
   const [mounted, setMounted] = useState(false);
   const [categoryFilter, setCategoryFilter] = useState("all");
   const [severityFilter, setSeverityFilter] = useState("all");
+  const router = useRouter();
+  const alertQueryHandled = useRef(false);
 
   useEffect(() => {
     setMounted(true);
@@ -90,6 +93,22 @@ export default function CrisisPublicPage() {
       setViewedAlerts((prev) => new Set(prev).add(alertId));
     }
   };
+
+  useEffect(() => {
+    if (alertQueryHandled.current) return;
+    const alertId = new URLSearchParams(window.location.search).get("alert");
+    if (!alertId) return;
+    const match = alerts.find((alert) => alert.id === alertId);
+    if (!match) return;
+    alertQueryHandled.current = true;
+    setSelectedAlert(match.id);
+    setViewedAlerts((prev) => {
+      if (prev.has(match.id)) return prev;
+      const next = new Set(prev);
+      next.add(match.id);
+      return next;
+    });
+  }, [alerts]);
 
   const alertRows = filteredAlerts.map((alert) => ({
     id: alert.id,
@@ -239,7 +258,15 @@ export default function CrisisPublicPage() {
         </PublicPanel>
       </PublicPageContent>
 
-      <AlertDetailModal alert={selectedAlertData} onClose={() => setSelectedAlert(null)} />
+      <AlertDetailModal
+        alert={selectedAlertData}
+        onClose={() => {
+          setSelectedAlert(null);
+          if (new URLSearchParams(window.location.search).get("alert")) {
+            router.replace("/crisis", { scroll: false });
+          }
+        }}
+      />
     </PublicPageShell>
   );
 }

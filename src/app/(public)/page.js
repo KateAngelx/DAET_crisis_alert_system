@@ -58,7 +58,7 @@ export default function Home() {
     ["published_at", "created_at"]
   );
   const criticalCount = activeAlerts.filter((alert) => alert.severity === "Critical").length;
-  const newestAlert = activeAlerts[0] || null;
+  const previewAlerts = activeAlerts.slice(0, 3);
   const showGuideHelp = isAuthenticated && user?.role === "tourist" && guideAssistance?.enabled === true;
   const featureCards = [
     {
@@ -104,8 +104,9 @@ export default function Home() {
       >
         <div className="absolute inset-0 bg-gradient-to-b from-slate-950/80 via-blue-900/60 to-indigo-950/80" aria-hidden="true" />
 
-        <div className="relative z-10 mx-auto flex w-full max-w-7xl flex-col items-start px-3 sm:px-6">
-          <div className="w-full max-w-3xl">
+        <div className="relative z-10 mx-auto w-full max-w-7xl px-4 sm:px-6 lg:px-8">
+          <div className="flex w-full flex-col gap-6 md:flex-row md:items-end md:justify-between">
+          <div className="min-w-0 flex-1">
             {isAuthenticated ? (
               <h2 className="mb-3 text-2xl font-black tracking-tight text-white md:text-[28px]">
                 Mabuhay, {user?.name || "Traveler"}!
@@ -121,10 +122,10 @@ export default function Home() {
             <p className="mb-2 text-[10px] font-black uppercase tracking-[0.12em] text-blue-300 md:text-xs">
               Official Tourism & Safety Portal
             </p>
-            <h1 className="text-xl font-black uppercase leading-tight tracking-tighter text-white md:text-4xl lg:text-5xl">
+            <h1 className="max-w-4xl text-xl font-black uppercase leading-tight tracking-tighter text-white md:text-4xl lg:text-5xl">
               Travel Safely in <span className="text-blue-400">Daet, Camarines Norte.</span>
             </h1>
-            <p className="mt-2 max-w-xl text-xs font-medium leading-relaxed text-zinc-200 md:text-base">
+            <p className="mt-2 max-w-2xl text-xs font-medium leading-relaxed text-zinc-200 md:text-base">
               Real-time crisis alerts, safe routes, and official guidance from the {siteInfo.officeName}.
             </p>
 
@@ -161,7 +162,8 @@ export default function Home() {
               </p>
             ) : null}
 
-            <div className="mt-6 hidden w-full max-w-sm grid-cols-2 gap-2 rounded-2xl border border-white/20 bg-white/10 px-3 py-4 text-center md:grid">
+            </div>
+            <div className="hidden w-full max-w-xs shrink-0 grid-cols-2 gap-2 rounded-2xl border border-white/20 bg-white/10 px-3 py-4 text-center md:grid">
               <div>
                 <p className="text-2xl font-black text-white">{loading ? "—" : activeAlerts.length}</p>
                 <p className="text-[10px] font-bold uppercase tracking-widest text-blue-100">Active alerts</p>
@@ -172,7 +174,7 @@ export default function Home() {
               </div>
             </div>
             {error ? (
-              <p className="mt-2 text-xs font-bold text-red-300">Could not load alert counts.</p>
+              <p className="mt-2 text-xs font-bold text-red-300 md:text-right">Could not load alert counts.</p>
             ) : null}
           </div>
         </div>
@@ -180,33 +182,38 @@ export default function Home() {
 
       <section className="border-b border-zinc-100 bg-white py-6 md:py-10">
         <div className="mx-auto max-w-7xl px-3 sm:px-6">
-          <h2 className="mb-3 text-[10px] font-black uppercase tracking-[0.2em] text-orange-600">Live alerts</h2>
+          <h2 className={typography.pageTitle}>Live alerts</h2>
+          <p className={`${typography.description} mt-1`}>The newest situations in Daet. Open one to read the full alert.</p>
           {loading ? (
-            <p className="text-sm font-medium text-zinc-500">Checking active alerts...</p>
-          ) : newestAlert ? (
-            <Link href="/crisis" className="flex items-start gap-3 rounded-2xl border border-orange-200 bg-orange-50/50 p-4 hover:border-orange-300">
-              <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-orange-600 text-white">
-                <AlertTriangle size={18} />
-              </span>
-              <span className="min-w-0">
-                <span className="text-[10px] font-black uppercase tracking-widest text-orange-700">
-                  {newestAlert.severity || "Alert"} · {newestAlert.location || "Daet"}
-                </span>
-                <span className="mt-1 block text-lg font-black text-zinc-900">{newestAlert.title}</span>
-                <span className="mt-1 line-clamp-2 block text-sm font-medium text-zinc-600">{newestAlert.message}</span>
-              </span>
-            </Link>
+            <p className="mt-4 text-sm font-medium text-zinc-500">Checking active alerts...</p>
+          ) : previewAlerts.length ? (
+            <div className="mt-4 overflow-hidden rounded-2xl border border-zinc-200 bg-white">
+              {previewAlerts.map((alert) => (
+                <div key={alert.id} className="flex items-center gap-3 border-b border-zinc-100 px-3 py-3 last:border-b-0 sm:px-4">
+                  <span className="min-w-0 flex-1">
+                    <span className="block text-[10px] font-black uppercase tracking-widest text-orange-700">
+                      {alert.severity || "Alert"} · {alert.location || "Daet"}
+                    </span>
+                    <span className="mt-0.5 block truncate text-sm font-black text-zinc-900">{alert.title}</span>
+                  </span>
+                  <Link
+                    href={`/crisis?alert=${alert.id}`}
+                    className="shrink-0 rounded-full bg-orange-50 px-3 py-2 text-[10px] font-black uppercase tracking-widest text-orange-700 hover:bg-orange-100"
+                  >
+                    View more
+                  </Link>
+                </div>
+              ))}
+              {activeAlerts.length > previewAlerts.length ? (
+                <Link href="/crisis" className="block px-4 py-3 text-center text-[10px] font-black uppercase tracking-widest text-blue-600 hover:bg-blue-50">
+                  View all alerts
+                </Link>
+              ) : null}
+            </div>
           ) : (
-            <div className="flex items-start gap-3 rounded-2xl border border-green-200 bg-green-50 p-4">
-              <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-green-700 text-white">
-                <ShieldCheck size={18} />
-              </span>
-              <div>
-                <h3 className="text-lg font-black text-zinc-900">All clear</h3>
-                <p className="mt-1 text-sm font-medium text-zinc-600">
-                  No active crisis alerts in Daet right now.
-                </p>
-              </div>
+            <div className="mt-4 flex items-center gap-3 rounded-2xl border border-green-200 bg-green-50 px-4 py-3">
+              <ShieldCheck className="shrink-0 text-green-700" size={18} />
+              <p className="text-sm font-bold text-zinc-800">All clear. No active crisis alerts in Daet right now.</p>
             </div>
           )}
         </div>
@@ -214,7 +221,8 @@ export default function Home() {
 
       <section className="border-b border-zinc-100 bg-zinc-50 py-6 md:py-10">
         <div className="mx-auto max-w-7xl px-3 sm:px-6">
-          <h2 className="mb-3 text-[10px] font-black uppercase tracking-[0.2em] text-blue-600">What you can do</h2>
+          <h2 className={typography.pageTitle}>What you can do</h2>
+          <p className={`${typography.description} mb-4 mt-1`}>Crisis alerts, roads, reports, and how alerts reach your phone.</p>
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
             {featureCards.map((card) => {
               const Icon = card.icon;
@@ -241,7 +249,8 @@ export default function Home() {
       {showGuideHelp ? (
         <section className="border-b border-zinc-100 bg-white py-6 md:py-10">
           <div className="mx-auto max-w-7xl px-3 sm:px-6">
-            <h2 className="mb-3 text-[10px] font-black uppercase tracking-[0.2em] text-purple-700">Guide help</h2>
+            <h2 className={typography.pageTitle}>Guide help</h2>
+            <p className={`${typography.description} mb-4 mt-1`}>Tourism help from a local guide. This is not an emergency service.</p>
             <div id="guide-assistance" className="flex items-start gap-3 rounded-2xl border border-purple-200 bg-purple-50/70 p-4">
               <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-purple-700 text-white">
                 <Compass size={18} />

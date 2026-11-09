@@ -12,6 +12,7 @@ import { ConfirmDialogProvider } from "@/app/components/ui/ConfirmDialogProvider
 import { InstallPwaPrompt } from "@/app/components/InstallPwaPrompt";
 import { PwaSplashScreen } from "@/app/components/PwaSplashScreen";
 import { DevServiceWorkerCleanup } from "@/app/components/DevServiceWorkerCleanup";
+import { PublicSiteChrome } from "@/app/components/shell/PublicSiteChrome";
 import { siteInfo } from "@/lib/siteInfo";
 import "./globals.css";
 
@@ -65,7 +66,9 @@ export default function RootLayout({ children }) {
         <RewardEarnedToast />
         <TouristStartGuide />
         <InstalledTouristSetup />
-        <ConfirmDialogProvider>{children}</ConfirmDialogProvider>
+        <ConfirmDialogProvider>
+          <PublicSiteChrome>{children}</PublicSiteChrome>
+        </ConfirmDialogProvider>
         <InstallPwaPrompt />
       </body>
     </html>

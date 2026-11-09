@@ -106,7 +106,6 @@ body {
   }
 
   [data-public-browser-nav],
-  [data-public-footer],
   .installed-app-hide {
     display: none;
   }
@@ -131,15 +130,14 @@ body {
   .installed-profile-stack [data-profile-section="account"] { order: 5; }
   .installed-profile-stack [data-profile-section="delete"] { order: 6; }
 
-  [data-page-intro] [data-page-intro-kicker],
-  [data-page-intro] [data-page-intro-description] {
-    display: none;
-  }
 }
 
-html[data-installed-app="true"] [data-public-footer],
 html[data-installed-app="true"] .installed-app-hide {
   display: none;
+}
+
+html[data-installed-app="true"] [data-public-footer] {
+  padding-bottom: calc(4.75rem + env(safe-area-inset-bottom));
 }
 
 html[data-installed-app="true"] .installed-app-show {
@@ -157,11 +155,6 @@ html[data-installed-app="true"] .installed-profile-stack [data-profile-section="
 html[data-installed-app="true"] .installed-profile-stack [data-profile-section="tour"] { order: 4; }
 html[data-installed-app="true"] .installed-profile-stack [data-profile-section="account"] { order: 5; }
 html[data-installed-app="true"] .installed-profile-stack [data-profile-section="delete"] { order: 6; }
-
-html[data-installed-app="true"] [data-page-intro] [data-page-intro-kicker],
-html[data-installed-app="true"] [data-page-intro] [data-page-intro-description] {
-  display: none;
-}
 
 @media (min-width: 1024px) {
   .installed-app-bottom-nav {

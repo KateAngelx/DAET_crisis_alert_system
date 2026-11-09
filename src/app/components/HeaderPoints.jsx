@@ -7,14 +7,26 @@ import { useAuthStore } from "@/app/store/crisisStore";
 import { getActiveSession } from "@/lib/authSession";
 import { REWARD_EARNED_EVENT } from "@/lib/rewardFeedback";
 
+let rememberedPoints = { userId: null, balance: null };
+
+function rememberPoints(userId, balance) {
+  rememberedPoints = { userId, balance };
+}
+
 export function HeaderPoints({ variant = "chip" }) {
   const { user, isAuthenticated } = useAuthStore();
-  const [balance, setBalance] = useState(null);
+  const [balance, setBalance] = useState(() => (
+    user?.id && rememberedPoints.userId === user.id ? rememberedPoints.balance : null
+  ));
 
   const loadBalance = useCallback(async () => {
     if (!isAuthenticated || user?.role !== "tourist" || !user?.id) {
+      rememberPoints(null, null);
       setBalance(null);
       return;
+    }
+    if (rememberedPoints.userId === user.id && rememberedPoints.balance != null) {
+      setBalance(rememberedPoints.balance);
     }
     try {
       const session = await getActiveSession();
@@ -25,9 +37,13 @@ export function HeaderPoints({ variant = "chip" }) {
       });
       const result = await response.json().catch(() => ({}));
       if (!response.ok) return;
-      setBalance(Number(result.balance) || 0);
+      const next = Number(result.balance) || 0;
+      rememberPoints(user.id, next);
+      setBalance(next);
     } catch {
-      setBalance(null);
+      if (rememberedPoints.userId !== user.id) {
+        setBalance(null);
+      }
     }
   }, [isAuthenticated, user?.id, user?.role]);
 
@@ -43,9 +59,9 @@ export function HeaderPoints({ variant = "chip" }) {
     return () => window.removeEventListener(REWARD_EARNED_EVENT, refresh);
   }, [loadBalance]);
 
-  if (!isAuthenticated || user?.role !== "tourist" || balance == null) return null;
+  if (!isAuthenticated || user?.role !== "tourist") return null;
 
-  const label = `${balance.toLocaleString()} pts`;
+  const label = balance == null ? "Points" : `${balance.toLocaleString()} pts`;
 
   if (variant === "menu") {
     return (
@@ -61,15 +77,15 @@ export function HeaderPoints({ variant = "chip" }) {
 
   if (variant === "inline") {
     return (
-      <span className="text-amber-700" title="Your points">
-        {label}
+      <span className="inline-block min-w-[3.5rem] text-amber-700" title="Your points">
+        {balance == null ? "\u00a0" : label}
       </span>
     );
   }
 
   return (
-    <span className="max-w-[2.6rem] truncate text-[8px] font-black leading-none text-amber-800" title={label}>
-      {balance.toLocaleString()}
+    <span className="inline-block min-w-[2.4rem] max-w-[2.8rem] truncate text-center text-[8px] font-black leading-none text-amber-800" title={label}>
+      {balance == null ? "\u00a0" : balance.toLocaleString()}
     </span>
   );
 }
