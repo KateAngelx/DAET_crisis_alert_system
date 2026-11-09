@@ -20,6 +20,7 @@ import { AdminTablePanel } from "@/app/components/admin/AdminTablePanel";
 import { GuideEmergencyReportsPanel } from "@/app/components/admin/GuideEmergencyReportsPanel";
 import { StatCardSkeleton, AlertCardSkeletonList, MapSkeleton, TableSkeleton } from "@/app/components/ui/Skeletons";
 import { ErrorState } from "@/app/components/ui/AsyncState";
+import { DashboardPageHeader } from "@/app/components/dashboard/DashboardPageHeader";
 import { DashboardStatCard } from "@/app/components/dashboard/DashboardStatCard";
 import { 
   AlertTriangle, Cloud, Heart, Shield, Info, MapPin, Search, CheckCircle, 
@@ -27,6 +28,7 @@ import {
   Mail, MessageSquare, Smartphone, Map, Plus, ArrowRight, Route, Users, Archive
 } from "lucide-react";
 import { adminShell, iconSize, statGrid, typography, getSeverityOutline, outlinedCard, portalLayout } from "@/lib/designSystem";
+import { ROLE_INTERFACE } from "@/lib/roleInterfaceCopy";
 import { geocodeLocation } from "@/lib/geocodeLocation";
 import { createCategoryPinIcon, getAlertPinCategory } from "@/lib/mapPinUtils";
 import { CrisisHubMap } from "@/app/components/maps/CrisisHubMap";
@@ -586,16 +588,19 @@ export default function CrisisAdminPage() {
         </div>
       )}
 
-            <div className="flex justify-end">
-              <button
-                type="button"
-                onClick={() => { setFormData(createEmptyAlertFormData()); setShowCreateModal(true); }}
-                className={adminShell.btnDanger}
-              >
-                <Plus size={18} /> New Broadcast
-              </button>
-            </div>
-            <RoleContextBanner helper={ROLE_INTERFACE.admin.commandCenter.helper} tone="info" />
+            <DashboardPageHeader
+              title={ROLE_INTERFACE.admin.commandCenter.title}
+              description={ROLE_INTERFACE.admin.commandCenter.description}
+              action={
+                <button
+                  type="button"
+                  onClick={() => { setFormData(createEmptyAlertFormData()); setShowCreateModal(true); }}
+                  className={adminShell.btnDanger}
+                >
+                  <Plus size={18} /> New Broadcast
+                </button>
+              }
+            />
 
             <GuideEmergencyReportsPanel />
 
@@ -758,6 +763,7 @@ export default function CrisisAdminPage() {
                         onChange={(e) => setLogSearchTerm(e.target.value)}
                       />
                 </div>
+              </div>
                 <div className="px-4 sm:px-6 py-4">
                   {loading ? (
                     <table className="w-full border-collapse">
@@ -797,9 +803,7 @@ export default function CrisisAdminPage() {
                     />
                   )}
                 </div>
-                ) : null}
             </AdminTablePanel>
-      </>
 
       <ConfirmDialog
         open={showResolveConfirm && !!selectedAlert}

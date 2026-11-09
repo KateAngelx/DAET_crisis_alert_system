@@ -4,7 +4,17 @@ import { usePathname } from "next/navigation";
 import { PublicHeader } from "@/app/components/PublicHeader";
 import { PublicFooter } from "@/app/components/PublicFooter";
 
-const PRIVATE_PREFIXES = ["/admin", "/guide", "/login", "/register", "/forgot-password", "/reset-password"];
+const PRIVATE_PREFIXES = [
+  "/admin",
+  "/guide",
+  "/login",
+  "/register",
+  "/forgot-password",
+  "/reset-password",
+  "/crisis/command",
+  "/crisis/roads",
+  "/crisis/hazards",
+];
 
 function isPrivatePath(pathname) {
   return PRIVATE_PREFIXES.some((prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`));
