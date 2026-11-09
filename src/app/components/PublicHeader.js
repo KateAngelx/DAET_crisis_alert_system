@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { AlertTriangle, CheckCircle2, FileText, HelpCircle, Home, Info, Menu, Phone, Route, User, UserPlus, X } from "lucide-react";
+import { AlertTriangle, BookOpen, CheckCircle2, FileText, HelpCircle, Home, Info, LogOut, Menu, MessageSquare, Phone, Route, User, UserPlus, X } from "lucide-react";
 import { BrandLogo } from "@/app/components/BrandLogo";
 import { siteInfo } from "@/lib/siteInfo";
 import { useAuthStore } from "../store/crisisStore";
@@ -19,21 +19,42 @@ const PRIMARY_NAV = [
   { name: "Roads & Travel", short: "Roads", href: "/routes", icon: Route },
 ];
 
-const MORE_NAV = [
+const ALERTS_NAV = [
   { name: "Resolved alerts", href: "/crisis/resolved", icon: CheckCircle2 },
+];
+
+const HELP_NAV = [
   { name: "FAQs", href: "/faq", icon: HelpCircle },
   { name: "About", href: "/about", icon: Info },
   { name: "Contact", href: "/contact", icon: Phone },
 ];
 
-const ACCOUNT_LINKS = [
-  { name: "My Profile", href: "/profile" },
-  { name: "How to Use", href: "/how-to-use", touristOnly: true },
-  { name: "Feedback", href: "/crisis/feedback" },
-  { name: "Resolved alerts", href: "/crisis/resolved" },
-  { name: "FAQs", href: "/faq" },
-  { name: "About", href: "/about" },
-  { name: "Contact", href: "/contact" },
+const ACCOUNT_SECTIONS = [
+  {
+    title: "Account",
+    tone: "text-blue-600",
+    items: [
+      { name: "My Profile", href: "/profile", icon: User },
+      { name: "How to Use", href: "/how-to-use", icon: BookOpen, touristOnly: true },
+    ],
+  },
+  {
+    title: "Alerts",
+    tone: "text-orange-600",
+    items: [
+      { name: "Feedback", href: "/crisis/feedback", icon: MessageSquare },
+      { name: "Resolved alerts", href: "/crisis/resolved", icon: CheckCircle2 },
+    ],
+  },
+  {
+    title: "Help",
+    tone: "text-blue-600",
+    items: [
+      { name: "FAQs", href: "/faq", icon: HelpCircle },
+      { name: "About", href: "/about", icon: Info },
+      { name: "Contact", href: "/contact", icon: Phone },
+    ],
+  },
 ];
 
 export function PublicHeader() {
@@ -59,7 +80,10 @@ export function PublicHeader() {
       ? { name: "My Reports", short: "Reports", href: "/crisis/reports", icon: FileText }
       : { name: "Register", short: "Register", href: "/register", icon: UserPlus },
   ];
-  const accountLinks = ACCOUNT_LINKS.filter((item) => !item.touristOnly || user?.role === "tourist");
+  const accountSections = ACCOUNT_SECTIONS.map((section) => ({
+    ...section,
+    items: section.items.filter((item) => !item.touristOnly || user?.role === "tourist"),
+  })).filter((section) => section.items.length > 0);
 
   const linkClass = (href) => {
     const active = isPublicNavActive(pathname, href);
@@ -182,43 +206,66 @@ export function PublicHeader() {
                       </span>
                     </button>
                     {accountOpen ? (
-                      <div className="absolute right-0 top-full z-50 mt-2 w-56 rounded-2xl border border-zinc-200 bg-white p-2 shadow-xl dark:border-zinc-800 dark:bg-zinc-950">
+                      <div className="absolute right-0 top-full z-50 mt-2 max-h-[min(70dvh,32rem)] w-64 overflow-y-auto rounded-2xl border border-zinc-200 bg-white p-2 shadow-xl dark:border-zinc-800 dark:bg-zinc-950">
                         <p className="truncate px-3 py-2 text-[11px] font-black uppercase tracking-tight text-zinc-900 dark:text-zinc-100">
                           {user?.name}
                         </p>
-                        <p className="-mt-1 px-3 pb-2 text-[9px] font-bold uppercase tracking-widest text-blue-600">
+                        <p className="-mt-1 px-3 pb-1 text-[9px] font-bold uppercase tracking-widest text-blue-600">
                           {user?.role || "tourist"}
                         </p>
-                        <HeaderPoints variant="menu" />
-                        {accountLinks.map((item) => (
-                          <Link
-                            key={item.href}
-                            href={item.href}
-                            className="block rounded-xl px-3 py-2.5 text-[11px] font-black uppercase tracking-widest text-zinc-700 hover:bg-zinc-50 dark:text-zinc-200 dark:hover:bg-zinc-900"
-                            onClick={() => setAccountOpen(false)}
-                          >
-                            {item.name}
-                          </Link>
+                        {accountSections.map((section) => (
+                          <div key={section.title}>
+                            <p className={`px-3 pb-1 pt-3 text-[10px] font-black uppercase tracking-[0.2em] ${section.tone}`}>
+                              {section.title}
+                            </p>
+                            {section.title === "Account" ? <HeaderPoints variant="menu" /> : null}
+                            {section.items.map((item) => {
+                              const Icon = item.icon;
+                              const active = isPublicNavActive(pathname, item.href);
+                              return (
+                                <Link
+                                  key={item.href}
+                                  href={item.href}
+                                  aria-current={active ? "page" : undefined}
+                                  className={`flex items-center gap-3 rounded-xl px-3 py-2.5 text-[11px] font-black uppercase tracking-widest ${
+                                    active ? "bg-blue-50 text-blue-600" : "text-zinc-700 hover:bg-zinc-50 dark:text-zinc-200 dark:hover:bg-zinc-900"
+                                  }`}
+                                  onClick={() => setAccountOpen(false)}
+                                >
+                                  <Icon size={16} className="shrink-0" />
+                                  {item.name}
+                                </Link>
+                              );
+                            })}
+                          </div>
                         ))}
+                        <p className="px-3 pb-1 pt-3 text-[10px] font-black uppercase tracking-[0.2em] text-red-600">
+                          Emergency
+                        </p>
                         <a
                           href="tel:911"
-                          className="block rounded-xl px-3 py-2.5 text-[11px] font-black uppercase tracking-widest text-red-600 hover:bg-red-50"
+                          className="flex items-center gap-3 rounded-xl px-3 py-2.5 text-[11px] font-black uppercase tracking-widest text-red-600 hover:bg-red-50"
                         >
+                          <Phone size={16} className="shrink-0" />
                           911 emergency
                         </a>
                         <a
                           href={`tel:${siteInfo.phoneTourismTel}`}
-                          className="block rounded-xl px-3 py-2.5 text-[11px] font-black uppercase tracking-widest text-zinc-700 hover:bg-zinc-50"
+                          className="flex items-center gap-3 rounded-xl px-3 py-2.5 text-[11px] font-black uppercase tracking-widest text-blue-700 hover:bg-blue-50"
                         >
+                          <Phone size={16} className="shrink-0" />
                           Tourism {siteInfo.phoneTourism}
                         </a>
-                        <button
-                          type="button"
-                          onClick={logout}
-                          className="w-full rounded-xl px-3 py-2.5 text-left text-[11px] font-black uppercase tracking-widest text-red-500 hover:bg-red-50"
-                        >
-                          Sign out
-                        </button>
+                        <div className="mt-2 border-t border-zinc-100 pt-2">
+                          <button
+                            type="button"
+                            onClick={logout}
+                            className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left text-[11px] font-black uppercase tracking-widest text-red-500 hover:bg-red-50"
+                          >
+                            <LogOut size={16} className="shrink-0" />
+                            Sign out
+                          </button>
+                        </div>
                       </div>
                     ) : null}
                   </div>
@@ -244,6 +291,7 @@ export function PublicHeader() {
             className="fixed top-12 md:top-16 inset-x-0 z-50 max-h-[calc(100dvh-3rem)] overflow-y-auto border-b border-zinc-200 bg-white shadow-lg lg:hidden"
             aria-label="Pages"
           >
+            <p className="px-4 pb-1 pt-3 text-[10px] font-black uppercase tracking-[0.2em] text-blue-600">Pages</p>
             {primaryNav.map((item) => {
               const Icon = item.icon;
               const active = isPublicNavActive(pathname, item.href);
@@ -262,8 +310,27 @@ export function PublicHeader() {
                 </Link>
               );
             })}
-            <p className="px-4 pb-1 pt-3 text-[10px] font-black uppercase tracking-widest text-zinc-400">More</p>
-            {MORE_NAV.map((item) => {
+            <p className="px-4 pb-1 pt-3 text-[10px] font-black uppercase tracking-[0.2em] text-orange-600">Alerts</p>
+            {ALERTS_NAV.map((item) => {
+              const Icon = item.icon;
+              const active = isPublicNavActive(pathname, item.href);
+              return (
+                <Link
+                  key={item.name}
+                  href={item.href}
+                  aria-current={active ? "page" : undefined}
+                  className={`flex items-center gap-3 border-b border-zinc-100 px-4 py-3 text-sm font-semibold ${
+                    active ? "bg-blue-50 text-blue-700" : "text-zinc-800"
+                  }`}
+                  onClick={() => setMenuOpen(false)}
+                >
+                  <Icon size={18} />
+                  {item.name}
+                </Link>
+              );
+            })}
+            <p className="px-4 pb-1 pt-3 text-[10px] font-black uppercase tracking-[0.2em] text-blue-600">Help</p>
+            {HELP_NAV.map((item) => {
               const Icon = item.icon;
               const active = isPublicNavActive(pathname, item.href);
               return (

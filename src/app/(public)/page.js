@@ -3,13 +3,15 @@
 import React, { useEffect, useState, useLayoutEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { ArrowRight, Compass, FileText, ShieldCheck, Users } from "lucide-react";
+import { AlertTriangle, ArrowRight, Bell, Compass, FileText, Route, ShieldCheck, Users } from "lucide-react";
 import { useCrisisStore, useAuthStore } from "@/app/store/crisisStore";
 import { typography } from "@/lib/designSystem";
 import { BrandLogo } from "@/app/components/BrandLogo";
 import { siteInfo } from "@/lib/siteInfo";
 import { sortRecordsNewestFirst } from "@/lib/recordSorting";
+import { usePublicVisibility } from "@/lib/usePublicVisibility";
 import { GuideAssistanceRequestForm } from "@/app/components/tourist/GuideAssistanceRequestForm";
+import { PublicFeedbackSection } from "@/app/components/feedback/PublicFeedbackSection";
 
 export default function Home() {
   const { fetchAlerts, alerts, loading, error } = useCrisisStore();
@@ -18,6 +20,7 @@ export default function Home() {
   const [guideAssistance, setGuideAssistance] = useState(null);
   const [guideRequestOpen, setGuideRequestOpen] = useState(false);
   const [guideRequestSubmitted, setGuideRequestSubmitted] = useState(false);
+  const visibility = usePublicVisibility();
   const router = useRouter();
 
   useEffect(() => {
@@ -57,6 +60,40 @@ export default function Home() {
   const criticalCount = activeAlerts.filter((alert) => alert.severity === "Critical").length;
   const newestAlert = activeAlerts[0] || null;
   const showGuideHelp = isAuthenticated && user?.role === "tourist" && guideAssistance?.enabled === true;
+  const featureCards = [
+    {
+      title: "Crisis alerts",
+      text: "Open the map and the active list.",
+      href: "/crisis",
+      icon: AlertTriangle,
+      tile: "bg-orange-50 text-orange-600",
+    },
+    visibility.roadsAndHazards
+      ? {
+          title: "Roads and travel",
+          text: "Check road closures and hazards.",
+          href: "/routes",
+          icon: Route,
+          tile: "bg-blue-50 text-blue-600",
+        }
+      : null,
+    {
+      title: "My reports",
+      text: isAuthenticated ? "Send a report and follow it." : "Sign in to send and follow a report.",
+      href: isAuthenticated ? "/crisis/reports" : "/login",
+      icon: FileText,
+      tile: "bg-sky-50 text-sky-700",
+    },
+    {
+      title: "Phone and SMS alerts",
+      text: isAuthenticated
+        ? "Turn channels on or off in Profile."
+        : "Register, then choose email, SMS, and app alerts.",
+      href: isAuthenticated ? "/profile" : "/register",
+      icon: Bell,
+      tile: "bg-violet-50 text-violet-700",
+    },
+  ].filter(Boolean);
 
   return (
     <div className="flex flex-col bg-white font-sans text-left">
@@ -137,60 +174,105 @@ export default function Home() {
             {error ? (
               <p className="mt-2 text-xs font-bold text-red-300">Could not load alert counts.</p>
             ) : null}
+          </div>
+        </div>
+      </section>
 
-            {showGuideHelp ? (
-              <div id="guide-assistance" className="mt-5 w-full max-w-xl">
+      <section className="border-b border-zinc-100 bg-white py-6 md:py-10">
+        <div className="mx-auto max-w-7xl px-3 sm:px-6">
+          <h2 className="mb-3 text-[10px] font-black uppercase tracking-[0.2em] text-orange-600">Live alerts</h2>
+          {loading ? (
+            <p className="text-sm font-medium text-zinc-500">Checking active alerts...</p>
+          ) : newestAlert ? (
+            <Link href="/crisis" className="flex items-start gap-3 rounded-2xl border border-orange-200 bg-orange-50/50 p-4 hover:border-orange-300">
+              <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-orange-600 text-white">
+                <AlertTriangle size={18} />
+              </span>
+              <span className="min-w-0">
+                <span className="text-[10px] font-black uppercase tracking-widest text-orange-700">
+                  {newestAlert.severity || "Alert"} · {newestAlert.location || "Daet"}
+                </span>
+                <span className="mt-1 block text-lg font-black text-zinc-900">{newestAlert.title}</span>
+                <span className="mt-1 line-clamp-2 block text-sm font-medium text-zinc-600">{newestAlert.message}</span>
+              </span>
+            </Link>
+          ) : (
+            <div className="flex items-start gap-3 rounded-2xl border border-green-200 bg-green-50 p-4">
+              <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-green-700 text-white">
+                <ShieldCheck size={18} />
+              </span>
+              <div>
+                <h3 className="text-lg font-black text-zinc-900">All clear</h3>
+                <p className="mt-1 text-sm font-medium text-zinc-600">
+                  No active crisis alerts in Daet right now.
+                </p>
+              </div>
+            </div>
+          )}
+        </div>
+      </section>
+
+      <section className="border-b border-zinc-100 bg-zinc-50 py-6 md:py-10">
+        <div className="mx-auto max-w-7xl px-3 sm:px-6">
+          <h2 className="mb-3 text-[10px] font-black uppercase tracking-[0.2em] text-blue-600">What you can do</h2>
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
+            {featureCards.map((card) => {
+              const Icon = card.icon;
+              return (
+                <Link
+                  key={card.title}
+                  href={card.href}
+                  className="flex items-start gap-3 rounded-2xl border border-zinc-200 bg-white p-4 shadow-sm hover:border-blue-200"
+                >
+                  <span className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl ${card.tile}`}>
+                    <Icon size={18} />
+                  </span>
+                  <span className="min-w-0">
+                    <span className="block text-sm font-black text-zinc-900">{card.title}</span>
+                    <span className="mt-1 block text-xs font-medium leading-relaxed text-zinc-500">{card.text}</span>
+                  </span>
+                </Link>
+              );
+            })}
+          </div>
+        </div>
+      </section>
+
+      {showGuideHelp ? (
+        <section className="border-b border-zinc-100 bg-white py-6 md:py-10">
+          <div className="mx-auto max-w-7xl px-3 sm:px-6">
+            <h2 className="mb-3 text-[10px] font-black uppercase tracking-[0.2em] text-purple-700">Guide help</h2>
+            <div id="guide-assistance" className="flex items-start gap-3 rounded-2xl border border-purple-200 bg-purple-50/70 p-4">
+              <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-purple-700 text-white">
+                <Compass size={18} />
+              </span>
+              <div className="min-w-0">
+                <p className="text-sm font-black text-zinc-900">Request a local guide</p>
+                <p className="mt-1 text-xs font-medium leading-relaxed text-zinc-600">
+                  Tourism help from a local guide. This is not an emergency service.
+                </p>
                 <button
                   type="button"
                   onClick={() => {
                     setGuideRequestSubmitted(false);
                     setGuideRequestOpen(true);
                   }}
-                  className="inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-xl bg-purple-700 px-5 py-3 text-sm font-black text-white hover:bg-purple-800 sm:w-auto"
+                  className="mt-3 inline-flex min-h-11 items-center justify-center gap-2 rounded-xl bg-purple-700 px-4 py-2.5 text-sm font-black text-white hover:bg-purple-800"
                 >
-                  <Compass size={17} /> Request guide help
+                  <Compass size={16} /> Request guide help
                 </button>
-                <p className="mt-2 text-xs font-medium leading-relaxed text-zinc-200">
-                  Tourism help from a local guide. This is not an emergency service.
-                </p>
                 {guideRequestSubmitted ? (
-                  <p role="status" className="mt-2 text-sm font-bold text-green-200">
+                  <p role="status" className="mt-2 text-sm font-bold text-green-700">
                     Your request was submitted. The Tourism Office will coordinate a guide.
                   </p>
                 ) : null}
               </div>
-            ) : null}
-          </div>
-        </div>
-      </section>
-
-      {!isAuthenticated ? (
-        <section className="border-b border-zinc-100 bg-white py-6 md:py-10">
-          <div className="mx-auto max-w-7xl px-3 sm:px-6">
-            {loading ? (
-              <p className="text-sm font-medium text-zinc-500">Checking active alerts...</p>
-            ) : newestAlert ? (
-              <Link href="/crisis" className="block rounded-2xl border border-orange-200 bg-orange-50/40 p-4 hover:border-orange-300">
-                <p className="text-[10px] font-black uppercase tracking-widest text-orange-700">
-                  {newestAlert.severity || "Alert"} · {newestAlert.location || "Daet"}
-                </p>
-                <h2 className="mt-1 text-lg font-black text-zinc-900">{newestAlert.title}</h2>
-                <p className="mt-1 line-clamp-2 text-sm font-medium text-zinc-600">{newestAlert.message}</p>
-              </Link>
-            ) : (
-              <div className="flex items-start gap-3 rounded-2xl border border-green-200 bg-green-50 p-4">
-                <ShieldCheck className="mt-0.5 shrink-0 text-green-700" size={22} />
-                <div>
-                  <h2 className="text-lg font-black text-zinc-900">All clear</h2>
-                  <p className="mt-1 text-sm font-medium text-zinc-600">
-                    No active crisis alerts in Daet right now.
-                  </p>
-                </div>
-              </div>
-            )}
+            </div>
           </div>
         </section>
       ) : null}
+
+      <PublicFeedbackSection />
 
       {guideRequestOpen && guideAssistance?.enabled === true ? (
         <GuideAssistanceRequestForm
