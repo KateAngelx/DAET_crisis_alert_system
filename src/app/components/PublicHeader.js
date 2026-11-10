@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { AlertTriangle, BookOpen, CheckCircle2, Compass, FileText, Home, LogOut, Menu, MessageSquare, Route, User, UserPlus, X } from "lucide-react";
+import { AlertTriangle, BookOpen, CheckCircle2, CircleHelp, Compass, FileText, Home, Info, LogOut, Menu, MessageSquare, Route, User, X } from "lucide-react";
 import { BrandLogo } from "@/app/components/BrandLogo";
 import { siteInfo } from "@/lib/siteInfo";
 import { useAuthStore } from "../store/crisisStore";
@@ -18,6 +18,11 @@ const PRIMARY_NAV = [
   { name: "Home", short: "Home", href: "/", icon: Home },
   { name: "Crisis Hub", short: "Crisis", href: "/crisis", icon: AlertTriangle },
   { name: "Roads & Travel", short: "Roads", href: "/routes", icon: Route },
+];
+
+const GUEST_INFO_NAV = [
+  { name: "About", short: "About", href: "/about", icon: Info },
+  { name: "FAQs", short: "FAQs", href: "/faq", icon: CircleHelp },
 ];
 
 const ACCOUNT_SECTIONS = [
@@ -55,10 +60,11 @@ export function PublicHeader() {
   const signedIn = isAuthenticated;
   const primaryNav = [
     ...PRIMARY_NAV.filter((item) => visibility.roadsAndHazards || item.href !== "/routes"),
-    signedIn
-      ? { name: "My Reports", short: "Reports", href: "/crisis/reports", icon: FileText }
-      : { name: "Register", short: "Register", href: "/register", icon: UserPlus },
+    ...(signedIn
+      ? [{ name: "My Reports", short: "Reports", href: "/crisis/reports", icon: FileText }]
+      : []),
   ];
+  const browserNav = signedIn ? primaryNav : [...primaryNav, ...GUEST_INFO_NAV];
   const accountSections = ACCOUNT_SECTIONS.map((section) => ({
     ...section,
     items: section.items.filter((item) => !item.touristOnly || user?.role === "tourist"),
@@ -83,7 +89,7 @@ export function PublicHeader() {
       </Link>
       <Link
         href="/register"
-        className="inline-flex h-7 items-center justify-center rounded-full bg-blue-600 px-2.5 text-[10px] font-black uppercase tracking-wide text-white hover:bg-blue-700 transition-colors shadow-sm shadow-blue-600/20 whitespace-nowrap sm:h-8 sm:px-3 lg:hidden"
+        className="inline-flex h-7 items-center justify-center rounded-full bg-blue-600 px-2.5 text-[10px] font-black uppercase tracking-wide text-white hover:bg-blue-700 transition-colors shadow-sm shadow-blue-600/20 whitespace-nowrap sm:h-8 sm:px-3"
       >
         Register
       </Link>
@@ -132,7 +138,7 @@ export function PublicHeader() {
               </div>
 
               <nav className="col-start-2 hidden items-center justify-center gap-1 px-2 lg:flex" aria-label="Primary">
-                {primaryNav.map((item) => (
+                {browserNav.map((item) => (
                   <Link
                     key={item.name}
                     href={item.href}
@@ -271,7 +277,7 @@ export function PublicHeader() {
             aria-label="Pages"
           >
             <p className="px-4 pb-1 pt-3 text-[10px] font-black uppercase tracking-[0.2em] text-blue-600">Pages</p>
-            {primaryNav.map((item) => {
+            {browserNav.map((item) => {
               const Icon = item.icon;
               const active = isPublicNavActive(pathname, item.href);
               return (
