@@ -27,7 +27,6 @@ export function PublicFooter() {
         <div className="mx-auto flex w-full max-w-7xl flex-col gap-1.5 px-4 py-3 sm:px-6 lg:px-8">
           <p className="text-xs font-medium leading-snug text-zinc-600">{siteInfo.address}</p>
           <p className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs font-bold">
-            <a href="tel:911" className="text-red-600 hover:underline">911</a>
             <a href={`tel:${siteInfo.phoneTourismTel}`} className="text-zinc-800 hover:text-blue-600">
               Tourism {siteInfo.phoneTourism}
             </a>
@@ -92,7 +91,6 @@ export function PublicFooter() {
                 <MapPin size={14} className="mt-0.5 shrink-0 text-blue-600" />
                 <span className="leading-snug">{siteInfo.address}</span>
               </li>
-              <li><a href="tel:911" className="hover:text-blue-600">911 — National Emergency</a></li>
               <li><a href={`tel:${siteInfo.phoneTourismTel}`} className="hover:text-blue-600">{siteInfo.phoneTourism} — Tourism</a></li>
             </ul>
           </div>
@@ -144,10 +142,6 @@ export function PublicFooter() {
               <li className="flex items-center gap-3">
                 <Phone size={16} className="shrink-0 text-blue-600" />
                 <a href={`tel:${siteInfo.phoneTourismTel}`} className="text-zinc-600 transition-colors hover:text-blue-600">{siteInfo.phoneTourism} Tourism Office</a>
-              </li>
-              <li className="flex items-center gap-3">
-                <Phone size={16} className="shrink-0 text-blue-600" />
-                <a href="tel:911" className="text-zinc-600 transition-colors hover:text-blue-600">911 National Emergency</a>
               </li>
               <li className="flex items-center gap-3">
                 <Phone size={16} className="shrink-0 text-blue-600" />

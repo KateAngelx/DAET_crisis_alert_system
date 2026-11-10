@@ -64,6 +64,7 @@ export function PublicHeader() {
       ? [{ name: "My Reports", short: "Reports", href: "/crisis/reports", icon: FileText }]
       : []),
   ];
+  const mobileNav = [...primaryNav, ...GUEST_INFO_NAV];
   const browserNav = signedIn ? primaryNav : [...primaryNav, ...GUEST_INFO_NAV];
   const accountSections = ACCOUNT_SECTIONS.map((section) => ({
     ...section,
@@ -151,14 +152,6 @@ export function PublicHeader() {
               </nav>
 
               <div className="relative z-20 col-start-3 flex items-center justify-end gap-1.5 bg-white md:gap-2">
-                {installedApp ? (
-                  <a
-                    href="tel:911"
-                    className="inline-flex h-8 items-center rounded-full bg-red-600 px-2.5 text-[10px] font-black uppercase tracking-wide text-white"
-                  >
-                    911
-                  </a>
-                ) : null}
                 {isAuthenticated && <NotificationPanel />}
 
                 {showGuestActions ? guestActions : null}
@@ -317,9 +310,9 @@ export function PublicHeader() {
         <div className="pointer-events-auto mx-auto max-w-lg rounded-2xl border border-zinc-200 bg-white shadow-[0_8px_28px_rgba(15,23,42,0.12)]">
           <div
             className="grid"
-            style={{ gridTemplateColumns: `repeat(${primaryNav.length}, minmax(0, 1fr))` }}
+            style={{ gridTemplateColumns: `repeat(${mobileNav.length}, minmax(0, 1fr))` }}
           >
-            {primaryNav.map((item) => {
+            {mobileNav.map((item) => {
               const Icon = item.icon;
               const active = isPublicNavActive(pathname, item.href);
               return (
