@@ -135,6 +135,7 @@ export default function AdminDashboard() {
       resolvedAlerts,
       urgentAlerts,
       activeDangerWarnings,
+      openIncidents,
       pendingReports,
       actionRequired,
       resolvedIncidents,
@@ -275,6 +276,8 @@ export default function AdminDashboard() {
             affectedAreas={metrics.affectedAreas}
             recentAlerts={metrics.recentAlerts}
             recentIncidents={metrics.recentIncidents}
+            activeAlertCount={metrics.activeAlerts.length}
+            openIncidentCount={metrics.openIncidents.length}
           />
 
           {metrics.recentlyResolved.length > 0 && (

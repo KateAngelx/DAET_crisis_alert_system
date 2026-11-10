@@ -47,8 +47,8 @@ export function ReportIncidentModal({
             categories={incidentCategories}
             introductoryInfo={isGuideAssistance ? guideAssistance?.introductoryInformation : undefined}
             availabilityMessage={isGuideAssistance ? guideAssistance?.availabilityMessage : undefined}
-            onSuccess={(incident) => {
-              onSuccess?.(incident);
+            onSuccess={(incident, notificationWarnings) => {
+              onSuccess?.(incident, notificationWarnings);
               onClose();
             }}
             onCancel={onClose}

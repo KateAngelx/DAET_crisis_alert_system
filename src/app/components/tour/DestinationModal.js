@@ -8,6 +8,7 @@ import { Card } from "@/app/components/ui/Card";
 import {
   formatTourRoute,
   formatTourDate,
+  formatTourEndDateTime,
   getRelevantAlertsForGroup,
   getRelevantRouteAdvisoriesForGroup,
 } from "@/lib/tourGroupRoute";
@@ -60,6 +61,7 @@ export function DestinationModal({
         trip_info: group.trip_info || "",
         start_date: group.start_date || "",
         end_date: group.end_date || "",
+        end_time: group.end_time?.slice(0, 5) || "",
         meeting_location: group.meeting_location || "",
         estimated_travel_time: group.estimated_travel_time || "",
         destination_notes: group.destination_notes || "",
@@ -87,6 +89,14 @@ export function DestinationModal({
   const handleSave = async (e) => {
     e.preventDefault();
     if (!onSave) return;
+    if (form.start_date && form.end_date && form.end_date < form.start_date) {
+      setError("The end date must be on or after the tour date.");
+      return;
+    }
+    if (form.end_time && !form.end_date) {
+      setError("Choose an end date before setting an end time.");
+      return;
+    }
     setSaving(true);
     setError(null);
     const result = await onSave({
@@ -95,6 +105,7 @@ export function DestinationModal({
       trip_info: form.trip_info.trim() || null,
       start_date: form.start_date || null,
       end_date: form.end_date || null,
+      end_time: form.end_date ? (form.end_time || null) : null,
       meeting_location: form.meeting_location.trim() || null,
       estimated_travel_time: form.estimated_travel_time.trim() || null,
       destination_notes: form.destination_notes.trim() || null,
@@ -172,14 +183,19 @@ export function DestinationModal({
                   />
                 </div>
               </div>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div className="space-y-1">
                   <label className="text-[10px] font-black uppercase text-zinc-400">Tour Date</label>
                   <input type="date" value={form.start_date} onChange={(e) => setForm({ ...form, start_date: e.target.value })} className="w-full p-3 bg-zinc-50 border border-zinc-200 rounded-xl text-sm font-bold" />
                 </div>
                 <div className="space-y-1">
                   <label className="text-[10px] font-black uppercase text-zinc-400">End Date (optional)</label>
-                  <input type="date" value={form.end_date} onChange={(e) => setForm({ ...form, end_date: e.target.value })} className="w-full p-3 bg-zinc-50 border border-zinc-200 rounded-xl text-sm font-bold" />
+                  <input type="date" min={form.start_date || undefined} value={form.end_date} onChange={(e) => setForm({ ...form, end_date: e.target.value, end_time: e.target.value ? form.end_time : "" })} className="w-full p-3 bg-zinc-50 border border-zinc-200 rounded-xl text-sm font-bold" />
+                </div>
+                <div className="space-y-1">
+                  <label className="text-[10px] font-black uppercase text-zinc-400">End Time (optional)</label>
+                  <input type="time" disabled={!form.end_date} value={form.end_time} onChange={(e) => setForm({ ...form, end_time: e.target.value })} className="w-full p-3 bg-zinc-50 border border-zinc-200 rounded-xl text-sm font-bold disabled:cursor-not-allowed disabled:bg-zinc-100" />
+                  <p className="text-[10px] text-zinc-400">Daet local time (PHT).</p>
                 </div>
               </div>
               <div className="space-y-1">
@@ -218,6 +234,7 @@ export function DestinationModal({
                   <InfoRow label="From" value={group.starting_location} icon={MapPin} />
                   <InfoRow label="To" value={group.destination} icon={MapPin} />
                   <InfoRow label="Tour Date" value={tourDate} icon={Calendar} />
+                  <InfoRow label="Planned End" value={formatTourEndDateTime(group)} icon={Clock} />
                   <InfoRow label="Estimated Travel Time" value={group.estimated_travel_time} icon={Clock} />
                 </div>
               </Card>

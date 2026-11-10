@@ -4,12 +4,15 @@ import React, { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { Search, Users, UserPlus, Loader2, Clock } from "lucide-react";
 import { Card } from "@/app/components/ui/Card";
+import { CategoryFilterSelect } from "@/app/components/shell/StatusRecordList";
 import { useGuideStore } from "@/app/store/guideStore";
 import { getTouristAvailabilityStatus } from "@/lib/assignmentStatus";
+import { isUserOnline } from "@/lib/userActivity";
 import { typography, iconSize } from "@/lib/designSystem";
 
 const STATUS_BADGE = {
   available: "bg-green-100 text-green-700",
+  unavailable: "bg-zinc-100 text-zinc-600",
   pending: "bg-orange-100 text-orange-700",
   assigned: "bg-blue-100 text-blue-700",
   under_other: "bg-zinc-100 text-zinc-600",
@@ -26,50 +29,80 @@ export function ActiveTouristsPanel({ guideId, tourGroupId, tourGroupName, compa
   } = useGuideStore();
 
   const [searchQuery, setSearchQuery] = useState("");
+  const [statusFilter, setStatusFilter] = useState("all");
   const [assignments, setAssignments] = useState([]);
   const [pendingCount, setPendingCount] = useState(0);
   const [actionId, setActionId] = useState(null);
   const [message, setMessage] = useState(null);
-
-  const loadData = async () => {
-    if (!guideId || !tourGroupId) return;
-    const result = await fetchAvailableTourists(guideId, tourGroupId);
-    setAssignments(result.assignments || []);
-    const pending = await fetchGroupPendingMembers(tourGroupId, guideId);
-    setPendingCount(pending.length);
-
-  };
+  const [refreshKey, setRefreshKey] = useState(0);
 
   useEffect(() => {
-    loadData();
-  }, [guideId, tourGroupId]);
+    let cancelled = false;
+    if (!guideId || !tourGroupId) return undefined;
+
+    fetchAvailableTourists(guideId, tourGroupId)
+      .then(async (result) => {
+        if (cancelled) return null;
+        setAssignments(result.assignments || []);
+        return fetchGroupPendingMembers(tourGroupId, guideId);
+      })
+      .then((pending) => {
+        if (!cancelled && pending) setPendingCount(pending.length);
+      })
+      .catch((error) => {
+        if (!cancelled) {
+          setMessage({ type: "error", text: error.message || "Unable to load tourist invitations." });
+        }
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [guideId, tourGroupId, fetchAvailableTourists, fetchGroupPendingMembers, refreshKey]);
+
+  useEffect(() => {
+    const intervalId = window.setInterval(() => {
+      setRefreshKey((current) => current + 1);
+    }, 5 * 60 * 1000);
+    return () => window.clearInterval(intervalId);
+  }, []);
 
   const filteredTourists = useMemo(() => {
     const q = searchQuery.trim().toLowerCase();
-    if (!q) return availableTourists;
-    return availableTourists.filter(
-      (t) =>
-        t.full_name?.toLowerCase().includes(q) ||
-        t.email?.toLowerCase().includes(q) ||
-        t.phone?.includes(q)
-    );
-  }, [availableTourists, searchQuery]);
+    return availableTourists.filter((tourist) => {
+      const matchesSearch =
+        !q ||
+        tourist.full_name?.toLowerCase().includes(q) ||
+        tourist.email?.toLowerCase().includes(q) ||
+        tourist.phone?.includes(q);
+      const currentAvailability = getTouristAvailabilityStatus(tourist.id, assignments, guideId, tourGroupId);
+      const availability = isUserOnline(tourist)
+        ? currentAvailability
+        : { ...currentAvailability, status: "unavailable", label: "Unavailable (offline)" };
+      return matchesSearch && (statusFilter === "all" || availability.status === statusFilter);
+    });
+  }, [availableTourists, searchQuery, assignments, guideId, tourGroupId, statusFilter]);
 
   const handleInvite = async (touristId) => {
     setActionId(touristId);
     setMessage(null);
-    const result = await sendAssignmentRequest({
-      touristId,
-      guideId,
-      tourGroupId,
-      assignedBy: guideId,
-    });
-    setActionId(null);
-    if (result.success) {
-      setMessage({ type: "success", text: "Assignment request sent. Waiting for tourist confirmation." });
-      loadData();
-    } else {
-      setMessage({ type: "error", text: result.error || "Failed to send request." });
+    try {
+      const result = await sendAssignmentRequest({
+        touristId,
+        guideId,
+        tourGroupId,
+        assignedBy: guideId,
+      });
+      if (result.success) {
+        setMessage({ type: "success", text: "Invitation sent. The tourist will appear as confirmed after they accept." });
+        setRefreshKey((current) => current + 1);
+      } else {
+        setMessage({ type: "error", text: result.error || "Failed to send invitation." });
+      }
+    } catch (error) {
+      setMessage({ type: "error", text: error.message || "Failed to send invitation." });
+    } finally {
+      setActionId(null);
     }
   };
 
@@ -91,7 +124,7 @@ export function ActiveTouristsPanel({ guideId, tourGroupId, tourGroupName, compa
         {!hideTitle && (
           <div>
             <h2 className={`${typography.sectionTitle} flex items-center gap-2`}>
-              <Users size={iconSize.section} /> Active Tourists
+              <Users size={iconSize.section} /> Find &amp; Invite Tourists
             </h2>
             {tourGroupName && (
               <p className="text-xs text-zinc-500 mt-1">For tour group: <strong>{tourGroupName}</strong></p>
@@ -115,88 +148,98 @@ export function ActiveTouristsPanel({ guideId, tourGroupId, tourGroupName, compa
       )}
 
       <Card className="p-4 border-zinc-100">
-        <div className="relative">
-          <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-400" />
-          <input
-            type="search"
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder="Filter by name, email, or phone..."
-            className="w-full pl-10 pr-4 py-3 bg-zinc-50 border border-zinc-100 rounded-xl text-sm font-medium"
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+          <label className="block min-w-0">
+            <span className="mb-1.5 block text-[10px] font-black uppercase tracking-widest text-zinc-400">Search tourists</span>
+            <span className="relative block">
+              <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-400" />
+              <input
+                type="search"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                placeholder="Name, email, or phone..."
+                className="w-full rounded-xl border border-zinc-200 bg-white py-3 pl-10 pr-4 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-blue-200"
+              />
+            </span>
+          </label>
+          <CategoryFilterSelect
+            label="Availability"
+            value={statusFilter}
+            onChange={setStatusFilter}
+            options={[
+              { value: "available", label: "Available to invite" },
+              { value: "unavailable", label: "Unavailable (offline)" },
+              { value: "pending", label: "Request sent" },
+              { value: "assigned", label: "Confirmed" },
+              { value: "under_other", label: "With another guide" },
+              { value: "declined", label: "Declined" },
+            ]}
           />
         </div>
       </Card>
 
-      <Card className="border-zinc-100 overflow-hidden">
+      <div className="overflow-hidden rounded-xl border border-zinc-200 bg-white">
         {loading && filteredTourists.length === 0 ? (
           <div className="p-8 text-center text-zinc-400 text-sm">Loading tourists...</div>
         ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm text-left">
-              <thead>
-                <tr className="border-b border-zinc-100 text-[10px] font-black uppercase tracking-widest text-zinc-400 bg-zinc-50/50">
-                  <th className="p-4">Tourist</th>
-                  <th className="p-4">Status</th>
-                  {!compact && <th className="p-4 text-right">Action</th>}
-                </tr>
-              </thead>
-              <tbody>
-                {filteredTourists.length === 0 ? (
-                  <tr>
-                    <td colSpan={compact ? 2 : 3} className="p-8 text-center text-zinc-400 text-sm">
-                      No registered tourists available yet. Tourists must register and sign in before they appear here.
-                    </td>
-                  </tr>
-                ) : (
-                  filteredTourists.map((tourist) => {
-                    const avail = getTouristAvailabilityStatus(tourist.id, assignments, guideId, tourGroupId);
-                    return (
-                      <tr key={tourist.id} className="border-b border-zinc-50 hover:bg-zinc-50/50">
-                        <td className="p-4">
-                          <p className="font-bold text-zinc-900">{tourist.full_name}</p>
-                          <p className="text-xs text-zinc-500">{tourist.email || tourist.phone || "—"}</p>
-                        </td>
-                        <td className="p-4">
-                          <span className={`text-[10px] font-black uppercase px-2 py-1 rounded-full ${STATUS_BADGE[avail.status]}`}>
-                            {avail.label}
-                          </span>
-                          {avail.status === "under_other" && avail.assignment?.guide?.full_name && (
-                            <p className="text-xs text-zinc-400 mt-1">{avail.assignment.guide.full_name}</p>
+          <>
+            <div className={`grid ${compact ? "grid-cols-[minmax(0,1fr)_auto]" : "grid-cols-[minmax(0,1fr)_auto_auto]"} gap-3 border-b border-zinc-100 bg-zinc-50 px-4 py-3 text-[10px] font-black uppercase tracking-widest text-zinc-400`}>
+              <span>Tourist</span>
+              <span>Status</span>
+              {!compact && <span className="text-right">Action</span>}
+            </div>
+            {filteredTourists.length === 0 ? (
+              <p className="p-8 text-center text-sm text-zinc-500">
+                {availableTourists.length === 0
+                  ? "No registered tourists available yet. Tourists must register and sign in before they appear here."
+                  : "No tourists match these filters."}
+              </p>
+            ) : (
+              <ul className="divide-y divide-zinc-100">
+                {filteredTourists.map((tourist) => {
+                  const currentAvailability = getTouristAvailabilityStatus(tourist.id, assignments, guideId, tourGroupId);
+                  const avail = isUserOnline(tourist)
+                    ? currentAvailability
+                    : { ...currentAvailability, status: "unavailable", label: "Unavailable (offline)" };
+                  return (
+                    <li
+                      key={tourist.id}
+                      className={`grid ${compact ? "grid-cols-[minmax(0,1fr)_auto]" : "grid-cols-[minmax(0,1fr)_auto_auto]"} items-center gap-3 px-4 py-3 hover:bg-zinc-50/70`}
+                    >
+                      <span className="min-w-0">
+                        <span className="block truncate text-sm font-bold text-zinc-900">{tourist.full_name}</span>
+                        <span className="mt-0.5 block truncate text-xs text-zinc-500">{tourist.email || tourist.phone || "—"}</span>
+                      </span>
+                      <span className={`rounded-full px-2 py-1 text-[9px] font-black uppercase ${STATUS_BADGE[avail.status]}`}>
+                        {avail.label}
+                      </span>
+                      {!compact && (
+                        <span className="flex justify-end">
+                          {avail.status === "available" ? (
+                            <button
+                              type="button"
+                              disabled={actionId === tourist.id}
+                              onClick={() => handleInvite(tourist.id)}
+                              className="inline-flex items-center gap-1 rounded-xl bg-blue-600 px-3 py-2 text-[10px] font-black uppercase text-white disabled:opacity-50"
+                            >
+                              {actionId === tourist.id ? <Loader2 size={12} className="animate-spin" /> : <UserPlus size={12} />}
+                              Invite
+                            </button>
+                          ) : (
+                            <span className={`text-right text-[9px] font-black uppercase ${avail.status === "unavailable" ? "text-zinc-500" : "text-zinc-400"}`}>
+                              {avail.status === "unavailable" ? "Unavailable" : avail.status === "pending" ? "Request sent" : avail.status === "assigned" ? "Confirmed" : "—"}
+                            </span>
                           )}
-                        </td>
-                        {!compact && (
-                          <td className="p-4 text-right">
-                            {avail.status === "available" && (
-                              <button
-                                type="button"
-                                disabled={actionId === tourist.id}
-                                onClick={() => handleInvite(tourist.id)}
-                                className="inline-flex items-center gap-1 px-3 py-2 bg-blue-600 text-white rounded-xl text-[10px] font-black uppercase disabled:opacity-50"
-                              >
-                                {actionId === tourist.id ? <Loader2 size={12} className="animate-spin" /> : <UserPlus size={12} />}
-                                Set as My Tourist
-                              </button>
-                            )}
-                            {avail.status === "pending" && (
-                              <span className="text-[10px] font-black uppercase text-orange-600">Request Sent</span>
-                            )}
-                            {avail.status === "assigned" && (
-                              <span className="text-[10px] font-black uppercase text-green-600">Confirmed</span>
-                            )}
-                            {avail.status === "under_other" && (
-                              <span className="text-[10px] font-black uppercase text-zinc-400">View</span>
-                            )}
-                          </td>
-                        )}
-                      </tr>
-                    );
-                  })
-                )}
-              </tbody>
-            </table>
-          </div>
+                        </span>
+                      )}
+                    </li>
+                  );
+                })}
+              </ul>
+            )}
+          </>
         )}
-      </Card>
+      </div>
 
       {!compact && tourGroupId && (
         <Link

@@ -3,6 +3,14 @@ import { NOTIFICATION_CHANNELS } from '@/lib/constants';
 import { processNotificationDeliveries } from '@/lib/notificationQueue.server';
 import { channelsFromProfile, getDispatchChannelsForProfile } from '@/lib/userNotificationChannels';
 
+function isMissingEventKeyColumn(error) {
+  const message = String(error?.message || '').toLowerCase();
+  return (
+    (error?.code === '42703' || error?.code === 'PGRST204')
+    && message.includes('event_key')
+  );
+}
+
 export async function dispatchNotificationServer({
   userId,
   title,
@@ -64,20 +72,31 @@ export async function dispatchNotificationServer({
     let notification = null;
 
     if (effective.app || effective.push) {
-      const { data: inserted, error: notifError } = await admin
+      const notificationData = {
+        user_id: userId,
+        title,
+        message,
+        notification_type: notificationType,
+        priority,
+        related_type: relatedType,
+        related_id: relatedId,
+        ...(eventKey ? { event_key: eventKey } : {}),
+      };
+      let { data: inserted, error: notifError } = await admin
         .from('notifications')
-        .insert({
-          user_id: userId,
-          title,
-          message,
-          notification_type: notificationType,
-          priority,
-          related_type: relatedType,
-          related_id: relatedId,
-          event_key: eventKey,
-        })
+        .insert(notificationData)
         .select()
         .single();
+
+      if (notifError && eventKey && isMissingEventKeyColumn(notifError)) {
+        console.warn('[NotificationDispatch] notifications.event_key is missing; retrying without deduplication.');
+        const { event_key: _eventKey, ...legacyNotificationData } = notificationData;
+        ({ data: inserted, error: notifError } = await admin
+          .from('notifications')
+          .insert(legacyNotificationData)
+          .select()
+          .single());
+      }
 
       if (notifError) {
         if (notifError.code === '23505' && eventKey) {

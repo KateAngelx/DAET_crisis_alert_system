@@ -50,6 +50,7 @@ function MyReportsContent() {
   const { incidents, fetchIncidents, loading, error } = useIncidentStore();
   const [modalOpen, setModalOpen] = useState(false);
   const [successRef, setSuccessRef] = useState(null);
+  const [notificationWarnings, setNotificationWarnings] = useState([]);
   const [categoryFilter, setCategoryFilter] = useState("all");
   const [severityFilter, setSeverityFilter] = useState("all");
   const [statusFilter, setStatusFilter] = useState("all");
@@ -110,8 +111,9 @@ function MyReportsContent() {
     return () => { active = false; };
   }, [selectedIncidentId]);
 
-  const handleReportSuccess = (incident) => {
+  const handleReportSuccess = (incident, warnings = []) => {
     setSuccessRef(incident.reference_number);
+    setNotificationWarnings(warnings);
     setPage(1);
     if (user?.id) fetchIncidents({ reporterId: user.id });
   };
@@ -230,6 +232,11 @@ function MyReportsContent() {
                 <div>
                   <p className="text-sm font-bold text-green-800">Report submitted — reference {successRef}</p>
                   <p className="text-xs text-green-700 mt-1">The Daet Municipal Tourism Office will review your report. Status updates appear below.</p>
+                  {notificationWarnings.length > 0 ? (
+                    <p className="mt-2 text-xs font-semibold text-amber-800" role="status">
+                      The report was saved, but some notifications may not have been delivered: {notificationWarnings.join(" ")}
+                    </p>
+                  ) : null}
                 </div>
               </div>
             ) : null}

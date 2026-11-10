@@ -17,11 +17,28 @@ export function getTourGroupStatusStyle(status) {
   return TOUR_GROUP_STATUS[status] || TOUR_GROUP_STATUS.active;
 }
 
-/** True when tour end date is today or in the past (suggest marking done). */
-export function isTourPastEndDate(group) {
-  if (!group?.end_date) return false;
-  const end = new Date(`${group.end_date}T23:59:59`);
-  return !Number.isNaN(end.getTime()) && end.getTime() < Date.now();
+export function getTourGroupEndAt(group) {
+  if (!group?.end_date) return null;
+  const endTime = group.end_time || "23:59:59";
+  const end = new Date(`${group.end_date}T${endTime}+08:00`);
+  return Number.isNaN(end.getTime()) ? null : end;
+}
+
+/** True when the planned end date and time has passed (suggest marking done). */
+export function isTourPastEndDate(group, nowMs = Date.now()) {
+  const end = getTourGroupEndAt(group);
+  return Boolean(end && end.getTime() < nowMs);
+}
+
+export function formatTourEndDateTime(group) {
+  const end = getTourGroupEndAt(group);
+  if (!end) return null;
+  const dateTime = new Intl.DateTimeFormat(undefined, {
+    dateStyle: "long",
+    timeStyle: group.end_time ? "short" : undefined,
+    timeZone: "Asia/Manila",
+  }).format(end);
+  return group.end_time ? `${dateTime} PHT` : `${dateTime} (end of day)`;
 }
 
 export function formatTourRoute(group) {
@@ -114,6 +131,7 @@ export const EMPTY_ROUTE_FORM = {
   trip_info: "",
   start_date: "",
   end_date: "",
+  end_time: "",
   meeting_location: "",
   estimated_travel_time: "",
   destination_notes: "",
@@ -128,6 +146,7 @@ export function groupToRouteForm(group) {
     trip_info: group.trip_info || "",
     start_date: group.start_date || "",
     end_date: group.end_date || "",
+    end_time: group.end_time?.slice(0, 5) || "",
     meeting_location: group.meeting_location || "",
     estimated_travel_time: group.estimated_travel_time || "",
     destination_notes: group.destination_notes || "",

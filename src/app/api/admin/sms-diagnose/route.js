@@ -1,15 +1,11 @@
 import { NextResponse } from "next/server";
 import { requireAdmin } from "@/lib/adminAuth";
 import { normalizePhilippinePhone } from "@/lib/phoneUtils";
-import {
-  detectIProgPhoneNetwork,
-  getSmsDiagnostics,
-  sendSms,
-} from "@/lib/smsService";
-import { formatIProgSmsErrorForAdmin } from "@/lib/iprogSmsErrors";
+import { getSmsDiagnostics, sendSms } from "@/lib/smsService";
+import { formatSemaphoreSmsErrorForAdmin } from "@/lib/semaphoreSmsErrors";
 import { API_RATE_LIMITS, enforceRateLimitByKey } from "@/lib/apiRateLimit";
 
-/** Diagnose a tourist (or any) PH mobile: network detect + optional test send */
+/** Validate a PH mobile number and optionally send an SMS using provider failover. */
 export async function POST(request) {
   const auth = await requireAdmin(request);
   if (auth.error) return auth.error;
@@ -37,7 +33,6 @@ export async function POST(request) {
     }
     phone = profile.phone;
     const normalized = normalizePhilippinePhone(phone);
-    const network = await detectIProgPhoneNetwork(phone);
     const diagnostics = getSmsDiagnostics();
 
     let sendResult = null;
@@ -58,16 +53,20 @@ export async function POST(request) {
         smsSuspended: Boolean(profile.sms_suspended_at),
         channels: profile.notification_channels,
       },
-      network,
+      network: sendResult?.detectedNetwork ? { network: sendResult.detectedNetwork } : null,
       diagnostics,
       send: sendResult
         ? {
             success: sendResult.success,
             messageId: sendResult.messageId,
+            provider: sendResult.provider,
+            fallbackFrom: sendResult.fallbackFrom,
+            apiAttempts: sendResult.apiAttempts,
             error: sendResult.error,
-            adminHint: formatIProgSmsErrorForAdmin(sendResult.error),
+            adminHint: formatSemaphoreSmsErrorForAdmin(sendResult.error),
             billed: sendResult.billed,
             detectedNetwork: sendResult.detectedNetwork,
+            deliveryStatus: sendResult.deliveryStatus,
           }
         : null,
     });
@@ -78,7 +77,6 @@ export async function POST(request) {
     return NextResponse.json({ error: "Invalid or missing phone (09XXXXXXXXX)" }, { status: 400 });
   }
 
-  const network = await detectIProgPhoneNetwork(normalized);
   let sendResult = null;
   if (doSend) {
     sendResult = await sendSms({
@@ -90,16 +88,20 @@ export async function POST(request) {
   return NextResponse.json({
     phoneRaw: phone,
     phoneNormalized: normalized,
-    network,
+    network: sendResult?.detectedNetwork ? { network: sendResult.detectedNetwork } : null,
     diagnostics: getSmsDiagnostics(),
     send: sendResult
       ? {
           success: sendResult.success,
           messageId: sendResult.messageId,
+          provider: sendResult.provider,
+          fallbackFrom: sendResult.fallbackFrom,
+          apiAttempts: sendResult.apiAttempts,
           error: sendResult.error,
-          adminHint: formatIProgSmsErrorForAdmin(sendResult.error),
+          adminHint: formatSemaphoreSmsErrorForAdmin(sendResult.error),
           billed: sendResult.billed,
           detectedNetwork: sendResult.detectedNetwork,
+          deliveryStatus: sendResult.deliveryStatus,
         }
       : null,
   });

@@ -1,4 +1,4 @@
-import { isIProgSenderNameError } from "@/lib/iprogSmsErrors";
+import { isSemaphoreSenderNameError } from "@/lib/semaphoreSmsErrors";
 import { summarizeSmsDeliveryResults } from "@/lib/smsDeliverySummary";
 
 function touristCountPhrase(n) {
@@ -43,7 +43,7 @@ function aggregateSmsPerRecipient(rows) {
     }
     if (row.status === "failed" || row.error) {
       const err = Array.isArray(row.error) ? row.error.join(" ") : row.error;
-      if (isIProgSenderNameError(err)) counts.failedSenderName += 1;
+      if (isSemaphoreSenderNameError(err)) counts.failedSenderName += 1;
       else counts.failedOther += 1;
       continue;
     }
@@ -79,7 +79,7 @@ function aggregateSmsSentences(counts) {
   const senderNameSms = touristPossessiveSms(counts.failedSenderName);
   if (senderNameSms) {
     lines.push(
-      `${senderNameSms} ${wereWas(counts.failedSenderName)} not sent — register an approved sender name in iProg (Smart/TNT).`
+      `${senderNameSms} ${wereWas(counts.failedSenderName)} not sent — check the sender name configured in Semaphore.`
     );
   }
 

@@ -9,7 +9,7 @@ Tourism crisis communication and emergency alerts for **Daet, Camarines Norte** 
 - **Incident reports** — Submit and track reports (registered users)
 - **Tourist Guide Assistance** — Registered tourists can request destination help; administrators select a guide, and guides accept or decline
 - **Command Center** — Create, broadcast, and resolve alerts (admin)
-- **Notifications** — In-app, email, SMS (iProg), and optional mobile/desktop Web Push
+- **Notifications** — In-app, email, SMS (Semaphore), and optional mobile/desktop Web Push
 - **Roles** — Tourist, guide, and admin access
 
 ## Tech stack
@@ -37,13 +37,19 @@ SUPABASE_SERVICE_ROLE_KEY=
 ```
 NOTIFICATION_INTERNAL_SECRET=
 CRON_SECRET=
+SMS_PRIMARY_PROVIDER=semaphore
+SEMAPHORE_API_KEY=
+SEMAPHORE_SENDER_NAME=
 IPROG_SMS_API_TOKEN=
+# IPROG_SMS_API_URL= (optional)
 SMTP_HOST= SMTP_PORT= SMTP_USER= SMTP_PASS= EMAIL_FROM=
 # or RESEND_API_KEY= and EMAIL_FROM=
 VAPID_PUBLIC_KEY=
 VAPID_PRIVATE_KEY=
 WEB_PUSH_SUBJECT=mailto:admin@example.com
 ```
+
+SMS tries the provider selected by `SMS_PRIMARY_PROVIDER` first (`semaphore` by default), then automatically falls back to the other provider if the request fails. Set both `SEMAPHORE_API_KEY` and `IPROG_SMS_API_TOKEN` to enable failover. Set `SMS_PRIMARY_PROVIDER=iprog` to make iProg primary and Semaphore the backup. A provider accepting a message means it has queued it; it does not guarantee delivery. If a provider queues a message but its response times out, the fallback may send a duplicate.
 
 Generate a VAPID key pair with `npx web-push generate-vapid-keys`. Keep `VAPID_PRIVATE_KEY` server-side; never expose it with a `NEXT_PUBLIC_` prefix. Push notifications require HTTPS (except localhost), browser permission, and the user's opt-in in Profile settings. Desktop banners follow browser and operating-system notification settings.
 
@@ -62,10 +68,13 @@ Tourist Guide Assistance uses migrations `035_tourist_guide_assistance_requests.
 Guide emergency reporting uses migration `037_guide_emergency_reports.sql`; apply it to enable direct emergency reporting from the Guide Dashboard and review in the Crisis Command Center.
 Web Push subscriptions and notification event de-duplication use migration `038_web_push_subscriptions.sql`; apply it before enabling push notifications. Apply `041_web_push_per_device_registration.sql` and `042_web_push_account_devices.sql` so each browser keeps its own subscription and one account can receive the same alert on every device that enabled push. In Vercel, set `VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY`, and `WEB_PUSH_SUBJECT` for Production, then redeploy. Use the same key pair already used by existing devices. Profile names any missing variable and does not show key values.
 
-Optional daily cron:
+Optional scheduled jobs:
 
 - `POST /api/cron/inactive-users` — header `x-cron-secret: <CRON_SECRET>` (SMS pause after 30 days inactive)
 - `GET /api/cron/expire-advisories` — header `Authorization: Bearer <CRON_SECRET>`
+- `POST /api/cron/tour-end-reminders` — header `x-cron-secret: <CRON_SECRET>`; schedule every 5 minutes for guide in-app/email reminders about 1 hour before and at the tour end time. Email follows each guide's notification preference.
+
+Tour end-time reminders require migration `044_tour_group_end_time_reminders.sql`. Schedule the endpoint with a cron provider; date-only tours receive the due reminder at the end of the selected date, while the 1-hour reminder requires an end time. Tour groups remain active until the guide manually marks them done.
 
 ### User roles
 

@@ -187,43 +187,48 @@ export default function CrisisAdminPage() {
   };
 
   const confirmAndBroadcast = async () => {
+    if (isPublishing) return;
     setIsPublishing(true);
 
-    const result = await addAlert(formData);
+    try {
+      const result = await addAlert(formData);
 
-    if (result.success) {
-      setToastMessage("Alert published. Tourist notifications are processing in the background.");
-      setShowToast(true);
-      setShowCreateModal(false);
-      setFormData(createEmptyAlertFormData());
-      setAuditLogExpanded(false);
-      void fetchAlerts();
+      if (result.success) {
+        setToastMessage("Alert published. Tourist notifications are processing in the background.");
+        setShowToast(true);
+        setShowCreateModal(false);
+        setFormData(createEmptyAlertFormData());
+        void fetchAlerts();
 
-      if (result.alert?.id) {
-        notifyTouristsOfCrisisAlert(result.alert.id)
-          .then((notifyResult) => {
-            setToastMessage(
-              notifyResult.success
-                ? formatBroadcastNotifyToast(notifyResult)
-                : `Alert published, but tourist notifications failed: ${notifyResult.error}`
-            );
-            setShowToast(true);
-          })
-          .catch((error) => {
-            setToastMessage(`Alert published, but tourist notifications failed: ${error.message}`);
-            setShowToast(true);
-          });
+        if (result.alert?.id) {
+          notifyTouristsOfCrisisAlert(result.alert.id)
+            .then((notifyResult) => {
+              setToastMessage(
+                notifyResult.success
+                  ? formatBroadcastNotifyToast(notifyResult)
+                  : `Alert published, but tourist notifications failed: ${notifyResult.error}`
+              );
+              setShowToast(true);
+            })
+            .catch((error) => {
+              setToastMessage(`Alert published, but tourist notifications failed: ${error.message}`);
+              setShowToast(true);
+            });
+        } else {
+          setToastMessage("Alert published, but tourist notification dispatch could not start.");
+          setShowToast(true);
+        }
       } else {
-        setToastMessage("Alert published, but tourist notification dispatch could not start.");
+        setToastMessage(`Error: ${result.error}`);
         setShowToast(true);
       }
-    } else {
-      setToastMessage(`Error: ${result.error}`);
+    } catch (error) {
+      setToastMessage(`Error: ${error?.message || "Failed to publish alert."}`);
       setShowToast(true);
+    } finally {
+      setIsPublishing(false);
+      setShowConfirmModal(false);
     }
-
-    setIsPublishing(false);
-    setShowConfirmModal(false);
   };
 
   const handleViewClick = (alert) => {

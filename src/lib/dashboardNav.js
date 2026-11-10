@@ -7,30 +7,30 @@ export const ADMIN_NAV = {
     { path: "/admin/settings", label: "Settings" },
   ],
   crisisOps: [
-    { path: "/crisis/command", label: "Command Center" },
-    { path: "/crisis/roads", label: "Roads & Hazards" },
-    { path: "/admin/incidents", label: "Incident Reports" },
-    { path: "/admin/guide-assistance", label: "Tourist Guide Assistance" },
-    { path: "/admin/crisis-feedback", label: "Crisis Feedback" },
+    { path: "/crisis/command", label: "Command Center", countKey: "commandCenter", countDescription: "unread crisis and emergency notifications" },
+    { path: "/crisis/roads", label: "Roads & Hazards", countKey: "roadsHazards", countDescription: "unread road and hazard notifications" },
+    { path: "/admin/incidents", label: "Incident Reports", countKey: "incidentReports", countDescription: "unread incident notifications" },
+    { path: "/admin/guide-assistance", label: "Tourist Guide Assistance", countKey: "guideAssistance", countDescription: "unread guide-assistance notifications" },
+    { path: "/admin/crisis-feedback", label: "Crisis Feedback", countKey: "crisisFeedback", countDescription: "unread crisis-feedback notifications" },
     { path: "/admin/archive", label: "Archive & History" },
   ],
 };
 
 export const GUIDE_NAV = {
   work: [
-    { path: "/guide", label: "Home" },
+    { path: "/guide", label: "Dashboard" },
     { path: "/guide/groups", label: "Tour groups" },
-    { path: "/guide/assistance", label: "Assistance" },
-    { path: "/guide/tourists", label: "Active tourists" },
+    { path: "/guide/tourists", label: "Tourists & invitations" },
+    { path: "/guide/assistance", label: "Assistance requests" },
   ],
   records: [
     { path: "/guide/completed", label: "Completed tours" },
     { path: "/guide/history", label: "History" },
-    { path: "/guide/reports", label: "Group reports" },
+    { path: "/guide/reports", label: "My reports" },
   ],
   alerts: [
-    { path: "/guide/crisis", label: "Crisis Hub" },
-    { path: "/guide/routes", label: "Roads & Travel" },
+    { path: "/guide/crisis", label: "Crisis alerts" },
+    { path: "/guide/routes", label: "Road & travel advisories" },
   ],
 };
 

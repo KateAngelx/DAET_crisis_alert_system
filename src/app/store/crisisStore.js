@@ -259,6 +259,9 @@ export const useCrisisStore = create((set, get) => ({
   },
 
   addAlert: async (alertData) => {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 30000);
+
     try {
       const insertPayload = {
         title: alertData.title,
@@ -280,21 +283,34 @@ export const useCrisisStore = create((set, get) => ({
       let { data, error } = await supabase
         .from('crisis_alerts')
         .insert([insertPayload])
-        .select();
+        .select()
+        .abortSignal(controller.signal);
 
-      if (error && insertPayload.latitude != null) {
+      const missingCoordinateColumn =
+        error?.code === 'PGRST204' || error?.code === '42703';
+      const coordinateColumnError =
+        missingCoordinateColumn &&
+        /latitude|longitude/i.test(error.message || '');
+
+      if (coordinateColumnError && insertPayload.latitude != null) {
         const { latitude, longitude, ...fallbackPayload } = insertPayload;
         ({ data, error } = await supabase
           .from('crisis_alerts')
           .insert([fallbackPayload])
-          .select());
+          .select()
+          .abortSignal(controller.signal));
       }
 
       if (error) throw error;
       return { success: true, alert: normalizeAlert(data?.[0]) };
     } catch (error) {
-      console.error("Supabase Add Error:", error.message);
-      return { success: false, error: error.message };
+      const message = controller.signal.aborted
+        ? 'Alert publishing timed out. Check the alert list before retrying to avoid a duplicate.'
+        : error?.message || 'Failed to publish alert.';
+      console.error("Supabase Add Error:", message);
+      return { success: false, error: message };
+    } finally {
+      clearTimeout(timeoutId);
     }
   },
 

@@ -2,9 +2,9 @@ import { create } from 'zustand';
 import { supabase } from '@/lib/supabaseClient';
 import {
   dispatchNotification,
-  notifyAdminsOfIncident,
   notifyUserOfStatusChange,
 } from '@/lib/notificationService';
+import { fetchWithFreshSession } from '@/lib/authSession';
 import { severityToPriority } from '@/lib/constants';
 import { INCIDENT_QUEUE_EXCLUDED_STATUSES } from '@/lib/incidentAuditUtils';
 import {
@@ -141,34 +141,27 @@ export const useIncidentStore = create((set, get) => ({
       }
 
       const enrichedIncident = { ...incident, reference_number: referenceNumber };
-      set({ submitting: false });
 
-      void (async () => {
-        try {
-          const { data: admins } = await supabase
-            .from('profiles')
-            .select('id, email, phone')
-            .eq('user_type', 'admin');
-          if (admins?.length) {
-            await notifyAdminsOfIncident(enrichedIncident, admins);
-          }
-
-          await dispatchNotification({
-            userId: reportData.reporterId,
-            title: 'Incident Report Submitted',
-            message: `Your report ${referenceNumber} has been submitted successfully. We will review it shortly.`,
-            notificationType: 'incident_submitted',
-            priority: severityToPriority(reportData.severity),
-            relatedType: 'incident',
-            relatedId: incident.id,
-            channels: ['web'],
-          });
-        } catch {
-          // Submission already succeeded; notification failures are retried via delivery queue or manual review.
+      let notificationWarnings = [];
+      try {
+        const response = await fetchWithFreshSession('/api/incidents/notify-submission', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ incidentId: incident.id }),
+        });
+        const notificationResult = await response.json();
+        if (!response.ok) {
+          notificationWarnings = [notificationResult.error || 'Incident notifications could not be sent.'];
+        } else {
+          notificationWarnings = notificationResult.notificationWarnings || [];
         }
-      })();
+      } catch (notificationError) {
+        console.error('[IncidentStore] Report saved but notifications failed:', notificationError);
+        notificationWarnings = ['Report submitted, but notifications could not be sent.'];
+      }
 
-      return { success: true, incident: enrichedIncident };
+      set({ submitting: false });
+      return { success: true, incident: enrichedIncident, notificationWarnings };
     } catch (err) {
       set({ submitting: false, error: err.message });
       const message = err?.message || 'We could not process your request right now. Please try again.';

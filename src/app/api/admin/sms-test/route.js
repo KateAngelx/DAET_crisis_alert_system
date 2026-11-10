@@ -1,13 +1,7 @@
 import { NextResponse } from "next/server";
 import { requireAdmin } from "@/lib/adminAuth";
-import { formatIProgSmsErrorForAdmin } from "@/lib/iprogSmsErrors";
-import {
-  detectIProgPhoneNetwork,
-  fetchIProgMessageStatus,
-  getSmsDiagnostics,
-  normalizePhilippinePhone,
-  sendSms,
-} from "@/lib/smsService";
+import { formatSemaphoreSmsErrorForAdmin } from "@/lib/semaphoreSmsErrors";
+import { getSmsDiagnostics, normalizePhilippinePhone, sendSms } from "@/lib/smsService";
 import { API_RATE_LIMITS, enforceRateLimitByKey } from "@/lib/apiRateLimit";
 
 export async function POST(request) {
@@ -36,7 +30,7 @@ export async function POST(request) {
       {
         success: false,
         step: "config",
-        error: "IPROG_SMS_API_TOKEN is not set on the server. Add it in Vercel env vars and redeploy.",
+        error: "No SMS provider is configured. Set SEMAPHORE_API_KEY or IPROG_SMS_API_TOKEN in the server environment and redeploy.",
         diagnostics,
         profilePhone: phone ? "set" : "missing",
         normalizedPhone: normalized,
@@ -58,51 +52,45 @@ export async function POST(request) {
     );
   }
 
-  const network = await detectIProgPhoneNetwork(normalized);
-
   const result = await sendSms({
     to: normalized,
     message:
       body.message ||
-      "CONNECT-DAET test SMS. If you received this, iProg SMS is working.",
+    "CONNECT-DAET test SMS. If you received this, an SMS provider is working.",
   });
 
   if (!result.success) {
-    const adminHint = formatIProgSmsErrorForAdmin(result.error);
+    const adminHint = formatSemaphoreSmsErrorForAdmin(result.error);
     return NextResponse.json(
       {
         success: false,
-        step: "iprog",
+        step: "sms",
         error: result.error,
         adminHint,
         errorCode: result.errorCode,
+        apiAttempts: result.apiAttempts,
         billed: Boolean(result.billed),
         diagnostics,
         normalizedPhone: normalized,
-        detectedNetwork: network.network || result.detectedNetwork || null,
+        detectedNetwork: result.detectedNetwork || null,
         skipped: Boolean(result.skipped),
       },
       { status: 502 }
     );
   }
 
-  let deliveryStatus = null;
-  if (result.messageId) {
-    deliveryStatus = await fetchIProgMessageStatus(result.messageId);
-  }
-
   return NextResponse.json({
     success: true,
     messageId: result.messageId,
     provider: result.provider,
+    fallbackFrom: result.fallbackFrom || null,
     mode: result.mode,
     apiMessage: result.apiMessage,
     normalizedPhone: normalized,
-    detectedNetwork: network.network || result.detectedNetwork || null,
+    detectedNetwork: result.detectedNetwork || null,
     apiPhone: normalized ? `63${normalized.slice(1)}` : null,
-    deliveryStatus: deliveryStatus?.messageStatus || null,
+    deliveryStatus: result.deliveryStatus || null,
     diagnostics,
-    note:
-      "iProg charges credits when a message is queued (message_id returned). Delivery to the handset can still fail — check deliveryStatus or the iProg dashboard.",
+    note: `${result.provider} accepted the message. Check its status in that provider's dashboard; queued messages may still fail during delivery.`,
   });
 }

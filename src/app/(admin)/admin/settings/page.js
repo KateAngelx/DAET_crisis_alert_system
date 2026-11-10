@@ -308,12 +308,12 @@ export default function AdminSettingsPage() {
       if (data.send?.success) {
         setMessage({
           type: "success",
-          text: `SMS accepted for ${data.phoneNormalized}. Network: ${data.network?.network || data.send.detectedNetwork || "—"}. ID: ${data.send.messageId || "—"}`,
+          text: `SMS accepted for ${data.phoneNormalized}${data.send.detectedNetwork ? ` (${data.send.detectedNetwork})` : ""}. ID: ${data.send.messageId || "—"}`,
         });
       } else if (data.send) {
         setMessage({
           type: "error",
-          text: data.send.adminHint || data.send.error || "SMS not accepted by iProg.",
+          text: data.send.adminHint || data.send.error || "SMS not accepted by Semaphore.",
         });
       }
     } catch (err) {
@@ -334,7 +334,7 @@ export default function AdminSettingsPage() {
       }
       setMessage({
         type: "success",
-        text: `SMS accepted by iProg for ${data.normalizedPhone}${data.messageId ? ` (${data.messageId})` : ""}.${data.deliveryStatus ? ` Status: ${data.deliveryStatus}.` : ""} ${data.note || ""}`,
+        text: `SMS accepted by Semaphore for ${data.normalizedPhone}${data.messageId ? ` (${data.messageId})` : ""}.${data.deliveryStatus ? ` Status: ${data.deliveryStatus}.` : ""} ${data.note || ""}`,
       });
     } catch (err) {
       setMessage({ type: "error", text: err.message });
@@ -942,7 +942,7 @@ export default function AdminSettingsPage() {
           </div>
         <div className="mb-4 p-4 rounded-2xl border border-zinc-100 bg-zinc-50/80 space-y-3">
           <p className="text-[10px] font-black uppercase tracking-widest text-zinc-500">
-            Diagnose tourist number (iProg network detect + test send)
+            Validate a tourist number and send a Semaphore test SMS
           </p>
           <input
             className={`${adminShell.input} w-full`}
@@ -961,8 +961,7 @@ export default function AdminSettingsPage() {
           </button>
           {diagResult?.network?.network ? (
             <p className="text-xs text-zinc-600 font-medium">
-              iProg sees this number as: <strong>{diagResult.network.network}</strong>
-              {diagResult.network.isSmartTnt ? " (Smart/TNT — shared sender blocked until you register a sender name)" : null}
+              Semaphore reports this network: <strong>{diagResult.network.network}</strong>
             </p>
           ) : null}
         </div>
@@ -992,17 +991,17 @@ export default function AdminSettingsPage() {
         <ul className="text-sm text-zinc-600 font-medium space-y-2 list-disc pl-5">
           <li>Crisis Command Center alert channels (email/SMS/app) control <em>how</em> an alert is sent; this page controls <em>who</em> receives it.</li>
           <li>
-            SMS uses iProg (<code className="text-xs bg-white px-1 rounded">IPROG_SMS_API_TOKEN</code>) on the 5-credit route.
-            Smart/TNT numbers require an{" "}
+            SMS tries the configured primary provider and falls back to the other provider if sending fails. Configure <code className="text-xs bg-white px-1 rounded">SMS_PRIMARY_PROVIDER</code>, <code className="text-xs bg-white px-1 rounded">SEMAPHORE_API_KEY</code>, and <code className="text-xs bg-white px-1 rounded">IPROG_SMS_API_TOKEN</code>.
+            An optional Semaphore sender name can be set with <code className="text-xs bg-white px-1 rounded">SEMAPHORE_SENDER_NAME</code>. Manage sender names in your{" "}
             <a
-              href="https://www.iprogsms.com/sender-names/new"
+              href="https://semaphore.co/account"
               className="text-blue-600 font-bold hover:underline"
               target="_blank"
               rel="noopener noreferrer"
             >
-              approved sender name
+              Semaphore account
             </a>
-            ; until then iProg rejects the send and credits are not deducted.
+            ; if omitted, Semaphore uses the account&apos;s default sender name.
           </li>
           <li>Email delivery: use your <strong>office inbox</strong> via SMTP, or your <strong>own domain</strong> via Resend. Recipients are always each user&apos;s registered profile email.</li>
           <li>SMTP (own Gmail/Workspace/Outlook): <code className="text-xs bg-white px-1 rounded">SMTP_HOST</code>, <code className="text-xs bg-white px-1 rounded">SMTP_USER</code>, <code className="text-xs bg-white px-1 rounded">SMTP_PASS</code>, <code className="text-xs bg-white px-1 rounded">EMAIL_FROM</code></li>

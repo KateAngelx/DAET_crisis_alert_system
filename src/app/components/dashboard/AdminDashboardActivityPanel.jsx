@@ -21,7 +21,7 @@ function formatRelativeTime(date) {
   return d.toLocaleDateString(undefined, { month: "short", day: "numeric" });
 }
 
-function PanelHeader({ icon: Icon, title, href, hrefLabel, count }) {
+function PanelHeader({ icon: Icon, title, href, hrefLabel, count, activeCount, activeLabel }) {
   return (
     <div className="flex items-center justify-between gap-2 mb-3 pb-3 border-b border-zinc-100">
       <div className="flex items-center gap-2 min-w-0">
@@ -32,6 +32,14 @@ function PanelHeader({ icon: Icon, title, href, hrefLabel, count }) {
             {count}
           </span>
         )}
+        {activeCount > 0 ? (
+          <span
+            className="inline-flex shrink-0 items-center gap-1 rounded-full bg-red-100 px-2 py-0.5 text-[9px] font-black uppercase tracking-wide text-red-700"
+            aria-label={`${activeCount} ${activeLabel}`}
+          >
+            <span className="tabular-nums">{activeCount}</span> {activeLabel}
+          </span>
+        ) : null}
       </div>
       {href && hrefLabel ? (
         <Link
@@ -57,6 +65,8 @@ export function AdminDashboardActivityPanel({
   affectedAreas = [],
   recentAlerts = [],
   recentIncidents = [],
+  activeAlertCount = 0,
+  openIncidentCount = 0,
 }) {
   useEffect(() => {
   }, [affectedAreas.length, recentAlerts.length, recentIncidents.length]);
@@ -101,6 +111,8 @@ export function AdminDashboardActivityPanel({
             icon={Radio}
             title="Recent alerts"
             count={recentAlerts.length}
+            activeCount={activeAlertCount}
+            activeLabel="active"
             href="/crisis/command"
             hrefLabel="Command"
           />
@@ -160,6 +172,8 @@ export function AdminDashboardActivityPanel({
             icon={FileWarning}
             title="Incident reports"
             count={recentIncidents.length}
+            activeCount={openIncidentCount}
+            activeLabel="open"
             href="/admin/incidents"
             hrefLabel="View all"
           />

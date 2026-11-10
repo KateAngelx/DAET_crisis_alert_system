@@ -22,7 +22,7 @@ export function formatSmsPerRecipientSummary(rows = []) {
       return `${who}${phone}: SMS sent (${r.network || r.detectedNetwork || "network"})`;
     }
     if (r.status === "failed" || r.error) {
-      return `${who}${phone}: SMS failed — iProg sees ${r.detectedNetwork || r.network || "?"} (fix phone or register sender name)`;
+      return `${who}${phone}: SMS failed — ${r.error || "check the phone number and Semaphore account settings"}`;
     }
     return `${who}${phone}: SMS pending`;
   });

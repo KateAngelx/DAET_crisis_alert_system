@@ -14,7 +14,7 @@ export function normalizePhilippinePhone(raw) {
   return null;
 }
 
-export function formatPhoneForIProgApi(raw) {
+export function formatPhoneForSemaphoreApi(raw) {
   const local = normalizePhilippinePhone(raw);
   if (!local) return null;
   return `63${local.slice(1)}`;

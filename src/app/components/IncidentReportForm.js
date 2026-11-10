@@ -53,7 +53,7 @@ export function IncidentReportForm({
     if (result.success) {
       setForm({ ...INITIAL_FORM, category: categoryOverride || INITIAL_FORM.category });
       setFiles([]);
-      onSuccess?.(result.incident);
+      onSuccess?.(result.incident, result.notificationWarnings || []);
     } else {
       setError(result.error);
     }

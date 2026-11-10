@@ -39,7 +39,7 @@ export function GuideEmergencyReporting() {
     setForm((current) => ({ ...current, ...patch }));
   };
 
-  const useDeviceLocation = () => {
+  const requestDeviceLocation = () => {
     if (!navigator.geolocation) {
       setError("Device location is not available in this browser. Enter the location manually.");
       return;
@@ -52,19 +52,30 @@ export function GuideEmergencyReporting() {
         const longitude = Number(coords.longitude.toFixed(6));
         setForm((current) => ({
           ...current,
-          location: `Device location (${latitude}, ${longitude})`,
+          location: `GPS location (${latitude}, ${longitude})`,
           latitude,
           longitude,
         }));
         idempotencyKey.current = null;
         setLocating(false);
       },
-      () => {
-        setError("Could not access device location. Allow location permission or enter the location manually.");
+      (locationError) => {
+        const message = locationError.code === 1
+          ? "Location permission was denied. Allow it in your browser settings or enter the location manually."
+          : locationError.code === 3
+            ? "Getting your location timed out. Try GPS again or enter the location manually."
+            : "Could not determine your location. Try GPS again or enter the location manually.";
+        setError(message);
         setLocating(false);
       },
-      { enableHighAccuracy: true, timeout: 10000, maximumAge: 30000 }
+      { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 }
     );
+  };
+
+  const openEmergencyForm = () => {
+    setError("");
+    setOpen(true);
+    requestDeviceLocation();
   };
 
   const submit = async (event) => {
@@ -132,7 +143,7 @@ export function GuideEmergencyReporting() {
         </div>
         <button
           type="button"
-          onClick={() => { setError(""); setOpen(true); }}
+          onClick={openEmergencyForm}
           className="mt-4 inline-flex w-full items-center justify-center gap-2 rounded-xl bg-red-700 px-5 py-3 text-sm font-black uppercase tracking-wide text-white shadow hover:bg-red-800 focus:outline-none focus:ring-4 focus:ring-red-300 sm:mt-0 sm:w-auto"
         >
           <AlertTriangle size={17} /> Emergency Report
@@ -185,14 +196,16 @@ export function GuideEmergencyReporting() {
                     maxLength={500}
                     value={form.location}
                     onChange={(event) => updateForm({ location: event.target.value, latitude: null, longitude: null })}
-                    placeholder="Enter a location or use device location"
+                    placeholder="GPS location will be filled automatically, or enter manually"
                     className="min-w-0 flex-1 rounded-xl border border-zinc-200 p-3 text-sm"
                   />
-                  <button type="button" onClick={useDeviceLocation} disabled={locating} className="inline-flex shrink-0 items-center gap-1 rounded-xl border border-zinc-200 px-3 text-xs font-bold text-zinc-700 disabled:opacity-50">
-                    <MapPin size={15} /> {locating ? "Locating…" : "Use GPS"}
+                  <button type="button" onClick={requestDeviceLocation} disabled={locating} className="inline-flex shrink-0 items-center gap-1 rounded-xl border border-zinc-200 px-3 text-xs font-bold text-zinc-700 disabled:opacity-50">
+                    <MapPin size={15} /> {locating ? "Locating…" : "Refresh GPS"}
                   </button>
                 </div>
-                <p className="mt-1 text-[11px] text-zinc-500">Device location is used only after you grant browser permission.</p>
+                <p className="mt-1 text-[11px] text-zinc-500">
+                  GPS is requested when you open this form and included only with this report. If permission is denied, enter the location manually.
+                </p>
               </div>
 
               <label className="block text-sm font-bold text-zinc-800">

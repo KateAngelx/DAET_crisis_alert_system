@@ -15,21 +15,21 @@ import { InstalledBottomNav } from "@/app/components/shell/InstalledBottomNav";
 import { useInstalledApp } from "@/lib/useInstalledApp";
 
 const ICONS = {
-  Home: LayoutDashboard,
+  Dashboard: LayoutDashboard,
   "Tour groups": Compass,
   "Completed tours": CheckCircle,
-  Assistance: Compass,
+  "Assistance requests": Compass,
   History: History,
-  "Active tourists": Users,
-  "Crisis Hub": ShieldCheck,
-  "Roads & Travel": Map,
-  "Group reports": FileText,
+  "Tourists & invitations": Users,
+  "Crisis alerts": ShieldCheck,
+  "Road & travel advisories": Map,
+  "My reports": FileText,
 };
 
 const GUIDE_SECTIONS = [
-  ["Work", GUIDE_NAV.work],
-  ["Records", GUIDE_NAV.records],
-  ["Alerts", GUIDE_NAV.alerts],
+  ["Tour Operations", GUIDE_NAV.work],
+  ["Records & Reports", GUIDE_NAV.records],
+  ["Safety", GUIDE_NAV.alerts],
 ];
 
 const PHONE_BROWSER_PRIMARY = [...GUIDE_NAV.work, GUIDE_NAV.alerts[0]];
@@ -66,7 +66,7 @@ function NavLink({ item, pathname }) {
       }`}
     >
       <Icon size={iconSize.nav} />
-      <span className="font-bold text-sm">{item.label}</span>
+      <span className="min-w-0 flex-1 truncate font-bold text-sm">{item.label}</span>
     </Link>
   );
 }

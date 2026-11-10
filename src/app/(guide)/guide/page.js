@@ -3,7 +3,7 @@
 import React, { useEffect, useState } from "react";
 import Link from "next/link";
 import {
-  Users, FileText, Plus, Compass, ShieldCheck,
+  Users, Plus, Compass, ShieldCheck,
 } from "lucide-react";
 import { GuidePageHeader } from "@/app/components/guide/GuidePageHeader";
 import { GuidePanel } from "@/app/components/guide/GuidePanel";
@@ -11,7 +11,6 @@ import { guideShell, iconSize, statGrid, portalLayout } from "@/lib/designSystem
 import { DashboardStatCard } from "@/app/components/dashboard/DashboardStatCard";
 import { DestinationModal } from "@/app/components/tour/DestinationModal";
 import { TourGroupCard } from "@/app/components/tour/TourGroupCard";
-import { ListPager } from "@/app/components/shell/ListPager";
 import { StatCardSkeletonGrid } from "@/app/components/ui/Skeletons";
 import { useAuthStore, useCrisisStore } from "@/app/store/crisisStore";
 import { useGuideStore } from "@/app/store/guideStore";
@@ -19,13 +18,13 @@ import { useRouteAdvisoryStore } from "@/app/store/routeAdvisoryStore";
 import { ROLE_INTERFACE } from "@/lib/roleInterfaceCopy";
 import { GuideEmergencyReporting } from "@/app/components/guide/GuideEmergencyReporting";
 import { getActiveSession } from "@/lib/authSession";
+import { isTourPastEndDate } from "@/lib/tourGroupRoute";
 
 export default function GuideDashboard() {
   const { user } = useAuthStore();
   const { alerts, fetchAlerts, loading: alertsLoading } = useCrisisStore();
   const { advisories, fetchAdvisories } = useRouteAdvisoryStore();
   const [waitingAssistance, setWaitingAssistance] = useState(0);
-  const [groupPage, setGroupPage] = useState(1);
   const {
     tourGroups,
     guideIncidents,
@@ -80,12 +79,42 @@ export default function GuideDashboard() {
   const openIncidents = guideIncidents.filter(
     (i) => !["Resolved", "Closed", "Rejected"].includes(i.status)
   );
+  const overdueGroups = activeGroups.filter(isTourPastEndDate);
   const totalTourists = activeGroups.reduce((sum, g) => sum + (g.member_count || 0), 0);
 
-  const groupPageSize = 5;
-  const groupPageCount = Math.max(1, Math.ceil(activeGroups.length / groupPageSize));
-  const safeGroupPage = Math.min(groupPage, groupPageCount);
-  const visibleGroups = activeGroups.slice((safeGroupPage - 1) * groupPageSize, safeGroupPage * groupPageSize);
+  const visibleGroups = activeGroups.slice(0, 3);
+  const attentionItems = [
+    ...(waitingAssistance > 0
+      ? [{
+          id: "assistance",
+          href: "/guide/assistance",
+          title: `${waitingAssistance} assistance request${waitingAssistance === 1 ? "" : "s"}`,
+          description: "Waiting for your response",
+        }]
+      : []),
+    ...(criticalAlerts.length > 0
+      ? [{
+          id: "critical-alerts",
+          href: "/guide/crisis",
+          title: `${criticalAlerts.length} critical alert${criticalAlerts.length === 1 ? "" : "s"}`,
+          description: "Review current safety information",
+        }]
+      : []),
+    ...(openIncidents.length > 0
+      ? [{
+          id: "reports",
+          href: "/guide/reports",
+          title: `${openIncidents.length} open report${openIncidents.length === 1 ? "" : "s"}`,
+          description: "Follow up on reports",
+        }]
+      : []),
+    ...overdueGroups.map((group) => ({
+      id: group.id,
+      href: `/guide/groups/${group.id}`,
+      title: group.name,
+      description: "End date reached — review and mark done when safe",
+    })),
+  ];
 
   const openDestination = async (group) => {
     setModalGroup(group);
@@ -106,35 +135,50 @@ export default function GuideDashboard() {
 
       <GuideEmergencyReporting />
 
+      {attentionItems.length > 0 ? (
+        <section
+          aria-labelledby="guide-needs-attention"
+          className="overflow-hidden rounded-2xl border border-amber-200 bg-white"
+        >
+          <h2 id="guide-needs-attention" className="bg-amber-50 px-4 py-3 text-[10px] font-black uppercase tracking-widest text-amber-800 sm:px-5">
+            Needs your attention <span className="ml-1 text-amber-600">({attentionItems.length})</span>
+          </h2>
+          <ul className="divide-y divide-zinc-100">
+            {attentionItems.map((item) => (
+              <li key={item.id}>
+                <Link
+                  href={item.href}
+                  className="flex items-center justify-between gap-3 px-4 py-3 transition-colors hover:bg-amber-50/50 sm:px-5"
+                >
+                  <span className="min-w-0">
+                    <span className="block truncate text-sm font-bold text-zinc-900">{item.title}</span>
+                    <span className="mt-0.5 block text-xs font-medium text-zinc-500">{item.description}</span>
+                  </span>
+                  <span aria-hidden="true" className="shrink-0 text-[10px] font-black uppercase tracking-widest text-amber-700">
+                    Review
+                  </span>
+              </Link>
+              </li>
+            ))}
+          </ul>
+        </section>
+      ) : null}
+
       {statsLoading ? (
-        <StatCardSkeletonGrid count={4} className={statGrid.dashboard} />
+        <StatCardSkeletonGrid count={3} className={statGrid.dashboardThree} />
       ) : (
-        <div className={statGrid.dashboard}>
+        <div className={statGrid.dashboardThree}>
           <DashboardStatCard compact label="Active Groups" value={activeGroups.length} icon={<Compass size={iconSize.stat} />} accent="purple" href="/guide/groups" hrefLabel="Manage" />
           <DashboardStatCard compact label="Active Tourists" value={totalTourists} icon={<Users size={iconSize.stat} />} accent="blue" href="/guide/tourists" hrefLabel="Manage" />
           <DashboardStatCard compact label="Completed Tours" value={completedGroups.length} icon={<ShieldCheck size={iconSize.stat} />} accent="green" href="/guide/completed" hrefLabel="View" />
-          <DashboardStatCard compact label="Open Reports" value={openIncidents.length} icon={<FileText size={iconSize.stat} />} accent="orange" href="/guide/reports" hrefLabel="View" />
         </div>
       )}
 
-      {waitingAssistance > 0 || criticalAlerts.length > 0 ? (
-        <div className="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm font-medium text-amber-950">
-          <p className="text-[10px] font-black uppercase tracking-widest text-amber-700">Needs you</p>
-          {waitingAssistance > 0 ? (
-            <Link href="/guide/assistance" className="mt-1 block text-amber-950 hover:underline">
-              {waitingAssistance} assistance request{waitingAssistance === 1 ? "" : "s"} waiting.
-            </Link>
-          ) : null}
-          {criticalAlerts.length > 0 ? (
-            <Link href="/guide/crisis" className="mt-1 block text-amber-950 hover:underline">
-              {criticalAlerts.length} critical alert{criticalAlerts.length === 1 ? "" : "s"}.
-            </Link>
-          ) : null}
-        </div>
-      ) : null}
-
       <GuidePanel
         title="Active tour groups"
+        badgeCount={activeGroups.length}
+        badgeLabel="active"
+        badgeTone="green"
         bodyClassName={portalLayout.panelBodyStack}
         action={
           <Link href="/guide/groups" className="text-[10px] font-black uppercase tracking-widest text-blue-600 hover:underline">
@@ -144,7 +188,7 @@ export default function GuideDashboard() {
       >
         {activeGroups.length > 0 ? (
           <>
-            <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+            <div className="overflow-hidden rounded-xl border border-zinc-200 bg-white divide-y divide-zinc-100">
               {visibleGroups.map((group) => (
                 <TourGroupCard
                   key={group.id}
@@ -156,7 +200,11 @@ export default function GuideDashboard() {
                 />
               ))}
             </div>
-            <ListPager page={safeGroupPage} pageCount={groupPageCount} onPage={setGroupPage} />
+            {activeGroups.length > visibleGroups.length ? (
+              <p className="text-center text-xs font-medium text-zinc-500">
+                Showing {visibleGroups.length} of {activeGroups.length} active groups
+              </p>
+            ) : null}
           </>
         ) : (
           <div className="py-10 text-center rounded-xl border border-dashed border-zinc-200 bg-zinc-50/50">

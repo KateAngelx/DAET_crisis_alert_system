@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import { supabase } from '@/lib/supabaseClient';
 import { getActiveSession } from '@/lib/authSession';
+import { isUserOnline } from '@/lib/userActivity';
 import { notifyGuideAssignment, notifyTouristGuideAssigned, notifyTouristAssignmentRequest, notifyGuideAssignmentAccepted, notifyGuideAssignmentDeclined } from '@/lib/notificationService';
 
 async function respondToAssignmentViaApi(assignmentId, action) {
@@ -202,6 +203,7 @@ export const useGuideStore = create((set, get) => ({
     trip_info,
     start_date,
     end_date,
+    end_time,
     meeting_location,
     estimated_travel_time,
     destination_notes,
@@ -217,6 +219,7 @@ export const useGuideStore = create((set, get) => ({
           trip_info: trip_info || null,
           start_date: start_date || null,
           end_date: end_date || null,
+          end_time: end_date ? (end_time || null) : null,
           meeting_location: meeting_location || null,
           estimated_travel_time: estimated_travel_time || null,
           destination_notes: destination_notes || null,
@@ -245,6 +248,7 @@ export const useGuideStore = create((set, get) => ({
           trip_info: updates.trip_info || null,
           start_date: updates.start_date || null,
           end_date: updates.end_date || null,
+          end_time: updates.end_date ? (updates.end_time || null) : null,
           meeting_location: updates.meeting_location || null,
           estimated_travel_time: updates.estimated_travel_time || null,
           destination_notes: updates.destination_notes || null,
@@ -319,7 +323,7 @@ export const useGuideStore = create((set, get) => ({
   searchTourists: async (query) => {
     let dbQuery = supabase
       .from('profiles')
-      .select('id, full_name, phone, email, nationality')
+      .select('id, full_name, phone, email, nationality, last_seen_at')
       .eq('user_type', 'tourist')
       .order('full_name')
       .limit(25);
@@ -351,7 +355,7 @@ export const useGuideStore = create((set, get) => ({
       if (userIds.length > 0) {
         const { data } = await supabase
           .from('profiles')
-          .select('id, full_name, phone, email, nationality')
+          .select('id, full_name, phone, email, nationality, last_seen_at')
           .in('id', userIds)
           .eq('user_type', 'tourist')
           .order('full_name');
@@ -398,6 +402,18 @@ export const useGuideStore = create((set, get) => ({
       const group = await get().fetchTourGroupById(tourGroupId, guideId);
       if (!group) {
         return { success: false, error: 'Tour group not found or access denied.' };
+      }
+
+      const { data: tourist, error: touristError } = await supabase
+        .from('profiles')
+        .select('id, last_seen_at')
+        .eq('id', touristId)
+        .eq('user_type', 'tourist')
+        .maybeSingle();
+
+      if (touristError) throw touristError;
+      if (!tourist || !isUserOnline(tourist)) {
+        return { success: false, error: 'This tourist is offline and unavailable for invitations.' };
       }
 
       const { data: activeElsewhere } = await supabase
@@ -462,7 +478,7 @@ export const useGuideStore = create((set, get) => ({
         guide:profiles!guide_assignments_guide_id_fkey(id, full_name, phone, email),
         tour_group:tour_groups(
           id, name, destination, starting_location, trip_info, status,
-          start_date, end_date, meeting_location, estimated_travel_time, destination_notes
+          start_date, end_date, end_time, meeting_location, estimated_travel_time, destination_notes
         )
       `)
       .eq('tourist_id', touristId)
@@ -487,7 +503,7 @@ export const useGuideStore = create((set, get) => ({
           .from('tour_groups')
           .select(`
             id, name, destination, starting_location, trip_info, status,
-            start_date, end_date, meeting_location, estimated_travel_time, destination_notes
+            start_date, end_date, end_time, meeting_location, estimated_travel_time, destination_notes
           `)
           .eq('id', assignment.tour_group_id)
           .maybeSingle();
@@ -589,7 +605,7 @@ export const useGuideStore = create((set, get) => ({
         guide:profiles!guide_assignments_guide_id_fkey(id, full_name, phone, email),
         tour_group:tour_groups(
           id, name, destination, starting_location, trip_info, status,
-          start_date, end_date, meeting_location, estimated_travel_time, destination_notes
+          start_date, end_date, end_time, meeting_location, estimated_travel_time, destination_notes
         )
       `)
       .eq('tourist_id', touristId)

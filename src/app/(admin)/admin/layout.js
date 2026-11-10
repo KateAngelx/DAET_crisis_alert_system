@@ -3,20 +3,23 @@ import { AdminHeader } from "@/app/components/AdminHeader";
 import { AdminPageShell } from "@/app/components/admin/AdminPageShell";
 import { AuthGuard } from "@/app/components/AuthGuard";
 import { adminShell } from "@/lib/designSystem";
+import { DashboardNavCountsProvider } from "@/app/components/dashboard/DashboardNavCountsProvider";
 
 export default function AdminLayout({ children }) {
   return (
     // This entirely protects the /admin route and all its sub-pages
     <AuthGuard requiredRole="admin">
-      <div className="flex h-screen bg-zinc-50 overflow-hidden dashboard-shell scrollbar-none">
-        <AdminSidebar />
-        <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
-          <AdminHeader />
-          <main className={`${adminShell.main} installed-app-main scrollbar-none`}>
-            <AdminPageShell>{children}</AdminPageShell>
-          </main>
+      <DashboardNavCountsProvider>
+        <div className="flex h-screen bg-zinc-50 overflow-hidden dashboard-shell scrollbar-none">
+          <AdminSidebar />
+          <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
+            <AdminHeader />
+            <main className={`${adminShell.main} installed-app-main scrollbar-none`}>
+              <AdminPageShell>{children}</AdminPageShell>
+            </main>
+          </div>
         </div>
-      </div>
+      </DashboardNavCountsProvider>
     </AuthGuard>
   );
 }

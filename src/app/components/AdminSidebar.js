@@ -10,6 +10,8 @@ import {
 import { BrandLogo } from "@/app/components/BrandLogo";
 import { ADMIN_NAV, isNavActive } from "@/lib/dashboardNav";
 import { typography, iconSize } from "@/lib/designSystem";
+import { useDashboardNavCounts } from "@/app/components/dashboard/DashboardNavCountsProvider";
+import { DashboardNavCountBadge } from "@/app/components/dashboard/DashboardNavCountBadge";
 
 const ICONS = {
   Dashboard: LayoutDashboard,
@@ -34,7 +36,7 @@ function Logo() {
   );
 }
 
-function NavLink({ item, pathname, variant = "default" }) {
+function NavLink({ item, pathname, variant = "default", counts }) {
   const Icon = ICONS[item.label] || LayoutDashboard;
   const active = isNavActive(pathname, item.path);
   const activeClass =
@@ -50,7 +52,8 @@ function NavLink({ item, pathname, variant = "default" }) {
       className={`flex items-center gap-3 px-4 py-3 rounded-2xl transition-all duration-200 ${activeClass}`}
     >
       <Icon size={iconSize.nav} />
-      <span className="font-bold text-sm">{item.label}</span>
+      <span className="min-w-0 flex-1 truncate font-bold text-sm">{item.label}</span>
+      <DashboardNavCountBadge count={counts[item.countKey]} label={item.countDescription || item.label} />
     </Link>
   );
 }
@@ -58,6 +61,7 @@ function NavLink({ item, pathname, variant = "default" }) {
 export function AdminSidebar() {
   const pathname = usePathname();
   const { logout } = useAuthStore();
+  const counts = useDashboardNavCounts();
 
   return (
     <aside className="w-[280px] bg-white border-r border-zinc-200 flex flex-col h-screen sticky top-0 hidden lg:flex dashboard-shell">
@@ -70,7 +74,7 @@ export function AdminSidebar() {
           </h3>
           <div className="space-y-1">
             {ADMIN_NAV.coreAdmin.map((item) => (
-              <NavLink key={item.path} item={item} pathname={pathname} />
+              <NavLink key={item.path} item={item} pathname={pathname} counts={counts} />
             ))}
           </div>
         </div>
@@ -81,7 +85,7 @@ export function AdminSidebar() {
           </h3>
           <div className="space-y-1">
             {ADMIN_NAV.crisisOps.map((item) => (
-              <NavLink key={item.path} item={item} pathname={pathname} variant="crisis" />
+              <NavLink key={item.path} item={item} pathname={pathname} variant="crisis" counts={counts} />
             ))}
           </div>
         </div>

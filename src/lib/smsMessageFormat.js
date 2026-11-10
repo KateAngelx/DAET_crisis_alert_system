@@ -1,4 +1,4 @@
-/** SMS length and formatting for iProg (supports multi-segment messages) */
+/** SMS length and formatting before messages are sent to the provider */
 
 /** GSM single segment = 160; 480 ≈ 3 segments. Override via SMS_MAX_LENGTH env. */
 export function getSmsMaxLength() {

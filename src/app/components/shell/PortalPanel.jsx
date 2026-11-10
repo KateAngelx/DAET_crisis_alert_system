@@ -21,9 +21,10 @@ export function PortalPanel({
   noPadding = false,
 
   compact = false,
-
   section,
-
+  badgeCount,
+  badgeLabel = "active",
+  badgeTone = "blue",
 }) {
 
   const showHeader = title || subtitle || action;
@@ -47,11 +48,26 @@ export function PortalPanel({
         >
 
           <div className="min-w-0">
-
             {title ? (
-
-              <h2 className={`${typography.sectionTitle} text-zinc-500`}>{title}</h2>
-
+              <div className="flex flex-wrap items-center gap-2">
+                <h2 className={`${typography.sectionTitle} text-zinc-500`}>{title}</h2>
+                {badgeCount > 0 ? (
+                  <span
+                    className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[9px] font-black uppercase tracking-wide ${
+                      badgeTone === "red"
+                        ? "bg-red-100 text-red-700"
+                        : badgeTone === "orange"
+                          ? "bg-orange-100 text-orange-700"
+                          : badgeTone === "green"
+                            ? "bg-green-100 text-green-700"
+                            : "bg-blue-100 text-blue-700"
+                    }`}
+                    aria-label={`${badgeCount} ${badgeLabel}`}
+                  >
+                    <span className="tabular-nums">{badgeCount}</span> {badgeLabel}
+                  </span>
+                ) : null}
+              </div>
             ) : null}
 
             {subtitle ? (
@@ -79,5 +95,4 @@ export function PortalPanel({
   );
 
 }
-
 

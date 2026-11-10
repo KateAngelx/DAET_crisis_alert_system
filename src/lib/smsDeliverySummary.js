@@ -1,4 +1,4 @@
-import { formatIProgSmsErrorForAdmin } from "@/lib/iprogSmsErrors";
+import { formatSemaphoreSmsErrorForAdmin } from "@/lib/semaphoreSmsErrors";
 
 export function summarizeSmsDeliveryResults(deliveryResults = []) {
   const sms = deliveryResults.filter((r) => r.channel === "sms");
@@ -8,9 +8,9 @@ export function summarizeSmsDeliveryResults(deliveryResults = []) {
   const firstError = failedRow?.error || null;
   const errText = Array.isArray(firstError) ? firstError.join(" ") : firstError;
   const detectedNetwork = failedRow?.detectedNetwork || sms.find((r) => r.detectedNetwork)?.detectedNetwork || null;
-  let adminMessage = formatIProgSmsErrorForAdmin(errText);
+  let adminMessage = formatSemaphoreSmsErrorForAdmin(errText);
   if (detectedNetwork && failed > 0) {
-    adminMessage = `${adminMessage || errText || "SMS failed."} (iProg network detect: ${detectedNetwork}.)`;
+    adminMessage = `${adminMessage || errText || "SMS failed."} (Semaphore reports ${detectedNetwork}.)`;
   }
   return {
     attempted: sms.length,

@@ -1,11 +1,11 @@
 "use client";
 
 import React, { useEffect, useMemo, useState } from "react";
-import { Compass, Plus, Users, Loader2, CheckCircle } from "lucide-react";
-import { Card } from "@/app/components/ui/Card";
+import { Compass, Plus, Users, Loader2, CheckCircle, X } from "lucide-react";
 import { GuidePageHeader } from "@/app/components/guide/GuidePageHeader";
 import { guideShell } from "@/lib/designSystem";
 import { DestinationModal } from "@/app/components/tour/DestinationModal";
+import { ActiveTouristsPanel } from "@/app/components/tour/ActiveTouristsPanel";
 import { TourGroupCard } from "@/app/components/tour/TourGroupCard";
 import { useAuthStore, useCrisisStore } from "@/app/store/crisisStore";
 import { useGuideStore } from "@/app/store/guideStore";
@@ -36,6 +36,8 @@ export default function GuideTourGroupsPage() {
   const [showForm, setShowForm] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState(null);
+  const [setupStep, setSetupStep] = useState("details");
+  const [createdGroup, setCreatedGroup] = useState(null);
   const [form, setForm] = useState({ ...EMPTY_ROUTE_FORM });
   const [modalGroup, setModalGroup] = useState(null);
   const [page, setPage] = useState(1);
@@ -80,31 +82,54 @@ export default function GuideTourGroupsPage() {
   const handleCreate = async (e) => {
     e.preventDefault();
     setError(null);
+    if (form.start_date && form.end_date && form.end_date < form.start_date) {
+      setError("The end date must be on or after the tour date.");
+      return;
+    }
+    if (form.end_time && !form.end_date) {
+      setError("Choose an end date before setting an end time.");
+      return;
+    }
     if (!form.name.trim() || !form.starting_location.trim() || !form.destination.trim()) {
       setError("Group name, starting location, and destination are required.");
       return;
     }
     setSaving(true);
-    const result = await createTourGroup({
-      guideId: user.id,
-      name: form.name.trim(),
-      starting_location: form.starting_location.trim(),
-      destination: form.destination.trim(),
-      trip_info: form.trip_info.trim() || null,
-      start_date: form.start_date || null,
-      end_date: form.end_date || null,
-      meeting_location: form.meeting_location.trim() || null,
-      estimated_travel_time: form.estimated_travel_time.trim() || null,
-      destination_notes: form.destination_notes.trim() || null,
-    });
-    setSaving(false);
-    if (result.success) {
-      setForm({ ...EMPTY_ROUTE_FORM });
-      setShowForm(false);
-      setTab("active");
-    } else {
-      setError(result.error || "Failed to create tour group.");
+    try {
+      const result = await createTourGroup({
+        guideId: user.id,
+        name: form.name.trim(),
+        starting_location: form.starting_location.trim(),
+        destination: form.destination.trim(),
+        trip_info: form.trip_info.trim() || null,
+        start_date: form.start_date || null,
+        end_date: form.end_date || null,
+        end_time: form.end_time || null,
+        meeting_location: form.meeting_location.trim() || null,
+        estimated_travel_time: form.estimated_travel_time.trim() || null,
+        destination_notes: form.destination_notes.trim() || null,
+      });
+      if (result.success && result.group?.id) {
+        setCreatedGroup(result.group);
+        setSetupStep("invite");
+        setTab("active");
+        refreshGroups();
+      } else {
+        setError(result.error || "The group was created, but its details could not be loaded.");
+      }
+    } catch (createError) {
+      setError(createError.message || "Failed to create tour group.");
+    } finally {
+      setSaving(false);
     }
+  };
+
+  const closeSetup = () => {
+    setShowForm(false);
+    setSetupStep("details");
+    setCreatedGroup(null);
+    setError(null);
+    setForm({ ...EMPTY_ROUTE_FORM });
   };
 
   return (
@@ -115,7 +140,15 @@ export default function GuideTourGroupsPage() {
         action={
           <button
             type="button"
-            onClick={() => setShowForm(!showForm)}
+            onClick={() => {
+              if (showForm) closeSetup();
+              else {
+                setError(null);
+                setSetupStep("details");
+                setCreatedGroup(null);
+                setShowForm(true);
+              }
+            }}
             className={guideShell.btnGuide}
           >
             <Plus size={16} /> {showForm ? "Cancel" : "New Tour Group"}
@@ -157,9 +190,35 @@ export default function GuideTourGroupsPage() {
       </div>
 
       {showForm && (
-        <Card className="p-5 sm:p-6 border-purple-100 bg-purple-50/30">
-          <h2 className={`${typography.sectionTitle} text-purple-700 mb-4`}>Create Tour Group & Route</h2>
-          {error && <p className="text-sm text-red-600 font-medium mb-4">{error}</p>}
+        <div
+          className="fixed inset-0 z-[1200] flex items-center justify-center bg-black/60 p-3 backdrop-blur-sm sm:p-5"
+          role="presentation"
+          onMouseDown={(event) => {
+            if (event.target === event.currentTarget && !saving) closeSetup();
+          }}
+        >
+          <section
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="tour-group-setup-title"
+            className="max-h-[94vh] w-full max-w-3xl overflow-y-auto rounded-2xl bg-white shadow-2xl"
+          >
+          <div className="sticky top-0 z-10 flex items-start justify-between gap-4 border-b border-zinc-100 bg-white px-5 py-4 sm:px-6">
+            <div>
+              <p className="text-[10px] font-black uppercase tracking-widest text-purple-700">
+                {setupStep === "details" ? "Step 1 of 2 · Group details" : "Step 2 of 2 · Invite tourists"}
+              </p>
+              <h2 id="tour-group-setup-title" className={`${typography.sectionTitle} mt-1 text-purple-700`}>
+                {setupStep === "details" ? "Create Tour Group & Route" : `Invite tourists to ${createdGroup?.name || "your group"}`}
+              </h2>
+            </div>
+            <button type="button" onClick={closeSetup} aria-label="Close tour group setup" disabled={saving} className="rounded-full p-2 text-zinc-500 hover:bg-zinc-100 disabled:opacity-50">
+              <X size={20} />
+            </button>
+          </div>
+          {setupStep === "details" ? (
+            <div className="p-5 sm:p-6">
+          {error && <p role="alert" className="text-sm text-red-600 font-medium mb-4">{error}</p>}
           <form onSubmit={handleCreate} className="space-y-4">
             <div className="space-y-1">
               <label className="text-[10px] font-black uppercase text-zinc-400">Tour Group Name</label>
@@ -193,14 +252,19 @@ export default function GuideTourGroupsPage() {
                 />
               </div>
             </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div className="space-y-1">
                 <label className="text-[10px] font-black uppercase text-zinc-400">Tour Date</label>
                 <input type="date" value={form.start_date} onChange={(e) => setForm({ ...form, start_date: e.target.value })} className="w-full p-3 bg-white border border-zinc-200 rounded-xl text-sm font-bold" />
               </div>
               <div className="space-y-1">
                 <label className="text-[10px] font-black uppercase text-zinc-400">End Date (optional)</label>
-                <input type="date" value={form.end_date} onChange={(e) => setForm({ ...form, end_date: e.target.value })} className="w-full p-3 bg-white border border-zinc-200 rounded-xl text-sm font-bold" />
+                <input type="date" min={form.start_date || undefined} value={form.end_date} onChange={(e) => setForm({ ...form, end_date: e.target.value, end_time: e.target.value ? form.end_time : "" })} className="w-full p-3 bg-white border border-zinc-200 rounded-xl text-sm font-bold" />
+              </div>
+              <div className="space-y-1">
+                <label className="text-[10px] font-black uppercase text-zinc-400">End Time (optional)</label>
+                <input type="time" disabled={!form.end_date} value={form.end_time} onChange={(e) => setForm({ ...form, end_time: e.target.value })} className="w-full p-3 bg-white border border-zinc-200 rounded-xl text-sm font-bold disabled:cursor-not-allowed disabled:bg-zinc-100" />
+                <p className="text-[10px] text-zinc-400">Daet local time (PHT). The guide is reminded about 1 hour before and when due.</p>
               </div>
             </div>
             <div className="space-y-1">
@@ -213,17 +277,72 @@ export default function GuideTourGroupsPage() {
                 className="w-full p-3 bg-white border border-zinc-200 rounded-xl text-sm font-medium"
               />
             </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-1">
+                <label className="text-[10px] font-black uppercase text-zinc-400">Meeting / Pickup Location (optional)</label>
+                <input
+                  value={form.meeting_location}
+                  onChange={(e) => setForm({ ...form, meeting_location: e.target.value })}
+                  placeholder="Where the group will meet"
+                  className="w-full p-3 bg-white border border-zinc-200 rounded-xl text-sm font-bold"
+                />
+              </div>
+              <div className="space-y-1">
+                <label className="text-[10px] font-black uppercase text-zinc-400">Estimated Travel Time (optional)</label>
+                <input
+                  value={form.estimated_travel_time}
+                  onChange={(e) => setForm({ ...form, estimated_travel_time: e.target.value })}
+                  placeholder="e.g. 4 hours"
+                  className="w-full p-3 bg-white border border-zinc-200 rounded-xl text-sm font-bold"
+                />
+              </div>
+            </div>
+            <div className="space-y-1">
+              <label className="text-[10px] font-black uppercase text-zinc-400">Important Destination Information (optional)</label>
+              <textarea
+                rows={2}
+                value={form.destination_notes}
+                onChange={(e) => setForm({ ...form, destination_notes: e.target.value })}
+                placeholder="Safety reminders, what to bring, or other useful details"
+                className="w-full p-3 bg-white border border-zinc-200 rounded-xl text-sm font-medium"
+              />
+            </div>
             <button type="submit" disabled={saving} className="px-6 py-3 bg-purple-600 text-white rounded-xl font-black uppercase text-xs tracking-widest hover:bg-purple-700 disabled:opacity-50 flex items-center gap-2">
               {saving ? <><Loader2 size={14} className="animate-spin" /> Creating...</> : "Create Tour Group"}
             </button>
           </form>
-        </Card>
+            </div>
+          ) : (
+            <div className="space-y-4 p-5 sm:p-6">
+              <p className="text-sm text-zinc-600">
+                Search for registered tourists and send invitations. Tourists join the confirmed roster only after they accept. You can also skip this step and invite them later.
+              </p>
+              {error ? <p role="alert" className="text-sm font-bold text-red-700">{error}</p> : null}
+              {createdGroup?.id && user?.id ? (
+                <ActiveTouristsPanel
+                  guideId={user.id}
+                  tourGroupId={createdGroup.id}
+                  tourGroupName={createdGroup.name}
+                />
+              ) : null}
+              <div className="flex flex-col-reverse gap-2 border-t border-zinc-100 pt-4 sm:flex-row sm:justify-end">
+                <button type="button" onClick={closeSetup} className="rounded-xl border border-zinc-200 px-4 py-3 text-sm font-bold text-zinc-700">
+                  Skip for now
+                </button>
+                <button type="button" onClick={closeSetup} className="rounded-xl bg-purple-600 px-5 py-3 text-sm font-black text-white hover:bg-purple-700">
+                  Done
+                </button>
+              </div>
+            </div>
+          )}
+          </section>
+        </div>
       )}
 
       {loading ? (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="overflow-hidden rounded-xl border border-zinc-200 bg-white divide-y divide-zinc-100">
           {Array.from({ length: 3 }).map((_, i) => (
-            <Card key={i} className="p-6 border-zinc-100 animate-pulse h-40" />
+            <div key={i} className="h-24 animate-pulse bg-zinc-50" />
           ))}
         </div>
       ) : displayedGroups.length === 0 ? (
@@ -237,7 +356,7 @@ export default function GuideTourGroupsPage() {
           }
         />
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="overflow-hidden rounded-xl border border-zinc-200 bg-white divide-y divide-zinc-100">
           {visibleGroups.map((group) => (
             <TourGroupCard
               key={group.id}

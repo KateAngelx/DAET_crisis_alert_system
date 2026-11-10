@@ -33,11 +33,11 @@ export function CompletedToursPanel({
 
   if (loading) {
     return (
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
+      <ul className="overflow-hidden rounded-xl border border-zinc-200 bg-white divide-y divide-zinc-100">
         {Array.from({ length: compact ? 2 : 3 }).map((_, i) => (
-          <Card key={i} className="p-4 border-zinc-100 animate-pulse h-28 sm:h-32" />
+          <li key={i} className="h-20 animate-pulse bg-zinc-50" />
         ))}
-      </div>
+      </ul>
     );
   }
 
@@ -53,22 +53,17 @@ export function CompletedToursPanel({
 
   return (
     <div className="space-y-3">
-      <div
-        className={
-          compact
-            ? "grid grid-cols-1 sm:grid-cols-2 gap-3"
-            : "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4"
-        }
-      >
+      <ul className="overflow-hidden rounded-xl border border-zinc-200 bg-white divide-y divide-zinc-100">
         {displayed.map((group) => (
-          <TourGroupCard
-            key={group.id}
-            group={group}
-            guideId={guideId}
-            compact={compact || group.status === "completed"}
-          />
+          <li key={group.id}>
+            <TourGroupCard
+              group={group}
+              guideId={guideId}
+              compact={compact || group.status === "completed"}
+            />
+          </li>
         ))}
-      </div>
+      </ul>
       {pageSize ? <ListPager page={safePage} pageCount={pageCount} onPage={setPage} /> : null}
       {limit && !pageSize && groups.length > limit && (
         <p className="text-xs text-zinc-500 font-medium text-center">

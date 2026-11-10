@@ -7,6 +7,8 @@ import {
 } from "lucide-react";
 import { BrandLogo } from "@/app/components/BrandLogo";
 import { ADMIN_NAV, isNavActive } from "@/lib/dashboardNav";
+import { useDashboardNavCounts } from "@/app/components/dashboard/DashboardNavCountsProvider";
+import { DashboardNavCountBadge } from "@/app/components/dashboard/DashboardNavCountBadge";
 
 const ICONS = {
   Dashboard: LayoutDashboard,
@@ -19,6 +21,7 @@ const ICONS = {
 
 export function MobileAdminMenu({ open, onOpen, onClose }) {
   const pathname = usePathname();
+  const counts = useDashboardNavCounts();
 
   const renderSection = (title, items, variant = "default") => (
     <div>
@@ -42,7 +45,8 @@ export function MobileAdminMenu({ open, onOpen, onClose }) {
               className={`flex items-center gap-3 px-4 py-3 rounded-2xl transition-all ${activeClass}`}
             >
               <Icon size={20} />
-              <span className="text-sm font-bold">{item.label}</span>
+              <span className="min-w-0 flex-1 truncate text-sm font-bold">{item.label}</span>
+              <DashboardNavCountBadge count={counts[item.countKey]} label={item.countDescription || item.label} />
             </Link>
           );
         })}

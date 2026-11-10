@@ -43,6 +43,10 @@ export function getNotificationHref(notification, role = "tourist") {
     return role === "guide" ? "/guide/groups" : "/profile";
   }
 
+  if (notification.related_type === "tour_group") {
+    return role === "guide" && relatedId ? `/guide/groups/${relatedId}` : "/guide/groups";
+  }
+
   if (notification.related_type === "crisis_feedback") {
     return role === "admin" ? "/admin/crisis-feedback" : "/crisis/feedback";
   }
