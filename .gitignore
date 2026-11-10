@@ -37,6 +37,9 @@ debug-*.log
 .tmp-*
 .tmp-docx-extract/
 
+# local database migrations
+/supabase
+
 # env files (can opt-in for committing if needed)
 .env*
 
