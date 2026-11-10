@@ -35,6 +35,14 @@ const ACCOUNT_SECTIONS = [
     ],
   },
   {
+    title: "Information",
+    tone: "text-zinc-500",
+    items: [
+      { name: "About", href: "/about", icon: Info },
+      { name: "FAQs", href: "/faq", icon: CircleHelp },
+    ],
+  },
+  {
     title: "Alerts",
     tone: "text-orange-600",
     items: [
@@ -64,7 +72,7 @@ export function PublicHeader() {
       ? [{ name: "My Reports", short: "Reports", href: "/crisis/reports", icon: FileText }]
       : []),
   ];
-  const mobileNav = [...primaryNav, ...GUEST_INFO_NAV];
+  const mobileNav = signedIn ? primaryNav : [...primaryNav, ...GUEST_INFO_NAV];
   const browserNav = signedIn ? primaryNav : [...primaryNav, ...GUEST_INFO_NAV];
   const accountSections = ACCOUNT_SECTIONS.map((section) => ({
     ...section,
