@@ -158,7 +158,6 @@ function MyReportsContent() {
     statusClass: getStatusColor(incident.status),
     reference: incident.reference_number || "Reference pending",
     place: incident.location || "Location not provided",
-    placeAlign: "right",
     type: incident.category || "Uncategorized",
     when: incident.created_at ? new Date(incident.created_at).toLocaleString() : "—",
     onSelect: () => setSelectedIncidentId(incident.id),
@@ -224,6 +223,7 @@ function MyReportsContent() {
           <PublicPanel
             title="Your incident reports"
             subtitle={`${filteredReports.length} matching reports`}
+            className="mt-2"
             bodyClassName={portalLayout.panelBodyStack}
           >
             {successRef ? (

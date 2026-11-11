@@ -151,8 +151,9 @@ export async function updateSystemSettings(adminClient, {
     throw new Error("SUPABASE_SERVICE_ROLE_KEY required");
   }
 
+  const updatedAt = new Date().toISOString();
   const payload = {
-    updated_at: new Date().toISOString(),
+    updated_at: updatedAt,
     updated_by: updatedBy || null,
   };
   if (notification_audience) {
@@ -227,82 +228,23 @@ export async function updateSystemSettings(adminClient, {
   }
 
   const row = { id: SETTINGS_ID, ...payload };
-  const withVisibility = "id, notification_audience, public_visibility, rewards_enabled, registration_points_enabled, registration_points_value, profile_completion_points_enabled, profile_completion_points_value, alert_reading_points_enabled, alert_reading_points_value, road_viewing_points_enabled, road_viewing_points_value, hazard_viewing_points_enabled, hazard_viewing_points_value, crisis_feedback_points_enabled, crisis_feedback_points_min_value, crisis_feedback_points_value, crisis_feedback_points_max_value, crisis_feedback_daily_submission_cap, incident_report_points_enabled, incident_report_points_value, tourist_guide_completion_points_enabled, tourist_guide_assistance_enabled, tourist_guide_assistance_intro, tourist_guide_assistance_availability, updated_at, updated_by";
-  const withoutVisibility = "id, notification_audience, rewards_enabled, registration_points_enabled, registration_points_value, profile_completion_points_enabled, profile_completion_points_value, alert_reading_points_enabled, alert_reading_points_value, road_viewing_points_enabled, road_viewing_points_value, hazard_viewing_points_enabled, hazard_viewing_points_value, crisis_feedback_points_enabled, crisis_feedback_points_min_value, crisis_feedback_points_value, crisis_feedback_points_max_value, crisis_feedback_daily_submission_cap, incident_report_points_enabled, incident_report_points_value, tourist_guide_completion_points_enabled, tourist_guide_assistance_enabled, tourist_guide_assistance_intro, tourist_guide_assistance_availability, updated_at, updated_by";
-
-  const { data, error } = await client
+  const { error } = await client
     .from("system_settings")
-    .upsert(row, { onConflict: "id" })
-    .select(withVisibility)
-    .single();
-
-  if (error && !public_visibility) {
-    const retry = await client
-      .from("system_settings")
-      .upsert(row, { onConflict: "id" })
-      .select(withoutVisibility)
-      .single();
-    if (retry.error) throw retry.error;
-    return {
-      ...retry.data,
-      notification_audience: normalizeNotificationAudience(retry.data.notification_audience),
-      public_visibility: { ...DEFAULT_PUBLIC_VISIBILITY },
-      rewards_enabled: retry.data.rewards_enabled ?? true,
-      registration_points_enabled: retry.data.registration_points_enabled ?? true,
-      registration_points_value: retry.data.registration_points_value ?? 10,
-      profile_completion_points_enabled: retry.data.profile_completion_points_enabled ?? true,
-      profile_completion_points_value: retry.data.profile_completion_points_value ?? 10,
-      alert_reading_points_enabled: retry.data.alert_reading_points_enabled ?? true,
-      alert_reading_points_value: retry.data.alert_reading_points_value ?? 5,
-      road_viewing_points_enabled: retry.data.road_viewing_points_enabled ?? true,
-      road_viewing_points_value: retry.data.road_viewing_points_value ?? 5,
-      hazard_viewing_points_enabled: retry.data.hazard_viewing_points_enabled ?? true,
-      hazard_viewing_points_value: retry.data.hazard_viewing_points_value ?? 5,
-      crisis_feedback_points_enabled: retry.data.crisis_feedback_points_enabled ?? true,
-      crisis_feedback_points_min_value: retry.data.crisis_feedback_points_min_value ?? 1,
-      crisis_feedback_points_value: retry.data.crisis_feedback_points_value ?? 5,
-      crisis_feedback_points_max_value: retry.data.crisis_feedback_points_max_value ?? 100,
-      crisis_feedback_daily_submission_cap: retry.data.crisis_feedback_daily_submission_cap ?? 1,
-      incident_report_points_enabled: retry.data.incident_report_points_enabled ?? false,
-      incident_report_points_value: retry.data.incident_report_points_value ?? 5,
-      tourist_guide_assistance_enabled: retry.data.tourist_guide_assistance_enabled ?? false,
-      tourist_guide_assistance_intro: retry.data.tourist_guide_assistance_intro ?? "",
-      tourist_guide_assistance_availability: retry.data.tourist_guide_assistance_availability ?? "",
-    };
-  }
-
+    .upsert(row, { onConflict: "id" });
   if (error) {
     const missingColumn = /public_visibility/i.test(error.message || "");
-    if (missingColumn) {
+    if (missingColumn && public_visibility) {
       throw new Error("Public visibility is not in the database yet. Run migration 022_public_visibility.sql, then save again.");
     }
     throw error;
   }
 
-  return {
-    ...data,
-    notification_audience: normalizeNotificationAudience(data.notification_audience),
-    public_visibility: normalizePublicVisibility(data.public_visibility),
-    rewards_enabled: data.rewards_enabled ?? true,
-    registration_points_enabled: data.registration_points_enabled ?? true,
-    registration_points_value: data.registration_points_value ?? 10,
-    profile_completion_points_enabled: data.profile_completion_points_enabled ?? true,
-    profile_completion_points_value: data.profile_completion_points_value ?? 10,
-    alert_reading_points_enabled: data.alert_reading_points_enabled ?? true,
-    alert_reading_points_value: data.alert_reading_points_value ?? 5,
-    road_viewing_points_enabled: data.road_viewing_points_enabled ?? true,
-    road_viewing_points_value: data.road_viewing_points_value ?? 5,
-    hazard_viewing_points_enabled: data.hazard_viewing_points_enabled ?? true,
-    hazard_viewing_points_value: data.hazard_viewing_points_value ?? 5,
-    crisis_feedback_points_enabled: data.crisis_feedback_points_enabled ?? true,
-    crisis_feedback_points_min_value: data.crisis_feedback_points_min_value ?? 1,
-    crisis_feedback_points_value: data.crisis_feedback_points_value ?? 5,
-    crisis_feedback_points_max_value: data.crisis_feedback_points_max_value ?? 100,
-    crisis_feedback_daily_submission_cap: data.crisis_feedback_daily_submission_cap ?? 1,
-    incident_report_points_enabled: data.incident_report_points_enabled ?? false,
-    incident_report_points_value: data.incident_report_points_value ?? 5,
-    tourist_guide_assistance_enabled: data.tourist_guide_assistance_enabled ?? false,
-    tourist_guide_assistance_intro: data.tourist_guide_assistance_intro ?? "",
-    tourist_guide_assistance_availability: data.tourist_guide_assistance_availability ?? "",
-  };
+  const settings = await getSystemSettings(client);
+  if (
+    Date.parse(settings.updated_at) !== Date.parse(updatedAt) ||
+    settings.updated_by !== (updatedBy || null)
+  ) {
+    throw new Error("Settings update could not be verified. Reload the page and try again.");
+  }
+  return settings;
 }

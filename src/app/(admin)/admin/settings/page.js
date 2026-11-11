@@ -27,6 +27,30 @@ async function authFetch(url, options = {}) {
   });
 }
 
+function ToggleIndicator({ enabled, enabledLabel = "On", disabledLabel = "Off" }) {
+  return (
+    <span className="flex shrink-0 items-center gap-2">
+      <span
+        aria-hidden="true"
+        className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
+          enabled ? "bg-blue-600" : "bg-zinc-300"
+        }`}
+      >
+        <span
+          className={`inline-block h-4 w-4 rounded-full bg-white shadow-sm transition-transform ${
+            enabled ? "translate-x-6" : "translate-x-1"
+          }`}
+        />
+      </span>
+      <span className={`text-[10px] font-black uppercase tracking-widest ${
+        enabled ? "text-blue-600" : "text-zinc-400"
+      }`}>
+        {enabled ? enabledLabel : disabledLabel}
+      </span>
+    </span>
+  );
+}
+
 export default function AdminSettingsPage() {
   const [audience, setAudience] = useState({ tourists: true, guides: true, admins: false });
   const [visibility, setVisibility] = useState({ map: true, roadsAndHazards: true });
@@ -400,11 +424,7 @@ export default function AdminSettingsPage() {
                   When off, the request card is hidden and the server rejects new tourist requests. Existing reports remain available to administrators.
                 </span>
               </span>
-              <span className={`shrink-0 text-[10px] font-black uppercase tracking-widest ${
-                guideAssistance.enabled ? "text-blue-600" : "text-zinc-400"
-              }`}>
-                {guideAssistance.enabled ? "On" : "Off"}
-              </span>
+              <ToggleIndicator enabled={guideAssistance.enabled} />
             </button>
             <label className="mb-5 block">
               <span className="mb-2 block text-xs font-black uppercase tracking-widest text-zinc-600">
@@ -468,7 +488,7 @@ export default function AdminSettingsPage() {
           <SettingsPanelSkeleton rows={2} />
         ) : (
           <>
-            <div className="space-y-3 mb-6">
+            <div className="mb-6 grid grid-cols-1 gap-3 sm:grid-cols-2">
               {[
                 {
                   key: "map",
@@ -486,6 +506,8 @@ export default function AdminSettingsPage() {
                 <button
                   key={key}
                   type="button"
+                  role="switch"
+                  aria-checked={visibility[key]}
                   onClick={() => {
                     setVisibility((prev) => ({ ...prev, [key]: !prev[key] }));
                     setMessage(null);
@@ -501,9 +523,7 @@ export default function AdminSettingsPage() {
                     <p className="font-black text-sm uppercase tracking-wide text-zinc-900">{label}</p>
                     <p className="text-xs text-zinc-500 mt-1 font-medium">{description}</p>
                   </div>
-                  <span className={`text-[10px] font-black uppercase tracking-widest shrink-0 ${visibility[key] ? "text-blue-600" : "text-zinc-400"}`}>
-                    {visibility[key] ? "On" : "Off"}
-                  </span>
+                  <ToggleIndicator enabled={visibility[key]} />
                 </button>
               ))}
             </div>
@@ -527,7 +547,7 @@ export default function AdminSettingsPage() {
           <SettingsPanelSkeleton rows={3} />
         ) : (
           <>
-            <div className="space-y-3 mb-5">
+            <div className="mb-5 grid grid-cols-1 gap-3 sm:grid-cols-2">
               {[
                 {
                   key: "rewards_enabled",
@@ -604,9 +624,7 @@ export default function AdminSettingsPage() {
                     <p className="font-black text-sm uppercase tracking-wide text-zinc-900">{label}</p>
                     <p className="text-xs text-zinc-500 mt-1 font-medium">{description}</p>
                   </div>
-                  <span className={`text-[10px] font-black uppercase tracking-widest shrink-0 ${rewardsSettings[key] ? "text-blue-600" : "text-zinc-400"}`}>
-                    {rewardsSettings[key] ? "On" : "Off"}
-                  </span>
+                  <ToggleIndicator enabled={rewardsSettings[key]} />
                 </button>
               ))}
             </div>
@@ -837,11 +855,13 @@ export default function AdminSettingsPage() {
             <SettingsPanelSkeleton rows={4} />
           ) : (
             <>
-              <div className="space-y-3 mb-6">
+              <div className="mb-6 grid grid-cols-1 gap-3 sm:grid-cols-2">
                 {AUDIENCE_ROLE_OPTIONS.map(({ key, label, description }) => (
                   <button
                     key={key}
                     type="button"
+                    role="switch"
+                    aria-checked={audience[key]}
                     onClick={() => toggleAudience(key)}
                     className={`w-full flex items-start gap-4 p-4 rounded-2xl border text-left transition-all ${
                       audience[key]
@@ -853,9 +873,11 @@ export default function AdminSettingsPage() {
                       <p className="font-black text-sm uppercase tracking-wide text-zinc-900">{label}</p>
                       <p className="text-xs text-zinc-500 mt-1 font-medium">{description}</p>
                     </div>
-                    <span className={`text-[10px] font-black uppercase tracking-widest shrink-0 ${audience[key] ? "text-blue-600" : "text-zinc-400"}`}>
-                      {audience[key] ? "Included" : "Excluded"}
-                    </span>
+                    <ToggleIndicator
+                      enabled={audience[key]}
+                      enabledLabel="Included"
+                      disabledLabel="Excluded"
+                    />
                   </button>
                 ))}
               </div>
