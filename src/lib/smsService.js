@@ -1,7 +1,7 @@
 import { agentDebugLog } from "@/lib/agentDebugLog.server";
 import { formatPhoneForSemaphoreApi, normalizePhilippinePhone } from "@/lib/phoneUtils";
 import { isSemaphoreSenderNameError } from "@/lib/semaphoreSmsErrors";
-import { truncateForSms, getSmsMaxLength } from "@/lib/smsMessageFormat";
+import { prepareSmsBody } from "@/lib/smsMessageFormat";
 
 export { formatPhoneForSemaphoreApi, normalizePhilippinePhone } from "@/lib/phoneUtils";
 
@@ -172,7 +172,7 @@ export async function sendSms({ to, message }) {
   }
 
   const rawLength = String(message ?? "").length;
-  const smsMessage = truncateForSms(message);
+  const smsMessage = prepareSmsBody(message);
   const attempts = [];
 
   for (const provider of configuredProviders) {
@@ -204,7 +204,6 @@ export async function sendSms({ to, message }) {
           messageId: result.messageId || null,
           rawLength,
           sentLength: smsMessage.length,
-          maxLength: getSmsMaxLength(),
           apiStatus: result.deliveryStatus || null,
           network: result.network || null,
           errorMsg: result.ok ? null : result.error || null,

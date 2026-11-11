@@ -1,7 +1,6 @@
 "use client";
 
 import React from "react";
-import { getSmsMaxLength } from "@/lib/smsMessageFormat";
 
 /** Rough GSM multipart SMS segment estimate */
 export function estimateSmsSegments(charLength) {
@@ -27,10 +26,8 @@ export function CharCounterTextarea({
   ...textareaProps
 }) {
   const fieldLength = String(value).length;
-  const smsMax = getSmsMaxLength();
   const effectiveSmsLength = smsGuide ? (smsLength ?? fieldLength) : fieldLength;
   const segments = estimateSmsSegments(effectiveSmsLength);
-  const smsOverLimit = smsGuide && effectiveSmsLength > smsMax;
 
   return (
     <div className="space-y-1">
@@ -46,19 +43,19 @@ export function CharCounterTextarea({
       <div
         className={`flex flex-wrap items-center justify-between gap-x-3 gap-y-1 text-[10px] font-bold uppercase tracking-widest text-zinc-400 ${counterClassName}`}
       >
-        <span className={smsOverLimit ? "text-amber-600" : ""}>
+        <span>
           {fieldLength} character{fieldLength === 1 ? "" : "s"}
           {smsGuide ? (
             <>
               {" "}
-              · SMS total ~{effectiveSmsLength}/{smsMax} ({segments} segment
+              · SMS total ~{effectiveSmsLength} ({segments} segment
               {segments === 1 ? "" : "s"})
             </>
           ) : null}
         </span>
-        {smsOverLimit ? (
-          <span className="text-amber-600 normal-case tracking-normal font-medium text-xs">
-            May truncate in text message
+        {smsGuide ? (
+          <span className="text-zinc-500 normal-case tracking-normal font-medium text-xs">
+            No app character cap; multipart SMS charges may apply.
           </span>
         ) : null}
       </div>

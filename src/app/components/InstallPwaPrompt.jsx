@@ -27,7 +27,7 @@ function isIos() {
 
 export function InstallPwaPrompt() {
   const [installEvent, setInstallEvent] = useState(null);
-  const [showIosHint, setShowIosHint] = useState(false);
+  const [showIosHint] = useState(isIos);
   const [visible, setVisible] = useState(false);
 
   useEffect(() => {
@@ -42,12 +42,19 @@ export function InstallPwaPrompt() {
     window.addEventListener("beforeinstallprompt", onBeforeInstall);
 
     if (isIos() && !isInstalledApp()) {
-      setShowIosHint(true);
+      // Keep browser-only install detection out of server-rendered markup.
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setVisible(true);
     }
 
     return () => window.removeEventListener("beforeinstallprompt", onBeforeInstall);
   }, []);
+
+  useEffect(() => {
+    if (!visible) return undefined;
+    const timer = window.setTimeout(() => setVisible(false), 6000);
+    return () => window.clearTimeout(timer);
+  }, [visible]);
 
   const dismiss = () => {
     sessionStorage.setItem(DISMISS_KEY, "1");

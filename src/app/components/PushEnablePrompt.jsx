@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { ArrowRight, BellRing, X } from "lucide-react";
 import { useAuthStore } from "@/app/store/crisisStore";
@@ -23,6 +23,7 @@ export function PushEnablePrompt() {
   const installed = useInstalledApp();
   const { isAuthenticated, user } = useAuthStore();
   const [prompt, setPrompt] = useState(null);
+  const autoDismissedUserIdRef = useRef(null);
 
   useEffect(() => {
     if (!isAuthenticated || !user?.id || !supportsWebPush()) return undefined;
@@ -31,7 +32,10 @@ export function PushEnablePrompt() {
     const key = dismissalKey(user.id);
     const checkSettings = async () => {
       try {
-        if (window.localStorage.getItem(key) === "1") {
+        if (
+          window.localStorage.getItem(key) === "1" ||
+          autoDismissedUserIdRef.current === user.id
+        ) {
           if (active) setPrompt(null);
           return;
         }
@@ -75,6 +79,17 @@ export function PushEnablePrompt() {
       window.removeEventListener("focus", checkSettings);
     };
   }, [isAuthenticated, user?.id]);
+
+  useEffect(() => {
+    const promptUserId = prompt?.userId;
+    if (!promptUserId || promptUserId !== user?.id) return undefined;
+
+    const timer = window.setTimeout(() => {
+      autoDismissedUserIdRef.current = promptUserId;
+      setPrompt(null);
+    }, 6000);
+    return () => window.clearTimeout(timer);
+  }, [prompt?.userId, user?.id]);
 
   const dismiss = () => {
     try {

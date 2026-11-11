@@ -41,6 +41,7 @@ import {
 import { ROLE_INTERFACE } from "@/lib/roleInterfaceCopy";
 import { RoleContextBanner } from "@/app/components/dashboard/RoleContextBanner";
 import { CharCounterTextarea } from "@/app/components/ui/CharCounterTextarea";
+import { formatRouteAdvisorySms } from "@/lib/smsMessageFormat";
 import { ConfirmDialog } from "@/app/components/ui/ConfirmDialog";
 import { useConfirm } from "@/app/components/ui/ConfirmDialogProvider";
 import dynamic from "next/dynamic";
@@ -722,6 +723,11 @@ function RouteAdvisoriesAdminPanel({
                   <CharCounterTextarea
                     label="What tourists should do"
                     rows={2}
+                    smsGuide
+                    smsLength={formatRouteAdvisorySms({
+                      ...formData,
+                      title: formData.title || suggestRouteTitle(formData.from_location, formData.to_location, formData.via_location),
+                    }).length}
                     value={formData.safety_instructions}
                     onChange={(e) => setFormData({ ...formData, safety_instructions: e.target.value })}
                     className="w-full p-3 bg-zinc-50 border border-zinc-200 rounded-xl text-sm font-medium"

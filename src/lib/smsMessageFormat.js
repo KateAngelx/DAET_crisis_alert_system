@@ -1,70 +1,95 @@
-/** SMS length and formatting before messages are sent to the provider */
-
-/** GSM single segment = 160; 480 ≈ 3 segments. Override via SMS_MAX_LENGTH env. */
-export function getSmsMaxLength() {
-  const parsed = parseInt(process.env.SMS_MAX_LENGTH || "480", 10);
-  return Number.isFinite(parsed) && parsed > 0 ? parsed : 480;
+/** Consistent, readable SMS layouts for crisis alerts, roads, and area hazards. */
+function cleanLine(value) {
+  return String(value ?? "").replace(/\r\n?/g, "\n").trim();
 }
 
-/** Normalize whitespace and truncate with ellipsis if still over limit */
-export function truncateForSms(text, maxLength) {
-  const limit = maxLength ?? getSmsMaxLength();
-  const normalized = String(text ?? "")
-    .replace(/\r\n/g, " ")
-    .replace(/\s+/g, " ")
-    .trim();
-  if (normalized.length <= limit) return normalized;
-  return `${normalized.slice(0, Math.max(0, limit - 1)).trim()}…`;
+function labeledLine(label, value) {
+  const cleaned = cleanLine(value);
+  return cleaned ? `${label}: ${cleaned}` : "";
+}
+
+function joinSmsLines(lines) {
+  return lines.map(cleanLine).filter(Boolean).join("\n");
 }
 
 export function formatCrisisAlertSms(alert, { resolved = false } = {}) {
-  const title = alert.title || "Crisis Alert";
-  const location = alert.location || "Daet";
+  const title = cleanLine(alert.title) || "Crisis Alert";
+  const location = cleanLine(alert.location) || "Daet";
+
   if (resolved) {
-    return truncateForSms(
-      `[CONNECT-DAET] RESOLVED: ${title}. ${location}. This alert is no longer active.`
-    );
+    return joinSmsLines([
+      "[CONNECT-DAET] CRISIS ALERT — RESOLVED",
+      title,
+      labeledLine("CATEGORY", alert.type),
+      labeledLine("LOCATION", location),
+      "STATUS: This alert is no longer active.",
+    ]);
   }
-  const severity = alert.severity || "Alert";
-  const detail = alert.message || "";
-  const text = `[CONNECT-DAET] ${severity}: ${title}. ${location}. ${detail}`;
-  return truncateForSms(text);
+
+  return joinSmsLines([
+    "[CONNECT-DAET] CRISIS ALERT",
+    title,
+    labeledLine("CATEGORY", alert.type),
+    labeledLine("SEVERITY", alert.severity),
+    labeledLine("LOCATION", location),
+    labeledLine("DETAILS", alert.message),
+  ]);
 }
 
 export function formatAreaHazardSms(warning, { cleared = false } = {}) {
-  const place = warning.dangerous_location || "Affected area";
+  const title = cleanLine(warning.dangerous_location) || "Area hazard";
+
   if (cleared) {
-    return truncateForSms(
-      `[CONNECT-DAET] CLEARED: ${place}. This area hazard is no longer active.`
-    );
+    return joinSmsLines([
+      "[CONNECT-DAET] ROADS & HAZARDS — AREA HAZARD CLEARED",
+      title,
+      labeledLine("CATEGORY", warning.danger_type),
+      labeledLine("LOCATION", warning.dangerous_location),
+      "STATUS: This area hazard is no longer active.",
+    ]);
   }
-  const label = warning.severity === "Caution" ? "Route Caution" : "Area Hazard";
-  const hazard = warning.danger_type || "Hazard";
-  const route = [warning.alternative_route, warning.destination].filter(Boolean).join(" → ");
-  const instructions = warning.safety_instructions || "";
-  const routePart = route ? ` Detour: ${route}.` : "";
-  const instructPart = instructions ? ` ${instructions}` : "";
-  const text = `[CONNECT-DAET] ${label}: ${hazard} at ${place}.${routePart}${instructPart}`;
-  return truncateForSms(text);
+
+  return joinSmsLines([
+    "[CONNECT-DAET] ROADS & HAZARDS — AREA HAZARD",
+    title,
+    labeledLine("CATEGORY", warning.danger_type),
+    labeledLine("SEVERITY", warning.severity),
+    labeledLine("LOCATION", warning.dangerous_location),
+    labeledLine("CURRENT LOCATION", warning.current_location),
+    labeledLine("ALTERNATIVE ROUTE", warning.alternative_route),
+    labeledLine("DESTINATION", warning.destination),
+    labeledLine("INSTRUCTIONS", warning.safety_instructions),
+  ]);
 }
 
 export function formatRouteAdvisorySms(advisory, { cleared = false } = {}) {
-  const title = advisory.title || "Road advisory";
-  const place = advisory.affected_location || advisory.to_location || "Daet";
+  const title = cleanLine(advisory.title) || "Road advisory";
+
   if (cleared) {
-    return truncateForSms(
-      `[CONNECT-DAET] CLEARED: ${title}. ${place}. This road advisory is no longer active.`
-    );
+    return joinSmsLines([
+      "[CONNECT-DAET] ROADS & HAZARDS — ROAD ADVISORY CLEARED",
+      title,
+      labeledLine("CATEGORY", advisory.hazard_type),
+      labeledLine("LOCATION", advisory.affected_location || advisory.to_location),
+      "STATUS: This road advisory is no longer active.",
+    ]);
   }
-  const status = advisory.route_status || "Advisory";
-  const detail = advisory.safety_instructions || advisory.reason || "";
-  const text = `[CONNECT-DAET] ${status}: ${title}. ${place}. ${detail}`;
-  return truncateForSms(text);
+
+  return joinSmsLines([
+    "[CONNECT-DAET] ROADS & HAZARDS — ROAD ADVISORY",
+    title,
+    labeledLine("CATEGORY", advisory.hazard_type),
+    labeledLine("STATUS", advisory.route_status),
+    labeledLine("FROM", advisory.from_location),
+    labeledLine("TO", advisory.to_location),
+    labeledLine("VIA", advisory.via_location),
+    labeledLine("AFFECTED AREA", advisory.affected_location),
+    labeledLine("INSTRUCTIONS", advisory.safety_instructions || advisory.reason),
+  ]);
 }
 
 export function prepareSmsBody(rawMessage, formatter) {
-  if (typeof formatter === "function") {
-    return formatter(rawMessage);
-  }
-  return truncateForSms(rawMessage);
+  return typeof formatter === "function"
+    ? formatter(rawMessage)
+    : cleanLine(rawMessage);
 }

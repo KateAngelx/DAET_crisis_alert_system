@@ -9,12 +9,13 @@ import { usePathname } from "next/navigation";
 export function GlobalEmergencyBanner() {
   const pathname = usePathname();
   const { alerts } = useCrisisStore();
-  const [isVisible, setIsVisible] = useState(false);
+  const [dismissedAlertId, setDismissedAlertId] = useState(null);
 
   // Filter active critical alerts
   const criticalAlerts = alerts.filter(
     (a) => a.severity === "Critical" && a.status === "Active"
   );
+  const latestAlert = criticalAlerts[0];
 
   /**
    * FIX: Mahigpit na check para sa Admin Pages.
@@ -28,18 +29,20 @@ export function GlobalEmergencyBanner() {
     pathname.includes("/admin");
 
   const isAuthPage = pathname === "/login" || pathname === "/register";
+  const latestAlertId = latestAlert?.id;
 
   useEffect(() => {
-    if (criticalAlerts.length > 0 && !isAdminPage && !isAuthPage) {
-      setIsVisible(true);
-    } else {
-      setIsVisible(false);
-    }
-  }, [criticalAlerts.length, isAdminPage, isAuthPage]);
+    if (!latestAlertId || isAdminPage || isAuthPage || dismissedAlertId === latestAlertId) return undefined;
+    const timer = window.setTimeout(() => setDismissedAlertId(latestAlertId), 6000);
+    return () => window.clearTimeout(timer);
+  }, [latestAlertId, isAdminPage, isAuthPage, dismissedAlertId]);
 
-  if (!isVisible || criticalAlerts.length === 0) return null;
-
-  const latestAlert = criticalAlerts[0];
+  if (
+    !latestAlert ||
+    isAdminPage ||
+    isAuthPage ||
+    dismissedAlertId === latestAlertId
+  ) return null;
 
   return (
     <div className="fixed top-[80px] right-4 z-[9999] w-full max-w-[300px] animate-in fade-in slide-in-from-right-4 duration-300">
@@ -56,7 +59,7 @@ export function GlobalEmergencyBanner() {
             </div>
             <button
               type="button"
-              onClick={() => setIsVisible(false)}
+              onClick={() => setDismissedAlertId(latestAlertId)}
               className="text-zinc-300 hover:text-white"
               aria-label="Dismiss critical alert"
             >
@@ -77,7 +80,7 @@ export function GlobalEmergencyBanner() {
           <div className="flex gap-2">
             <Link
               href="/crisis"
-              onClick={() => setIsVisible(false)}
+              onClick={() => setDismissedAlertId(latestAlertId)}
               className="flex-1 bg-red-600 text-white py-2 rounded-lg text-[10px] font-black uppercase tracking-widest text-center hover:bg-red-700 transition-all"
             >
               Open Crisis Hub
