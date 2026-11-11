@@ -5,6 +5,7 @@ import {
   Check, Eye, EyeOff, Loader2, MessageSquare, X,
 } from "lucide-react";
 import { AdminPanel } from "@/app/components/admin/AdminPanel";
+import { ResponsiveAdminTable } from "@/app/components/admin/ResponsiveAdminTable";
 import { DashboardPageHeader } from "@/app/components/dashboard/DashboardPageHeader";
 import { useConfirm } from "@/app/components/ui/ConfirmDialogProvider";
 import { getActiveSession } from "@/lib/authSession";
@@ -191,7 +192,7 @@ export default function AdminCrisisFeedbackPage() {
             <p>No submissions match these filters.</p>
           </div>
         ) : (
-          <div className="overflow-x-auto rounded-xl border border-zinc-200 bg-white">
+          <ResponsiveAdminTable label="Crisis feedback submissions">
             <table className="w-full min-w-[1080px] table-fixed border-collapse text-left">
               <colgroup>
                 <col className="w-[9%]" />
@@ -447,7 +448,7 @@ export default function AdminCrisisFeedbackPage() {
                 })}
               </tbody>
             </table>
-          </div>
+          </ResponsiveAdminTable>
         )}
 
         <ListPager page={page} pageCount={pageCount} onPage={setPage} disabled={loading} />

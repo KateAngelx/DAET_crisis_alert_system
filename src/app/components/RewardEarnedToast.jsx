@@ -31,7 +31,7 @@ export function RewardEarnedToast() {
       className="fixed right-4 top-20 z-[2100] flex items-center gap-3 rounded-2xl border border-emerald-200 bg-white px-5 py-4 text-emerald-800 shadow-xl"
     >
       <CheckCircle2 size={20} className="shrink-0 text-emerald-600" />
-      <span className="font-black">+{points} Points Earned!</span>
+      <span className="font-black">+{points} points added to your placeholder balance.</span>
     </div>
   );
 }

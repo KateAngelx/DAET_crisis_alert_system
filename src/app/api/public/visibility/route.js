@@ -7,5 +7,6 @@ export async function GET() {
   return NextResponse.json({
     success: true,
     visibility: normalizePublicVisibility(settings.public_visibility),
+    rewardsEnabled: settings.rewards_enabled === true,
   });
 }

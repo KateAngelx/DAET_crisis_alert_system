@@ -180,7 +180,7 @@ export function CrisisHubMap({
 
       {showLegend && leafletReady && (
 
-        <div className="absolute bottom-3 left-3 z-[3] max-w-[200px]">
+        <div className="absolute bottom-[max(0.5rem,env(safe-area-inset-bottom))] left-2 z-[3] max-w-[min(200px,calc(100%-1rem))] sm:bottom-3 sm:left-3">
 
           <MapLegend
             compact
@@ -197,5 +197,4 @@ export function CrisisHubMap({
   );
 
 }
-
 

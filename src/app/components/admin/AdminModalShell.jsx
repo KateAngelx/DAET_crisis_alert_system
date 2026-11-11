@@ -11,13 +11,13 @@ export function AdminModalShell({ open, onClose, title, subtitle, headerExtra, c
   if (!open) return null;
 
   return (
-    <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+    <div className="fixed inset-0 bg-black/50 z-[100] flex items-center justify-center p-3 sm:p-4">
       <div
-        className={`bg-white rounded-2xl border border-zinc-200 shadow-xl ${maxWidth} w-full max-h-[90vh] flex flex-col min-h-0`}
+        className={`bg-white rounded-2xl border border-zinc-200 shadow-xl ${maxWidth} w-full max-h-[min(90dvh,48rem)] flex flex-col min-h-0`}
         role="dialog"
         aria-modal="true"
       >
-        <div className="sticky top-0 z-10 flex items-start justify-between gap-4 border-b border-zinc-100 bg-white rounded-t-2xl px-6 py-4 shrink-0">
+        <div className="sticky top-0 z-10 flex items-start justify-between gap-3 border-b border-zinc-100 bg-white rounded-t-2xl px-4 py-3 sm:gap-4 sm:px-6 sm:py-4 shrink-0">
           <div className="min-w-0">
             {subtitle ? (
               <p className="font-mono text-sm text-blue-600 font-black truncate">{subtitle}</p>
@@ -31,7 +31,7 @@ export function AdminModalShell({ open, onClose, title, subtitle, headerExtra, c
             <X size={iconSize.button} />
           </button>
         </div>
-        <div className="overflow-y-auto overscroll-contain px-6 py-5 space-y-5 min-h-0 flex-1">{children}</div>
+        <div className="overflow-y-auto overscroll-contain px-4 py-4 sm:px-6 sm:py-5 space-y-5 min-h-0 flex-1">{children}</div>
       </div>
     </div>
   );

@@ -690,7 +690,17 @@ export default function AdminIncidentsPage() {
               subtitle={`${filtered.length} in queue · page ${page} of ${totalPages || 1} · approved & closed reports are in the audit log`}
             >
 
-              <div className={`overflow-x-auto rounded-xl border border-zinc-200 bg-white ${portalLayout.listScrollPaneAdmin}`}>
+              <div className="space-y-2 lg:hidden" aria-label="Incident reports list">
+                {paginated.map((inc) => (
+                  <IncidentReportAdminCard
+                    key={inc.id}
+                    incident={inc}
+                    onManage={openDetail}
+                    mobile
+                  />
+                ))}
+              </div>
+              <div className={`hidden overflow-x-auto rounded-xl border border-zinc-200 bg-white lg:block ${portalLayout.listScrollPaneAdmin}`}>
                 <table className="w-full min-w-[1120px] border-collapse text-left">
                   <thead className="border-b border-zinc-100 bg-zinc-50">
                     <tr>

@@ -16,6 +16,7 @@ import { PublicListModal } from "@/app/components/shell/PublicListModal";
 import { getActiveSession } from "@/lib/authSession";
 import { useInstalledApp } from "@/lib/useInstalledApp";
 import { parseApiJson } from "@/lib/parseApiJson";
+import { usePublicVisibility } from "@/lib/usePublicVisibility";
 
 const POINTS_HISTORY_PAGE_SIZE = 20;
 
@@ -117,6 +118,7 @@ async function fetchPointsData(page, pageSize, action) {
 
 export default function ProfilePage() {
   const installedApp = useInstalledApp();
+  const visibility = usePublicVisibility();
   const { confirm } = useConfirm();
   const { user, isAuthenticated, loading, fetchProfile, updateProfile, updateNotificationChannels, deleteAccount } = useAuthStore();
   const [form, setForm] = useState({ full_name: "", phone: "", nationality: "Filipino" });
@@ -177,7 +179,7 @@ export default function ProfilePage() {
   }, [user, initialized]);
 
   useEffect(() => {
-    if (!isAuthenticated || !user?.id || user?.role !== "tourist") return undefined;
+    if (!visibility.rewardsEnabled || !isAuthenticated || !user?.id || user?.role !== "tourist") return undefined;
 
     let cancelled = false;
 
@@ -206,10 +208,10 @@ export default function ProfilePage() {
     return () => {
       cancelled = true;
     };
-  }, [isAuthenticated, user?.id, user?.role, pointsRetry]);
+  }, [visibility.rewardsEnabled, isAuthenticated, user?.id, user?.role, pointsRetry]);
 
   useEffect(() => {
-    if (!isAuthenticated || !user?.id || user?.role !== "tourist") return undefined;
+    if (!visibility.rewardsEnabled || !isAuthenticated || !user?.id || user?.role !== "tourist") return undefined;
     const refreshIfVisible = () => {
       if (document.visibilityState === "visible") refreshPoints(false);
     };
@@ -221,11 +223,11 @@ export default function ProfilePage() {
       document.removeEventListener("visibilitychange", refreshIfVisible);
       window.clearInterval(timer);
     };
-  }, [isAuthenticated, user?.id, user?.role, refreshPoints]);
+  }, [visibility.rewardsEnabled, isAuthenticated, user?.id, user?.role, refreshPoints]);
 
   const pointsHistoryRequestKey = `${user?.id || ""}:${pointsHistoryPage}:${pointsHistoryRetry}`;
   useEffect(() => {
-    if (!pointsHistoryOpen || !isAuthenticated || !user?.id || user?.role !== "tourist") return undefined;
+    if (!visibility.rewardsEnabled || !pointsHistoryOpen || !isAuthenticated || !user?.id || user?.role !== "tourist") return undefined;
     let cancelled = false;
     const requestKey = `${user.id}:${pointsHistoryPage}:${pointsHistoryRetry}`;
 
@@ -243,7 +245,11 @@ export default function ProfilePage() {
       });
 
     return () => { cancelled = true; };
-  }, [pointsHistoryOpen, isAuthenticated, user?.id, user?.role, pointsHistoryPage, pointsHistoryRetry]);
+  }, [visibility.rewardsEnabled, pointsHistoryOpen, isAuthenticated, user?.id, user?.role, pointsHistoryPage, pointsHistoryRetry]);
+
+  useEffect(() => {
+    if (!visibility.rewardsEnabled) setPointsHistoryOpen(false);
+  }, [visibility.rewardsEnabled]);
 
   const pointsHistoryIsCurrent = pointsHistoryState.requestKey === pointsHistoryRequestKey;
   const pointsHistoryLoading = pointsHistoryOpen && !pointsHistoryIsCurrent;
@@ -376,8 +382,8 @@ export default function ProfilePage() {
                   <p className="mt-2 break-all text-sm font-medium text-zinc-600">{user?.email || "—"}</p>
                 </div>
               </div>
-              {user?.role === "tourist" ? (
-                <div className="min-w-[10rem]">
+              {user?.role === "tourist" && visibility.rewardsEnabled ? (
+                <div className="min-w-0 max-w-xs sm:min-w-[10rem]">
                   {pointsLoading || pointsUserId !== user.id ? (
                     <p className="flex items-center gap-2 text-sm font-medium text-zinc-500" role="status">
                       <Loader2 size={16} className="animate-spin" /> Loading points...
@@ -390,6 +396,9 @@ export default function ProfilePage() {
                     <div>
                       <p className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-blue-700">
                         <Coins size={14} /> {formatPoints(points.balance)} pts
+                      </p>
+                      <p className="mt-1 text-[10px] leading-relaxed text-zinc-500">
+                        Placeholder balance only — points are not redeemable or connected to the main wallet.
                       </p>
                       <button
                         type="button"
@@ -410,14 +419,16 @@ export default function ProfilePage() {
             </div>
             {user?.role !== "admin" ? (
               <p className="mt-4 text-xs font-bold text-zinc-600">
-                Phone alerts: SMS {user?.notification_channels?.sms === false ? "off" : "on"}
+                Preferences: Email {user?.notification_channels?.email === false ? "off" : "on"}
                 <span className="mx-2 text-zinc-300">·</span>
-                App {user?.notification_channels?.app === false ? "off" : "on"}
+                SMS {user?.notification_channels?.sms === false ? "off" : "on"}
+                <span className="mx-2 text-zinc-300">·</span>
+                In-app {user?.notification_channels?.app === false ? "off" : "on"}
               </p>
             ) : null}
             <div className="mt-4 flex flex-wrap gap-x-4 gap-y-2 border-t border-zinc-100 pt-4">
               <Link href="/notifications" className="text-xs font-black uppercase tracking-widest text-blue-600 hover:underline">
-                Notifications
+                Notification inbox
               </Link>
               <Link href="/crisis/reports" className="text-xs font-black uppercase tracking-widest text-blue-600 hover:underline">
                 My Reports
@@ -430,17 +441,17 @@ export default function ProfilePage() {
 
           <ProfileFold
             title="Alerts"
-            text="Communication channels and alerts on this phone."
+            text="Manage email, SMS, in-app, and browser push notifications."
             open={openPanel === "alerts"}
             onToggle={() => setOpenPanel((current) => (current === "alerts" ? null : "alerts"))}
           >
           {user?.role !== "admin" ? (
-            <PublicPanel title="Communication preferences" subtitle="SMS and in-app channels">
+            <PublicPanel title="Communication preferences" subtitle="Email, SMS, and in-app updates">
               <p className="text-sm text-zinc-500 font-medium mb-4">
-                Control SMS and in-app notifications. Official crisis alert emails are always sent to your registered email address during emergencies.
+                These preferences control your account updates. For crisis and area-hazard broadcasts, the Tourism Office selects channels for each alert; broadcast emails may be sent to eligible accounts with an email on file even when your Email preference is off. SMS and in-app broadcasts also require the matching preference to be on.
                 {user?.notification_channels && !user.notification_channels.sms ? (
                   <span className="block mt-2 text-amber-700">
-                    SMS is currently off. Sign in regularly and re-enable SMS here to receive text alerts again.
+                    SMS is off. If it was paused after 30 days of inactivity, sign in and turn it back on here to resume text alerts.
                   </span>
                 ) : null}
               </p>
@@ -468,8 +479,8 @@ export default function ProfilePage() {
           )}
 
           <PublicPanel
-            title={installedApp ? "Phone alerts" : "Browser push notifications"}
-            subtitle={installedApp ? "Alerts on this phone." : "Optional system banners for phone and desktop"}
+            title={installedApp ? "Push alerts on this device" : "Browser and desktop push alerts"}
+            subtitle="Optional system notifications, managed separately from in-app alerts"
           >
             <WebPushSettings />
           </PublicPanel>
@@ -574,7 +585,7 @@ export default function ProfilePage() {
                 <AlertTriangle size={18} className="text-red-600 shrink-0 mt-0.5" />
                 <span>
                 If you no longer want alerts from CONNECT-DAET, you can permanently delete your account.
-                Inactive accounts (30+ days without signing in) have SMS paused automatically until you sign in again.
+                After 30 days without signing in, SMS may be paused automatically. Signing in does not turn it back on; re-enable SMS in Communication Preferences if you want text alerts.
                 </span>
               </p>
               {deleteError && (
@@ -596,13 +607,16 @@ export default function ProfilePage() {
         )}
       </PublicPageContent>
 
-      <PublicListModal
+      {visibility.rewardsEnabled ? <PublicListModal
         open={pointsHistoryOpen}
         onClose={() => setPointsHistoryOpen(false)}
         title="Points history"
         subtitle={pointsHistoryIsCurrent ? `${pointsHistoryCount} point transactions` : "Loading your transaction history"}
       >
-        {pointsHistoryError ? (
+      <p className="rounded-xl border border-amber-200 bg-amber-50 p-3 text-xs font-medium leading-relaxed text-amber-900">
+        This is a placeholder balance only. Points are not redeemable and are not connected to the main wallet.
+      </p>
+      {pointsHistoryError ? (
           <ErrorState
             title="Could not load points history"
             message={pointsHistoryError}
@@ -682,7 +696,7 @@ export default function ProfilePage() {
             ) : null}
           </div>
         )}
-      </PublicListModal>
+      </PublicListModal> : null}
 
     </PublicPageShell>
   );

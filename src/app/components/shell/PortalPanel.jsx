@@ -43,14 +43,14 @@ export function PortalPanel({
 
         <div
 
-          className={`${headerClass} flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1 sm:gap-2`}
+          className={`${headerClass} flex min-w-0 flex-col items-start gap-2 sm:flex-row sm:items-center sm:justify-between sm:gap-2`}
 
         >
 
           <div className="min-w-0">
             {title ? (
               <div className="flex flex-wrap items-center gap-2">
-                <h2 className={`${typography.sectionTitle} text-zinc-500`}>{title}</h2>
+                <h2 className={`${typography.sectionTitle} break-words text-zinc-500`}>{title}</h2>
                 {badgeCount > 0 ? (
                   <span
                     className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[9px] font-black uppercase tracking-wide ${
@@ -78,7 +78,7 @@ export function PortalPanel({
 
           </div>
 
-          {action ? <div className="shrink-0">{action}</div> : null}
+          {action ? <div className="flex w-full max-w-full flex-wrap items-center gap-2 sm:w-auto sm:shrink-0">{action}</div> : null}
 
         </div>
 
@@ -95,4 +95,3 @@ export function PortalPanel({
   );
 
 }
-

@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { Coins } from "lucide-react";
 import { useAuthStore } from "@/app/store/crisisStore";
@@ -13,79 +13,66 @@ function rememberPoints(userId, balance) {
   rememberedPoints = { userId, balance };
 }
 
-export function HeaderPoints({ variant = "chip" }) {
+export function HeaderPoints({ enabled }) {
   const { user, isAuthenticated } = useAuthStore();
   const [balance, setBalance] = useState(() => (
     user?.id && rememberedPoints.userId === user.id ? rememberedPoints.balance : null
   ));
 
-  const loadBalance = useCallback(async () => {
-    if (!isAuthenticated || user?.role !== "tourist" || !user?.id) {
-      rememberPoints(null, null);
-      setBalance(null);
-      return;
-    }
-    if (rememberedPoints.userId === user.id && rememberedPoints.balance != null) {
-      setBalance(rememberedPoints.balance);
-    }
-    try {
-      const session = await getActiveSession();
-      if (!session?.access_token) return;
+  useEffect(() => {
+    let cancelled = false;
+    async function loadBalance() {
+      if (!enabled || !isAuthenticated || user?.role !== "tourist" || !user?.id) {
+        rememberPoints(null, null);
+        return;
+      }
+      try {
+        const session = await getActiveSession();
+        if (cancelled) return;
+        if (rememberedPoints.userId === user.id && rememberedPoints.balance != null) {
+          setBalance(rememberedPoints.balance);
+        } else {
+          setBalance(null);
+        }
+        if (!session?.access_token) return;
       const response = await fetch("/api/tourist/points?page=1&pageSize=1", {
         cache: "no-store",
         headers: { Authorization: `Bearer ${session.access_token}` },
       });
-      const result = await response.json().catch(() => ({}));
-      if (!response.ok) return;
-      const next = Number(result.balance) || 0;
-      rememberPoints(user.id, next);
-      setBalance(next);
-    } catch {
-      if (rememberedPoints.userId !== user.id) {
-        setBalance(null);
+        const result = await response.json().catch(() => ({}));
+        if (cancelled || !response.ok) return;
+        const next = Number(result.balance) || 0;
+        rememberPoints(user.id, next);
+        setBalance(next);
+      } catch {
+        if (!cancelled && rememberedPoints.userId !== user.id) {
+          setBalance(null);
+        }
       }
     }
-  }, [isAuthenticated, user?.id, user?.role]);
 
-  useEffect(() => {
     loadBalance();
-  }, [loadBalance]);
-
-  useEffect(() => {
-    const refresh = () => {
-      loadBalance();
+    window.addEventListener(REWARD_EARNED_EVENT, loadBalance);
+    return () => {
+      cancelled = true;
+      window.removeEventListener(REWARD_EARNED_EVENT, loadBalance);
     };
-    window.addEventListener(REWARD_EARNED_EVENT, refresh);
-    return () => window.removeEventListener(REWARD_EARNED_EVENT, refresh);
-  }, [loadBalance]);
+  }, [enabled, isAuthenticated, user]);
 
-  if (!isAuthenticated || user?.role !== "tourist") return null;
+  if (!enabled || !isAuthenticated || user?.role !== "tourist") return null;
 
   const label = balance == null ? "Points" : `${balance.toLocaleString()} pts`;
-
-  if (variant === "menu") {
-    return (
-      <Link
-        href="/profile"
-        className="flex items-center gap-3 rounded-xl px-3 py-2.5 text-[11px] font-black uppercase tracking-widest text-amber-800 hover:bg-amber-50"
-      >
-        <Coins size={16} className="shrink-0 text-amber-600" />
-        {label}
-      </Link>
-    );
-  }
-
-  if (variant === "inline") {
-    return (
-      <span className="inline-block min-w-[3.5rem] text-amber-700" title="Your points">
-        {balance == null ? "\u00a0" : label}
-      </span>
-    );
-  }
+  const description = "Placeholder balance only. Points are not redeemable and are not connected to the main wallet.";
 
   return (
-    <span className="inline-block min-w-[3.4rem] whitespace-nowrap text-center text-[9px] font-black leading-none text-amber-800" title={label}>
-      {balance == null ? "\u00a0" : `${balance.toLocaleString()} pts`}
-    </span>
+    <Link
+      href="/profile"
+      className="inline-flex h-9 shrink-0 items-center gap-1 rounded-full border border-amber-200 bg-amber-50 px-2 text-[10px] font-black leading-none text-amber-800 hover:bg-amber-100 sm:gap-1.5 sm:px-2.5"
+      title={`${label}. ${description}`}
+      aria-label={`${label}. ${description}`}
+    >
+      <Coins size={14} className="shrink-0 text-amber-600" />
+      {balance == null ? "Points" : `${balance.toLocaleString()} pts`}
+    </Link>
   );
 }

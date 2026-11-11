@@ -457,8 +457,8 @@ export const portalShell = {
   panelHeaderCompact: "px-3 sm:px-4 py-2 border-b border-zinc-100 bg-zinc-50/70",
   panelBody: "p-4 sm:p-6",
   panelBodyCompact: "p-2.5 sm:p-3",
-  pageIntro: "flex h-[8.25rem] flex-col justify-center overflow-hidden rounded-2xl border border-zinc-200 bg-white px-4 sm:px-6 py-4 shadow-sm",
-  pageIntroDescription: "text-sm text-zinc-500 font-medium leading-relaxed line-clamp-1",
+  pageIntro: "flex min-h-[8.25rem] flex-col justify-center rounded-2xl border border-zinc-200 bg-white px-4 sm:px-6 py-4 shadow-sm",
+  pageIntroDescription: "text-sm text-zinc-500 font-medium leading-relaxed",
   input:
     "w-full px-3 py-2.5 bg-zinc-50 border border-zinc-200 rounded-xl text-sm font-medium text-zinc-900 outline-none focus:ring-2 focus:ring-blue-500/25 focus:border-blue-400 transition-shadow",
   select:
@@ -483,14 +483,14 @@ export const portalShell = {
 /** Admin portal layout */
 export const adminShell = {
   ...portalShell,
-  main: "flex-1 overflow-y-auto p-4 md:p-6 lg:p-8 bg-zinc-100/80",
+  main: "flex-1 min-h-0 overflow-y-auto p-4 md:p-6 lg:p-8 bg-zinc-100/80",
   page: `max-w-[1520px] mx-auto w-full text-left ${portalLayout.stack} ${portalLayout.padBottom}`,
 };
 
 /** Guide portal layout */
 export const guideShell = {
   ...portalShell,
-  main: "flex-1 overflow-y-auto p-4 md:p-6 lg:p-8 bg-zinc-100/80",
+  main: "flex-1 min-h-0 overflow-y-auto p-4 md:p-6 lg:p-8 bg-zinc-100/80",
   page: `max-w-[1520px] mx-auto w-full text-left ${portalLayout.stack} ${portalLayout.padBottom}`,
   btnGuide:
     "inline-flex items-center justify-center gap-2 bg-purple-600 text-white px-4 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-purple-700 transition-colors",
@@ -503,4 +503,3 @@ export const publicShell = {
   pageNarrow: `max-w-4xl mx-auto w-full ${portalLayout.stackPublic} ${portalLayout.padBottom}`,
   pageWide: `max-w-7xl mx-auto w-full ${portalLayout.stackPublic} ${portalLayout.padBottom}`,
 };
-

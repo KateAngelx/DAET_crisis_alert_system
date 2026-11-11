@@ -6,7 +6,10 @@ import { DEFAULT_PUBLIC_VISIBILITY, normalizePublicVisibility } from "@/lib/publ
 let cachedVisibility = null;
 
 export function usePublicVisibility() {
-  const [visibility, setVisibility] = useState(cachedVisibility || DEFAULT_PUBLIC_VISIBILITY);
+  const [visibility, setVisibility] = useState(cachedVisibility || {
+    ...DEFAULT_PUBLIC_VISIBILITY,
+    rewardsEnabled: false,
+  });
 
   useEffect(() => {
     let cancelled = false;
@@ -14,7 +17,10 @@ export function usePublicVisibility() {
       .then((res) => res.json())
       .then((data) => {
         if (cancelled || !data?.visibility) return;
-        const next = normalizePublicVisibility(data.visibility);
+        const next = {
+          ...normalizePublicVisibility(data.visibility),
+          rewardsEnabled: data.rewardsEnabled === true,
+        };
         cachedVisibility = next;
         setVisibility(next);
       })

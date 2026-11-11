@@ -4,6 +4,7 @@ import React, { useCallback, useEffect, useState } from "react";
 import { Compass, RefreshCw, Search } from "lucide-react";
 import { ListPager } from "@/app/components/shell/ListPager";
 import { AdminPanel } from "@/app/components/admin/AdminPanel";
+import { ResponsiveAdminTable } from "@/app/components/admin/ResponsiveAdminTable";
 import { DashboardPageHeader } from "@/app/components/dashboard/DashboardPageHeader";
 import { AsyncState, EmptyState } from "@/app/components/ui/AsyncState";
 import { useConfirm } from "@/app/components/ui/ConfirmDialogProvider";
@@ -197,7 +198,7 @@ export default function AdminGuideAssistancePage() {
           loadingFallback={<div className="rounded-2xl border border-zinc-200 bg-white p-8 text-center text-sm font-medium text-zinc-500">Loading requests…</div>}
           emptyFallback={<EmptyState icon={Compass} title="No assistance requests found" description="Try a different search or status filter." />}
         >
-          <div className="overflow-x-auto rounded-xl border border-zinc-200 bg-white">
+          <ResponsiveAdminTable label="Tourist guide assistance requests">
             <table className="w-full min-w-[1450px] border-collapse text-left">
               <thead className="bg-zinc-50">
                 <tr>
@@ -324,7 +325,7 @@ export default function AdminGuideAssistancePage() {
                 })}
               </tbody>
             </table>
-          </div>
+          </ResponsiveAdminTable>
         </AsyncState>
 
         <ListPager page={page} pageCount={pageCount} onPage={setPage} disabled={loading} />

@@ -8,6 +8,7 @@ import { AdminFilterBar } from "@/app/components/admin/AdminFilterBar";
 import { AdminPanel } from "@/app/components/admin/AdminPanel";
 import { AdminDashboardKpiSection } from "@/app/components/admin/AdminDashboardKpiSection";
 import { AdminActivityDetailModal } from "@/app/components/admin/AdminActivityDetailModal";
+import { ResponsiveAdminTable } from "@/app/components/admin/ResponsiveAdminTable";
 import { RoleContextBanner } from "@/app/components/dashboard/RoleContextBanner";
 import { AdminActivityTableSkeleton, StatCardSkeletonGrid } from "@/app/components/ui/Skeletons";
 import { ListPager } from "@/app/components/shell/ListPager";
@@ -192,7 +193,7 @@ export default function AdminActivityLogPage() {
         ) : paginated.length === 0 ? (
           <p className="text-xs text-zinc-500 font-medium py-10 text-center">No activity matches your filters.</p>
         ) : (
-          <div className={`${portalLayout.listScrollPaneAdmin} overflow-x-auto`}>
+          <ResponsiveAdminTable label="Recent activity" desktopClassName={portalLayout.listScrollPaneAdmin}>
             <table className="w-full border-collapse text-xs min-w-[720px]">
               <thead>
                 <tr className="bg-zinc-50 text-zinc-500 text-[9px] uppercase tracking-widest font-black">
@@ -232,7 +233,7 @@ export default function AdminActivityLogPage() {
                 ))}
               </tbody>
             </table>
-          </div>
+          </ResponsiveAdminTable>
         )}
 
         <ListPager page={page} pageCount={totalPages} onPage={setPage} disabled={loading} />

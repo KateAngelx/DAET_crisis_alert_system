@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { AlertTriangle, BookOpen, CheckCircle2, CircleHelp, Compass, FileText, Home, Info, LogOut, Menu, MessageSquare, Route, User, X } from "lucide-react";
+import { AlertTriangle, BookOpen, CheckCircle2, CircleHelp, CircleUserRound, Compass, FileText, Home, Info, LogOut, Menu, MessageSquare, Route, User, X } from "lucide-react";
 import { BrandLogo } from "@/app/components/BrandLogo";
 import { siteInfo } from "@/lib/siteInfo";
 import { useAuthStore } from "../store/crisisStore";
@@ -161,6 +161,7 @@ export function PublicHeader() {
 
               <div className="relative z-20 col-start-3 flex items-center justify-end gap-1.5 bg-white md:gap-2">
                 {isAuthenticated && <NotificationPanel />}
+                <HeaderPoints enabled={visibility.rewardsEnabled} />
 
                 {showGuestActions ? guestActions : null}
 
@@ -174,23 +175,20 @@ export function PublicHeader() {
                             setMenuOpen(false);
                             setAccountOpen((open) => !open);
                           }}
-                          className="inline-flex h-10 min-w-9 flex-col items-center justify-center gap-0.5 rounded-xl border border-zinc-200/90 bg-white px-1.5 text-zinc-700 hover:bg-zinc-50 transition-colors lg:h-auto lg:flex-row lg:gap-2 lg:rounded-full lg:py-1.5 lg:pl-2 lg:pr-3 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-200"
+                          className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-zinc-200/90 bg-white text-zinc-700 hover:bg-zinc-50 transition-colors lg:h-auto lg:w-auto lg:gap-2 lg:rounded-full lg:py-1.5 lg:pl-2 lg:pr-3 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-200"
                           aria-label="Account menu"
                           aria-expanded={accountOpen}
                         >
-                          <span className="flex h-7 w-7 items-center justify-center rounded-full bg-blue-600 text-white">
-                            <User size={14} />
+                          <span className="flex h-8 w-8 items-center justify-center rounded-full bg-blue-50 text-blue-600">
+                            <CircleUserRound size={22} strokeWidth={1.8} />
                           </span>
                           <span className="hidden text-left leading-none lg:block">
                             <span className="block max-w-32 truncate text-[11px] font-black uppercase tracking-tight text-zinc-900 dark:text-zinc-100">
                               {user?.name}
                             </span>
                             <span className="text-[9px] font-bold uppercase tracking-widest text-blue-600">
-                              {user?.role === "tourist" ? <HeaderPoints variant="inline" /> : (user?.role || "tourist")}
+                              {user?.role || "tourist"}
                             </span>
-                          </span>
-                          <span className="lg:hidden">
-                            <HeaderPoints />
                           </span>
                         </button>
                         {accountOpen ? (
@@ -206,7 +204,6 @@ export function PublicHeader() {
                                 <p className={`px-3 pb-1 pt-3 text-[10px] font-black uppercase tracking-[0.2em] ${section.tone}`}>
                                   {section.title}
                                 </p>
-                                {section.title === "Account" ? <HeaderPoints variant="menu" /> : null}
                                 {section.title === "Account" && showTour ? (
                                   <button
                                     type="button"

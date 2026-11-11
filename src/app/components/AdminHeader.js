@@ -24,8 +24,8 @@ export function AdminHeader() {
   useInstalledApp();
 
   return (
-    <header className="h-[72px] bg-white border-b border-zinc-200 px-4 lg:px-6 flex items-center justify-between sticky top-0 z-10 dashboard-shell">
-      <div className="flex items-center gap-4">
+    <header className="h-16 shrink-0 bg-white border-b border-zinc-200 px-2.5 sm:px-4 lg:px-6 flex items-center justify-between sticky top-0 z-10 dashboard-shell">
+      <div className="flex min-w-0 items-center gap-2 sm:gap-4">
         <MobileAdminMenu
           open={menuOpen}
           onOpen={() => setMenuOpen(true)}
@@ -40,11 +40,11 @@ export function AdminHeader() {
         </div>
       </div>
 
-      <div className="flex items-center gap-3">
+      <div className="flex shrink-0 items-center gap-1.5 sm:gap-3">
         <NotificationPanel />
 
-        <div className="flex items-center gap-2 px-3 py-2 bg-zinc-50 rounded-2xl border border-zinc-100">
-          <div className="bg-blue-600 p-1.5 rounded-lg">
+        <div className="flex items-center gap-1 rounded-2xl border border-zinc-100 bg-zinc-50 px-1.5 py-1.5 sm:gap-2 sm:px-3 sm:py-2">
+          <div className="hidden rounded-lg bg-blue-600 p-1.5 sm:block">
             <User size={16} className="text-white" />
           </div>
           <div className="hidden md:block leading-none text-left">

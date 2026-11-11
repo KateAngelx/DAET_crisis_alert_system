@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import Link from "next/link";
 import { ArrowRight, ClipboardList, Loader2 } from "lucide-react";
 import { AdminPanel } from "@/app/components/admin/AdminPanel";
@@ -9,16 +9,14 @@ import { adminShell, iconSize, portalLayout } from "@/lib/designSystem";
 import { formatIncidentAuditAction } from "@/lib/incidentAuditUtils";
 import { incidentStatusBadgeClass, normalizeIncidentStatusLabel } from "@/lib/incidentStatusUtils";
 import { AdminTablePlaceholderSkeleton } from "@/app/components/ui/Skeletons";
+import { ResponsiveAdminTable } from "@/app/components/admin/ResponsiveAdminTable";
 
 export function IncidentReportsAuditLog({ entries, loading, onRefresh }) {
-  const [page, setPage] = useState(1);
+  const [pageState, setPageState] = useState({ signature: null, page: 1 });
   const pageSize = 10;
   const signature = entries.map((row) => row.id).join("|");
-
-  useEffect(() => {
-    setPage(1);
-  }, [signature]);
-
+  const page = pageState.signature === signature ? pageState.page : 1;
+  const setPage = (nextPage) => setPageState({ signature, page: nextPage });
   const pageCount = Math.max(1, Math.ceil(entries.length / pageSize));
   const safePage = Math.min(page, pageCount);
   const visibleEntries = entries.slice((safePage - 1) * pageSize, safePage * pageSize);
@@ -53,8 +51,9 @@ export function IncidentReportsAuditLog({ entries, loading, onRefresh }) {
           No audit entries yet. Approve or update reports to see activity here.
         </p>
       ) : (
-        <div className={`${portalLayout.listScrollPaneAdmin} overflow-x-auto`}>
-          <table className="w-full border-collapse text-xs min-w-[640px]">
+        <>
+          <ResponsiveAdminTable label="Incident audit log" desktopClassName={portalLayout.listScrollPaneAdmin}>
+            <table className="w-full border-collapse text-xs min-w-[640px]">
             <thead>
               <tr className="bg-zinc-50 text-zinc-500 text-[9px] uppercase tracking-widest font-black">
                 <th className="px-4 py-3 text-left">When</th>
@@ -99,9 +98,10 @@ export function IncidentReportsAuditLog({ entries, loading, onRefresh }) {
                 );
               })}
             </tbody>
-          </table>
+            </table>
+          </ResponsiveAdminTable>
           <ListPager page={safePage} pageCount={pageCount} onPage={setPage} />
-        </div>
+        </>
       )}
     </AdminPanel>
   );

@@ -23,6 +23,7 @@ import {
   AdminDashboardQuickNavRow,
 } from "@/app/components/admin/AdminDashboardQuickNavLink";
 import { AdminPanel } from "@/app/components/admin/AdminPanel";
+import { ResponsiveAdminTable } from "@/app/components/admin/ResponsiveAdminTable";
 import { RoleContextBanner } from "@/app/components/dashboard/RoleContextBanner";
 import { useCrisisStore } from "@/app/store/crisisStore";
 import { useIncidentStore } from "@/app/store/incidentStore";
@@ -220,7 +221,7 @@ export default function AdminArchivePage() {
           ) : closedIncidents.length === 0 ? (
             <p className="text-xs text-zinc-500 font-medium py-8 text-center">No closed incidents yet.</p>
           ) : (
-            <div className={`${listPane} overflow-x-auto`}>
+            <ResponsiveAdminTable label="Closed incidents" desktopClassName={listPane}>
               <table className="w-full border-collapse text-xs">
                 <thead>
                   <tr className="bg-zinc-50 text-zinc-500 text-[9px] uppercase tracking-widest font-black">
@@ -249,7 +250,7 @@ export default function AdminArchivePage() {
                   ))}
                 </tbody>
               </table>
-            </div>
+            </ResponsiveAdminTable>
           )}
         </AdminPanel>
 

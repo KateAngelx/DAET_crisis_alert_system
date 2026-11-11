@@ -1,6 +1,7 @@
 import React from "react";
 
 import { AdminPanel } from "@/app/components/admin/AdminPanel";
+import { ResponsiveAdminTable } from "@/app/components/admin/ResponsiveAdminTable";
 
 
 
@@ -22,11 +23,11 @@ export function AdminTablePanel({ title, subtitle, action, children, className =
 
       noPadding
 
-      bodyClassName="overflow-x-auto"
+      bodyClassName="min-w-0 overflow-hidden"
 
     >
 
-      {children}
+      <ResponsiveAdminTable label={title || "Records"}>{children}</ResponsiveAdminTable>
 
     </AdminPanel>
 
@@ -49,4 +50,3 @@ export const adminTableClasses = {
   table: "w-full text-sm text-left",
 
 };
-

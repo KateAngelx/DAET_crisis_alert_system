@@ -48,7 +48,7 @@ const faqs = [
 
     q: "How do I receive emergency notifications?",
 
-    a: `Create an account with a valid email and phone number. When the ${siteInfo.officeName} issues an alert, notifications are sent through the channels selected for that alert (app, email, and/or SMS).`,
+    a: `Create an account with a valid email and phone number. The ${siteInfo.officeName} selects channels for each crisis alert. SMS and in-app delivery also depend on your Profile preferences; broadcast email may be sent when the office includes Email for an alert. Browser push is managed separately in Profile.`,
 
   },
 
@@ -207,5 +207,4 @@ export default function FaqPage() {
   );
 
 }
-
 

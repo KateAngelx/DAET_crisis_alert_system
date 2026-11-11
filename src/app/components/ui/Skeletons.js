@@ -1,7 +1,7 @@
 import React from "react";
 import { Skeleton } from "@/app/components/ui/Skeleton";
 import { Card } from "@/app/components/ui/Card";
-import { statGrid, statCard, outlinedCard, portalLayout } from "@/lib/designSystem";
+import { statGrid, statCard, outlinedCard } from "@/lib/designSystem";
 import { OutlinedCard } from "@/app/components/ui/OutlinedCard";
 
 export function StatCardSkeleton() {
@@ -318,36 +318,56 @@ export function FeedbackWallSkeleton() {
   );
 }
 
+function AdminTableCardSkeletons({ rows }) {
+  return (
+    <div className="space-y-2 lg:hidden">
+      {Array.from({ length: rows }).map((_, index) => (
+        <div key={index} className="rounded-xl border border-zinc-200 bg-white p-3">
+          <Skeleton className="h-4 w-2/5" />
+          <Skeleton className="mt-2 h-3 w-4/5" />
+          <Skeleton className="mt-2 h-3 w-3/5" />
+        </div>
+      ))}
+    </div>
+  );
+}
+
 export function AdminActivityTableSkeleton({ rows = 8 }) {
   return (
-    <div className={`${portalLayout.listScrollPaneAdmin} overflow-x-auto`} role="status" aria-label="Loading activity">
-      <table className="w-full border-collapse text-xs min-w-[720px]">
-        <thead>
-          <tr className="bg-zinc-50 text-zinc-500 text-[9px] uppercase tracking-widest font-black">
-            <th className="px-4 py-3 text-left">When</th>
-            <th className="px-4 py-3 text-left">Source</th>
-            <th className="px-4 py-3 text-left">Action</th>
-            <th className="px-4 py-3 text-left">Subject</th>
-            <th className="px-4 py-3 text-left">Actor</th>
-            <th className="px-4 py-3 text-right">Details</th>
-          </tr>
-        </thead>
-        <tbody className="divide-y divide-zinc-100">
-          <TableSkeleton rows={rows} columns={6} />
-        </tbody>
-      </table>
+    <div role="status" aria-label="Loading activity">
+      <AdminTableCardSkeletons rows={Math.min(rows, 5)} />
+      <div className="hidden overflow-x-auto lg:block">
+        <table className="w-full border-collapse text-xs min-w-[720px]">
+          <thead>
+            <tr className="bg-zinc-50 text-zinc-500 text-[9px] uppercase tracking-widest font-black">
+              <th className="px-4 py-3 text-left">When</th>
+              <th className="px-4 py-3 text-left">Source</th>
+              <th className="px-4 py-3 text-left">Action</th>
+              <th className="px-4 py-3 text-left">Subject</th>
+              <th className="px-4 py-3 text-left">Actor</th>
+              <th className="px-4 py-3 text-right">Details</th>
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-zinc-100">
+            <TableSkeleton rows={rows} columns={6} />
+          </tbody>
+        </table>
+      </div>
     </div>
   );
 }
 
 export function AdminTablePlaceholderSkeleton({ rows = 6, columns = 5 }) {
   return (
-    <div className="overflow-x-auto py-2" role="status" aria-label="Loading table">
-      <table className="w-full border-collapse">
-        <tbody>
-          <TableSkeleton rows={rows} columns={columns} />
-        </tbody>
-      </table>
+    <div className="py-2" role="status" aria-label="Loading table">
+      <AdminTableCardSkeletons rows={Math.min(rows, 5)} />
+      <div className="hidden overflow-x-auto lg:block">
+        <table className="w-full border-collapse">
+          <tbody>
+            <TableSkeleton rows={rows} columns={columns} />
+          </tbody>
+        </table>
+      </div>
     </div>
   );
 }

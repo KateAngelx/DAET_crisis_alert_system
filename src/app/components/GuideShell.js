@@ -121,7 +121,7 @@ export function MobileGuideMenu({ open, onOpen, onClose, installed = false }) {
       {open && (
         <>
           <div className="fixed inset-0 bg-black/50 z-40 lg:hidden backdrop-blur-sm" onClick={onClose} />
-          <div className="fixed inset-y-0 left-0 w-[280px] bg-white z-50 lg:hidden overflow-y-auto shadow-2xl animate-in slide-in-from-left duration-300 dashboard-shell">
+          <div className="fixed inset-y-0 left-0 w-[min(280px,85vw)] bg-white z-50 lg:hidden overflow-y-auto shadow-2xl animate-in slide-in-from-left duration-300 dashboard-shell">
             <div className="flex items-center justify-between p-4 border-b border-zinc-200">
               <span className="text-sm font-black text-blue-600 uppercase">Guide Portal</span>
               <button onClick={onClose} className="p-2 hover:bg-zinc-100 rounded-lg" aria-label="Close menu">
@@ -182,24 +182,24 @@ export function GuideHeader() {
   const installedApp = useInstalledApp();
 
   return (
-    <header className="h-[72px] bg-white border-b border-zinc-200 px-4 lg:px-6 flex items-center justify-between sticky top-0 z-10 dashboard-shell">
-      <div className="flex items-center gap-4">
+    <header className="h-16 shrink-0 bg-white border-b border-zinc-200 px-3 sm:px-4 lg:px-6 flex items-center justify-between sticky top-0 z-10 dashboard-shell">
+      <div className="flex min-w-0 items-center gap-2 sm:gap-4">
         <MobileGuideMenu
           open={menuOpen}
           installed={installedApp}
           onOpen={() => setMenuOpen(true)}
           onClose={() => setMenuOpen(false)}
         />
-        <div className="hidden sm:block">
-          <p className={`${typography.statLabel} tracking-[0.2em] text-zinc-400 leading-none mb-0.5`}>Guide portal</p>
-          <h1 className={`${typography.pageTitle} leading-none text-zinc-800`}>Tour operations</h1>
+        <div className="min-w-0">
+          <p className={`${typography.statLabel} hidden tracking-[0.2em] text-zinc-400 leading-none mb-0.5 sm:block`}>Guide portal</p>
+          <h1 className="truncate text-sm font-black tracking-tight leading-tight text-zinc-800 sm:text-2xl md:text-[28px]">Tour operations</h1>
         </div>
       </div>
 
-      <div className="flex items-center gap-3">
+      <div className="flex shrink-0 items-center gap-1.5 sm:gap-3">
         <NotificationPanel />
-        <div className="flex items-center gap-2 px-3 py-2 bg-zinc-50 rounded-2xl border border-zinc-100">
-          <div className="bg-purple-100 p-1.5 rounded-lg">
+        <div className="flex items-center gap-1 sm:gap-2 rounded-2xl border border-zinc-100 bg-zinc-50 px-1.5 py-1.5 sm:px-3 sm:py-2">
+          <div className="hidden rounded-lg bg-purple-100 p-1.5 sm:block">
             <Users size={16} className="text-purple-600" />
           </div>
           <div className="hidden md:block leading-none text-left">

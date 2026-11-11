@@ -9,7 +9,7 @@ export default function CrisisAdminLayout({ children }) {
   return (
     <AuthGuard requiredRole="admin">
       <DashboardNavCountsProvider>
-        <div className="flex h-screen bg-zinc-50 overflow-hidden dashboard-shell scrollbar-none">
+        <div className="flex h-dvh min-h-0 bg-zinc-50 overflow-hidden dashboard-shell scrollbar-none">
           <AdminSidebar />
           <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
             <AdminHeader />

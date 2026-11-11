@@ -43,12 +43,12 @@ const STEPS = [
   {
     title: "Notifications",
     where: "Use the bell in the header. Preferences are in Profile.",
-    detail: "Alerts for your account appear there. SMS and browser alerts are switched on from Profile.",
+    detail: "Your in-app inbox is there. Manage email, SMS, and in-app preferences in Profile; browser push is a separate setting on supported devices.",
   },
   {
     title: "Points",
     where: "Your points number is in the header. The full history is in Profile.",
-    detail: "Marking this guide ready can add 10 points when the office has that reward turned on.",
+    detail: "This is a placeholder balance only: points are not redeemable or connected to the main wallet. Marking this guide complete can add 10 points when the office has that reward turned on.",
   },
 ];
 

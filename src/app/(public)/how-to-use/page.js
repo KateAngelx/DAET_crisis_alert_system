@@ -88,7 +88,7 @@ const GUIDE_SECTIONS = [
     title: "Receive notifications",
     summary: "Choose the channels available to your account and device.",
     steps: [
-      "Open Profile to manage SMS and in-app notification preferences.",
+      "Open Profile to manage email, SMS, and in-app preferences. Crisis broadcast email is controlled by the Tourism Office for each alert; browser push is a separate device setting.",
       "Open Notifications to read alerts and updates sent to your account. Browser push can be enabled in Profile on supported devices.",
     ],
     href: "/notifications",
@@ -98,10 +98,10 @@ const GUIDE_SECTIONS = [
     id: "points",
     icon: Coins,
     title: "View points and transaction history",
-    summary: "Your Profile shows your balance and recorded point activity.",
+    summary: "Your Profile shows a placeholder balance and recorded point activity. Points are not redeemable or connected to the main wallet.",
     steps: [
       "Open Profile and find My Points to see your current balance.",
-      "Choose View Points History to see recorded rewards, deductions, dates, and statuses where available.",
+      "Choose View Points History to see recorded rewards, deductions, dates, and statuses where available. This is a placeholder balance only; points cannot be redeemed and are not connected to the main wallet.",
     ],
     href: "/profile",
     action: "Open Profile",
@@ -254,7 +254,7 @@ export default function HowToUsePage() {
                 <p className="text-sm font-bold text-zinc-900">Guide completed</p>
                 <p className="mt-1 text-xs text-zinc-600">
                   {completion.rewardAwarded
-                    ? `Your one-time ${completion.pointsAwarded || 10}-point reward is recorded in My Points.`
+                    ? `Your one-time ${completion.pointsAwarded || 10}-point reward is recorded in your placeholder balance. Points are not redeemable or connected to the main wallet.`
                     : "Your completion is saved. No reward was recorded for this completion."}
                   {completion.completedAt ? ` Completed ${new Date(completion.completedAt).toLocaleDateString()}.` : ""}
                 </p>
