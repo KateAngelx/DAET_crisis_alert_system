@@ -29,7 +29,7 @@ async function authFetch(url, options = {}) {
 
 function ToggleIndicator({ enabled, enabledLabel = "On", disabledLabel = "Off" }) {
   return (
-    <span className="flex shrink-0 items-center gap-2">
+    <span className="flex shrink-0 flex-col items-center gap-1 sm:flex-row sm:gap-2">
       <span
         aria-hidden="true"
         className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${

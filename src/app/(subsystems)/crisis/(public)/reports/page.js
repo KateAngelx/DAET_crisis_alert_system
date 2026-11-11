@@ -303,11 +303,13 @@ function MyReportsContent() {
                   allLabel="All statuses"
                 />
               </div>
-              <StatusRecordList
-                rows={reportRows}
-                columnLabels={["Status", "Location", "Category", "Submitted"]}
-                emptyMessage="No reports match your search and filters."
-              />
+              <div className="mt-4">
+                <StatusRecordList
+                  rows={reportRows}
+                  columnLabels={["Status", "Location", "Category", "Submitted"]}
+                  emptyMessage="No reports match your search and filters."
+                />
+              </div>
               {filteredReports.length > REPORTS_PER_PAGE ? (
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-3 border-t border-zinc-100">
                   <p className="text-xs font-medium text-zinc-500">
