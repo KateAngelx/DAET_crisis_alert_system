@@ -30,9 +30,7 @@ function createEndpointIcon(label, color) {
 
 function FitRouteBounds({ positions }) {
   const map = useMap();
-  const signature = positions.length
-    ? `${positions.length}:${positions[0]?.join(",")}:${positions[positions.length - 1]?.join(",")}`
-    : "";
+  const signature = positions.length ? JSON.stringify(positions) : "";
 
   useEffect(() => {
     if (positions.length < 2) return;
@@ -73,9 +71,9 @@ export function RouteAdvisoryPolylines({
 
   return (
     <>
+      {fitBounds ? <FitRouteBounds positions={lines.flatMap(({ positions }) => positions)} /> : null}
       {lines.map(({ advisory, positions, style, highlighted }) => (
         <React.Fragment key={`${advisory.id}-${positions.length}`}>
-          {fitBounds ? <FitRouteBounds positions={positions} /> : null}
           <Polyline
             key={`${advisory.id}-${positions.length}`}
             positions={positions}

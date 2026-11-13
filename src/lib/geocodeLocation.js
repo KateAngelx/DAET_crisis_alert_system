@@ -1,6 +1,8 @@
 const cache = new Map();
 const pending = new Map();
 const NOMINATIM_DELAY_MS = 1100;
+let geocodeQueue = Promise.resolve();
+let nextGeocodeAt = 0;
 
 export function parseMapCoordinates(latitude, longitude) {
   if (
@@ -25,12 +27,24 @@ function sleep(ms) {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
-async function requestCoords(trimmed) {
-  const locationQuery = `${trimmed}, Daet, Camarines Norte, Philippines`;
+function fetchGeocode(endpoint) {
+  const request = geocodeQueue.then(async () => {
+    const delay = Math.max(0, nextGeocodeAt - Date.now());
+    if (delay > 0) await sleep(delay);
+    nextGeocodeAt = Date.now() + NOMINATIM_DELAY_MS;
+    return fetch(endpoint);
+  });
+  geocodeQueue = request.then(() => undefined, () => undefined);
+  return request;
+}
+
+async function requestCoords(trimmed, region) {
+  const locationQuery = `${trimmed}, ${region}`;
+  const endpoint = `/api/geocode?q=${encodeURIComponent(locationQuery)}`;
 
   for (let attempt = 0; attempt < 2; attempt += 1) {
     try {
-      const response = await fetch(`/api/geocode?q=${encodeURIComponent(locationQuery)}`);
+      const response = await fetchGeocode(endpoint);
       const data = await response.json();
 
       if (data?.[0]?.lat && data?.[0]?.lon) {
@@ -46,17 +60,17 @@ async function requestCoords(trimmed) {
   return null;
 }
 
-export async function geocodeLocation(locationText) {
+export async function geocodeLocation(locationText, region = "Daet, Camarines Norte, Philippines") {
   const trimmed = locationText?.trim();
   if (!trimmed) return null;
 
-  const key = trimmed.toLowerCase();
+  const key = `${region}:${trimmed.toLowerCase()}`;
   if (cache.has(key)) return cache.get(key);
 
   const inFlight = pending.get(key);
   if (inFlight) return inFlight;
 
-  const request = requestCoords(trimmed)
+  const request = requestCoords(trimmed, region)
     .then((coords) => {
       if (coords) cache.set(key, coords);
       return coords;

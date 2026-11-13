@@ -55,15 +55,25 @@ export function formatAdvisoryTitle(advisory) {
   return to || "Route advisory";
 }
 
+function normalizeMapPlace(value) {
+  if (typeof value !== "string") return null;
+  const place = value.replace(/\s*\([^)]*\)/g, " ").trim();
+  return !place || /^:?\s*enter\b/i.test(place) ? null : place;
+}
+
 /** Adapter for map markers and legacy display components */
 export function advisoryToMapWarning(advisory) {
   if (!advisory) return null;
+  const isAlternative = advisory.route_type === "alternative";
+  const from = normalizeMapPlace(advisory.from_location);
+  const via = normalizeMapPlace(advisory.via_location);
+
   return {
     id: advisory.id,
-    dangerous_location: advisory.affected_location || advisory.via_location || advisory.title,
-    destination: advisory.to_location,
-    current_location: advisory.from_location,
-    alternative_route: advisory.route_type === "alternative" ? advisory.via_location : null,
+    dangerous_location: normalizeMapPlace(advisory.affected_location) || via || from || advisory.title,
+    destination: normalizeMapPlace(advisory.to_location),
+    current_location: from,
+    alternative_route: isAlternative ? via : null,
     danger_type: advisory.hazard_type,
     severity:
       advisory.route_status === "Closed"

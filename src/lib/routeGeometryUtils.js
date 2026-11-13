@@ -84,22 +84,33 @@ function sameCoords(a, b) {
   return Math.abs(a.lat - b.lat) < 0.00001 && Math.abs(a.lng - b.lng) < 0.00001;
 }
 
+function normalizeRouteLocation(value) {
+  if (typeof value !== "string") return "";
+  const label = value
+    .replace(/\s*\([^)]*\)/g, " ")
+    .replace(/\b(?:town center|town proper)\b/gi, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+  return /^:?\s*enter\b|flooded or blocked section|verified alternate road/i.test(label) ? "" : label;
+}
+
 async function geocodeEndpointWaypoints({ from, to, via }) {
-  const startLabel = from?.trim();
-  const endLabel = to?.trim();
-  const viaLabel = via?.trim();
+  const startLabel = normalizeRouteLocation(from);
+  const endLabel = normalizeRouteLocation(to);
+  const viaLabel = normalizeRouteLocation(via);
 
   if (!startLabel && !endLabel) return [];
 
   const waypoints = [];
+  const region = "Camarines Norte, Philippines";
 
   if (startLabel) {
-    const fromCoords = await geocodeLocation(startLabel);
+    const fromCoords = await geocodeLocation(startLabel, region);
     if (fromCoords) waypoints.push({ lat: fromCoords[0], lng: fromCoords[1] });
   }
 
   if (viaLabel) {
-    const viaCoords = await geocodeLocation(viaLabel);
+    const viaCoords = await geocodeLocation(viaLabel, region);
     if (viaCoords) {
       const point = { lat: viaCoords[0], lng: viaCoords[1] };
       if (!sameCoords(waypoints[waypoints.length - 1], point)) waypoints.push(point);
@@ -107,7 +118,7 @@ async function geocodeEndpointWaypoints({ from, to, via }) {
   }
 
   if (endLabel) {
-    const toCoords = await geocodeLocation(endLabel);
+    const toCoords = await geocodeLocation(endLabel, region);
     if (toCoords) {
       const point = { lat: toCoords[0], lng: toCoords[1] };
       if (!sameCoords(waypoints[waypoints.length - 1], point)) waypoints.push(point);

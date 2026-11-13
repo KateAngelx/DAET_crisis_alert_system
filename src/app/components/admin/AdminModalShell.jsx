@@ -31,8 +31,8 @@ export function AdminModalShell({ open, onClose, title, subtitle, headerExtra, a
             <X size={iconSize.button} />
           </button>
         </div>
-        {actions ? <div className={adminShell.modalActionBar}>{actions}</div> : null}
         <div className="overflow-y-auto overscroll-contain px-4 py-4 sm:px-6 sm:py-5 space-y-5 min-h-0 flex-1">{children}</div>
+        {actions ? <div className={`${adminShell.modalActionBar} border-b-0 border-t`}>{actions}</div> : null}
       </div>
     </div>
   );

@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import dynamic from "next/dynamic";
 import { geocodeAlerts, geocodeLocation, parseMapCoordinates } from "@/lib/geocodeLocation";
 import { createCategoryPinIcon, createSafeRoutePinIcon, getDangerPinCategory } from "@/lib/mapPinUtils";
@@ -11,20 +11,26 @@ const Popup = dynamic(() => import("react-leaflet").then((mod) => mod.Popup), { 
 export function DangerousLocationMapMarkers({ warnings, renderPopup, showSafeRoutePins = true }) {
   const [geocoded, setGeocoded] = useState({ key: "", coords: {} });
   const [safeGeocoded, setSafeGeocoded] = useState({ key: "", coords: {} });
+  const warningsRef = useRef(warnings);
+
+  useEffect(() => {
+    warningsRef.current = warnings;
+  }, [warnings]);
 
   const warningKey = useMemo(
     () =>
       warnings
-        .map((w) => `${w.id}:${w.dangerous_location}:${w.destination}:${w.latitude}:${w.longitude}`)
+        .map((w) => `${w.id}:${w.dangerous_location}:${w.destination}:${w.latitude}:${w.longitude}:${w.alt_latitude}:${w.alt_longitude}`)
         .join("|"),
     [warnings]
   );
 
   useEffect(() => {
     let cancelled = false;
-    if (!warnings.length) return undefined;
+    const currentWarnings = warningsRef.current;
+    if (!currentWarnings.length) return undefined;
 
-    const geocodeInput = warnings.map((w) => ({
+    const geocodeInput = currentWarnings.map((w) => ({
       id: w.id,
       location: w.dangerous_location,
       latitude: w.latitude,
@@ -39,7 +45,7 @@ export function DangerousLocationMapMarkers({ warnings, renderPopup, showSafeRou
       if (!showSafeRoutePins) return;
 
       const safeResolved = {};
-      for (const warning of warnings) {
+      for (const warning of currentWarnings) {
         const dest = warning.destination?.trim();
         if (!dest) continue;
         const storedCoordinates = parseMapCoordinates(warning.alt_latitude, warning.alt_longitude);
@@ -56,7 +62,7 @@ export function DangerousLocationMapMarkers({ warnings, renderPopup, showSafeRou
     return () => {
       cancelled = true;
     };
-  }, [warningKey, warnings, showSafeRoutePins]);
+  }, [warningKey, showSafeRoutePins]);
 
   const coordsById = geocoded.key === warningKey ? geocoded.coords : {};
   const safeCoordsById = safeGeocoded.key === warningKey ? safeGeocoded.coords : {};

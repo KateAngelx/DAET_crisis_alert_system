@@ -233,7 +233,7 @@ export function AlertDetailModal({ alert, onClose }) {
         <div
           ref={detailBodyRef}
           onScroll={handleDetailScroll}
-          className="order-3 p-6 sm:p-8 space-y-5 bg-white text-left overflow-y-auto flex-1"
+          className="order-2 p-6 sm:p-8 space-y-5 bg-white text-left overflow-y-auto flex-1"
         >
           <p className="text-sm font-medium leading-relaxed text-zinc-700">{alert.message}</p>
 
@@ -291,7 +291,7 @@ export function AlertDetailModal({ alert, onClose }) {
           </div>
         </div>
 
-        <div className="order-2 shrink-0 border-b border-zinc-100 bg-white p-4">
+        <div className="order-3 shrink-0 border-t border-zinc-100 bg-white p-4">
           {canShowReadState && (
             <div className="mb-3">
               {hasAlreadyRead ? (

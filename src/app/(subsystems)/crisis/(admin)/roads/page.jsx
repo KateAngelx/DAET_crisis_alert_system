@@ -527,7 +527,10 @@ function RouteAdvisoriesAdminPanel({
             <div className={portalLayout.mapColumnFill}>
               <MapContainer center={mapCenter} zoom={13} style={{ height: "100%", width: "100%" }}>
                 <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" attribution="&copy; OpenStreetMap" />
-                <RouteAdvisoryPolylines advisories={filtered.filter((advisory) => advisory.status === "Active")} />
+                <RouteAdvisoryPolylines
+                  advisories={filtered.filter((advisory) => advisory.status === "Active")}
+                  fitBounds
+                />
               </MapContainer>
             </div>
           ) : (

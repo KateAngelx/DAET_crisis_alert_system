@@ -404,16 +404,6 @@ export default function CrisisAdminPage() {
               <h2 className="text-2xl font-black uppercase tracking-tighter text-zinc-900 dark:text-white leading-none">Alert Summary</h2>
               <button onClick={() => setIsViewModalOpen(false)} className="p-2 hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded-full transition-colors"><X size={20}/></button>
             </div>
-            <div className="grid shrink-0 grid-cols-2 gap-2 border-b border-zinc-100 px-8 py-3">
-              <button type="button" onClick={() => { setIsViewModalOpen(false); handleEditClick(selectedAlert); }} className="py-3 rounded-2xl border border-amber-200 text-amber-700 font-black uppercase text-[10px] tracking-widest hover:bg-amber-50">Edit</button>
-              {selectedAlert.status === "Active" ? (
-                <button type="button" onClick={() => { setIsViewModalOpen(false); handleResolveClick(selectedAlert); }} className="py-3 rounded-2xl border border-green-200 text-green-700 font-black uppercase text-[10px] tracking-widest hover:bg-green-50">Resolve</button>
-              ) : (
-                <span />
-              )}
-              <button type="button" onClick={() => { setIsViewModalOpen(false); handleDelete(selectedAlert.id); }} className="py-3 rounded-2xl border border-red-200 text-red-600 font-black uppercase text-[10px] tracking-widest hover:bg-red-50">Delete</button>
-              <button type="button" onClick={() => setIsViewModalOpen(false)} className="py-3 bg-zinc-900 dark:bg-zinc-100 text-white dark:text-black rounded-2xl font-black uppercase text-[10px] tracking-widest hover:opacity-90">Close</button>
-            </div>
             <div className="min-h-0 flex-1 space-y-5 overflow-y-auto px-8 py-6">
               <div className="p-4 bg-zinc-50 dark:bg-zinc-900 rounded-2xl border border-zinc-100 dark:border-white/5">
                 <p className="text-[10px] font-black uppercase text-zinc-400 tracking-widest mb-1">Title</p>
@@ -446,6 +436,16 @@ export default function CrisisAdminPage() {
                 <MapPin size={16}/> {selectedAlert.location}
               </div>
             </div>
+            <div className="grid shrink-0 grid-cols-2 gap-2 border-t border-zinc-100 px-8 py-3">
+              <button type="button" onClick={() => { setIsViewModalOpen(false); handleEditClick(selectedAlert); }} className="py-3 rounded-2xl border border-amber-200 text-amber-700 font-black uppercase text-[10px] tracking-widest hover:bg-amber-50">Edit</button>
+              {selectedAlert.status === "Active" ? (
+                <button type="button" onClick={() => { setIsViewModalOpen(false); handleResolveClick(selectedAlert); }} className="py-3 rounded-2xl border border-green-200 text-green-700 font-black uppercase text-[10px] tracking-widest hover:bg-green-50">Resolve</button>
+              ) : (
+                <span />
+              )}
+              <button type="button" onClick={() => { setIsViewModalOpen(false); handleDelete(selectedAlert.id); }} className="py-3 rounded-2xl border border-red-200 text-red-600 font-black uppercase text-[10px] tracking-widest hover:bg-red-50">Delete</button>
+              <button type="button" onClick={() => setIsViewModalOpen(false)} className="py-3 bg-zinc-900 dark:bg-zinc-100 text-white dark:text-black rounded-2xl font-black uppercase text-[10px] tracking-widest hover:opacity-90">Close</button>
+            </div>
           </div>
         </div>
       )}
@@ -457,10 +457,6 @@ export default function CrisisAdminPage() {
             <div className="flex shrink-0 items-center justify-between border-b border-zinc-100 px-8 py-6">
               <h2 className="text-2xl font-black uppercase tracking-tighter">Edit Broadcast Details</h2>
               <button onClick={() => setIsEditModalOpen(false)}><X size={24}/></button>
-            </div>
-            <div className="flex shrink-0 gap-3 border-b border-zinc-100 px-8 py-3">
-              <button type="button" onClick={() => setIsEditModalOpen(false)} className="flex-1 py-4 bg-zinc-100 dark:bg-zinc-800 text-zinc-500 rounded-2xl font-black uppercase text-xs">Cancel</button>
-              <button type="submit" form="edit-broadcast-form" className="flex-1 py-4 bg-blue-600 text-white rounded-2xl font-black uppercase text-xs shadow-lg shadow-blue-100">Update Entry</button>
             </div>
             <form id="edit-broadcast-form" onSubmit={onUpdateSubmit} className="min-h-0 flex-1 space-y-4 overflow-y-auto px-8 py-5">
               <input required className="w-full p-4 bg-zinc-50 dark:bg-zinc-900 border border-zinc-100 dark:border-white/5 rounded-2xl font-bold text-sm outline-none focus:ring-2 focus:ring-blue-500" value={formData.title} onChange={e => { const title = e.target.value; setFormData({...formData, title, rewards_eligible: formData.rewards_eligible && isAlertEligibleForReadingPoints({ ...formData, title })}); }} placeholder="Title" />
@@ -515,6 +511,10 @@ export default function CrisisAdminPage() {
                 placeholder="Instructions"
               />
             </form>
+            <div className="flex shrink-0 gap-3 border-t border-zinc-100 px-8 py-3">
+              <button type="button" onClick={() => setIsEditModalOpen(false)} className="flex-1 py-4 bg-zinc-100 dark:bg-zinc-800 text-zinc-500 rounded-2xl font-black uppercase text-xs">Cancel</button>
+              <button type="submit" form="edit-broadcast-form" className="flex-1 py-4 bg-blue-600 text-white rounded-2xl font-black uppercase text-xs shadow-lg shadow-blue-100">Update Entry</button>
+            </div>
           </div>
         </div>
       )}
@@ -526,11 +526,6 @@ export default function CrisisAdminPage() {
               <div className="flex shrink-0 items-center justify-between border-b border-zinc-100 px-8 py-6 leading-none">
                  <h2 className="text-2xl font-black tracking-tight uppercase text-zinc-900 dark:text-white">Emergency Broadcast</h2>
                  <button onClick={() => setShowCreateModal(false)} className="p-2 hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded-full transition-colors"><X size={24}/></button>
-              </div>
-              <div className="shrink-0 border-b border-zinc-100 px-8 py-3">
-                <button type="submit" form="create-broadcast-form" disabled={isPublishing} className={`w-full py-4 ${adminShell.btnDanger} !text-sm !py-4 disabled:opacity-50`}>
-                  {isPublishing ? "Broadcasting..." : (<><AlertTriangle size={20}/> Broadcast Alert Now</>)}
-                </button>
               </div>
               <div className="min-h-0 flex-1 overflow-y-auto px-8 py-5">
               <div className="leaflet-modal-map-shell h-[180px] rounded-2xl overflow-hidden border border-gray-100 dark:border-white/10 shadow-inner relative z-0 mb-4">
@@ -614,6 +609,11 @@ export default function CrisisAdminPage() {
                     onChange={(e) => { const message = e.target.value; setFormData({ ...formData, message, rewards_eligible: formData.rewards_eligible && isAlertEligibleForReadingPoints({ ...formData, message }) }); }}
                   />
               </form>
+              </div>
+              <div className="shrink-0 border-t border-zinc-100 px-8 py-3">
+              <button type="submit" form="create-broadcast-form" disabled={isPublishing} className={`w-full py-4 ${adminShell.btnDanger} !text-sm !py-4 disabled:opacity-50`}>
+                {isPublishing ? "Broadcasting..." : (<><AlertTriangle size={20}/> Broadcast Alert Now</>)}
+              </button>
               </div>
            </div>
         </div>

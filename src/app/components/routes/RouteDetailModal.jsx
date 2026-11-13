@@ -305,7 +305,7 @@ export function RouteDetailModal({ open, route, catalog, onClose, onSelectRoute 
           </div>
           <div
             ref={detailBodyRef}
-            className="order-3 flex-1 overflow-y-auto p-6 bg-white"
+            className="order-2 flex-1 overflow-y-auto p-6 bg-white"
             onScroll={(e) => {
               const body = e.currentTarget;
               if (body.scrollTop + body.clientHeight >= body.scrollHeight - 8) {
@@ -315,7 +315,7 @@ export function RouteDetailModal({ open, route, catalog, onClose, onSelectRoute 
           >
             <RouteDetailContent route={route} catalog={catalog} onSelectRoute={onSelectRoute} />
           </div>
-          <div className="order-2 shrink-0 border-b border-zinc-100 bg-white p-4">
+          <div className="order-3 shrink-0 border-t border-zinc-100 bg-white p-4">
             <div className="mb-3">
               <TravelAdvisoryViewReward
                 advisoryId={routeId}
