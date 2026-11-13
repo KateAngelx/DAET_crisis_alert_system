@@ -3,18 +3,11 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import dynamic from "next/dynamic";
 import { useMap } from "react-leaflet";
-import { geocodeAlerts } from "@/lib/geocodeLocation";
+import { geocodeAlerts, parseMapCoordinates } from "@/lib/geocodeLocation";
 import { createCategoryPinIcon, getAlertPinCategory } from "@/lib/mapPinUtils";
 
 const Marker = dynamic(() => import("react-leaflet").then((mod) => mod.Marker), { ssr: false });
 const Popup = dynamic(() => import("react-leaflet").then((mod) => mod.Popup), { ssr: false });
-
-function storedPosition(alert) {
-  const lat = Number(alert?.latitude);
-  const lng = Number(alert?.longitude);
-  if (Number.isFinite(lat) && Number.isFinite(lng)) return [lat, lng];
-  return null;
-}
 
 function FitAlertBounds({ positions }) {
   const map = useMap();
@@ -71,26 +64,26 @@ function FitAlertBounds({ positions }) {
 }
 
 export function CrisisAlertMapMarkers({ alerts, renderPopup, fitToAlerts = false }) {
-  const [coordsById, setCoordsById] = useState({});
+  const [geocoded, setGeocoded] = useState({ key: "", coords: {} });
   const alertsRef = useRef(alerts);
-  alertsRef.current = alerts;
   const alertKey = useMemo(
     () => alerts.map((alert) => `${alert.id}:${alert.location}:${alert.latitude}:${alert.longitude}`).join("|"),
     [alerts]
   );
 
   useEffect(() => {
+    alertsRef.current = alerts;
+  }, [alerts]);
+
+  useEffect(() => {
     let cancelled = false;
     const current = alertsRef.current;
 
-    if (!current.length) {
-      setCoordsById({});
-      return undefined;
-    }
+    if (!current.length) return undefined;
 
     (async () => {
       const resolved = await geocodeAlerts(current);
-      if (!cancelled) setCoordsById(resolved);
+      if (!cancelled) setGeocoded({ key: alertKey, coords: resolved });
     })();
 
     return () => {
@@ -98,15 +91,16 @@ export function CrisisAlertMapMarkers({ alerts, renderPopup, fitToAlerts = false
     };
   }, [alertKey]);
 
+  const coordsById = geocoded.key === alertKey ? geocoded.coords : {};
   const positions = alerts
-    .map((alert) => storedPosition(alert) ?? coordsById[alert.id])
+    .map((alert) => parseMapCoordinates(alert.latitude, alert.longitude) ?? coordsById[alert.id])
     .filter((position) => Array.isArray(position) && position.length === 2);
 
   return (
     <>
       {fitToAlerts ? <FitAlertBounds positions={positions} /> : null}
       {alerts.map((alert) => {
-        const position = storedPosition(alert) ?? coordsById[alert.id];
+        const position = parseMapCoordinates(alert.latitude, alert.longitude) ?? coordsById[alert.id];
         if (!position) return null;
 
         const category = getAlertPinCategory(alert);

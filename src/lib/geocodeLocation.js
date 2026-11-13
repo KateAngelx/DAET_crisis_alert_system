@@ -2,6 +2,25 @@ const cache = new Map();
 const pending = new Map();
 const NOMINATIM_DELAY_MS = 1100;
 
+export function parseMapCoordinates(latitude, longitude) {
+  if (
+    latitude == null ||
+    longitude == null ||
+    (typeof latitude === "string" && !latitude.trim()) ||
+    (typeof longitude === "string" && !longitude.trim())
+  ) {
+    return null;
+  }
+
+  const lat = Number(latitude);
+  const lng = Number(longitude);
+  if (!Number.isFinite(lat) || !Number.isFinite(lng) || lat < -90 || lat > 90 || lng < -180 || lng > 180) {
+    return null;
+  }
+
+  return [lat, lng];
+}
+
 function sleep(ms) {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
@@ -54,8 +73,9 @@ export async function geocodeAlerts(alerts) {
   const resolved = {};
 
   for (const alert of alerts) {
-    if (alert.latitude != null && alert.longitude != null) {
-      resolved[alert.id] = [Number(alert.latitude), Number(alert.longitude)];
+    const storedCoordinates = parseMapCoordinates(alert.latitude, alert.longitude);
+    if (storedCoordinates) {
+      resolved[alert.id] = storedCoordinates;
       continue;
     }
 
