@@ -169,8 +169,8 @@ export function GuideEmergencyReporting() {
 
       {open ? (
         <div className="fixed inset-0 z-[2100] flex items-center justify-center bg-black/60 p-3 backdrop-blur-sm sm:p-5">
-          <form onSubmit={submit} className="max-h-[94vh] w-full max-w-xl overflow-y-auto rounded-2xl bg-white shadow-2xl">
-            <div className="sticky top-0 z-10 flex items-start justify-between gap-4 border-b border-red-100 bg-white px-5 py-4">
+          <form onSubmit={submit} className="flex max-h-[94vh] w-full max-w-xl flex-col overflow-hidden rounded-2xl bg-white shadow-2xl">
+            <div className="flex shrink-0 items-start justify-between gap-4 border-b border-red-100 bg-white px-5 py-4">
               <div>
                 <p className="text-[10px] font-black uppercase tracking-widest text-red-700">Emergency report</p>
                 <h2 className="mt-1 text-xl font-black text-zinc-950">Tell us what happened</h2>
@@ -178,7 +178,13 @@ export function GuideEmergencyReporting() {
               </div>
               <button type="button" onClick={() => setOpen(false)} aria-label="Close emergency form" className="rounded-full p-2 text-zinc-500 hover:bg-zinc-100"><X size={20} /></button>
             </div>
-            <div className="space-y-4 p-5">
+            <div className="flex shrink-0 flex-col-reverse gap-2 border-b border-zinc-100 bg-white px-5 py-3 sm:flex-row sm:justify-end">
+              <button type="button" onClick={() => setOpen(false)} className="rounded-xl border border-zinc-200 px-4 py-3 text-sm font-bold text-zinc-700">Cancel</button>
+              <button type="submit" disabled={submitting || !form.location.trim() || !form.description.trim()} className="inline-flex items-center justify-center gap-2 rounded-xl bg-red-700 px-5 py-3 text-sm font-black text-white hover:bg-red-800 disabled:opacity-50">
+                <AlertTriangle size={16} /> {submitting ? "Sending…" : "Send Emergency Report"}
+              </button>
+            </div>
+            <div className="min-h-0 flex-1 space-y-4 overflow-y-auto p-5">
               {error ? <p role="alert" className="rounded-xl border border-red-200 bg-red-50 p-3 text-sm font-bold text-red-800">{error}</p> : null}
               <label className="block text-sm font-bold text-zinc-800">
                 Emergency type
@@ -223,12 +229,6 @@ export function GuideEmergencyReporting() {
                 <textarea rows={2} maxLength={1000} value={form.affectedInfo} onChange={(event) => updateForm({ affectedInfo: event.target.value })} placeholder="Names, group name, or other identifying details if known." className="mt-1.5 w-full resize-y rounded-xl border border-zinc-200 p-3 text-sm" />
               </label>
 
-              <div className="flex flex-col-reverse gap-2 border-t border-zinc-100 pt-4 sm:flex-row sm:justify-end">
-                <button type="button" onClick={() => setOpen(false)} className="rounded-xl border border-zinc-200 px-4 py-3 text-sm font-bold text-zinc-700">Cancel</button>
-                <button type="submit" disabled={submitting || !form.location.trim() || !form.description.trim()} className="inline-flex items-center justify-center gap-2 rounded-xl bg-red-700 px-5 py-3 text-sm font-black text-white hover:bg-red-800 disabled:opacity-50">
-                  <AlertTriangle size={16} /> {submitting ? "Sending…" : "Send Emergency Report"}
-                </button>
-              </div>
             </div>
           </form>
         </div>

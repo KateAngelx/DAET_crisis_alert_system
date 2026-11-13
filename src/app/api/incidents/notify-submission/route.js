@@ -50,7 +50,7 @@ export async function POST(request) {
     }
 
     const [{ data: admins, error: adminsError }, { data: reporter, error: reporterError }] = await Promise.all([
-      admin.from("profiles").select("id, email, phone").eq("user_type", "admin"),
+      admin.from("profiles").select("id").eq("user_type", "admin"),
       admin.from("profiles").select("id").eq("id", user.id).maybeSingle(),
     ]);
     if (adminsError) throw adminsError;
@@ -78,8 +78,6 @@ export async function POST(request) {
             relatedId: incident.id,
             eventKey: `incident-submitted:${incident.id}:admin:${recipient.id}`,
             channels,
-            recipientEmail: recipient.email,
-            recipientPhone: recipient.phone,
           })
         )
       );

@@ -565,8 +565,8 @@ function RouteAdvisoriesAdminPanel({
 
       {showModal && (
         <div className="fixed inset-0 z-[2000] flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm">
-          <div className="bg-white rounded-3xl max-w-2xl w-full max-h-[90vh] overflow-y-auto shadow-2xl">
-            <div className="sticky top-0 bg-white border-b border-zinc-100 px-6 py-4 flex items-center justify-between z-10">
+          <div className="bg-white rounded-3xl max-w-2xl w-full max-h-[90vh] flex flex-col overflow-hidden shadow-2xl">
+            <div className="shrink-0 bg-white border-b border-zinc-100 px-6 py-4 flex items-center justify-between">
               <div>
                 <h2 className="font-black uppercase text-zinc-900">
                   {editingId ? "Edit Route" : formData.route_type === "alternative" ? "New Detour" : "New Route"}
@@ -577,8 +577,16 @@ function RouteAdvisoriesAdminPanel({
                 <X size={20} />
               </button>
             </div>
+            <div className="shrink-0 flex gap-3 border-b border-zinc-100 bg-white px-6 py-3">
+              <button type="submit" form="route-advisory-form" disabled={isSaving} className={`flex-1 ${adminShell.btnPrimary} disabled:opacity-50`}>
+                {isSaving ? "Saving..." : editingId ? "Update Route" : "Publish Route"}
+              </button>
+              <button type="button" onClick={() => setShowModal(false)} className={adminShell.btnGhost}>
+                Cancel
+              </button>
+            </div>
 
-            <form onSubmit={handleSubmit} className="p-6 space-y-2">
+            <form id="route-advisory-form" onSubmit={handleSubmit} className="min-h-0 flex-1 overflow-y-auto p-6 space-y-2">
               <FormSection step={1} title="Route type" description="Primary = main road status. Detour = safer alternative.">
                 <div className="grid grid-cols-2 gap-2">
                   {ROUTE_ADVISORY_TYPES.map((type) => (
@@ -774,14 +782,6 @@ function RouteAdvisoriesAdminPanel({
                 </p>
               </FormSection>
 
-              <div className="flex gap-3 pt-4">
-                <button type="submit" disabled={isSaving} className={`flex-1 ${adminShell.btnPrimary} disabled:opacity-50`}>
-                  {isSaving ? "Saving..." : editingId ? "Update Route" : "Publish Route"}
-                </button>
-                <button type="button" onClick={() => setShowModal(false)} className={adminShell.btnGhost}>
-                  Cancel
-                </button>
-              </div>
             </form>
           </div>
         </div>

@@ -23,8 +23,8 @@ export function ReportIncidentModal({
 
   return (
     <div className="fixed inset-0 z-[200] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
-      <div className="bg-white rounded-3xl max-w-lg w-full max-h-[90vh] overflow-y-auto shadow-2xl custom-scrollbar">
-        <div className="sticky top-0 bg-white border-b border-zinc-100 px-6 py-4 flex items-start justify-between gap-4 rounded-t-3xl">
+      <div className="bg-white rounded-3xl max-w-lg w-full max-h-[min(92dvh,48rem)] flex flex-col overflow-hidden shadow-2xl">
+        <div className="shrink-0 bg-white border-b border-zinc-100 px-6 py-4 flex items-start justify-between gap-4">
           <div>
             <div className="flex items-center gap-2 mb-1">
               <AlertTriangle size={18} className={isGuideAssistance ? "text-purple-600" : "text-red-600"} />
@@ -40,21 +40,18 @@ export function ReportIncidentModal({
             <X size={20} />
           </button>
         </div>
-        <div className="p-6">
-          <IncidentReportForm
-            key={isGuideAssistance ? "guide-assistance" : "incident"}
-            categoryOverride={isGuideAssistance ? "Tourist Assistance" : undefined}
-            categories={incidentCategories}
-            introductoryInfo={isGuideAssistance ? guideAssistance?.introductoryInformation : undefined}
-            availabilityMessage={isGuideAssistance ? guideAssistance?.availabilityMessage : undefined}
-            onSuccess={(incident, notificationWarnings) => {
-              onSuccess?.(incident, notificationWarnings);
-              onClose();
-            }}
-            onCancel={onClose}
-            compact
-          />
-        </div>
+        <IncidentReportForm
+          key={isGuideAssistance ? "guide-assistance" : "incident"}
+          categoryOverride={isGuideAssistance ? "Tourist Assistance" : undefined}
+          categories={incidentCategories}
+          introductoryInfo={isGuideAssistance ? guideAssistance?.introductoryInformation : undefined}
+          availabilityMessage={isGuideAssistance ? guideAssistance?.availabilityMessage : undefined}
+          onSuccess={(incident, notificationWarnings) => {
+            onSuccess?.(incident, notificationWarnings);
+            onClose();
+          }}
+          onCancel={onClose}
+        />
       </div>
     </div>
   );

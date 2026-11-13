@@ -1,6 +1,7 @@
 import { getSupabaseAdmin } from '@/lib/supabaseAdmin';
 import { NOTIFICATION_CHANNELS } from '@/lib/constants';
 import { processNotificationDeliveries } from '@/lib/notificationQueue.server';
+import { verifiedDeliveryContacts } from '@/lib/verifiedDeliveryContacts';
 import { channelsFromProfile, getDispatchChannelsForProfile } from '@/lib/userNotificationChannels';
 
 function isMissingEventKeyColumn(error) {
@@ -21,12 +22,12 @@ export async function dispatchNotificationServer({
   relatedId = null,
   eventKey = null,
   channels = ['web', 'email'],
-  recipientEmail = null,
-  recipientPhone = null,
   criticalEmergency = false,
+  adminClient = null,
+  processDeliveries = processNotificationDeliveries,
 }) {
   const results = { web: null, email: null, sms: null, errors: [] };
-  const admin = getSupabaseAdmin();
+  const admin = adminClient || getSupabaseAdmin();
 
   if (!admin) {
     results.errors.push('Server misconfigured: SUPABASE_SERVICE_ROLE_KEY required');
@@ -49,8 +50,9 @@ export async function dispatchNotificationServer({
     return results;
   }
 
-  const emailTo = recipientEmail || recipient.email;
-  const phoneTo = recipientPhone || recipient.phone;
+  const verified = await lookupVerifiedContacts(admin, userId);
+  const emailTo = verified.email;
+  const phoneTo = verified.phone;
   const effective = criticalEmergency
     ? {
         app: channels.includes('web') || channels.includes('app'),
@@ -155,12 +157,16 @@ export async function dispatchNotificationServer({
         .select();
 
       if (deliveryError) {
-        results.errors.push(`Delivery queue failed: ${deliveryError.message}`);
+        if (deliveryError.code === '23505' && eventKey) {
+          results.duplicate = true;
+        } else {
+          results.errors.push(`Delivery queue failed: ${deliveryError.message}`);
+        }
       } else {
         for (const d of deliveries || []) {
           results[d.channel] = d;
         }
-        await processNotificationDeliveries({ deliveryIds: (deliveries || []).map((d) => d.id) });
+        await processDeliveries({ deliveryIds: (deliveries || []).map((d) => d.id) });
       }
     }
   } catch (err) {
@@ -172,4 +178,15 @@ export async function dispatchNotificationServer({
 
 function generateIdempotencyKey(userId, type, relatedId, channel, eventKey) {
   return `${userId}-${type}-${relatedId || 'none'}-${channel}-${eventKey || Date.now()}`;
+}
+
+async function lookupVerifiedContacts(admin, userId) {
+  try {
+    if (!admin.auth?.admin?.getUserById) return { email: null, phone: null };
+    const { data, error } = await admin.auth.admin.getUserById(userId);
+    if (error) return { email: null, phone: null };
+    return verifiedDeliveryContacts(data?.user);
+  } catch {
+    return { email: null, phone: null };
+  }
 }

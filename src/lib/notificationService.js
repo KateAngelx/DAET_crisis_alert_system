@@ -123,15 +123,13 @@ export async function notifyAdminsOfIncident(incident, adminUsers) {
       relatedType: 'incident',
       relatedId: incident.id,
       channels,
-      recipientEmail: admin.email,
-      recipientPhone: admin.phone,
     })
   );
 
   return Promise.allSettled(promises);
 }
 
-export async function notifyUserOfStatusChange(incident, userProfile) {
+export async function notifyUserOfStatusChange(incident) {
   const priority = severityToPriority(incident.severity);
   return dispatchNotification({
     userId: incident.reporter_id,
@@ -142,12 +140,10 @@ export async function notifyUserOfStatusChange(incident, userProfile) {
     relatedType: 'incident',
     relatedId: incident.id,
     channels: ['web', 'email'],
-    recipientEmail: userProfile?.email,
-    recipientPhone: userProfile?.phone,
   });
 }
 
-export async function notifyTouristAssignmentRequest(tourist, guide, tourGroup) {
+export async function notifyTouristAssignmentRequest(tourist, guide, tourGroup, assignmentId) {
   const route = [tourGroup?.starting_location, tourGroup?.destination].filter(Boolean).join(' → ');
   return dispatchNotification({
     userId: tourist.id,
@@ -156,14 +152,12 @@ export async function notifyTouristAssignmentRequest(tourist, guide, tourGroup) 
     notificationType: 'guide_assignment_request',
     priority: 'HIGH',
     relatedType: 'assignment',
-    relatedId: tourGroup?.id,
+    relatedId: assignmentId,
     channels: ['web', 'email'],
-    recipientEmail: tourist.email,
-    recipientPhone: tourist.phone,
   });
 }
 
-export async function notifyGuideAssignmentAccepted(guide, tourist, tourGroup) {
+export async function notifyGuideAssignmentAccepted(guide, tourist, tourGroup, assignmentId) {
   return dispatchNotification({
     userId: guide.id,
     title: 'Tourist Accepted Assignment',
@@ -171,14 +165,12 @@ export async function notifyGuideAssignmentAccepted(guide, tourist, tourGroup) {
     notificationType: 'guide_assignment_accepted',
     priority: 'NORMAL',
     relatedType: 'assignment',
-    relatedId: tourist.id,
+    relatedId: assignmentId,
     channels: ['web', 'email'],
-    recipientEmail: guide.email,
-    recipientPhone: guide.phone,
   });
 }
 
-export async function notifyGuideAssignmentDeclined(guide, tourist, tourGroup) {
+export async function notifyGuideAssignmentDeclined(guide, tourist, tourGroup, assignmentId) {
   return dispatchNotification({
     userId: guide.id,
     title: 'Assignment Request Declined',
@@ -186,13 +178,12 @@ export async function notifyGuideAssignmentDeclined(guide, tourist, tourGroup) {
     notificationType: 'guide_assignment_declined',
     priority: 'NORMAL',
     relatedType: 'assignment',
-    relatedId: tourist.id,
+    relatedId: assignmentId,
     channels: ['web'],
-    recipientEmail: guide.email,
   });
 }
 
-export async function notifyGuideAssignment(guide, tourist, assignedBy) {
+export async function notifyGuideAssignment(guide, tourist, assignmentId) {
   return dispatchNotification({
     userId: guide.id,
     title: 'New Tourist Assignment',
@@ -200,14 +191,12 @@ export async function notifyGuideAssignment(guide, tourist, assignedBy) {
     notificationType: 'guide_assignment',
     priority: 'NORMAL',
     relatedType: 'assignment',
-    relatedId: tourist.id,
+    relatedId: assignmentId,
     channels: ['web', 'email'],
-    recipientEmail: guide.email,
-    recipientPhone: guide.phone,
   });
 }
 
-export async function notifyTouristGuideAssigned(tourist, guide) {
+export async function notifyTouristGuideAssigned(tourist, guide, assignmentId) {
   return dispatchNotification({
     userId: tourist.id,
     title: 'Tourism Guide Assigned',
@@ -215,9 +204,7 @@ export async function notifyTouristGuideAssigned(tourist, guide) {
     notificationType: 'guide_assignment',
     priority: 'NORMAL',
     relatedType: 'assignment',
-    relatedId: guide.id,
+    relatedId: assignmentId,
     channels: ['web', 'email'],
-    recipientEmail: tourist.email,
-    recipientPhone: tourist.phone,
   });
 }

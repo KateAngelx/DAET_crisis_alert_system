@@ -26,13 +26,13 @@ export function AuthGuard({ children, requiredRole = null, fallbackUrl = '/login
       const result = await useAuthStore.getState().fetchProfile();
       if (cancelled) return;
 
+      const persisted = useAuthStore.getState();
       let role = result.success ? result.profile?.user_type : null;
+      let accountActive = result.success ? result.profile?.is_active === true : false;
 
-      if (!role) {
-        const persisted = useAuthStore.getState();
-        if (persisted.user?.id === session.user.id) {
-          role = persisted.user.role;
-        }
+      if (!role && persisted.user?.id === session.user.id) {
+        role = persisted.user.role;
+        accountActive = persisted.user.is_active === true;
       }
 
 
@@ -41,7 +41,7 @@ export function AuthGuard({ children, requiredRole = null, fallbackUrl = '/login
         return;
       }
 
-      if (requiredRole === 'admin' && !canAccessAdmin(role)) {
+      if (requiredRole === 'admin' && (!canAccessAdmin(role) || !accountActive)) {
         router.replace('/');
         return;
       }

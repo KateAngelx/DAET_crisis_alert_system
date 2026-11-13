@@ -7,14 +7,26 @@ export async function GET(request) {
   const limited = enforceRateLimit(request, { name: "geocode", ...API_RATE_LIMITS.geocode });
   if (limited) return limited;
 
+  const lat = Number(request.nextUrl.searchParams.get("lat"));
+  const lon = Number(request.nextUrl.searchParams.get("lon"));
+  const hasReverse =
+    Number.isFinite(lat) &&
+    Number.isFinite(lon) &&
+    lat >= -90 &&
+    lat <= 90 &&
+    lon >= -180 &&
+    lon <= 180;
   const query = request.nextUrl.searchParams.get("q")?.trim().slice(0, MAX_QUERY_LEN);
-  if (!query) {
+  if (!hasReverse && !query) {
     return NextResponse.json({ error: "Missing query" }, { status: 400 });
   }
 
   try {
+    const endpoint = hasReverse
+      ? `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lon}`
+      : `https://nominatim.openstreetmap.org/search?format=json&limit=1&q=${encodeURIComponent(query)}`;
     const response = await fetch(
-      `https://nominatim.openstreetmap.org/search?format=json&limit=1&q=${encodeURIComponent(query)}`,
+      endpoint,
       {
         headers: {
           "Accept-Language": "en",

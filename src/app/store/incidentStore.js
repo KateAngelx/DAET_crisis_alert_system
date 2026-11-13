@@ -92,21 +92,45 @@ export const useIncidentStore = create((set, get) => ({
       const refResponse = await supabase.rpc('generate_incident_reference');
       const referenceNumber = refResponse.data || `INC-${Date.now()}`;
 
-      const { data: incident, error } = await supabase
+      const insertPayload = {
+        reference_number: referenceNumber,
+        reporter_id: reportData.reporterId,
+        category: reportData.category,
+        description: reportData.description,
+        location: reportData.location,
+        severity: reportData.severity,
+        status: 'Submitted',
+      };
+
+      const latitude = Number(reportData.latitude);
+      const longitude = Number(reportData.longitude);
+      if (Number.isFinite(latitude) && Number.isFinite(longitude)) {
+        insertPayload.latitude = latitude;
+        insertPayload.longitude = longitude;
+      }
+
+      let { data: incident, error } = await supabase
         .from('incident_reports')
-        .insert({
-          reference_number: referenceNumber,
-          reporter_id: reportData.reporterId,
-          category: reportData.category,
-          description: reportData.description,
-          location: reportData.location,
-          latitude: reportData.latitude,
-          longitude: reportData.longitude,
-          severity: reportData.severity,
-          status: 'Submitted',
-        })
+        .insert(insertPayload)
         .select()
         .single();
+
+      const coordinateColumnError =
+        (error?.code === 'PGRST204' || error?.code === '42703') &&
+        /latitude|longitude/i.test(error?.message || '');
+
+      if (coordinateColumnError && insertPayload.latitude != null) {
+        const { latitude: savedLatitude, longitude: savedLongitude, ...fallbackPayload } = insertPayload;
+        const coordNote = `GPS ${Number(savedLatitude).toFixed(5)}, ${Number(savedLongitude).toFixed(5)}`;
+        if (!String(fallbackPayload.location || '').includes(coordNote)) {
+          fallbackPayload.location = `${fallbackPayload.location} (${coordNote})`.slice(0, 500);
+        }
+        ({ data: incident, error } = await supabase
+          .from('incident_reports')
+          .insert(fallbackPayload)
+          .select()
+          .single());
+      }
 
       if (error) throw error;
 
@@ -224,7 +248,7 @@ export const useIncidentStore = create((set, get) => ({
       }
 
       if (incident.reporter) {
-        await notifyUserOfStatusChange(incident, incident.reporter);
+        await notifyUserOfStatusChange(incident);
       }
 
       if (adminData.assignedTo && adminData.assigneeProfile) {
@@ -237,8 +261,6 @@ export const useIncidentStore = create((set, get) => ({
           relatedType: 'incident',
           relatedId: id,
           channels: ['web', 'email', 'sms'],
-          recipientEmail: adminData.assigneeProfile.email,
-          recipientPhone: adminData.assigneeProfile.phone,
         });
       }
 

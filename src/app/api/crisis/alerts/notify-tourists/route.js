@@ -31,6 +31,13 @@ export async function POST(request) {
 
     const results = await broadcastCrisisAlertToTourists(auth.admin, alertId, eventType);
 
+    if (results.rejected) {
+      return NextResponse.json(
+        { error: results.errors[0] || 'This notice does not match the alert status.' },
+        { status: 400 }
+      );
+    }
+
     const reachCount =
       (results.notified || 0) + (results.emailQueued || 0) + (results.smsQueued || 0);
 

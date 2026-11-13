@@ -1,5 +1,6 @@
 import { createClient } from '@supabase/supabase-js';
 import { NextResponse } from 'next/server';
+import { adminAccessDecision } from '@/lib/adminAccess';
 import { getSupabaseAdmin } from '@/lib/supabaseAdmin';
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
@@ -31,14 +32,24 @@ export async function requireAdmin(request) {
     };
   }
 
-  const { data: callerProfile } = await admin
+  const { data: callerProfile, error: profileError } = await admin
     .from('profiles')
-    .select('user_type')
+    .select('user_type, is_active')
     .eq('id', user.id)
-    .single();
+    .maybeSingle();
 
-  if (callerProfile?.user_type !== 'admin') {
-    return { error: NextResponse.json({ error: 'Admin access required' }, { status: 403 }) };
+  if (profileError) {
+    return {
+      error: NextResponse.json(
+        { error: 'Unable to verify administrator access.' },
+        { status: 503 }
+      ),
+    };
+  }
+
+  const denial = adminAccessDecision(callerProfile);
+  if (denial) {
+    return { error: NextResponse.json({ error: denial }, { status: 403 }) };
   }
 
   return { admin, user, callerProfile };

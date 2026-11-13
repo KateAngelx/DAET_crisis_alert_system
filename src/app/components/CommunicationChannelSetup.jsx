@@ -40,6 +40,7 @@ export function CommunicationChannelForm({
   showSkip = false,
   showProfileHint = false,
   compact = false,
+  actionClassName = "sticky top-0 z-20",
 }) {
   const [channels, setChannels] = useState(initialChannels);
   const [error, setError] = useState(null);
@@ -62,8 +63,31 @@ export function CommunicationChannelForm({
     await onSave(channels);
   };
 
+  const actions = (
+    <div className={`${actionClassName} flex flex-col gap-3 bg-white py-2 sm:flex-row`}>
+      <button
+        type="submit"
+        disabled={saving}
+        className="flex-1 py-4 bg-blue-600 text-white rounded-xl font-black uppercase text-xs tracking-widest hover:bg-blue-700 disabled:opacity-50 flex items-center justify-center gap-2"
+      >
+        {saving ? <><Loader2 size={16} className="animate-spin" /> Saving...</> : submitLabel}
+      </button>
+      {showSkip && onSkip && (
+        <button
+          type="button"
+          disabled={saving}
+          onClick={onSkip}
+          className="py-4 px-6 rounded-xl border border-zinc-200 text-zinc-600 font-black uppercase text-xs tracking-widest hover:bg-zinc-50 disabled:opacity-50"
+        >
+          Skip for now
+        </button>
+      )}
+    </div>
+  );
+
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
+      {actions}
       {showProfileHint && (
         <div className="flex items-start gap-3 p-4 rounded-xl bg-blue-50 border border-blue-200 text-sm text-blue-900 font-medium">
           <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-blue-200 bg-white text-blue-700">
@@ -122,26 +146,6 @@ export function CommunicationChannelForm({
           );
         })}
       </div>
-
-      <div className="flex flex-col sm:flex-row gap-3">
-        <button
-          type="submit"
-          disabled={saving}
-          className="flex-1 py-4 bg-blue-600 text-white rounded-xl font-black uppercase text-xs tracking-widest hover:bg-blue-700 disabled:opacity-50 flex items-center justify-center gap-2"
-        >
-          {saving ? <><Loader2 size={16} className="animate-spin" /> Saving...</> : submitLabel}
-        </button>
-        {showSkip && onSkip && (
-          <button
-            type="button"
-            disabled={saving}
-            onClick={onSkip}
-            className="py-4 px-6 rounded-xl border border-zinc-200 text-zinc-600 font-black uppercase text-xs tracking-widest hover:bg-zinc-50 disabled:opacity-50"
-          >
-            Skip for now
-          </button>
-        )}
-      </div>
     </form>
   );
 }
@@ -190,8 +194,8 @@ export function CommunicationChannelOnboarding({ onComplete, compact = false }) 
 
   return (
     <div className="fixed inset-0 z-[200] flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
-      <Card className="w-full max-w-lg p-6 sm:p-8 rounded-3xl shadow-2xl max-h-[90vh] overflow-y-auto">
-        <div className="flex items-center gap-3 mb-4">
+      <Card className="flex max-h-[90vh] w-full max-w-lg flex-col overflow-hidden rounded-3xl p-6 shadow-2xl sm:p-8">
+        <div className="mb-4 flex shrink-0 items-center gap-3">
           <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-blue-200 bg-blue-50 text-blue-700">
             <Bell size={22} strokeWidth={2.25} />
           </div>
@@ -207,6 +211,7 @@ export function CommunicationChannelOnboarding({ onComplete, compact = false }) 
           </div>
         )}
 
+        <div className="min-h-0 flex-1 overflow-y-auto">
         <CommunicationChannelForm
           initialChannels={{ email: true, sms: true, app: true }}
           onSave={handleSave}
@@ -217,6 +222,7 @@ export function CommunicationChannelOnboarding({ onComplete, compact = false }) 
           showProfileHint={!compact}
           compact={compact}
         />
+        </div>
       </Card>
     </div>
   );

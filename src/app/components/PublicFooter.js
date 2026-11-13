@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
-import { Phone, Mail, MapPin } from "lucide-react";
+import { Phone, Mail, MapPin, Share2 } from "lucide-react";
 import { BrandLogo } from "@/app/components/BrandLogo";
 import { useAuthStore } from "@/app/store/crisisStore";
 import { siteInfo } from "@/lib/siteInfo";
@@ -30,8 +30,14 @@ export function PublicFooter() {
             <a href={`tel:${siteInfo.phoneTourismTel}`} className="text-zinc-800 hover:text-blue-600">
               Tourism {siteInfo.phoneTourism}
             </a>
+            <a href={`tel:${siteInfo.phoneTourismAltTel}`} className="text-zinc-800 hover:text-blue-600">
+              {siteInfo.phoneTourismAlt}
+            </a>
             <a href={`mailto:${siteInfo.emailTourism}`} className="text-zinc-800 hover:text-blue-600">
               {siteInfo.emailTourism}
+            </a>
+            <a href={siteInfo.facebook} target="_blank" rel="noreferrer" className="text-zinc-800 hover:text-blue-600">
+              {siteInfo.facebookHandle}
             </a>
           </p>
           <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-[10px] font-black uppercase tracking-widest text-zinc-400">
@@ -92,6 +98,8 @@ export function PublicFooter() {
                 <span className="leading-snug">{siteInfo.address}</span>
               </li>
               <li><a href={`tel:${siteInfo.phoneTourismTel}`} className="hover:text-blue-600">{siteInfo.phoneTourism} — Tourism</a></li>
+              <li><a href={`tel:${siteInfo.phoneTourismAltTel}`} className="hover:text-blue-600">{siteInfo.phoneTourismAlt} — Tourism</a></li>
+              <li><a href={siteInfo.facebook} target="_blank" rel="noreferrer" className="hover:text-blue-600">{siteInfo.facebookHandle}</a></li>
             </ul>
           </div>
         </div>
@@ -142,6 +150,14 @@ export function PublicFooter() {
               <li className="flex items-center gap-3">
                 <Phone size={16} className="shrink-0 text-blue-600" />
                 <a href={`tel:${siteInfo.phoneTourismTel}`} className="text-zinc-600 transition-colors hover:text-blue-600">{siteInfo.phoneTourism} Tourism Office</a>
+              </li>
+              <li className="flex items-center gap-3">
+                <Phone size={16} className="shrink-0 text-blue-600" />
+                <a href={`tel:${siteInfo.phoneTourismAltTel}`} className="text-zinc-600 transition-colors hover:text-blue-600">{siteInfo.phoneTourismAlt} Tourism Office</a>
+              </li>
+              <li className="flex items-center gap-3">
+                <Share2 size={16} className="shrink-0 text-blue-600" />
+                <a href={siteInfo.facebook} target="_blank" rel="noreferrer" className="text-zinc-600 transition-colors hover:text-blue-600">{siteInfo.facebookHandle}</a>
               </li>
               <li className="flex items-center gap-3">
                 <Phone size={16} className="shrink-0 text-blue-600" />

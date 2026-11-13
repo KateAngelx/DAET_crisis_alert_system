@@ -476,6 +476,9 @@ export const portalShell = {
     "inline-flex items-center justify-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-blue-700 active:scale-[0.98] transition-all shadow-sm disabled:opacity-50",
   btnIcon:
     "inline-flex items-center justify-center p-2 rounded-xl border border-zinc-200 bg-white text-zinc-600 hover:bg-zinc-50 transition-colors",
+  /** Action buttons pinned above scrolling modal content */
+  modalActionBar:
+    "shrink-0 z-20 flex flex-wrap items-center gap-2 border-b border-zinc-200 bg-white px-4 py-3 sm:px-6",
   statMini:
     "rounded-xl border border-zinc-200 bg-zinc-50/60 p-3 text-center min-w-0",
 };

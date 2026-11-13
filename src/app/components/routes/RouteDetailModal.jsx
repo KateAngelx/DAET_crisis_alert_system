@@ -290,7 +290,7 @@ export function RouteDetailModal({ open, route, catalog, onClose, onSelectRoute 
         <Card
           className={`p-0 flex flex-col max-h-[90vh] overflow-hidden border-2 ${styles.border} shadow-2xl animate-in zoom-in-95 duration-200`}
         >
-          <div className="shrink-0 bg-white rounded-t-2xl border-b border-zinc-100 px-6 py-4 flex items-start justify-between gap-4">
+          <div className="order-1 shrink-0 bg-white rounded-t-2xl border-b border-zinc-100 px-6 py-4 flex items-start justify-between gap-4">
             <p id="route-detail-title" className="text-[10px] font-black uppercase tracking-widest text-zinc-400">
               Route advisory details
             </p>
@@ -305,7 +305,7 @@ export function RouteDetailModal({ open, route, catalog, onClose, onSelectRoute 
           </div>
           <div
             ref={detailBodyRef}
-            className="flex-1 overflow-y-auto p-6 bg-white"
+            className="order-3 flex-1 overflow-y-auto p-6 bg-white"
             onScroll={(e) => {
               const body = e.currentTarget;
               if (body.scrollTop + body.clientHeight >= body.scrollHeight - 8) {
@@ -315,7 +315,7 @@ export function RouteDetailModal({ open, route, catalog, onClose, onSelectRoute 
           >
             <RouteDetailContent route={route} catalog={catalog} onSelectRoute={onSelectRoute} />
           </div>
-          <div className="shrink-0 bg-white rounded-b-2xl border-t border-zinc-100 p-4">
+          <div className="order-2 shrink-0 border-b border-zinc-100 bg-white p-4">
             <div className="mb-3">
               <TravelAdvisoryViewReward
                 advisoryId={routeId}

@@ -468,6 +468,7 @@ export default function ProfilePage() {
                 initialChannels={channelForm}
                 onSave={handleChannelSave}
                 saving={channelSaving}
+                actionClassName="sticky top-[4.75rem] z-30 md:top-20"
               />
             </PublicPanel>
           ) : (
@@ -504,6 +505,11 @@ export default function ProfilePage() {
                 </div>
               )}
               <form onSubmit={handleSubmit} className="space-y-4">
+                <div className="sticky top-[4.75rem] z-30 -mx-1 border-b border-zinc-100 bg-white py-3 md:top-20">
+                  <button type="submit" disabled={loading} className={`w-full sm:w-auto ${portalShell.btnPrimary} disabled:opacity-50`}>
+                    {loading ? <><Loader2 size={16} className="animate-spin" /> Saving...</> : "Save changes"}
+                  </button>
+                </div>
                 <div className="space-y-1">
                   <label className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-zinc-400">
                     <User size={12} /> Full Name
@@ -563,11 +569,6 @@ export default function ProfilePage() {
                     value={ROLE_LABELS[user?.role] || user?.role || "Tourist"}
                     className={`${portalShell.input} cursor-not-allowed bg-zinc-100 text-zinc-500`}
                   />
-                </div>
-                <div className="pt-2">
-                  <button type="submit" disabled={loading} className={`w-full sm:w-auto ${portalShell.btnPrimary} disabled:opacity-50`}>
-                    {loading ? <><Loader2 size={16} className="animate-spin" /> Saving...</> : "Save changes"}
-                  </button>
                 </div>
               </form>
             </PublicPanel>

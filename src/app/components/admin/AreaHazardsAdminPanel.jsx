@@ -461,12 +461,18 @@ export function AreaHazardsAdminPanel({
 
       {showModal && (
         <div className="fixed inset-0 z-[2000] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
-          <div className="relative z-[2001] bg-white dark:bg-zinc-900 rounded-[40px] p-8 max-w-2xl w-full max-h-[90vh] overflow-y-auto border border-zinc-200 shadow-2xl">
-            <div className="flex justify-between items-center mb-6">
+          <div className="relative z-[2001] flex max-h-[90vh] max-w-2xl w-full flex-col overflow-hidden rounded-[40px] border border-zinc-200 bg-white shadow-2xl dark:bg-zinc-900">
+            <div className="flex shrink-0 items-center justify-between border-b border-zinc-100 px-8 py-5">
               <h2 className="text-xl font-black uppercase">{editingId ? "Update Area Hazard" : "Mark Area Hazard"}</h2>
               <button type="button" onClick={() => setShowModal(false)} className="p-2 hover:bg-zinc-100 rounded-full"><X size={22} /></button>
             </div>
+            <div className="shrink-0 border-b border-zinc-100 bg-white px-8 py-3 dark:bg-zinc-900">
+              <button type="submit" form="area-hazard-form" disabled={isSaving} className={`w-full ${adminShell.btnDanger} disabled:opacity-60`}>
+                {isSaving ? "Saving..." : editingId ? "Update Hazard" : "Publish Hazard & Notify Tourists"}
+              </button>
+            </div>
 
+            <div className="min-h-0 flex-1 overflow-y-auto px-8 py-5">
             <div className="leaflet-modal-map-shell h-[160px] rounded-2xl overflow-hidden border border-zinc-100 mb-4">
               {mounted && (
                 <MapContainer center={mapCenter} zoom={15} style={{ height: "100%", width: "100%" }} zoomControl={false}>
@@ -479,7 +485,7 @@ export function AreaHazardsAdminPanel({
               )}
             </div>
 
-            <form onSubmit={handleSubmit} className="space-y-4">
+            <form id="area-hazard-form" onSubmit={handleSubmit} className="space-y-4">
               <div className="flex gap-2">
                 <input
                   required
@@ -530,10 +536,8 @@ export function AreaHazardsAdminPanel({
                 onChange={(e) => setFormData({ ...formData, safety_instructions: e.target.value })}
               />
 
-              <button type="submit" disabled={isSaving} className={`w-full ${adminShell.btnDanger} disabled:opacity-60`}>
-                {isSaving ? "Saving..." : editingId ? "Update Hazard" : "Publish Hazard & Notify Tourists"}
-              </button>
             </form>
+            </div>
           </div>
         </div>
       )}

@@ -58,6 +58,7 @@ export function PublicListModal({ open, onClose, title, subtitle, children, foot
             <X size={18} />
           </button>
         </div>
+        {footer ? <div className="shrink-0 border-b border-zinc-100 bg-white p-4">{footer}</div> : null}
         <div
           ref={detailBodyRef}
           className={`${portalShell.panelBody} overflow-y-auto overscroll-contain flex-1 min-h-0`}
@@ -76,7 +77,6 @@ export function PublicListModal({ open, onClose, title, subtitle, children, foot
         >
           {children}
         </div>
-        {footer ? <div className="shrink-0 border-t border-zinc-100 bg-white p-4">{footer}</div> : null}
       </div>
     </div>
   );

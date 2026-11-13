@@ -78,9 +78,9 @@ export function GuideAssistanceRequestForm({ assistance, onClose, onSubmitted })
     <div className="fixed inset-0 z-[210] flex items-center justify-center bg-black/60 p-3 backdrop-blur-sm sm:p-5">
       <form
         onSubmit={handleSubmit}
-        className="max-h-[92vh] w-full max-w-2xl overflow-y-auto rounded-3xl bg-white shadow-2xl"
+        className="flex max-h-[92vh] w-full max-w-2xl flex-col overflow-hidden rounded-3xl bg-white shadow-2xl"
       >
-        <div className="sticky top-0 z-10 flex items-start justify-between gap-4 rounded-t-3xl border-b border-zinc-100 bg-white px-5 py-4 sm:px-7">
+        <div className="flex shrink-0 items-start justify-between gap-4 border-b border-zinc-100 bg-white px-5 py-4 sm:px-7">
           <div>
             <p className="text-[10px] font-black uppercase tracking-widest text-purple-700">Tourist Guide Assistance</p>
             <h2 className="mt-1 text-xl font-black text-zinc-900">Request local assistance</h2>
@@ -92,8 +92,20 @@ export function GuideAssistanceRequestForm({ assistance, onClose, onSubmitted })
             <span aria-hidden="true">×</span>
           </button>
         </div>
+        <div className="flex shrink-0 flex-col-reverse gap-2 border-b border-zinc-100 bg-white px-5 py-3 sm:flex-row sm:justify-end sm:px-7">
+          <button type="button" onClick={onClose} className="rounded-xl border border-zinc-200 px-5 py-3 text-sm font-bold text-zinc-700 hover:bg-zinc-50">
+            Cancel
+          </button>
+          <button
+            type="submit"
+            disabled={submitting}
+            className="rounded-xl bg-purple-700 px-5 py-3 text-sm font-black text-white hover:bg-purple-800 disabled:cursor-not-allowed disabled:opacity-60"
+          >
+            {submitting ? "Submitting…" : "Submit assistance request"}
+          </button>
+        </div>
 
-        <div className="space-y-4 p-5 sm:p-7">
+        <div className="min-h-0 flex-1 space-y-4 overflow-y-auto p-5 sm:p-7">
           {assistance?.introductoryInformation ? (
             <p className="whitespace-pre-wrap rounded-xl border border-purple-100 bg-purple-50 p-3 text-sm leading-relaxed text-purple-950">
               {assistance.introductoryInformation}
@@ -167,19 +179,6 @@ export function GuideAssistanceRequestForm({ assistance, onClose, onSubmitted })
             />
             <span className="mt-1 block text-right text-xs text-zinc-500">{form.details.length}/5000</span>
           </label>
-
-          <div className="flex flex-col-reverse gap-3 pt-1 sm:flex-row sm:justify-end">
-            <button type="button" onClick={onClose} className="rounded-xl border border-zinc-200 px-5 py-3 text-sm font-bold text-zinc-700 hover:bg-zinc-50">
-              Cancel
-            </button>
-            <button
-              type="submit"
-              disabled={submitting}
-              className="rounded-xl bg-purple-700 px-5 py-3 text-sm font-black text-white hover:bg-purple-800 disabled:cursor-not-allowed disabled:opacity-60"
-            >
-              {submitting ? "Submitting…" : "Submit assistance request"}
-            </button>
-          </div>
         </div>
       </form>
     </div>

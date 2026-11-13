@@ -11,6 +11,7 @@ import { useAuthStore } from "@/app/store/crisisStore";
 import { useGuideStore } from "@/app/store/guideStore";
 import { useIncidentStore } from "@/app/store/incidentStore";
 import { getStatusColor, getSeverityColor } from "@/lib/constants";
+import { ReportGeoLink } from "@/app/components/incidents/ReportGeoLink";
 
 export default function GuideReportDetailPage({ params }) {
   const { id } = React.use(params);
@@ -100,6 +101,7 @@ export default function GuideReportDetailPage({ params }) {
             <p className="text-sm font-medium text-zinc-700 flex items-center gap-2">
               <MapPin size={14} className="text-blue-500" /> {inc.location}
             </p>
+            <ReportGeoLink record={inc} className="mt-2" />
           </Card>
         )}
         <Card className="p-5 border-zinc-100">

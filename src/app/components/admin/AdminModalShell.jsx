@@ -7,7 +7,7 @@ import { adminShell, iconSize } from "@/lib/designSystem";
 /**
  * Modal with sticky header + close button; body scrolls independently.
  */
-export function AdminModalShell({ open, onClose, title, subtitle, headerExtra, children, maxWidth = "max-w-2xl" }) {
+export function AdminModalShell({ open, onClose, title, subtitle, headerExtra, actions, children, maxWidth = "max-w-2xl" }) {
   if (!open) return null;
 
   return (
@@ -31,6 +31,7 @@ export function AdminModalShell({ open, onClose, title, subtitle, headerExtra, c
             <X size={iconSize.button} />
           </button>
         </div>
+        {actions ? <div className={adminShell.modalActionBar}>{actions}</div> : null}
         <div className="overflow-y-auto overscroll-contain px-4 py-4 sm:px-6 sm:py-5 space-y-5 min-h-0 flex-1">{children}</div>
       </div>
     </div>

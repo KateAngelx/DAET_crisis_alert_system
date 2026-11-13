@@ -6,6 +6,7 @@ import { incidentReportEligibleForGuideAssignment } from "@/lib/incidentGuideEli
 import { incidentStatusBadgeClass, normalizeIncidentStatusLabel } from "@/lib/incidentStatusUtils";
 import { isIncidentClosed } from "@/lib/incidentAdminActions";
 import { iconSize } from "@/lib/designSystem";
+import { ReportGeoLink } from "@/app/components/incidents/ReportGeoLink";
 
 export function IncidentReportAdminCard({ incident, onManage, mobile = false }) {
   const closed = isIncidentClosed(incident.status);
@@ -35,6 +36,7 @@ export function IncidentReportAdminCard({ incident, onManage, mobile = false }) 
             {incident.severity || "Unknown"}
           </span>
           <span className="break-words">{incident.location || "Location not provided"}</span>
+          <ReportGeoLink record={incident} />
         </div>
         {showGuide ? (
           <p className="mt-2 text-[10px] font-semibold text-purple-700">
@@ -89,6 +91,7 @@ export function IncidentReportAdminCard({ incident, onManage, mobile = false }) 
       </td>
       <td className="max-w-[180px] px-3 py-3 text-[11px] leading-relaxed text-zinc-700">
         <span className="line-clamp-2 break-words">{incident.location || "Not provided"}</span>
+        <ReportGeoLink record={incident} className="mt-1" />
       </td>
       <td className="max-w-[150px] px-3 py-3 text-[11px] font-medium text-zinc-700">
         <span className="line-clamp-2 break-words">{incident.reporter?.full_name || "Not available"}</span>

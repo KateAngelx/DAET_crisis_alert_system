@@ -60,10 +60,10 @@ export function ConfirmDialog({
       onClick={onCancel}
     >
       <div
-        className="bg-white rounded-3xl p-6 sm:p-8 max-w-md w-full border border-zinc-200 text-left shadow-2xl animate-in zoom-in-95 duration-200"
+        className="flex max-h-[90vh] w-full max-w-md flex-col overflow-hidden rounded-3xl border border-zinc-200 bg-white text-left shadow-2xl animate-in zoom-in-95 duration-200"
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="flex items-start gap-4 mb-4">
+        <div className="flex shrink-0 items-start gap-4 border-b border-zinc-100 px-6 py-5 sm:px-8">
           <div className={`p-2.5 rounded-2xl bg-zinc-50 shrink-0 ${styles.iconClass}`}>
             <Icon size={28} />
           </div>
@@ -71,9 +71,6 @@ export function ConfirmDialog({
             <h3 id="confirm-dialog-title" className="text-lg font-black uppercase tracking-tight text-zinc-900 leading-snug">
               {title}
             </h3>
-            {description ? (
-              <p className="text-sm text-zinc-600 font-medium leading-relaxed mt-2">{description}</p>
-            ) : null}
           </div>
           <button
             type="button"
@@ -84,23 +81,7 @@ export function ConfirmDialog({
             <X size={18} />
           </button>
         </div>
-
-        {requireText ? (
-          <div className="mb-5">
-            <label className="text-[10px] font-black uppercase text-zinc-400 block mb-2">
-              {requireTextLabel || `Type ${requireText} to confirm`}
-            </label>
-            <input
-              value={typed}
-              onChange={(e) => setTyped(e.target.value)}
-              placeholder={requireText}
-              className="w-full p-3 bg-zinc-50 border border-zinc-200 rounded-xl text-sm font-bold text-zinc-900 outline-none focus:ring-2 focus:ring-red-500"
-              autoComplete="off"
-            />
-          </div>
-        ) : null}
-
-        <div className="flex gap-3">
+        <div className="flex shrink-0 gap-3 border-b border-zinc-100 px-6 py-4 sm:px-8">
           {mode === "confirm" && (
             <button
               type="button"
@@ -119,6 +100,26 @@ export function ConfirmDialog({
           >
             {loading ? "Please wait…" : confirmLabel}
           </button>
+        </div>
+        <div className="min-h-0 flex-1 overflow-y-auto px-6 py-5 sm:px-8">
+        {description ? (
+          <p className="text-sm text-zinc-600 font-medium leading-relaxed">{description}</p>
+        ) : null}
+
+        {requireText ? (
+          <div className="mb-5">
+            <label className="text-[10px] font-black uppercase text-zinc-400 block mb-2">
+              {requireTextLabel || `Type ${requireText} to confirm`}
+            </label>
+            <input
+              value={typed}
+              onChange={(e) => setTyped(e.target.value)}
+              placeholder={requireText}
+              className="w-full p-3 bg-zinc-50 border border-zinc-200 rounded-xl text-sm font-bold text-zinc-900 outline-none focus:ring-2 focus:ring-red-500"
+              autoComplete="off"
+            />
+          </div>
+        ) : null}
         </div>
       </div>
     </div>

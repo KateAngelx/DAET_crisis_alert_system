@@ -29,6 +29,7 @@ import { DashboardPageHeader } from "@/app/components/dashboard/DashboardPageHea
 import { DashboardStatCard } from "@/app/components/dashboard/DashboardStatCard";
 
 import { IncidentReportAdminCard } from "@/app/components/incidents/IncidentReportAdminCard";
+import { formatReportCoordinates, ReportGeoLink } from "@/app/components/incidents/ReportGeoLink";
 import { IncidentGuideAssignmentFields } from "@/app/components/incidents/IncidentGuideAssignmentFields";
 import { incidentReportEligibleForGuideAssignment } from "@/lib/incidentGuideEligibility";
 import { IncidentReportsAuditLog } from "@/app/components/incidents/IncidentReportsAuditLog";
@@ -810,44 +811,41 @@ export default function AdminIncidentsPage() {
             </span>
           ) : null
         }
+        actions={selected ? (
+          <div className="flex w-full flex-col gap-2">
+            <div className="flex flex-wrap gap-2">
+              {getIncidentQuickActionsForReport(selected).map((action) => (
+                <button
+                  key={action.id}
+                  type="button"
+                  disabled={actionBusyId === selected.id}
+                  onClick={() => handleQuickAction(selected, action)}
+                  className={`${action.tone === "primary" ? adminShell.btnPrimary : action.tone === "danger" ? adminShell.btnGhost + " text-red-600 border-red-100" : action.tone === "success" ? adminShell.btnSuccess : adminShell.btnGhost} text-[10px]`}
+                >
+                  {action.label}
+                </button>
+              ))}
+            </div>
+            <button type="button" onClick={handleUpdate} className={`${adminShell.btnPrimary} w-full justify-center py-3`}>
+              Save changes
+            </button>
+          </div>
+        ) : null}
       >
         {selected ? (
           <>
-            <div className="flex flex-wrap gap-2">
-
-              {getIncidentQuickActionsForReport(selected).map((action) => (
-
-                <button
-
-                  key={action.id}
-
-                  type="button"
-
-                  disabled={actionBusyId === selected.id}
-
-                  onClick={() => handleQuickAction(selected, action)}
-
-                  className={`${action.tone === "primary" ? adminShell.btnPrimary : action.tone === "danger" ? adminShell.btnGhost + " text-red-600 border-red-100" : action.tone === "success" ? adminShell.btnSuccess : adminShell.btnGhost} text-[10px]`}
-
-                >
-
-                  {action.label}
-
-                </button>
-
-              ))}
-
-            </div>
-
-
-
             <p className="text-zinc-700 text-sm">{selected.description}</p>
 
-            <p className="text-sm text-zinc-500 flex items-center gap-1">
-
-              <MapPin size={iconSize.inline} className="text-blue-500" /> {selected.location}
-
-            </p>
+            <div className="space-y-2 rounded-xl border border-blue-100 bg-blue-50/60 p-3">
+              <p className="text-[10px] font-black uppercase tracking-widest text-zinc-400">Location and GPS</p>
+              <p className="flex items-start gap-1 text-sm font-medium text-zinc-700">
+                <MapPin size={iconSize.inline} className="mt-0.5 shrink-0 text-blue-500" /> {selected.location}
+              </p>
+              <ReportGeoLink record={selected} />
+              {formatReportCoordinates(selected) ? null : (
+                <p className="text-xs font-medium text-zinc-500">No GPS pin was shared with this report.</p>
+              )}
+            </div>
 
 
 
@@ -1084,11 +1082,6 @@ export default function AdminIncidentsPage() {
 
 
 
-            <button type="button" onClick={handleUpdate} className={`${adminShell.btnPrimary} w-full justify-center py-3`}>
-
-              Save changes
-
-            </button>
           </>
         ) : null}
       </AdminModalShell>

@@ -182,16 +182,7 @@ export function TouristStartGuide() {
             {current.title}
           </h2>
         </div>
-        <div className="space-y-3 overflow-y-auto px-5 py-5 sm:px-6">
-          <p className="text-sm font-bold leading-relaxed text-zinc-900">{current.where}</p>
-          <p className="text-sm leading-relaxed text-zinc-600">{current.detail}</p>
-          {error ? (
-            <p role="alert" className="rounded-xl border border-red-200 bg-red-50 p-3 text-sm font-bold text-red-800">
-              {error}
-            </p>
-          ) : null}
-        </div>
-        <div className="flex items-center justify-between gap-3 border-t border-zinc-100 px-5 py-4 sm:px-6">
+        <div className="flex shrink-0 items-center justify-between gap-3 border-b border-zinc-100 px-5 py-4 sm:px-6">
           <button
             type="button"
             onClick={skip}
@@ -219,6 +210,15 @@ export function TouristStartGuide() {
               Next <ChevronRight size={15} />
             </button>
           )}
+        </div>
+        <div className="min-h-0 flex-1 space-y-3 overflow-y-auto px-5 py-5 sm:px-6">
+          <p className="text-sm font-bold leading-relaxed text-zinc-900">{current.where}</p>
+          <p className="text-sm leading-relaxed text-zinc-600">{current.detail}</p>
+          {error ? (
+            <p role="alert" className="rounded-xl border border-red-200 bg-red-50 p-3 text-sm font-bold text-red-800">
+              {error}
+            </p>
+          ) : null}
         </div>
       </div>
     </div>

@@ -15,6 +15,7 @@ import {
 } from "@/app/components/InfoPageHero";
 import { ReportDetailSkeleton } from "@/app/components/ui/Skeletons";
 import { ErrorState, EmptyState } from "@/app/components/ui/AsyncState";
+import { ReportGeoLink } from "@/app/components/incidents/ReportGeoLink";
 
 export default function ReportDetailPage({ params }) {
   const { id } = React.use(params);
@@ -111,8 +112,11 @@ export default function ReportDetailPage({ params }) {
           <PublicPanel title="Description">
             <p className="text-zinc-700 leading-relaxed text-sm font-medium">{inc.description}</p>
             <div className="flex flex-wrap gap-4 text-sm text-zinc-500 mt-4 pt-4 border-t border-zinc-100">
-              <span className="flex items-center gap-1">
-                <MapPin size={14} /> {inc.location}
+              <span className="flex flex-col gap-1">
+                <span className="flex items-center gap-1">
+                  <MapPin size={14} /> {inc.location}
+                </span>
+                <ReportGeoLink record={inc} />
               </span>
               <span className="flex items-center gap-1">
                 <Clock size={14} /> {new Date(inc.created_at).toLocaleString()}

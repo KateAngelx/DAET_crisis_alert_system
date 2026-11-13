@@ -188,7 +188,10 @@ export default function FaqPage() {
 
             <a href={`mailto:${siteInfo.emailTourism}`} className="text-blue-600 font-bold hover:underline">{siteInfo.emailTourism}</a>{" "}
 
-            or <a href={`tel:${siteInfo.phoneTourismTel}`} className="text-blue-600 font-bold hover:underline">{siteInfo.phoneTourism}</a>.
+            or <a href={`tel:${siteInfo.phoneTourismTel}`} className="text-blue-600 font-bold hover:underline">{siteInfo.phoneTourism}</a>
+            {" / "}
+            <a href={`tel:${siteInfo.phoneTourismAltTel}`} className="text-blue-600 font-bold hover:underline">{siteInfo.phoneTourismAlt}</a>.
+            Facebook: <a href={siteInfo.facebook} className="text-blue-600 font-bold hover:underline" target="_blank" rel="noreferrer">{siteInfo.facebookHandle}</a>.
 
           </p>
 

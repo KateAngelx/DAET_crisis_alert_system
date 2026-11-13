@@ -97,14 +97,24 @@ function CreateUserModal({ open, onClose, onCreated }) {
 
   return (
     <div className="fixed inset-0 z-[2000] flex items-center justify-center p-4 bg-black/50">
-      <Card className="w-full max-w-lg p-6">
-        <div className="flex items-center justify-between mb-4">
+      <Card className="flex max-h-[90vh] w-full max-w-lg flex-col overflow-hidden p-0">
+        <div className="flex shrink-0 items-center justify-between border-b border-zinc-100 px-6 py-4">
           <h2 className="text-lg font-black uppercase tracking-tight">Create User</h2>
           <button type="button" onClick={onClose} className="p-2 hover:bg-zinc-100 rounded-xl">
             <X size={18} />
           </button>
         </div>
-        <form onSubmit={handleSubmit} className="space-y-3">
+        <form onSubmit={handleSubmit} className="flex min-h-0 flex-1 flex-col">
+          <div className="shrink-0 border-b border-zinc-100 px-6 py-3">
+            <button
+              type="submit"
+              disabled={saving}
+              className="w-full py-3 bg-blue-600 text-white rounded-xl font-black uppercase text-xs tracking-widest disabled:opacity-50"
+            >
+              {saving ? "Creating..." : "Create User"}
+            </button>
+          </div>
+          <div className="min-h-0 flex-1 space-y-3 overflow-y-auto p-6">
           <input
             required
             type="email"
@@ -155,13 +165,7 @@ function CreateUserModal({ open, onClose, onCreated }) {
             </select>
           </div>
           {error && <p className="text-sm text-red-600 font-medium">{error}</p>}
-          <button
-            type="submit"
-            disabled={saving}
-            className="w-full py-3 bg-blue-600 text-white rounded-xl font-black uppercase text-xs tracking-widest disabled:opacity-50"
-          >
-            {saving ? "Creating..." : "Create User"}
-          </button>
+          </div>
         </form>
       </Card>
     </div>

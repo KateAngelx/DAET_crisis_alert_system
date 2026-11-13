@@ -460,7 +460,7 @@ export const useGuideStore = create((set, get) => ({
       if (error) throw error;
 
       if (data.tourist && data.guide && data.tour_group) {
-        await notifyTouristAssignmentRequest(data.tourist, data.guide, data.tour_group);
+        await notifyTouristAssignmentRequest(data.tourist, data.guide, data.tour_group, data.id);
       }
 
 
@@ -526,9 +526,9 @@ export const useGuideStore = create((set, get) => ({
 
       const data = apiResult.assignment;
       if (data?.guide && data?.tourist && data?.tour_group) {
-        await notifyGuideAssignmentAccepted(data.guide, data.tourist, data.tour_group);
-        await notifyGuideAssignment(data.guide, data.tourist, touristId);
-        await notifyTouristGuideAssigned(data.tourist, data.guide);
+        await notifyGuideAssignmentAccepted(data.guide, data.tourist, data.tour_group, data.id);
+        await notifyGuideAssignment(data.guide, data.tourist, data.id);
+        await notifyTouristGuideAssigned(data.tourist, data.guide, data.id);
       }
 
       set({ pendingAssignment: null, touristActiveGroup: data });
@@ -552,7 +552,7 @@ export const useGuideStore = create((set, get) => ({
 
       const assignment = apiResult.assignment;
       if (assignment?.guide && assignment?.tourist && assignment?.tour_group) {
-        await notifyGuideAssignmentDeclined(assignment.guide, assignment.tourist, assignment.tour_group);
+        await notifyGuideAssignmentDeclined(assignment.guide, assignment.tourist, assignment.tour_group, assignment.id);
       }
 
       set({ pendingAssignment: null });

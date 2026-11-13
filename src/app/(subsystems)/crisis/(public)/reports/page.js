@@ -26,6 +26,7 @@ import { CategoryFilterSelect, StatusRecordList } from "@/app/components/shell/S
 import { sortRecordsNewestFirst } from "@/lib/recordSorting";
 import { PublicListModal } from "@/app/components/shell/PublicListModal";
 import { supabase } from "@/lib/supabaseClient";
+import { formatReportCoordinates, ReportGeoLink } from "@/app/components/incidents/ReportGeoLink";
 
 const REPORTS_PER_PAGE = 10;
 
@@ -157,7 +158,12 @@ function MyReportsContent() {
     status: incident.status,
     statusClass: getStatusColor(incident.status),
     reference: incident.reference_number || "Reference pending",
-    place: incident.location || "Location not provided",
+    place: (() => {
+      const coords = formatReportCoordinates(incident);
+      const place = incident.location || "Location not provided";
+      if (!coords || /GPS\s*-?\d/i.test(place)) return place;
+      return `${place} · GPS ${coords.label}`;
+    })(),
     type: incident.category || "Uncategorized",
     when: incident.created_at ? new Date(incident.created_at).toLocaleString() : "—",
     onSelect: () => setSelectedIncidentId(incident.id),
@@ -378,7 +384,10 @@ function MyReportsContent() {
             <dl className="divide-y divide-zinc-100 border-y border-zinc-100">
               <div className="grid grid-cols-1 sm:grid-cols-[7rem_1fr] gap-1 sm:gap-3 py-2.5">
                 <dt className="text-[9px] font-black uppercase tracking-widest text-zinc-400">Location</dt>
-                <dd className="text-sm font-medium text-zinc-700 flex items-start gap-1.5"><MapPin size={14} className="mt-0.5 shrink-0 text-blue-600" />{selectedIncident.location || "Not provided"}</dd>
+                <dd className="text-sm font-medium text-zinc-700">
+                  <span className="flex items-start gap-1.5"><MapPin size={14} className="mt-0.5 shrink-0 text-blue-600" />{selectedIncident.location || "Not provided"}</span>
+                  <ReportGeoLink record={selectedIncident} className="mt-1" />
+                </dd>
               </div>
               <div className="grid grid-cols-1 sm:grid-cols-[7rem_1fr] gap-1 sm:gap-3 py-2.5">
                 <dt className="text-[9px] font-black uppercase tracking-widest text-zinc-400">Submitted</dt>

@@ -1,8 +1,14 @@
-import { createHash } from 'node:crypto';
 import { channelsFromDb } from '@/lib/alertChannels';
 import { NOTIFICATION_CHANNELS, severityToPriority } from '@/lib/constants';
 import { processNotificationDeliveries } from '@/lib/notificationQueue.server';
 import { agentDebugLog } from '@/lib/agentDebugLog.server';
+import {
+  crisisAlertEventKey,
+  crisisAlertEventStatusError,
+  deliveryIdempotencyKey,
+  isUniqueViolation,
+  planCrisisRecipientNotification,
+} from '@/lib/crisisAlertBroadcastPolicy';
 import {
   channelsFromProfile,
   getBroadcastAlertChannels,
@@ -14,6 +20,49 @@ import { formatCrisisAlertSms } from '@/lib/smsMessageFormat';
 import { normalizePhilippinePhone } from '@/lib/phoneUtils';
 import { isSmsSuspended } from '@/lib/userActivity';
 import { sendWebPushToSubscriptions } from '@/lib/webPush.server';
+
+async function loadExistingDeliveryKeys(admin, keys) {
+  const found = new Set();
+  const size = 100;
+  for (let index = 0; index < keys.length; index += size) {
+    const slice = keys.slice(index, index + size);
+    const { data, error } = await admin
+      .from('notification_deliveries')
+      .select('idempotency_key')
+      .in('idempotency_key', slice);
+    if (error) return { keys: found, error };
+    for (const row of data || []) {
+      if (row.idempotency_key) found.add(row.idempotency_key);
+    }
+  }
+  return { keys: found, error: null };
+}
+
+async function insertDeliveryRecords(admin, records) {
+  if (!records.length) return { deliveries: [], error: null };
+  const { data, error } = await admin
+    .from('notification_deliveries')
+    .insert(records)
+    .select();
+  if (!error) return { deliveries: data || [], error: null };
+  if (!isUniqueViolation(error)) return { deliveries: [], error };
+
+  const inserted = [];
+  for (const record of records) {
+    const single = await admin
+      .from('notification_deliveries')
+      .insert(record)
+      .select()
+      .single();
+    if (!single.error) {
+      inserted.push(single.data);
+      continue;
+    }
+    if (isUniqueViolation(single.error)) continue;
+    return { deliveries: inserted, error: single.error };
+  }
+  return { deliveries: inserted, error: null };
+}
 
 function emptySmsDiagnostics() {
   return {
@@ -50,16 +99,18 @@ export async function broadcastCrisisAlertToTourists(admin, alertId, eventType =
     return results;
   }
 
+  const statusError = crisisAlertEventStatusError(alert.status, eventType);
+  if (statusError) {
+    results.errors.push(statusError);
+    results.rejected = true;
+    return results;
+  }
+
   const alertChannelFlags = channelsFromDb(alert.channels);
   const priority = severityToPriority(alert.severity);
   const isResolved = eventType === 'resolved';
   const isUpdate = eventType === 'updated';
-  const alertVersion = createHash('sha256').update(JSON.stringify(alert)).digest('hex');
-  const eventKey = isResolved
-    ? `crisis-alert:${alert.id}:resolved:${alert.resolved_at || alertVersion}`
-    : isUpdate
-      ? `crisis-alert:${alert.id}:updated:${alertVersion}`
-      : `crisis-alert:${alert.id}:created`;
+  const eventKey = crisisAlertEventKey(alert, eventType);
   const title = isResolved
     ? `Resolved: ${alert.title}`
     : isUpdate
@@ -84,20 +135,19 @@ export async function broadcastCrisisAlertToTourists(admin, alertId, eventType =
     return results;
   }
 
-  let existingQuery = admin
+  const { data: existing, error: existingError } = await admin
     .from('notifications')
-    .select('user_id')
+    .select('id, user_id')
     .eq('related_type', 'alert')
-    .eq('related_id', alertId);
-  if (isUpdate || isResolved) existingQuery = existingQuery.eq('event_key', eventKey);
-  const { data: existing, error: existingError } = await existingQuery;
+    .eq('related_id', alertId)
+    .eq('event_key', eventKey);
 
   if (existingError) {
     results.errors.push(existingError.message);
     return results;
   }
 
-  const alreadyNotified = new Set((existing || []).map((row) => row.user_id));
+  const existingNotificationByUser = new Map((existing || []).map((row) => [row.user_id, row.id]));
 
   const { data: recipients, error: recipientError } = await admin
     .from('profiles')
@@ -110,11 +160,18 @@ export async function broadcastCrisisAlertToTourists(admin, alertId, eventType =
     return results;
   }
 
-  const toNotify = (recipients || []).filter(
-    (profile) =>
-      !alreadyNotified.has(profile.id) && isProfileInAudience(profile, audience)
-  );
+  const toNotify = (recipients || []).filter((profile) => isProfileInAudience(profile, audience));
   results.skipped = (recipients || []).length - toNotify.length;
+
+  const candidateKeys = toNotify.flatMap((profile) => [
+    deliveryIdempotencyKey(profile.id, eventKey, 'email'),
+    deliveryIdempotencyKey(profile.id, eventKey, 'sms'),
+  ]);
+  const existingDeliveries = await loadExistingDeliveryKeys(admin, candidateKeys);
+  if (existingDeliveries.error) {
+    results.errors.push(existingDeliveries.error.message);
+    return results;
+  }
 
   if (toNotify.length === 0) {
     return results;
@@ -124,12 +181,25 @@ export async function broadcastCrisisAlertToTourists(admin, alertId, eventType =
 
   for (const profile of toNotify) {
     const isTourist = profile.user_type === 'tourist';
-    if (isTourist) results.smsDiagnostics.touristsInAudience += 1;
-
     const userChannels = channelsFromProfile(profile);
     const effective = getBroadcastAlertChannels(alertChannelFlags, userChannels);
     const sendEmail = effective.email && hasProfileEmail(profile);
     const normalizedPhone = normalizePhilippinePhone(profile.phone);
+    const sendSms = Boolean(effective.sms && normalizedPhone);
+    const plan = planCrisisRecipientNotification({
+      userId: profile.id,
+      eventKey,
+      alreadyNotified: existingNotificationByUser.has(profile.id),
+      sendInApp: effective.app || effective.push,
+      sendEmail,
+      sendSms,
+      existingDeliveryKeys: existingDeliveries.keys,
+    });
+    if (plan.skip) {
+      results.skipped += 1;
+      continue;
+    }
+    if (isTourist) results.smsDiagnostics.touristsInAudience += 1;
 
     if (alertChannelFlags.sms && isTourist) {
       let skipReason = null;
@@ -154,19 +224,14 @@ export async function broadcastCrisisAlertToTourists(admin, alertId, eventType =
           ? `${normalizedPhone.slice(0, 4)}…${normalizedPhone.slice(-3)}`
           : null,
         network: null,
-        queued: Boolean(effective.sms && normalizedPhone),
-        skipReason: effective.sms && normalizedPhone ? null : skipReason || 'not_eligible',
+        queued: plan.queueSms,
+        skipReason: plan.queueSms ? null : (sendSms ? 'already_queued' : skipReason || 'not_eligible'),
       });
     }
 
-    if (!sendEmail && !effective.sms && !effective.app && !effective.push) {
-      results.skipped += 1;
-      continue;
-    }
+    let notificationId = existingNotificationByUser.get(profile.id) || null;
 
-    let notificationId = null;
-
-    if (effective.app || effective.push) {
+    if (plan.insertNotification) {
       const { data: notification, error: notifError } = await admin
         .from('notifications')
         .insert({
@@ -183,16 +248,16 @@ export async function broadcastCrisisAlertToTourists(admin, alertId, eventType =
         .single();
 
       if (notifError) {
-        if (notifError.code === '23505') {
-          results.skipped += 1;
+        if (!isUniqueViolation(notifError)) {
+          results.errors.push(notifError.message);
           continue;
         }
-        results.errors.push(notifError.message);
-        continue;
-      }
+      } else {
 
-      notificationId = notification.id;
-      results.notified += 1;
+        notificationId = notification.id;
+        existingNotificationByUser.set(profile.id, notification.id);
+        results.notified += 1;
+      }
     }
 
     if (effective.push && notificationId) {
@@ -213,7 +278,7 @@ export async function broadcastCrisisAlertToTourists(admin, alertId, eventType =
       results.errors.push(...(pushResult.errors || []));
     }
 
-    if (sendEmail) {
+    if (plan.queueEmail) {
       deliveryRecords.push({
         notification_id: notificationId,
         user_id: profile.id,
@@ -223,11 +288,11 @@ export async function broadcastCrisisAlertToTourists(admin, alertId, eventType =
         subject: title,
         body: message,
         priority,
-        idempotency_key: `${profile.id}-${eventKey}-email`,
+        idempotency_key: plan.emailKey,
       });
     }
 
-    if (effective.sms && normalizedPhone) {
+    if (plan.queueSms) {
       deliveryRecords.push({
         notification_id: notificationId,
         user_id: profile.id,
@@ -237,7 +302,7 @@ export async function broadcastCrisisAlertToTourists(admin, alertId, eventType =
         subject: title,
         body: smsBody,
         priority,
-        idempotency_key: `${profile.id}-${eventKey}-sms`,
+        idempotency_key: plan.smsKey,
       });
       if (isTourist) results.smsDiagnostics.touristSmsQueued += 1;
       else results.smsDiagnostics.guideSmsQueued += 1;
@@ -256,14 +321,11 @@ export async function broadcastCrisisAlertToTourists(admin, alertId, eventType =
     return results;
   }
 
-  const { data: deliveries, error: deliveryError } = await admin
-    .from('notification_deliveries')
-    .insert(deliveryRecords)
-    .select();
+  const { deliveries, error: deliveryError } = await insertDeliveryRecords(admin, deliveryRecords);
 
   if (deliveryError) {
     results.errors.push(`Delivery queue failed: ${deliveryError.message}`);
-    return results;
+    if (!deliveries.length) return results;
   }
 
   results.emailQueued = (deliveries || []).filter((d) => d.channel === 'email').length;

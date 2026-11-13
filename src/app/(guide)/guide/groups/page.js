@@ -201,9 +201,9 @@ export default function GuideTourGroupsPage() {
             role="dialog"
             aria-modal="true"
             aria-labelledby="tour-group-setup-title"
-            className="max-h-[94vh] w-full max-w-3xl overflow-y-auto rounded-2xl bg-white shadow-2xl"
+            className="flex max-h-[94vh] w-full max-w-3xl flex-col overflow-hidden rounded-2xl bg-white shadow-2xl"
           >
-          <div className="sticky top-0 z-10 flex items-start justify-between gap-4 border-b border-zinc-100 bg-white px-5 py-4 sm:px-6">
+          <div className="flex shrink-0 items-start justify-between gap-4 border-b border-zinc-100 bg-white px-5 py-4 sm:px-6">
             <div>
               <p className="text-[10px] font-black uppercase tracking-widest text-purple-700">
                 {setupStep === "details" ? "Step 1 of 2 · Group details" : "Step 2 of 2 · Invite tourists"}
@@ -217,9 +217,25 @@ export default function GuideTourGroupsPage() {
             </button>
           </div>
           {setupStep === "details" ? (
-            <div className="p-5 sm:p-6">
+            <div className="shrink-0 border-b border-zinc-100 bg-white px-5 py-3 sm:px-6">
+              <button type="submit" form="tour-group-create-form" disabled={saving} className="px-6 py-3 bg-purple-600 text-white rounded-xl font-black uppercase text-xs tracking-widest hover:bg-purple-700 disabled:opacity-50 flex items-center gap-2">
+                {saving ? <><Loader2 size={14} className="animate-spin" /> Creating...</> : "Create Tour Group"}
+              </button>
+            </div>
+          ) : (
+            <div className="flex shrink-0 flex-col-reverse gap-2 border-b border-zinc-100 bg-white px-5 py-3 sm:flex-row sm:justify-end sm:px-6">
+              <button type="button" onClick={closeSetup} className="rounded-xl border border-zinc-200 px-4 py-3 text-sm font-bold text-zinc-700">
+                Skip for now
+              </button>
+              <button type="button" onClick={closeSetup} className="rounded-xl bg-purple-600 px-5 py-3 text-sm font-black text-white hover:bg-purple-700">
+                Done
+              </button>
+            </div>
+          )}
+          {setupStep === "details" ? (
+            <div className="min-h-0 flex-1 overflow-y-auto p-5 sm:p-6">
           {error && <p role="alert" className="text-sm text-red-600 font-medium mb-4">{error}</p>}
-          <form onSubmit={handleCreate} className="space-y-4">
+          <form id="tour-group-create-form" onSubmit={handleCreate} className="space-y-4">
             <div className="space-y-1">
               <label className="text-[10px] font-black uppercase text-zinc-400">Tour Group Name</label>
               <input
@@ -307,13 +323,10 @@ export default function GuideTourGroupsPage() {
                 className="w-full p-3 bg-white border border-zinc-200 rounded-xl text-sm font-medium"
               />
             </div>
-            <button type="submit" disabled={saving} className="px-6 py-3 bg-purple-600 text-white rounded-xl font-black uppercase text-xs tracking-widest hover:bg-purple-700 disabled:opacity-50 flex items-center gap-2">
-              {saving ? <><Loader2 size={14} className="animate-spin" /> Creating...</> : "Create Tour Group"}
-            </button>
           </form>
             </div>
           ) : (
-            <div className="space-y-4 p-5 sm:p-6">
+            <div className="min-h-0 flex-1 space-y-4 overflow-y-auto p-5 sm:p-6">
               <p className="text-sm text-zinc-600">
                 Search for registered tourists and send invitations. Tourists join the confirmed roster only after they accept. You can also skip this step and invite them later.
               </p>
@@ -325,14 +338,6 @@ export default function GuideTourGroupsPage() {
                   tourGroupName={createdGroup.name}
                 />
               ) : null}
-              <div className="flex flex-col-reverse gap-2 border-t border-zinc-100 pt-4 sm:flex-row sm:justify-end">
-                <button type="button" onClick={closeSetup} className="rounded-xl border border-zinc-200 px-4 py-3 text-sm font-bold text-zinc-700">
-                  Skip for now
-                </button>
-                <button type="button" onClick={closeSetup} className="rounded-xl bg-purple-600 px-5 py-3 text-sm font-black text-white hover:bg-purple-700">
-                  Done
-                </button>
-              </div>
             </div>
           )}
           </section>

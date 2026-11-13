@@ -1,19 +1,7 @@
-const DEFAULT_CHANNEL_FLAGS = { email: true, sms: true, app: true };
+const NO_CHANNEL_FLAGS = { email: false, sms: false, app: false };
 
 export function channelsToDb(channels) {
-  if (Array.isArray(channels)) {
-    return channels.length > 0 ? channels : ['web'];
-  }
-
-  if (channels && typeof channels === 'object') {
-    const enabled = Object.entries(channels)
-      .filter(([, isEnabled]) => Boolean(isEnabled))
-      .map(([key]) => (key === 'app' ? 'web' : key));
-
-    return enabled.length > 0 ? enabled : ['web'];
-  }
-
-  return ['web'];
+  return channelFlagsToDb(channels);
 }
 
 export function channelsFromDb(channels) {
@@ -33,7 +21,7 @@ export function channelsFromDb(channels) {
     };
   }
 
-  return { ...DEFAULT_CHANNEL_FLAGS };
+  return { ...NO_CHANNEL_FLAGS };
 }
 
 export function normalizeAlert(alert) {
@@ -41,10 +29,17 @@ export function normalizeAlert(alert) {
   return { ...alert, channels: channelsFromDb(alert.channels) };
 }
 
-/** Persist office channel switches, including the case where every switch is off. */
+/**
+ * Persist office channel switches as the JSON array stored on alerts.
+ * An empty array means every switch is off. "web" is the stored in-app value.
+ */
 export function channelFlagsToDb(channels) {
-  const flags = channelsFromDb(channels ?? DEFAULT_CHANNEL_FLAGS);
-  return { email: flags.email, sms: flags.sms, app: flags.app };
+  const flags = channelsFromDb(channels);
+  const stored = [];
+  if (flags.email) stored.push("email");
+  if (flags.sms) stored.push("sms");
+  if (flags.app) stored.push("web");
+  return stored;
 }
 
 export function channelOverrideFromBody(channels) {

@@ -211,7 +211,7 @@ export function AlertDetailModal({ alert, onClose }) {
       <Card
         className={`p-0 max-h-[90vh] overflow-hidden border-2 ${styles.border} shadow-2xl animate-in zoom-in-95 duration-200 flex flex-col`}
       >
-        <div className={`${styles.headerBg} ${styles.headerFg} p-6 sm:p-8 text-left shrink-0 rounded-t-2xl`}>
+        <div className={`${styles.headerBg} ${styles.headerFg} order-1 p-6 sm:p-8 text-left shrink-0 rounded-t-2xl`}>
           <div className="flex justify-between items-start mb-4">
             <div className={`p-3 rounded-2xl ${styles.headerIcon}`}>
               <AlertTypeIcon type={alert.type} size={iconSize.empty} />
@@ -233,7 +233,7 @@ export function AlertDetailModal({ alert, onClose }) {
         <div
           ref={detailBodyRef}
           onScroll={handleDetailScroll}
-          className="p-6 sm:p-8 space-y-5 bg-white text-left overflow-y-auto flex-1"
+          className="order-3 p-6 sm:p-8 space-y-5 bg-white text-left overflow-y-auto flex-1"
         >
           <p className="text-sm font-medium leading-relaxed text-zinc-700">{alert.message}</p>
 
@@ -291,7 +291,7 @@ export function AlertDetailModal({ alert, onClose }) {
           </div>
         </div>
 
-        <div className="shrink-0 bg-white rounded-b-2xl border-t border-zinc-100 p-4">
+        <div className="order-2 shrink-0 border-b border-zinc-100 bg-white p-4">
           {canShowReadState && (
             <div className="mb-3">
               {hasAlreadyRead ? (

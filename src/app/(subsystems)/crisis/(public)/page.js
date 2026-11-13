@@ -19,6 +19,7 @@ import {
   DEFAULT_CRISIS_TYPE_OPTIONS,
   DEFAULT_SEVERITY_ORDER,
 } from "@/app/components/shell/PublicCategorizedCardFilters";
+import { siteInfo } from "@/lib/siteInfo";
 
 const DAET_CENTER = [14.1122, 122.9553];
 
@@ -249,7 +250,7 @@ export default function CrisisPublicPage() {
           {safetyOpen ? (
             <div className="grid grid-cols-1 gap-4 bg-blue-600 p-4 text-left text-sm font-medium text-white md:grid-cols-2 sm:p-6">
               <p>1. During typhoon season (June–December), check this page before visiting beaches or remote areas.</p>
-              <p>2. Save emergency numbers: <strong>911</strong> (national), <strong>117</strong> (PNP), municipal hotline <strong>(054) 472-3000</strong>, tourism office <strong>0907 834 1818</strong>.</p>
+              <p>2. Save emergency numbers: <strong>911</strong> (national), <strong>117</strong> (PNP), tourism office <strong>{siteInfo.phoneTourism}</strong> / <strong>{siteInfo.phoneTourismAlt}</strong>.</p>
               <p>3. When a Critical alert is posted, follow the listed instructions and avoid named affected areas.</p>
               {!isAuthenticated ? (
                 <p>4. Register your account to receive email, SMS, and app notifications when the tourism office issues a new alert.</p>

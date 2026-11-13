@@ -123,8 +123,8 @@ export function DestinationModal({
 
   return (
     <div className="fixed inset-0 z-[200] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
-      <div className="bg-white rounded-3xl max-w-2xl w-full max-h-[90vh] overflow-y-auto shadow-2xl custom-scrollbar">
-        <div className="sticky top-0 bg-white border-b border-zinc-100 px-6 py-4 flex items-start justify-between gap-4 rounded-t-3xl z-10">
+      <div className="bg-white rounded-3xl max-w-2xl w-full max-h-[90vh] flex flex-col overflow-hidden shadow-2xl">
+        <div className="shrink-0 bg-white border-b border-zinc-100 px-6 py-4 flex items-start justify-between gap-4">
           <div>
             <div className="flex items-center gap-2 mb-1">
               <Navigation size={18} className="text-blue-600" />
@@ -136,7 +136,16 @@ export function DestinationModal({
             )}
           </div>
           <div className="flex items-center gap-2 shrink-0">
-            {editable && !editing && (
+            {editing ? (
+              <>
+                <button type="submit" form="destination-route-form" disabled={saving} className="px-4 py-2.5 bg-blue-600 text-white rounded-xl font-black uppercase text-[10px] tracking-widest disabled:opacity-50 flex items-center gap-2">
+                  {saving ? <><Loader2 size={14} className="animate-spin" /> Saving...</> : "Save Route"}
+                </button>
+                <button type="button" onClick={() => setEditing(false)} className="px-4 py-2.5 bg-zinc-100 text-zinc-600 rounded-xl font-black uppercase text-[10px] tracking-widest">
+                  Cancel
+                </button>
+              </>
+            ) : editable ? (
               <button
                 type="button"
                 onClick={() => setEditing(true)}
@@ -144,7 +153,7 @@ export function DestinationModal({
               >
                 <Pencil size={12} /> Edit Route
               </button>
-            )}
+            ) : null}
             <button
               type="button"
               onClick={onClose}
@@ -156,13 +165,13 @@ export function DestinationModal({
           </div>
         </div>
 
-        <div className="p-6 space-y-6">
+        <div className="min-h-0 flex-1 overflow-y-auto p-6 space-y-6">
           {error && (
             <p className="text-sm text-red-600 font-medium p-3 bg-red-50 rounded-xl border border-red-100">{error}</p>
           )}
 
           {editing ? (
-            <form onSubmit={handleSave} className="space-y-4">
+            <form id="destination-route-form" onSubmit={handleSave} className="space-y-4">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-1">
                   <label className="text-[10px] font-black uppercase text-zinc-400">From (Starting Location)</label>
@@ -215,14 +224,6 @@ export function DestinationModal({
               <div className="space-y-1">
                 <label className="text-[10px] font-black uppercase text-zinc-400">Important Destination Information</label>
                 <textarea rows={3} value={form.destination_notes} onChange={(e) => setForm({ ...form, destination_notes: e.target.value })} className="w-full p-3 bg-zinc-50 border border-zinc-200 rounded-xl text-sm font-medium" />
-              </div>
-              <div className="flex gap-3">
-                <button type="submit" disabled={saving} className="px-5 py-2.5 bg-blue-600 text-white rounded-xl font-black uppercase text-xs tracking-widest disabled:opacity-50 flex items-center gap-2">
-                  {saving ? <><Loader2 size={14} className="animate-spin" /> Saving...</> : "Save Route"}
-                </button>
-                <button type="button" onClick={() => setEditing(false)} className="px-5 py-2.5 bg-zinc-100 text-zinc-600 rounded-xl font-black uppercase text-xs tracking-widest">
-                  Cancel
-                </button>
               </div>
             </form>
           ) : (

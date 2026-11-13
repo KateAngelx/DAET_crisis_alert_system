@@ -2,7 +2,7 @@ import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { supabase } from '@/lib/supabaseClient';
 import { useNotificationStore } from '@/app/store/notificationStore';
-import { channelsToDb, normalizeAlert } from '@/lib/alertChannels';
+import { channelFlagsToDb, normalizeAlert } from '@/lib/alertChannels';
 import { fetchWithFreshSession, getActiveSession } from '@/lib/authSession';
 import { DEFAULT_USER_NOTIFICATION_CHANNELS } from '@/lib/userNotificationChannels';
 import { parseApiJson } from '@/lib/parseApiJson';
@@ -272,7 +272,7 @@ export const useCrisisStore = create((set, get) => ({
         status: 'Active',
         is_public: true,
         rewards_eligible: alertData.rewards_eligible === true,
-        channels: channelsToDb(alertData.channels || { email: true, sms: true, app: true })
+        channels: channelFlagsToDb(alertData.channels ?? { email: true, sms: true, app: true })
       };
 
       if (alertData.latitude != null && alertData.longitude != null) {
@@ -323,7 +323,7 @@ export const useCrisisStore = create((set, get) => ({
         severity: updatedData.severity,
         location: updatedData.location,
         rewards_eligible: updatedData.rewards_eligible === true,
-        channels: channelsToDb(updatedData.channels),
+        channels: channelFlagsToDb(updatedData.channels),
         is_public: true
       };
 
@@ -396,6 +396,7 @@ function mapProfileToUser(profile) {
       push: Boolean(channels.push),
     },
     notification_channels_configured: Boolean(profile.notification_channels_configured),
+    is_active: profile.is_active === true,
   };
 }
 

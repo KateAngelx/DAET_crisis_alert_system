@@ -1,5 +1,5 @@
 import { InfoPageHero, InfoSection, PublicPageShell, PublicPageContent, publicLayout } from "@/app/components/InfoPageHero";
-import { Phone, Mail, MapPin, Clock } from "lucide-react";
+import { Phone, Mail, MapPin, Clock, Share2 } from "lucide-react";
 import { iconSize, typography, portalShell } from "@/lib/designSystem";
 import { siteInfo } from "@/lib/siteInfo";
 
@@ -32,14 +32,26 @@ export default function ContactPage() {
           <ContactCard
             icon={<Phone size={iconSize.stat} className="text-blue-600" />}
             title="Tourism Office Mobile"
-            content={`${siteInfo.phoneTourism} / ${siteInfo.phoneTourismAlt}`}
+            content={siteInfo.phoneTourism}
             href={`tel:${siteInfo.phoneTourismTel}`}
+          />
+          <ContactCard
+            icon={<Phone size={iconSize.stat} className="text-blue-600" />}
+            title="Tourism Office Mobile"
+            content={siteInfo.phoneTourismAlt}
+            href={`tel:${siteInfo.phoneTourismAltTel}`}
           />
           <ContactCard
             icon={<Mail size={iconSize.stat} className="text-blue-600" />}
             title="Tourism Office Email"
             content={siteInfo.emailTourism}
             href={`mailto:${siteInfo.emailTourism}`}
+          />
+          <ContactCard
+            icon={<Share2 size={iconSize.stat} className="text-blue-600" />}
+            title="Facebook"
+            content={siteInfo.facebookHandle}
+            href={siteInfo.facebook}
           />
           <ContactCard
             icon={<Clock size={iconSize.stat} className="text-blue-600" />}
@@ -65,7 +77,11 @@ export default function ContactPage() {
             For account issues, incident report inquiries, or technical support, email{" "}
             <a href={`mailto:${siteInfo.emailTourism}`} className="text-blue-600 font-bold hover:underline">{siteInfo.emailTourism}</a>{" "}
             or call the tourism office at{" "}
-            <a href={`tel:${siteInfo.phoneTourismTel}`} className="text-blue-600 font-bold hover:underline">{siteInfo.phoneTourism}</a>.
+            <a href={`tel:${siteInfo.phoneTourismTel}`} className="text-blue-600 font-bold hover:underline">{siteInfo.phoneTourism}</a>
+            {" / "}
+            <a href={`tel:${siteInfo.phoneTourismAltTel}`} className="text-blue-600 font-bold hover:underline">{siteInfo.phoneTourismAlt}</a>.
+            Facebook:{" "}
+            <a href={siteInfo.facebook} className="text-blue-600 font-bold hover:underline" target="_blank" rel="noreferrer">{siteInfo.facebookHandle}</a>.
             You may also reach the municipal hotline at{" "}
             <a href={`tel:${siteInfo.phoneMunicipalTel}`} className="text-blue-600 font-bold hover:underline">{siteInfo.phoneMunicipal}</a>.
           </p>

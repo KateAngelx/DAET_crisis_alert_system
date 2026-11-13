@@ -44,7 +44,10 @@ export default function AboutPage() {
           <p>
             {siteInfo.officeName}, Municipality of Daet, Camarines Norte. For non-emergency inquiries, contact{" "}
             <a href={`mailto:${siteInfo.emailTourism}`} className="text-blue-600 font-bold hover:underline">{siteInfo.emailTourism}</a>{" "}
-            or call {siteInfo.phoneTourism} during {siteInfo.officeHours.toLowerCase()}.
+            or call {siteInfo.phoneTourism} / {siteInfo.phoneTourismAlt} during {siteInfo.officeHours.toLowerCase()}.
+            Facebook:{" "}
+            <a href={siteInfo.facebook} className="text-blue-600 font-bold hover:underline" target="_blank" rel="noreferrer">{siteInfo.facebookHandle}</a>.
+            Office: {siteInfo.address}.
           </p>
         </InfoSection>
 

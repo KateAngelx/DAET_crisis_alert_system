@@ -73,7 +73,7 @@ export function GuideAssignmentRequestModal({
 
   return (
     <div className="fixed inset-0 z-[300] flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm">
-      <div className="bg-white rounded-3xl max-w-lg w-full shadow-2xl overflow-hidden">
+      <div className="flex max-h-[90vh] w-full max-w-lg flex-col overflow-hidden rounded-3xl bg-white shadow-2xl">
         <div className="bg-blue-600 px-6 py-5 text-white">
           <div className="flex items-start justify-between gap-4">
             <div>
@@ -90,7 +90,25 @@ export function GuideAssignmentRequestModal({
           </div>
         </div>
 
-        <div className="p-6 space-y-5">
+        <div className="flex shrink-0 gap-3 border-b border-zinc-100 bg-white px-6 py-4">
+          <button
+            type="button"
+            disabled={!!loading}
+            onClick={handleDecline}
+            className="flex-1 px-4 py-3 bg-zinc-100 text-zinc-700 rounded-2xl font-black uppercase text-xs tracking-widest hover:bg-zinc-200 disabled:opacity-50"
+          >
+            {loading === "decline" ? <Loader2 size={16} className="animate-spin mx-auto" /> : "Decline"}
+          </button>
+          <button
+            type="button"
+            disabled={!!loading}
+            onClick={handleAccept}
+            className="flex-1 px-4 py-3 bg-blue-600 text-white rounded-2xl font-black uppercase text-xs tracking-widest hover:bg-blue-700 disabled:opacity-50 flex items-center justify-center gap-2"
+          >
+            {loading === "accept" ? <Loader2 size={16} className="animate-spin" /> : "Confirm Guide"}
+          </button>
+        </div>
+        <div className="min-h-0 flex-1 space-y-5 overflow-y-auto p-6">
           <div className="p-4 bg-zinc-50 rounded-2xl border border-zinc-100">
             <p className="text-[10px] font-black uppercase text-zinc-400 mb-1">Tour Group</p>
             <p className={`font-black text-zinc-900 ${typography.cardTitle}`}>{group?.name || "—"}</p>
@@ -125,24 +143,6 @@ export function GuideAssignmentRequestModal({
             </p>
           )}
 
-          <div className="flex gap-3">
-            <button
-              type="button"
-              disabled={!!loading}
-              onClick={handleDecline}
-              className="flex-1 px-4 py-3 bg-zinc-100 text-zinc-700 rounded-2xl font-black uppercase text-xs tracking-widest hover:bg-zinc-200 disabled:opacity-50"
-            >
-              {loading === "decline" ? <Loader2 size={16} className="animate-spin mx-auto" /> : "Decline"}
-            </button>
-            <button
-              type="button"
-              disabled={!!loading}
-              onClick={handleAccept}
-              className="flex-1 px-4 py-3 bg-blue-600 text-white rounded-2xl font-black uppercase text-xs tracking-widest hover:bg-blue-700 disabled:opacity-50 flex items-center justify-center gap-2"
-            >
-              {loading === "accept" ? <Loader2 size={16} className="animate-spin" /> : "Confirm Guide"}
-            </button>
-          </div>
         </div>
       </div>
     </div>
