@@ -4,11 +4,11 @@ import { areaAdvisoryToWarning } from "@/lib/areaAdvisoryAdapter";
 import { NOTIFICATION_CHANNELS } from "@/lib/constants";
 import { processNotificationDeliveries } from "@/lib/notificationQueue.server";
 import {
-  channelsFromProfile,
+  channelsForBroadcast,
   getBroadcastAlertChannels,
   hasProfileEmail,
 } from "@/lib/userNotificationChannels";
-import { audienceToUserTypes, isProfileInAudience } from "@/lib/notificationAudience";
+import { audienceForSeverity, audienceToUserTypes, isProfileInAudience } from "@/lib/notificationAudience";
 import { getSystemSettings } from "@/lib/systemSettings.server";
 import { formatAreaHazardSms } from "@/lib/smsMessageFormat";
 import { normalizePhilippinePhone } from "@/lib/phoneUtils";
@@ -78,7 +78,8 @@ export async function broadcastDangerousLocationToTourists(
   const hazardChannelFlags = channelsFromDb(channelOverride ?? warning.channels);
 
   const settings = await getSystemSettings(admin);
-  const audience = settings.notification_audience;
+  // Critical hazards go to every role, on every channel, regardless of settings.
+  const audience = audienceForSeverity(settings.notification_audience, warning.severity);
   const audienceTypes = audienceToUserTypes(audience);
 
   if (audienceTypes.length === 0) {
@@ -123,7 +124,7 @@ export async function broadcastDangerousLocationToTourists(
   const deliveryRecords = [];
 
   for (const profile of toNotify) {
-    const userChannels = channelsFromProfile(profile);
+    const userChannels = channelsForBroadcast(profile, warning.severity);
     const effective = getBroadcastAlertChannels(hazardChannelFlags, userChannels);
     const sendEmail = effective.email && hasProfileEmail(profile);
 

@@ -20,9 +20,12 @@ export function CompletedToursPanel({
 }) {
   const [page, setPage] = useState(1);
   const signature = groups.map((group) => group.id).join("|");
-  useEffect(() => {
+  // Back to page 1 when the list changes.
+  const [pagedSignature, setPagedSignature] = useState(signature);
+  if (pagedSignature !== signature) {
+    setPagedSignature(signature);
     setPage(1);
-  }, [signature]);
+  }
   const pageCount = pageSize ? Math.max(1, Math.ceil(groups.length / pageSize)) : 1;
   const safePage = Math.min(page, pageCount);
   const displayed = pageSize

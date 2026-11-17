@@ -33,10 +33,6 @@ export default function GuideActiveTouristsPage() {
     () => tourGroups.filter((g) => g.status === "active"),
     [tourGroups]
   );
-  const activeGroupIds = useMemo(
-    () => activeGroups.map((g) => g.id).join(","),
-    [activeGroups]
-  );
   const selectedGroup = activeGroups.find((g) => g.id === selectedGroupId) || activeGroups[0] || null;
   const pendingPageSize = 5;
   const pendingPageCount = Math.max(1, Math.ceil(pendingAll.length / pendingPageSize));
@@ -65,7 +61,7 @@ export default function GuideActiveTouristsPage() {
     if (activeGroups.length > 0) {
       setSelectedGroupId((prev) => prev || activeGroups[0].id);
     }
-  }, [searchParams, activeGroupIds]);
+  }, [searchParams, activeGroups]);
 
   useEffect(() => {
     let cancelled = false;
@@ -134,7 +130,7 @@ export default function GuideActiveTouristsPage() {
     return () => {
       cancelled = true;
     };
-  }, [user?.id, activeGroupIds, fetchGroupPendingMembers]);
+  }, [user?.id, activeGroups, fetchGroupPendingMembers]);
 
   const confirmedCount = activeGroups.reduce((sum, g) => sum + (g.member_count || 0), 0);
 

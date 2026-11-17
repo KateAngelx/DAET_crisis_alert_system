@@ -19,6 +19,8 @@ import { AlertCardSkeletonList, MapSkeleton, StatCardSkeletonGrid } from "@/app/
 import { ListPager } from "@/app/components/shell/ListPager";
 import { getSeverityOutline, guideShell, portalLayout, statGrid, iconSize } from "@/lib/designSystem";
 import { DashboardStatCard } from "@/app/components/dashboard/DashboardStatCard";
+import { AlertTypeIcon } from "@/app/components/ui/cardTypeIcons";
+import { useHydrated } from "@/lib/useHydrated";
 
 const CLOSED_REPORT_STATUSES = ["Resolved", "Closed", "Rejected"];
 
@@ -26,7 +28,7 @@ export default function GuideHistoryPage() {
   const { user } = useAuthStore();
   const { alerts, fetchAlerts, loading: alertsLoading } = useCrisisStore();
   const { tourGroups, guideIncidents, fetchTourGroups, fetchGuideIncidents, loading: guideLoading } = useGuideStore();
-  const [mounted, setMounted] = useState(false);
+  const mounted = useHydrated();
   const [categoryFilter, setCategoryFilter] = useState("all");
   const [severityFilter, setSeverityFilter] = useState("all");
   const [selectedAlert, setSelectedAlert] = useState(null);
@@ -38,10 +40,6 @@ export default function GuideHistoryPage() {
     fetchGuideIncidents(user.id);
     fetchAlerts();
   }, [user?.id, fetchTourGroups, fetchGuideIncidents, fetchAlerts]);
-
-  useEffect(() => {
-    setMounted(true);
-  }, []);
 
   const completedGroups = useMemo(() => tourGroups.filter((g) => g.status === "completed"), [tourGroups]);
   const closedReports = useMemo(
@@ -69,6 +67,7 @@ export default function GuideHistoryPage() {
       ? `${alert.title} · ${alert.location}`
       : alert.title || alert.location || "—",
     type: alert.type || "General",
+    typeIcon: <AlertTypeIcon type={alert.type} size={12} />,
     when: new Date(alert.published_at || alert.created_at).toLocaleString(),
     onSelect: () => setSelectedAlert(alert),
     ariaLabel: "View resolved alert",

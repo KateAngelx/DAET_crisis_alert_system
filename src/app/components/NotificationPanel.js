@@ -9,6 +9,7 @@ import { NotificationPanelSkeleton } from "@/app/components/ui/Skeletons";
 import { NotificationItemCard } from "@/app/components/NotificationItemCard";
 import { getActiveSession } from "@/lib/authSession";
 import { getNotificationHref, getNotificationInboxHref } from "@/lib/notificationLinks";
+import { splitRewardNotifications } from "@/lib/notificationCategory";
 import { iconSize } from "@/lib/designSystem";
 import { ListPager } from "@/app/components/shell/ListPager";
 
@@ -16,16 +17,18 @@ export function NotificationPanel() {
   const { user, isAuthenticated } = useAuthStore();
   const {
     notifications,
-    unreadCount,
     fetchNotifications,
     markAsRead,
     markAllAsRead,
+    dismissNotification,
     loading,
     error,
     clearNotifications,
   } = useNotificationStore();
   const [open, setOpen] = useState(false);
-  const [sessionReady, setSessionReady] = useState(false);
+  // Which signed-in user the bell has confirmed a session for.
+  const [readyFor, setReadyFor] = useState(null);
+  const sessionReady = Boolean(user?.id) && readyFor === user.id;
   const [page, setPage] = useState(1);
 
   useEffect(() => {
@@ -37,11 +40,11 @@ export function NotificationPanel() {
 
       if (!session?.user?.id) {
         clearNotifications();
-        setSessionReady(false);
+        setReadyFor(null);
         return;
       }
 
-      setSessionReady(true);
+      setReadyFor(session.user.id);
       await fetchNotifications(session.user.id);
     }
 
@@ -49,7 +52,6 @@ export function NotificationPanel() {
       loadForSession();
     } else {
       clearNotifications();
-      setSessionReady(false);
     }
 
     return () => {
@@ -60,10 +62,14 @@ export function NotificationPanel() {
   if (!isAuthenticated || !sessionReady || !user?.id) return null;
 
   const getRelatedLink = (notification) => getNotificationHref(notification, user?.role);
+  // The bell shows alerts and updates only; rewards are on the full Notifications page.
+  // Dismissed ("not affected") notices stay on the full Notifications page only.
+  const { updates } = splitRewardNotifications(notifications.filter((n) => !n.dismissed_at));
+  const updateUnreadCount = updates.filter((n) => !n.is_read).length;
   const pageSize = 10;
-  const pageCount = Math.max(1, Math.ceil(notifications.length / pageSize));
+  const pageCount = Math.max(1, Math.ceil(updates.length / pageSize));
   const safePage = Math.min(page, pageCount);
-  const visibleNotifications = notifications.slice((safePage - 1) * pageSize, safePage * pageSize);
+  const visibleNotifications = updates.slice((safePage - 1) * pageSize, safePage * pageSize);
 
   return (
     <div className="relative">
@@ -71,12 +77,12 @@ export function NotificationPanel() {
         type="button"
         onClick={() => setOpen(!open)}
         className="relative p-2 hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded-full transition-colors"
-        aria-label={`${unreadCount} unread notifications`}
+        aria-label={`${updateUnreadCount} unread notifications`}
       >
         <Bell size={iconSize.nav} className="text-zinc-600" />
-        {unreadCount > 0 && (
+        {updateUnreadCount > 0 && (
           <span className="absolute top-0.5 right-0.5 bg-red-600 text-white text-[9px] font-bold rounded-full min-w-[16px] h-[16px] flex items-center justify-center border-2 border-white">
-            {unreadCount > 9 ? "9+" : unreadCount}
+            {updateUnreadCount > 9 ? "9+" : updateUnreadCount}
           </span>
         )}
       </button>
@@ -88,7 +94,7 @@ export function NotificationPanel() {
             <div className="flex items-center justify-between gap-2 px-2.5 py-1.5 border-b border-zinc-100">
               <h3 className="font-black text-[10px] uppercase tracking-widest text-zinc-800">Notifications</h3>
               <div className="flex items-center gap-1">
-                {unreadCount > 0 && (
+                {updateUnreadCount > 0 && (
                   <button
                     type="button"
                     onClick={() => markAllAsRead(user.id)}
@@ -118,7 +124,7 @@ export function NotificationPanel() {
                     Try again
                   </button>
                 </div>
-              ) : notifications.length === 0 ? (
+              ) : updates.length === 0 ? (
                 <div className="px-3 py-5 text-center text-zinc-400">
                   <Bell size={16} className="mx-auto mb-1 opacity-40" />
                   <p className="text-[10px] font-bold uppercase">No notifications</p>
@@ -131,6 +137,7 @@ export function NotificationPanel() {
                     compact
                     relatedLink={getRelatedLink(n)}
                     onMarkRead={markAsRead}
+                    onDismiss={dismissNotification}
                     onNavigate={() => setOpen(false)}
                   />
                 ))

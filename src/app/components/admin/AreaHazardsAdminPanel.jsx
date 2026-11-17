@@ -2,7 +2,7 @@
 
 import React, { useEffect, useMemo, useState } from "react";
 import {
-  AlertOctagon, Plus, Search, X, Navigation, ShieldAlert,
+  AlertOctagon, Plus, Search, Navigation, ShieldAlert,
 } from "lucide-react";
 import { useDangerousLocationStore } from "@/app/store/dangerousLocationStore";
 import { notifyTouristsOfDangerousLocation } from "@/lib/notificationService";
@@ -27,7 +27,7 @@ import { CategoryFilterSelect, StatusRecordList } from "@/app/components/shell/S
 import { AdminDashboardKpiSection } from "@/app/components/admin/AdminDashboardKpiSection";
 import { AdminDashboardQuickNavLink, AdminDashboardQuickNavRow } from "@/app/components/admin/AdminDashboardQuickNavLink";
 import { Radio } from "lucide-react";
-import { DangerSeverityIcon } from "@/app/components/ui/cardTypeIcons";
+import { DangerSeverityIcon, HazardTypeIcon } from "@/app/components/ui/cardTypeIcons";
 import { AdminTablePanel } from "@/app/components/admin/AdminTablePanel";
 import { AdminActiveOpsCard, hazardSeverityToCardSeverity } from "@/app/components/admin/AdminActiveOpsCard";
 import { CharCounterTextarea } from "@/app/components/ui/CharCounterTextarea";
@@ -36,12 +36,25 @@ import { useConfirm } from "@/app/components/ui/ConfirmDialogProvider";
 import { formatAreaHazardSms } from "@/lib/smsMessageFormat";
 import dynamic from "next/dynamic";
 import "leaflet/dist/leaflet.css";
+import { AdminFormModal } from "@/app/components/admin/AdminFormModal";
 
 const MapContainer = dynamic(() => import("react-leaflet").then((m) => m.MapContainer), { ssr: false });
 const TileLayer = dynamic(() => import("react-leaflet").then((m) => m.TileLayer), { ssr: false });
 const Marker = dynamic(() => import("react-leaflet").then((m) => m.Marker), { ssr: false });
 const DangerousLocationMapMarkers = dynamic(
   () => import("@/app/components/maps/DangerousLocationMapMarkers").then((m) => m.DangerousLocationMapMarkers),
+  { ssr: false }
+);
+const MapResizeFix = dynamic(
+  () => import("@/app/components/maps/MapResizeFix").then((m) => m.MapResizeFix),
+  { ssr: false }
+);
+const MapViewController = dynamic(
+  () => import("@/app/components/maps/MapViewController").then((m) => m.MapViewController),
+  { ssr: false }
+);
+const MapClickPicker = dynamic(
+  () => import("@/app/components/maps/MapViewController").then((m) => m.MapClickPicker),
   { ssr: false }
 );
 
@@ -162,6 +175,13 @@ export function AreaHazardsAdminPanel({
       setMapCenter([Number(warning.latitude), Number(warning.longitude)]);
     }
     setShowModal(true);
+  };
+
+  const hasPin = formData.latitude != null && formData.longitude != null;
+
+  /** Click or drag on the modal map sets the exact hazard spot. */
+  const placePin = ([lat, lng]) => {
+    setFormData((prev) => ({ ...prev, latitude: lat, longitude: lng }));
   };
 
   const findOnMap = async () => {
@@ -405,6 +425,7 @@ export function AreaHazardsAdminPanel({
                   statusClass: styles.badge,
                   place: warning.dangerous_location,
                   type: warning.danger_type || "Hazard",
+                  typeIcon: <HazardTypeIcon type={warning.danger_type} size={12} />,
                   when: formatWarningTimeRange(warning),
                   actions: [
                     { label: "Edit", onClick: () => openEdit(warning) },
@@ -427,7 +448,8 @@ export function AreaHazardsAdminPanel({
             {mounted && !mapBlocked && (
               <MapContainer center={DAET_CENTER} zoom={13} style={{ height: "100%", width: "100%" }}>
                 <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" attribution="&copy; OpenStreetMap" />
-                <DangerousLocationMapMarkers warnings={filtered.filter((warning) => warning.status === "Active")} />
+                <MapResizeFix />
+                <DangerousLocationMapMarkers warnings={filtered.filter((warning) => warning.status === "Active")} fitBounds />
               </MapContainer>
             )}
             <div className="absolute bottom-3 left-3 z-[3]">
@@ -460,30 +482,49 @@ export function AreaHazardsAdminPanel({
       )}
 
       {showModal && (
-        <div className="fixed inset-0 z-[2000] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
-          <div className="relative z-[2001] flex max-h-[90vh] max-w-2xl w-full flex-col overflow-hidden rounded-[40px] border border-zinc-200 bg-white shadow-2xl dark:bg-zinc-900">
-            <div className="flex shrink-0 items-center justify-between border-b border-zinc-100 px-8 py-5">
-              <h2 className="text-xl font-black uppercase">{editingId ? "Update Area Hazard" : "Mark Area Hazard"}</h2>
-              <button type="button" onClick={() => setShowModal(false)} className="p-2 hover:bg-zinc-100 rounded-full"><X size={22} /></button>
-            </div>
-            <div className="shrink-0 border-b border-zinc-100 bg-white px-8 py-3 dark:bg-zinc-900">
-              <button type="submit" form="area-hazard-form" disabled={isSaving} className={`w-full ${adminShell.btnDanger} disabled:opacity-60`}>
+        <AdminFormModal
+          title={editingId ? "Update Area Hazard" : "Mark Area Hazard"}
+          subtitle="Pin the place on the map, then fill in the hazard and the safe route."
+          onClose={() => setShowModal(false)}
+          footer={
+            <>
+              <button type="submit" form="area-hazard-form" disabled={isSaving} className={`flex-1 ${adminShell.btnDanger} disabled:opacity-60`}>
                 {isSaving ? "Saving..." : editingId ? "Update Hazard" : "Publish Hazard & Notify Tourists"}
               </button>
-            </div>
-
-            <div className="min-h-0 flex-1 overflow-y-auto px-8 py-5">
-            <div className="leaflet-modal-map-shell h-[160px] rounded-2xl overflow-hidden border border-zinc-100 mb-4">
+              <button type="button" onClick={() => setShowModal(false)} className={adminShell.btnGhost}>
+                Cancel
+              </button>
+            </>
+          }
+        >
+            <div className="leaflet-modal-map-shell h-[220px] rounded-2xl overflow-hidden border border-zinc-100 cursor-crosshair">
               {mounted && (
-                <MapContainer center={mapCenter} zoom={15} style={{ height: "100%", width: "100%" }} zoomControl={false}>
-                  <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
-                  <Marker
-                    position={mapCenter}
-                    icon={createCategoryPinIcon(getDangerPinCategory({ severity: formData.severity }))}
-                  />
+                <MapContainer center={mapCenter} zoom={15} style={{ height: "100%", width: "100%" }}>
+                  <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" attribution="&copy; OpenStreetMap" />
+                  <MapResizeFix />
+                  <MapViewController center={mapCenter} zoom={16} />
+                  <MapClickPicker onPick={placePin} />
+                  {hasPin && (
+                    <Marker
+                      position={[Number(formData.latitude), Number(formData.longitude)]}
+                      draggable
+                      eventHandlers={{
+                        dragend: (event) => {
+                          const { lat, lng } = event.target.getLatLng();
+                          placePin([lat, lng]);
+                        },
+                      }}
+                      icon={createCategoryPinIcon(getDangerPinCategory({ severity: formData.severity }))}
+                    />
+                  )}
                 </MapContainer>
               )}
             </div>
+            <p className="mt-2 mb-4 text-[11px] font-medium text-zinc-500">
+              {hasPin
+                ? `Pin set at ${Number(formData.latitude).toFixed(5)}, ${Number(formData.longitude).toFixed(5)}. Drag the pin or click the map to adjust it.`
+                : "Search the place name, or click the map to drop the pin on the exact spot."}
+            </p>
 
             <form id="area-hazard-form" onSubmit={handleSubmit} className="space-y-4">
               <div className="flex gap-2">
@@ -537,9 +578,7 @@ export function AreaHazardsAdminPanel({
               />
 
             </form>
-            </div>
-          </div>
-        </div>
+        </AdminFormModal>
       )}
 
       <ConfirmDialog

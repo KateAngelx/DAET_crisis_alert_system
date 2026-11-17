@@ -1,7 +1,7 @@
 import { InfoPageHero, InfoSection, PublicPageShell, PublicPageContent, publicLayout } from "@/app/components/InfoPageHero";
 import { Phone, Mail, MapPin, Clock, Share2 } from "lucide-react";
 import { iconSize, typography, portalShell } from "@/lib/designSystem";
-import { siteInfo } from "@/lib/siteInfo";
+import { allEmergencyHotlines, hotlineTel, siteInfo } from "@/lib/siteInfo";
 
 export const metadata = {
   title: `Contact | ${siteInfo.brandName}`,
@@ -63,10 +63,10 @@ export default function ContactPage() {
         <InfoSection title="Emergency Hotlines">
           <p>For life-threatening emergencies, contact these numbers immediately — do not use this contact page:</p>
           <ul className="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-4">
-            {siteInfo.emergencyHotlines.map((h) => (
-              <li key={h.number} className="flex items-center justify-between p-4 bg-blue-50 border border-blue-100 rounded-2xl">
+            {allEmergencyHotlines.map((h) => (
+              <li key={h.name} className="flex items-center justify-between p-4 bg-blue-50 border border-blue-100 rounded-2xl">
                 <span className="font-bold text-sm text-zinc-700">{h.name}</span>
-                <a href={`tel:${h.number}`} className="font-black text-blue-600">{h.number}</a>
+                <a href={`tel:${hotlineTel(h)}`} className="font-black text-blue-600">{h.number}</a>
               </li>
             ))}
           </ul>

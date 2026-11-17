@@ -12,11 +12,12 @@ import { sortRecordsNewestFirst } from "@/lib/recordSorting";
 import { usePublicVisibility } from "@/lib/usePublicVisibility";
 import { GuideAssistanceRequestForm } from "@/app/components/tourist/GuideAssistanceRequestForm";
 import { PublicFeedbackSection } from "@/app/components/feedback/PublicFeedbackSection";
+import { useHydrated } from "@/lib/useHydrated";
 
 export default function Home() {
   const { fetchAlerts, alerts, loading, error } = useCrisisStore();
   const { isAuthenticated, user } = useAuthStore();
-  const [mounted, setMounted] = useState(false);
+  const mounted = useHydrated();
   const [guideAssistance, setGuideAssistance] = useState(null);
   const [guideRequestOpen, setGuideRequestOpen] = useState(false);
   const [guideRequestSubmitted, setGuideRequestSubmitted] = useState(false);
@@ -24,7 +25,6 @@ export default function Home() {
   const router = useRouter();
 
   useEffect(() => {
-    setMounted(true);
     fetchAlerts();
   }, [fetchAlerts]);
 

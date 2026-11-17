@@ -24,6 +24,7 @@ import { RoleContextBanner } from "@/app/components/dashboard/RoleContextBanner"
 import { CategoryFilterSelect, StatusRecordList } from "@/app/components/shell/StatusRecordList";
 import { AlertDetailModal } from "@/app/(subsystems)/crisis/(public)/_components/AlertDetailModal";
 import { sortRecordsNewestFirst } from "@/lib/recordSorting";
+import { AlertTypeIcon } from "@/app/components/ui/cardTypeIcons";
 
 function formatResolvedAt(alert) {
   const date = alert.published_at || alert.created_at;
@@ -54,6 +55,8 @@ export default function ResolvedAlertsPage() {
     };
   }, [fetchAlerts]);
 
+  // "This week / this month" are counted from when the page was opened.
+  const [pageOpenedAt] = useState(() => Date.now());
   const resolvedAlerts = sortRecordsNewestFirst(
     alerts.filter((a) => a.status === "Resolved" && a.is_public),
     ["published_at", "created_at"]
@@ -61,12 +64,12 @@ export default function ResolvedAlertsPage() {
 
   const recentCount = resolvedAlerts.filter((a) => {
     const t = new Date(a.resolved_at || a.updated_at || a.published_at || a.created_at).getTime();
-    return Date.now() - t < 7 * 24 * 60 * 60 * 1000;
+    return pageOpenedAt - t < 7 * 24 * 60 * 60 * 1000;
   }).length;
 
   const monthCount = resolvedAlerts.filter((a) => {
     const t = new Date(a.resolved_at || a.updated_at || a.published_at || a.created_at).getTime();
-    return Date.now() - t < 30 * 24 * 60 * 60 * 1000;
+    return pageOpenedAt - t < 30 * 24 * 60 * 60 * 1000;
   }).length;
 
   const filteredAlerts = useMemo(() => {
@@ -85,6 +88,7 @@ export default function ResolvedAlertsPage() {
       ? `${alert.title} · ${alert.location}`
       : alert.title || alert.location || "—",
     type: alert.type || "General",
+    typeIcon: <AlertTypeIcon type={alert.type} size={12} />,
     when: formatResolvedAt(alert),
     onSelect: () => setSelectedAlert(alert),
     ariaLabel: "View resolved alert",

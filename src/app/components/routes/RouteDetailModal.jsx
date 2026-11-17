@@ -288,7 +288,7 @@ export function RouteDetailModal({ open, route, catalog, onClose, onSelectRoute 
         onClick={(e) => e.stopPropagation()}
       >
         <Card
-          className={`p-0 flex flex-col max-h-[90vh] overflow-hidden border-2 ${styles.border} shadow-2xl animate-in zoom-in-95 duration-200`}
+          className={`!p-0 flex flex-col max-h-[90vh] overflow-hidden border-2 ${styles.border} shadow-2xl animate-in zoom-in-95 duration-200`}
         >
           <div className="order-1 shrink-0 bg-white rounded-t-2xl border-b border-zinc-100 px-6 py-4 flex items-start justify-between gap-4">
             <p id="route-detail-title" className="text-[10px] font-black uppercase tracking-widest text-zinc-400">
@@ -315,8 +315,9 @@ export function RouteDetailModal({ open, route, catalog, onClose, onSelectRoute 
           >
             <RouteDetailContent route={route} catalog={catalog} onSelectRoute={onSelectRoute} />
           </div>
-          <div className="order-2 shrink-0 border-b border-zinc-100 bg-white p-4">
-            <div className="mb-3">
+          {/* Actions stay pinned to the bottom of the modal while the details scroll. */}
+          <div className="order-4 shrink-0 border-t border-zinc-100 bg-white p-4 rounded-b-2xl">
+            <div className="mb-3 empty:hidden">
               <TravelAdvisoryViewReward
                 advisoryId={routeId}
                 activityType="road_view"

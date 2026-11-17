@@ -1,26 +1,10 @@
 import { NextResponse } from "next/server";
 import { dispatchNotificationServer } from "@/lib/notificationDispatch.server";
 import { getSupabaseAdmin } from "@/lib/supabaseAdmin";
-import { formatTourEndDateTime, getTourGroupEndAt } from "@/lib/tourGroupRoute";
+import { requireCronSecret } from "@/lib/cronAuth.server";
+import { formatTourEndDateTime, getTourEndReminderKind, getTourGroupEndAt, touristTourReminderText } from "@/lib/tourGroupRoute";
 
-const ONE_HOUR_MS = 60 * 60 * 1000;
 const BATCH_SIZE = 500;
-
-function requireCronSecret(request) {
-  const secret = process.env.CRON_SECRET || process.env.NOTIFICATION_INTERNAL_SECRET;
-  if (!secret) {
-    return {
-      ok: false,
-      response: NextResponse.json({ error: "CRON_SECRET is not configured" }, { status: 503 }),
-    };
-  }
-  const header = request.headers.get("x-cron-secret") ||
-    request.headers.get("authorization")?.replace("Bearer ", "");
-  if (header !== secret) {
-    return { ok: false, response: NextResponse.json({ error: "Unauthorized" }, { status: 401 }) };
-  }
-  return { ok: true };
-}
 
 async function getActiveTours(admin) {
   const tours = [];
@@ -38,6 +22,49 @@ async function getActiveTours(admin) {
     tours.push(...(data || []));
     if (!data || data.length < BATCH_SIZE) return tours;
   }
+}
+
+/** Tourists in the group (active assignments). */
+async function getTourTouristIds(admin, tourId) {
+  const { data, error } = await admin
+    .from("guide_assignments")
+    .select("tourist_id")
+    .eq("tour_group_id", tourId)
+    .eq("status", "active");
+  if (error) throw new Error(error.message);
+  return [...new Set((data || []).map((row) => row.tourist_id))];
+}
+
+async function notifyTourTourists(admin, tour, kind, endAt) {
+  const errors = [];
+  let touristIds = [];
+  try {
+    touristIds = await getTourTouristIds(admin, tour.id);
+  } catch (error) {
+    return { sent: 0, errors: [error.message] };
+  }
+  const { title, message } = touristTourReminderText(tour, kind);
+  let sent = 0;
+  for (const touristId of touristIds) {
+    try {
+      const result = await dispatchNotificationServer({
+        userId: touristId,
+        title,
+        message,
+        notificationType: "tour_group_end_reminder",
+        priority: "NORMAL",
+        relatedType: "tour_group",
+        relatedId: tour.id,
+        eventKey: `tour-end:${tour.id}:${endAt.toISOString()}:${kind}:tourist:${touristId}`,
+        channels: ["web"],
+      });
+      if (result.errors.length) errors.push(...result.errors);
+      else sent += 1;
+    } catch (error) {
+      errors.push(error.message);
+    }
+  }
+  return { sent, errors };
 }
 
 async function sendReminder(admin, tour, kind, endAt) {
@@ -58,10 +85,16 @@ async function sendReminder(admin, tour, kind, endAt) {
     relatedType: "tour_group",
     relatedId: tour.id,
     eventKey,
-    channels: ["web", "email"],
+    channels: ["web", "email", "sms"],
   });
 
   if (result.errors.length) throw new Error(result.errors.join("; "));
+
+  // Tell the group's tourists too (in-app and push). A failure here never blocks the guide reminder.
+  const touristResult = await notifyTourTourists(admin, tour, kind, endAt);
+  if (touristResult.errors.length) {
+    console.error(`[TourEndReminders] ${tour.id} tourist notices:`, touristResult.errors.join("; "));
+  }
 
   const sentField = isDue ? "end_reminder_due_sent_at" : "end_reminder_1h_sent_at";
   const { data, error } = await admin
@@ -95,27 +128,17 @@ export async function POST(request) {
     const errors = [];
 
     for (const tour of tours) {
+      const kind = getTourEndReminderKind(tour, nowMs);
+      if (!kind) continue;
       const endAt = getTourGroupEndAt(tour);
-      if (!endAt) continue;
 
-      const due = endAt.getTime() <= nowMs;
-      const approaching =
-        Boolean(tour.end_time) &&
-        endAt.getTime() > nowMs &&
-        endAt.getTime() <= nowMs + ONE_HOUR_MS;
-
-      if (due && !tour.end_reminder_due_sent_at) {
-        try {
-          if (await sendReminder(admin, tour, "due", endAt)) dueReminders += 1;
-        } catch (error) {
-          errors.push(`${tour.id} due reminder: ${error.message}`);
+      try {
+        if (await sendReminder(admin, tour, kind, endAt)) {
+          if (kind === "due") dueReminders += 1;
+          else oneHourReminders += 1;
         }
-      } else if (approaching && !tour.end_reminder_1h_sent_at) {
-        try {
-          if (await sendReminder(admin, tour, "one-hour", endAt)) oneHourReminders += 1;
-        } catch (error) {
-          errors.push(`${tour.id} one-hour reminder: ${error.message}`);
-        }
+      } catch (error) {
+        errors.push(`${tour.id} ${kind === "due" ? "due" : "one-hour"} reminder: ${error.message}`);
       }
     }
 

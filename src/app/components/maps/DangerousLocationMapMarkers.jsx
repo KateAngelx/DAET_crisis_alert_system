@@ -4,11 +4,13 @@ import React, { useEffect, useMemo, useState } from "react";
 import dynamic from "next/dynamic";
 import { geocodeAlerts, geocodeLocation } from "@/lib/geocodeLocation";
 import { createCategoryPinIcon, createSafeRoutePinIcon, getDangerPinCategory } from "@/lib/mapPinUtils";
+import { hazardPinGlyph } from "./typePinGlyph";
+import { MapViewController } from "@/app/components/maps/MapViewController";
 
 const Marker = dynamic(() => import("react-leaflet").then((mod) => mod.Marker), { ssr: false });
 const Popup = dynamic(() => import("react-leaflet").then((mod) => mod.Popup), { ssr: false });
 
-export function DangerousLocationMapMarkers({ warnings, renderPopup, showSafeRoutePins = true }) {
+export function DangerousLocationMapMarkers({ warnings, renderPopup, showSafeRoutePins = true, fitBounds = false }) {
   const [coordsById, setCoordsById] = useState({});
   const [safeCoordsById, setSafeCoordsById] = useState({});
 
@@ -22,11 +24,7 @@ export function DangerousLocationMapMarkers({ warnings, renderPopup, showSafeRou
 
   useEffect(() => {
     let cancelled = false;
-    if (!warnings.length) {
-      setCoordsById({});
-      setSafeCoordsById({});
-      return undefined;
-    }
+    if (!warnings.length) return undefined; // nothing to look up; positions below are only read for listed warnings
 
     const geocodeInput = warnings.map((w) => ({
       id: w.id,
@@ -61,8 +59,19 @@ export function DangerousLocationMapMarkers({ warnings, renderPopup, showSafeRou
     };
   }, [warningKey, warnings, showSafeRoutePins]);
 
+  const pinPositions = fitBounds
+    ? warnings
+        .map((warning) =>
+          warning.latitude != null && warning.longitude != null
+            ? [Number(warning.latitude), Number(warning.longitude)]
+            : coordsById[warning.id]
+        )
+        .filter(Boolean)
+    : [];
+
   return (
     <>
+      {fitBounds && pinPositions.length > 0 ? <MapViewController positions={pinPositions} maxZoom={15} /> : null}
       {warnings.map((warning) => {
         const stored =
           warning.latitude != null && warning.longitude != null
@@ -74,7 +83,7 @@ export function DangerousLocationMapMarkers({ warnings, renderPopup, showSafeRou
         const category = getDangerPinCategory(warning);
 
         return (
-          <Marker key={warning.id} position={position} icon={createCategoryPinIcon(category)}>
+          <Marker key={warning.id} position={position} icon={createCategoryPinIcon(category, hazardPinGlyph(warning))}>
             {renderPopup ? (
               renderPopup(warning)
             ) : (

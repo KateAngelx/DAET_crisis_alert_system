@@ -4,6 +4,9 @@ import { API_RATE_LIMITS, enforceRateLimitByKey } from "@/lib/apiRateLimit";
 import { channelOverrideFromBody } from "@/lib/alertChannels";
 import { broadcastRouteAdvisoryToTourists } from "@/lib/routeAdvisoryBroadcast.server";
 
+/** Seconds this request may run while it sends the broadcast (Vercel Hobby allows up to 60). */
+export const maxDuration = 60;
+
 export async function POST(request) {
   try {
     const auth = await requireAdmin(request);

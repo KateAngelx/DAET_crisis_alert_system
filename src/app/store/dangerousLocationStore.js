@@ -3,6 +3,7 @@ import { supabase } from "@/lib/supabaseClient";
 import { isMissingChannelsColumn } from "@/lib/alertChannels";
 import { areaAdvisoryToWarning, warningPayloadToAreaAdvisory } from "@/lib/areaAdvisoryAdapter";
 import { sortRecordsNewestFirst } from "@/lib/recordSorting";
+import { isConnectionError, loadOfflineSnapshot, saveOfflineSnapshot } from "@/lib/offlineSnapshot";
 
 async function fetchAreaAdvisoryRows() {
   const { data, error } = await supabase
@@ -39,9 +40,13 @@ export const useDangerousLocationStore = create((set, get) => ({
           ? rows.map(areaAdvisoryToWarning).filter(Boolean)
           : rows;
 
-      set({ warnings: sortRecordsNewestFirst(warnings), loading: false, error: null });
+      const sorted = sortRecordsNewestFirst(warnings);
+      set({ warnings: sorted, loading: false, error: null, offlineSavedAt: null });
+      saveOfflineSnapshot("hazards", sorted);
     } catch (err) {
-      set({ loading: false, error: err.message || "Could not load area hazards." });
+      const saved = isConnectionError(err) ? loadOfflineSnapshot("hazards") : null;
+      if (saved) set({ warnings: saved.items, loading: false, error: null, offlineSavedAt: saved.savedAt });
+      else set({ loading: false, error: err.message || "Could not load area hazards." });
       return;
     }
 

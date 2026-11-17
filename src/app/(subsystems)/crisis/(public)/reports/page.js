@@ -27,6 +27,7 @@ import { sortRecordsNewestFirst } from "@/lib/recordSorting";
 import { PublicListModal } from "@/app/components/shell/PublicListModal";
 import { supabase } from "@/lib/supabaseClient";
 import { formatReportCoordinates, ReportGeoLink } from "@/app/components/incidents/ReportGeoLink";
+import Image from "next/image";
 
 const REPORTS_PER_PAGE = 10;
 
@@ -72,7 +73,6 @@ function MyReportsContent() {
     if (typeof window !== "undefined" && sessionStorage.getItem(OPEN_INCIDENT_MODAL_KEY) === "1") {
       sessionStorage.removeItem(OPEN_INCIDENT_MODAL_KEY);
       // Apply external sessionStorage navigation by opening the report modal.
-      // eslint-disable-next-line react-hooks/set-state-in-effect
       setModalOpen(true);
     }
 
@@ -186,9 +186,14 @@ function MyReportsContent() {
             <p className="text-sm text-zinc-600 font-medium mb-4">
               Your submitted reports and status updates are available after you sign in.
             </p>
-            <Link href="/login" className={portalShell.btnPrimary}>
-              Sign in
-            </Link>
+            <div className="flex flex-wrap gap-2">
+              <Link href="/login" className={portalShell.btnPrimary}>
+                Sign in
+              </Link>
+              <Link href="/crisis/report" className={portalShell.btnGhost}>
+                Report without an account
+              </Link>
+            </div>
           </PublicPanel>
         </PublicPageContent>
       </PublicPageShell>
@@ -414,7 +419,7 @@ function MyReportsContent() {
                       className="block overflow-hidden rounded-lg border border-zinc-200 text-xs font-semibold text-zinc-600 hover:border-zinc-300"
                     >
                       {attachment.file_type?.startsWith("image/") ? (
-                        <img src={attachment.file_url} alt={attachment.file_name || "Report evidence"} className="h-28 w-full object-cover" />
+                        <Image src={attachment.file_url} alt={attachment.file_name || "Report evidence"} width={400} height={224} sizes="(max-width: 640px) 50vw, 240px" className="h-28 w-full object-cover" />
                       ) : (
                         <span className="block p-3 break-words">{attachment.file_name || "Open attachment"}</span>
                       )}

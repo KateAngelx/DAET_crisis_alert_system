@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { requireTourist } from "@/lib/touristAuth";
 import { getSupabaseAdmin } from "@/lib/supabaseAdmin";
-import { enforceRateLimit, enforceRateLimitByKey } from "@/lib/apiRateLimit";
+import { enforceRateLimit, enforceSharedRateLimit, enforceSharedRateLimitByKey } from "@/lib/apiRateLimit";
 
 const VALID_TYPES = new Set(["comment", "feedback", "suggestion"]);
 const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
@@ -57,7 +57,7 @@ export async function GET(request) {
 }
 
 export async function POST(request) {
-  const limited = enforceRateLimit(request, {
+  const limited = await enforceSharedRateLimit(request, {
     name: "crisis-feedback-post",
     limit: 8,
     windowMs: 60 * 60_000,
@@ -96,7 +96,7 @@ export async function POST(request) {
     return NextResponse.json({ error: "Invalid alert ID." }, { status: 400 });
   }
 
-  const userLimit = enforceRateLimitByKey(auth.user.id, {
+  const userLimit = await enforceSharedRateLimitByKey(auth.user.id, {
     name: "crisis-feedback-tourist-post",
     ...SUBMISSION_LIMIT,
   });

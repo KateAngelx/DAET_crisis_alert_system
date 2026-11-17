@@ -14,11 +14,13 @@ export function AssignmentRequestHandler() {
     declineAssignmentRequest,
   } = useGuideStore();
 
+  const role = user?.role;
+  const userId = user?.id;
   const loadPending = useCallback(() => {
-    if (isAuthenticated && user?.role === "tourist" && user?.id) {
-      fetchPendingAssignmentForTourist(user.id);
+    if (isAuthenticated && role === "tourist" && userId) {
+      fetchPendingAssignmentForTourist(userId);
     }
-  }, [isAuthenticated, user?.role, user?.id, fetchPendingAssignmentForTourist]);
+  }, [isAuthenticated, role, userId, fetchPendingAssignmentForTourist]);
 
   useEffect(() => {
     loadPending();
@@ -27,10 +29,10 @@ export function AssignmentRequestHandler() {
   }, [loadPending]);
 
   const handleClose = useCallback(() => {
-    if (user?.id) {
-      fetchPendingAssignmentForTourist(user.id);
+    if (userId) {
+      fetchPendingAssignmentForTourist(userId);
     }
-  }, [user?.id, fetchPendingAssignmentForTourist]);
+  }, [userId, fetchPendingAssignmentForTourist]);
 
   if (!isAuthenticated || user?.role !== "tourist" || !pendingAssignment) {
     return null;

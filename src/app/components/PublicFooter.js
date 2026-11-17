@@ -9,15 +9,14 @@ import { siteInfo } from "@/lib/siteInfo";
 import { typography } from "@/lib/designSystem";
 import { usePublicVisibility } from "@/lib/usePublicVisibility";
 import { useInstalledApp } from "@/lib/useInstalledApp";
+import { useHydrated } from "@/lib/useHydrated";
 
 export function PublicFooter() {
   const currentYear = new Date().getFullYear();
   const { user } = useAuthStore();
   const visibility = usePublicVisibility();
   const installedApp = useInstalledApp();
-  const [mounted, setMounted] = useState(false);
-
-  useEffect(() => setMounted(true), []);
+  const mounted = useHydrated();
 
   const showResponderPortal = mounted && user?.role === "admin";
 

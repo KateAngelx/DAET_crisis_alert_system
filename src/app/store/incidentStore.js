@@ -102,9 +102,11 @@ export const useIncidentStore = create((set, get) => ({
         status: 'Submitted',
       };
 
+      // No pin dropped: leave the coordinates empty (Number(null) would be 0, a point off Africa).
+      const hasPin = reportData.latitude != null && reportData.latitude !== "" && reportData.longitude != null && reportData.longitude !== "";
       const latitude = Number(reportData.latitude);
       const longitude = Number(reportData.longitude);
-      if (Number.isFinite(latitude) && Number.isFinite(longitude)) {
+      if (hasPin && Number.isFinite(latitude) && Number.isFinite(longitude)) {
         insertPayload.latitude = latitude;
         insertPayload.longitude = longitude;
       }
@@ -313,7 +315,8 @@ export const useIncidentStore = create((set, get) => ({
           inc.reference_number?.toLowerCase().includes(s) ||
           inc.location?.toLowerCase().includes(s) ||
           inc.description?.toLowerCase().includes(s) ||
-          inc.reporter?.full_name?.toLowerCase().includes(s)
+          inc.reporter?.full_name?.toLowerCase().includes(s) ||
+          inc.guest_name?.toLowerCase().includes(s)
         );
       }
       return true;

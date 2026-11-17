@@ -110,7 +110,7 @@ export function LineTrendChart({
       }
       return next;
     });
-  }, [series.length]);
+  }, [series]);
 
   const handlePointer = useCallback(
     (clientX) => {

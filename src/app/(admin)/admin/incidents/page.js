@@ -71,6 +71,8 @@ import { CharCounterTextarea } from "@/app/components/ui/CharCounterTextarea";
 
 import { useConfirm } from "@/app/components/ui/ConfirmDialogProvider";
 import { getActiveSession } from "@/lib/authSession";
+import { IncidentChat } from "@/app/components/IncidentChat";
+import Image from "next/image";
 
 
 
@@ -849,6 +851,16 @@ export default function AdminIncidentsPage() {
 
 
 
+            {selected.is_guest && !selected.reporter ? null : <IncidentChat incidentId={selected.id} compact />}
+
+            {!selected.reporter && selected.is_guest && (
+              <div className="bg-yellow-50 rounded-xl p-4 text-sm border border-yellow-200">
+                <p className="font-black text-xs uppercase text-yellow-800 mb-1">Guest reporter (no account)</p>
+                <p className="font-bold">{selected.guest_name}</p>
+                <p className="text-zinc-600">{[selected.guest_phone, selected.guest_email].filter(Boolean).join(" | ")}</p>
+                <p className="mt-1 text-[11px] font-medium text-zinc-500">Guests get no in-app updates. Contact them directly by phone or email.</p>
+              </div>
+            )}
             {selected.reporter && (
 
               <div className="bg-zinc-50 rounded-xl p-4 text-sm border border-zinc-100">
@@ -994,7 +1006,7 @@ export default function AdminIncidentsPage() {
 
                   <a key={a.id} href={a.file_url} target="_blank" rel="noopener noreferrer">
 
-                    <img src={a.file_url} alt={a.file_name} className="w-full h-20 object-cover rounded-lg border border-zinc-200" />
+                    <Image src={a.file_url} alt={a.file_name || "Report evidence"} width={320} height={160} sizes="160px" className="w-full h-20 object-cover rounded-lg border border-zinc-200" />
 
                   </a>
 

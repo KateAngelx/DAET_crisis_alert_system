@@ -6,6 +6,9 @@ import { useAuthStore } from "@/app/store/crisisStore";
 import { useIncidentStore } from "@/app/store/incidentStore";
 import { INCIDENT_CATEGORIES, INCIDENT_SEVERITIES } from "@/lib/constants";
 import { portalShell } from "@/lib/designSystem";
+import { fetchWithFreshSession } from "@/lib/authSession";
+import { composeMissingDescription, isMissingPersonCategory, validateMissingPerson } from "@/lib/missingPersons";
+import { EMPTY_MISSING_PERSON, MissingPersonFields } from "@/app/components/MissingPersonFields";
 
 const INITIAL_FORM = {
   category: "Accident",
@@ -31,6 +34,8 @@ export function IncidentReportForm({
     category: categoryOverride || INITIAL_FORM.category,
   }));
   const [files, setFiles] = useState([]);
+  const [missing, setMissing] = useState(EMPTY_MISSING_PERSON);
+  const isMissing = isMissingPersonCategory(form.category);
   const [error, setError] = useState(null);
   const [locating, setLocating] = useState(false);
   const [locationMessage, setLocationMessage] = useState("");
@@ -44,21 +49,61 @@ export function IncidentReportForm({
       return;
     }
 
-    if (!form.description.trim() || !form.location.trim()) {
+    // Missing tourist: the person, last-seen place and time are required; the description is optional.
+    let missingDetails = null;
+    if (isMissing) {
+      const check = validateMissingPerson({
+        ...missing,
+        personName: missing.taggedName || missing.personName,
+        lastSeenLocation: form.location,
+        latitude: form.latitude,
+        longitude: form.longitude,
+        lastSeenAt: missing.lastSeenAt ? new Date(missing.lastSeenAt).toISOString() : null,
+      });
+      if (!check.ok) {
+        setError(check.error);
+        return;
+      }
+      missingDetails = check.value;
+    } else if (!form.description.trim() || !form.location.trim()) {
       setError("Please provide a description and location.");
       return;
     }
 
+    const reportForm = missingDetails
+      ? {
+          ...form,
+          severity: "Critical",
+          description: composeMissingDescription({ ...missingDetails, details: form.description.trim() }),
+        }
+      : form;
+
     const result = await submitReport(
-      { ...form, reporterId: user.id, reporterRole: user.role },
+      { ...reportForm, reporterId: user.id, reporterRole: user.role },
       files
     );
 
     if (result.success) {
+      const warnings = [...(result.notificationWarnings || [])];
+      if (missingDetails) {
+        try {
+          const response = await fetchWithFreshSession("/api/missing-persons", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ incidentId: result.incident.id, ...missingDetails }),
+          });
+          const data = await response.json().catch(() => ({}));
+          if (!response.ok) warnings.push(data.error || "The missing-person details could not be saved, but your report was sent.");
+          else warnings.push(...(data.notificationWarnings || []));
+        } catch {
+          warnings.push("The missing-person details could not be saved, but your report was sent.");
+        }
+      }
       setForm({ ...INITIAL_FORM, category: categoryOverride || INITIAL_FORM.category });
       setFiles([]);
+      setMissing(EMPTY_MISSING_PERSON);
       setLocationMessage("");
-      onSuccess?.(result.incident, result.notificationWarnings || []);
+      onSuccess?.(result.incident, warnings);
     } else {
       setError(result.error);
     }
@@ -111,6 +156,131 @@ export function IncidentReportForm({
           {error}
         </div>
       ) : null}
+      <div className="min-h-0 flex-1 space-y-5 overflow-y-auto overscroll-contain px-6 py-5">
+        {introductoryInfo ? (
+          <div className="rounded-xl border border-blue-100 bg-blue-50 p-4 text-sm font-medium leading-relaxed text-blue-900">
+            {introductoryInfo}
+          </div>
+        ) : null}
+        {availabilityMessage ? (
+          <div className="rounded-xl border border-amber-100 bg-amber-50 p-3 text-xs font-semibold leading-relaxed text-amber-900">
+            {availabilityMessage}
+          </div>
+        ) : null}
+
+        <div>
+          <label className="text-[10px] font-black uppercase tracking-widest text-gray-400">Category</label>
+          {categoryOverride ? (
+            <p className="mt-1 rounded-xl border border-zinc-100 bg-zinc-50 p-3 text-sm font-bold text-zinc-800">
+              {categoryOverride}
+            </p>
+          ) : (
+            <select
+              value={form.category}
+              onChange={(e) => {
+                const category = e.target.value;
+                // A missing tourist is always treated as Critical.
+                setForm({ ...form, category, ...(isMissingPersonCategory(category) ? { severity: "Critical" } : {}) });
+              }}
+              className="w-full mt-1 p-3 bg-gray-50 border border-gray-100 rounded-xl font-bold text-sm"
+            >
+              {categories.map((c) => (
+                <option key={c} value={c}>{c}</option>
+              ))}
+            </select>
+          )}
+        </div>
+
+        {isMissing ? <MissingPersonFields value={missing} onChange={setMissing} /> : null}
+
+        <div className={isMissing ? "hidden" : ""}>
+          <label className="text-[10px] font-black uppercase tracking-widest text-gray-400">Severity / Priority</label>
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mt-1">
+            {INCIDENT_SEVERITIES.map((s) => (
+              <button
+                key={s}
+                type="button"
+                onClick={() => setForm({ ...form, severity: s })}
+                className={`p-3 rounded-xl font-black text-xs uppercase border-2 transition-all ${
+                  form.severity === s
+                    ? s === "Critical" ? "border-red-500 bg-red-50 text-red-700"
+                      : s === "High" ? "border-orange-500 bg-orange-50 text-orange-700"
+                      : "border-blue-500 bg-blue-50 text-blue-700"
+                    : "border-gray-100 text-gray-400 hover:border-gray-200"
+                }`}
+              >
+                {s}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        <div>
+          <label className="text-[10px] font-black uppercase tracking-widest text-gray-400">{isMissing ? "Anything else? (optional)" : "Description"}</label>
+          <textarea
+            required={!isMissing}
+            rows={4}
+            maxLength={5000}
+            value={form.description}
+            onChange={(e) => setForm({ ...form, description: e.target.value })}
+            placeholder="Describe what happened..."
+            className="w-full mt-1 p-3 bg-gray-50 border border-gray-100 rounded-xl font-medium text-sm resize-none"
+          />
+        </div>
+
+        <div>
+          <label className="text-[10px] font-black uppercase tracking-widest text-gray-400 flex items-center gap-1">
+            <MapPin size={12} /> {isMissing ? "Last seen at" : "Location"}
+          </label>
+          <div className="mt-1 flex gap-2">
+            <input
+              required
+              maxLength={500}
+              value={form.location}
+              onChange={(e) => {
+                const location = e.target.value;
+                setForm({
+                  ...form,
+                  location,
+                  ...(location.trim() ? {} : { latitude: null, longitude: null }),
+                });
+              }}
+              placeholder="e.g. Bagasbas Beach, Daet"
+              className="min-w-0 flex-1 p-3 bg-gray-50 border border-gray-100 rounded-xl font-bold text-sm"
+            />
+            <button
+              type="button"
+              onClick={requestLocation}
+              disabled={locating}
+              aria-label="Add my current location"
+              title="Add my location"
+              className="inline-flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-blue-600 text-white hover:bg-blue-700 disabled:opacity-50"
+            >
+              {locating ? <Loader2 size={18} className="animate-spin" /> : <LocateFixed size={18} />}
+            </button>
+          </div>
+          <p className={`mt-1 text-[11px] font-medium ${form.latitude != null ? "text-blue-700" : locationMessage ? "text-zinc-600" : "text-zinc-400"}`}>
+            {form.latitude != null && form.longitude != null
+              ? `GPS pin saved: ${Number(form.latitude).toFixed(5)}, ${Number(form.longitude).toFixed(5)}. The tourism office can open this on a map.`
+              : locationMessage || "Tap the location icon to drop a GPS pin, or type the place."}
+          </p>
+        </div>
+
+        <div>
+          <label className="text-[10px] font-black uppercase tracking-widest text-gray-400">{isMissing ? "Recent photo (optional)" : "Evidence (Optional)"}</label>
+          <input
+            type="file"
+            multiple
+            accept="image/*,.pdf"
+            onChange={(e) => setFiles(Array.from(e.target.files || []))}
+            className="w-full mt-1 text-sm"
+          />
+          {files.length > 0 && (
+            <p className="text-[10px] text-gray-400 mt-1">{files.length} file(s) selected</p>
+          )}
+        </div>
+      </div>
+
       <div className={`${portalShell.modalActionBar} flex-col sm:flex-row`}>
         <button
           type="button"
@@ -149,125 +319,6 @@ export function IncidentReportForm({
             {submitting ? <Loader2 size={16} className="animate-spin" /> : <Send size={16} />}
             {submitting ? "Submitting..." : "Submit Report"}
           </button>
-        </div>
-      </div>
-
-      <div className="min-h-0 flex-1 space-y-5 overflow-y-auto overscroll-contain px-6 py-5">
-        {introductoryInfo ? (
-          <div className="rounded-xl border border-blue-100 bg-blue-50 p-4 text-sm font-medium leading-relaxed text-blue-900">
-            {introductoryInfo}
-          </div>
-        ) : null}
-        {availabilityMessage ? (
-          <div className="rounded-xl border border-amber-100 bg-amber-50 p-3 text-xs font-semibold leading-relaxed text-amber-900">
-            {availabilityMessage}
-          </div>
-        ) : null}
-
-        <div>
-          <label className="text-[10px] font-black uppercase tracking-widest text-gray-400">Category</label>
-          {categoryOverride ? (
-            <p className="mt-1 rounded-xl border border-zinc-100 bg-zinc-50 p-3 text-sm font-bold text-zinc-800">
-              {categoryOverride}
-            </p>
-          ) : (
-            <select
-              value={form.category}
-              onChange={(e) => setForm({ ...form, category: e.target.value })}
-              className="w-full mt-1 p-3 bg-gray-50 border border-gray-100 rounded-xl font-bold text-sm"
-            >
-              {categories.map((c) => (
-                <option key={c} value={c}>{c}</option>
-              ))}
-            </select>
-          )}
-        </div>
-
-        <div>
-          <label className="text-[10px] font-black uppercase tracking-widest text-gray-400">Severity / Priority</label>
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mt-1">
-            {INCIDENT_SEVERITIES.map((s) => (
-              <button
-                key={s}
-                type="button"
-                onClick={() => setForm({ ...form, severity: s })}
-                className={`p-3 rounded-xl font-black text-xs uppercase border-2 transition-all ${
-                  form.severity === s
-                    ? s === "Critical" ? "border-red-500 bg-red-50 text-red-700"
-                      : s === "High" ? "border-orange-500 bg-orange-50 text-orange-700"
-                      : "border-blue-500 bg-blue-50 text-blue-700"
-                    : "border-gray-100 text-gray-400 hover:border-gray-200"
-                }`}
-              >
-                {s}
-              </button>
-            ))}
-          </div>
-        </div>
-
-        <div>
-          <label className="text-[10px] font-black uppercase tracking-widest text-gray-400">Description</label>
-          <textarea
-            required
-            rows={4}
-            maxLength={5000}
-            value={form.description}
-            onChange={(e) => setForm({ ...form, description: e.target.value })}
-            placeholder="Describe what happened..."
-            className="w-full mt-1 p-3 bg-gray-50 border border-gray-100 rounded-xl font-medium text-sm resize-none"
-          />
-        </div>
-
-        <div>
-          <label className="text-[10px] font-black uppercase tracking-widest text-gray-400 flex items-center gap-1">
-            <MapPin size={12} /> Location
-          </label>
-          <div className="mt-1 flex gap-2">
-            <input
-              required
-              maxLength={500}
-              value={form.location}
-              onChange={(e) => {
-                const location = e.target.value;
-                setForm({
-                  ...form,
-                  location,
-                  ...(location.trim() ? {} : { latitude: null, longitude: null }),
-                });
-              }}
-              placeholder="e.g. Bagasbas Beach, Daet"
-              className="min-w-0 flex-1 p-3 bg-gray-50 border border-gray-100 rounded-xl font-bold text-sm"
-            />
-            <button
-              type="button"
-              onClick={requestLocation}
-              disabled={locating}
-              aria-label="Add my current location"
-              title="Add my location"
-              className="inline-flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-blue-600 text-white hover:bg-blue-700 disabled:opacity-50"
-            >
-              {locating ? <Loader2 size={18} className="animate-spin" /> : <LocateFixed size={18} />}
-            </button>
-          </div>
-          <p className={`mt-1 text-[11px] font-medium ${form.latitude != null ? "text-blue-700" : locationMessage ? "text-zinc-600" : "text-zinc-400"}`}>
-            {form.latitude != null && form.longitude != null
-              ? `GPS pin saved: ${Number(form.latitude).toFixed(5)}, ${Number(form.longitude).toFixed(5)}. The tourism office can open this on a map.`
-              : locationMessage || "Tap the location icon to drop a GPS pin, or type the place."}
-          </p>
-        </div>
-
-        <div>
-          <label className="text-[10px] font-black uppercase tracking-widest text-gray-400">Evidence (Optional)</label>
-          <input
-            type="file"
-            multiple
-            accept="image/*,.pdf"
-            onChange={(e) => setFiles(Array.from(e.target.files || []))}
-            className="w-full mt-1 text-sm"
-          />
-          {files.length > 0 && (
-            <p className="text-[10px] text-gray-400 mt-1">{files.length} file(s) selected</p>
-          )}
         </div>
       </div>
     </form>

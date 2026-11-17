@@ -60,10 +60,13 @@ export function PublicHeader() {
   const visibility = usePublicVisibility();
   const installedApp = useInstalledApp();
 
-  useEffect(() => {
+  // Close the menus after navigating to another page.
+  const [menuPath, setMenuPath] = useState(pathname);
+  if (menuPath !== pathname) {
+    setMenuPath(pathname);
     setAccountOpen(false);
     setMenuOpen(false);
-  }, [pathname]);
+  }
 
   const signedIn = isAuthenticated;
   const primaryNav = [

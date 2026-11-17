@@ -8,7 +8,10 @@ import { getActiveSession } from '@/lib/authSession';
 
 export function AuthGuard({ children, requiredRole = null, fallbackUrl = '/login' }) {
   const router = useRouter();
-  const [checked, setChecked] = useState(false);
+  // Access is checked per role/fallback; a change re-checks without resetting state in an effect.
+  const accessKey = `${requiredRole}|${fallbackUrl}`;
+  const [checkedFor, setCheckedFor] = useState(null);
+  const checked = checkedFor === accessKey;
 
   useEffect(() => {
     let cancelled = false;
@@ -51,16 +54,15 @@ export function AuthGuard({ children, requiredRole = null, fallbackUrl = '/login
         return;
       }
 
-      setChecked(true);
+      setCheckedFor(accessKey);
     }
 
-    setChecked(false);
     verifyAccess();
 
     return () => {
       cancelled = true;
     };
-  }, [requiredRole, router, fallbackUrl]);
+  }, [requiredRole, router, fallbackUrl, accessKey]);
 
   if (!checked) {
     return (

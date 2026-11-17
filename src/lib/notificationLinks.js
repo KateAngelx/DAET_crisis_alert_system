@@ -21,6 +21,12 @@ export function getNotificationHref(notification, role = "tourist") {
     return "/crisis/roads";
   }
 
+  if (notification.related_type === "missing_person") {
+    if (role === "admin") return "/crisis/command";
+    if (role === "guide") return "/guide/crisis";
+    return "/crisis";
+  }
+
   if (notification.related_type === "incident") {
     if (role === "admin") return "/admin/incidents";
     if (role === "guide") return relatedId ? `/guide/reports/${relatedId}` : "/guide/reports";

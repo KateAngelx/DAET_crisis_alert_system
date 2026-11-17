@@ -3,7 +3,7 @@
 import React, { Suspense, useEffect, useMemo, useState } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import {
-  Route, Plus, X, MapPin, Ban, CheckCircle, Navigation, Loader2, Radio, Archive, FileWarning,
+  Route, Plus, MapPin, Ban, CheckCircle, Navigation, Loader2, Radio, Archive, FileWarning,
 } from "lucide-react";
 import { useRouteAdvisoryStore } from "@/app/store/routeAdvisoryStore";
 import { notifyTouristsOfRouteAdvisory } from "@/lib/notificationService";
@@ -46,11 +46,16 @@ import { ConfirmDialog } from "@/app/components/ui/ConfirmDialog";
 import { useConfirm } from "@/app/components/ui/ConfirmDialogProvider";
 import dynamic from "next/dynamic";
 import "leaflet/dist/leaflet.css";
+import { AdminFormModal } from "@/app/components/admin/AdminFormModal";
 
 const MapContainer = dynamic(() => import("react-leaflet").then((m) => m.MapContainer), { ssr: false });
 const TileLayer = dynamic(() => import("react-leaflet").then((m) => m.TileLayer), { ssr: false });
 const RouteAdvisoryPolylines = dynamic(
   () => import("@/app/components/maps/RouteAdvisoryPolylines").then((m) => m.RouteAdvisoryPolylines),
+  { ssr: false }
+);
+const MapResizeFix = dynamic(
+  () => import("@/app/components/maps/MapResizeFix").then((m) => m.MapResizeFix),
   { ssr: false }
 );
 
@@ -184,6 +189,7 @@ function RouteAdvisoriesAdminPanel({
       route_type: formData.route_type,
       from_location: formData.from_location,
       to_location: formData.to_location,
+      via_location: formData.via_location,
       route_path: previewPath,
     }),
     [formData, previewPath]
@@ -527,7 +533,8 @@ function RouteAdvisoriesAdminPanel({
             <div className={portalLayout.mapColumnFill}>
               <MapContainer center={mapCenter} zoom={13} style={{ height: "100%", width: "100%" }}>
                 <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" attribution="&copy; OpenStreetMap" />
-                <RouteAdvisoryPolylines advisories={filtered.filter((advisory) => advisory.status === "Active")} />
+                <MapResizeFix />
+                <RouteAdvisoryPolylines advisories={filtered.filter((advisory) => advisory.status === "Active")} fitBounds />
               </MapContainer>
             </div>
           ) : (
@@ -564,29 +571,22 @@ function RouteAdvisoriesAdminPanel({
       )}
 
       {showModal && (
-        <div className="fixed inset-0 z-[2000] flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm">
-          <div className="bg-white rounded-3xl max-w-2xl w-full max-h-[90vh] flex flex-col overflow-hidden shadow-2xl">
-            <div className="shrink-0 bg-white border-b border-zinc-100 px-6 py-4 flex items-center justify-between">
-              <div>
-                <h2 className="font-black uppercase text-zinc-900">
-                  {editingId ? "Edit Route" : formData.route_type === "alternative" ? "New Detour" : "New Route"}
-                </h2>
-                <p className="text-xs text-zinc-500 mt-1">Fill in From and To — the map line is created automatically.</p>
-              </div>
-              <button type="button" onClick={() => setShowModal(false)} className="p-2 hover:bg-zinc-100 rounded-full">
-                <X size={20} />
-              </button>
-            </div>
-            <div className="shrink-0 flex gap-3 border-b border-zinc-100 bg-white px-6 py-3">
+        <AdminFormModal
+          title={editingId ? "Edit Route" : formData.route_type === "alternative" ? "New Detour" : "New Route"}
+          subtitle="Fill in From and To — the map line is created automatically."
+          onClose={() => setShowModal(false)}
+          footer={
+            <>
               <button type="submit" form="route-advisory-form" disabled={isSaving} className={`flex-1 ${adminShell.btnPrimary} disabled:opacity-50`}>
                 {isSaving ? "Saving..." : editingId ? "Update Route" : "Publish Route"}
               </button>
               <button type="button" onClick={() => setShowModal(false)} className={adminShell.btnGhost}>
                 Cancel
               </button>
-            </div>
-
-            <form id="route-advisory-form" onSubmit={handleSubmit} className="min-h-0 flex-1 overflow-y-auto p-6 space-y-2">
+            </>
+          }
+        >
+            <form id="route-advisory-form" onSubmit={handleSubmit} className="space-y-2">
               <FormSection step={1} title="Route type" description="Primary = main road status. Detour = safer alternative.">
                 <div className="grid grid-cols-2 gap-2">
                   {ROUTE_ADVISORY_TYPES.map((type) => (
@@ -767,8 +767,9 @@ function RouteAdvisoriesAdminPanel({
                     )}
                     <MapContainer center={mapCenter} zoom={13} style={{ height: "100%", width: "100%" }}>
                       <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" attribution="&copy; OpenStreetMap" />
+                      <MapResizeFix />
                       {previewPath.length >= 2 && (
-                        <RouteAdvisoryPolylines advisories={[previewAdvisory]} highlightId="preview" />
+                        <RouteAdvisoryPolylines advisories={[previewAdvisory]} highlightId="preview" fitBounds />
                       )}
                     </MapContainer>
                   </div>
@@ -783,8 +784,7 @@ function RouteAdvisoriesAdminPanel({
               </FormSection>
 
             </form>
-          </div>
-        </div>
+        </AdminFormModal>
       )}
 
       </div>

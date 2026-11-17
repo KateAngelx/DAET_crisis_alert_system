@@ -12,6 +12,8 @@ import { useAuthStore } from "@/app/store/crisisStore";
 import { getActiveSession } from "@/lib/authSession";
 import { supabase } from "@/lib/supabaseClient";
 import { notifyRewardEarned } from "@/lib/rewardFeedback";
+import { AlertUpdateTimeline } from "./AlertUpdateTimeline";
+import { AlertCheckinPanel } from "./AlertCheckinPanel";
 
 const DAET_CENTER = [14.1122, 122.9553];
 
@@ -237,6 +239,9 @@ export function AlertDetailModal({ alert, onClose }) {
         >
           <p className="text-sm font-medium leading-relaxed text-zinc-700">{alert.message}</p>
 
+          <AlertCheckinPanel alert={alert} />
+          <AlertUpdateTimeline alert={alert} />
+
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">
             <div className="p-4 bg-zinc-50 rounded-2xl border border-zinc-100">
               <p className="text-[10px] font-black uppercase text-zinc-400 mb-1">Reported</p>
@@ -291,7 +296,8 @@ export function AlertDetailModal({ alert, onClose }) {
           </div>
         </div>
 
-        <div className="order-2 shrink-0 border-b border-zinc-100 bg-white p-4">
+        {/* Actions stay pinned to the bottom of the modal while the details scroll. */}
+        <div className="order-4 shrink-0 border-t border-zinc-100 bg-white p-4 rounded-b-2xl">
           {canShowReadState && (
             <div className="mb-3">
               {hasAlreadyRead ? (

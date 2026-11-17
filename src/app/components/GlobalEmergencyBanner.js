@@ -6,21 +6,26 @@ import { X, ShieldAlert } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 
+/**
+ * Critical alerts stay visible on every public page until they are resolved.
+ * Closing the card shrinks it to a small red button; it never disappears on its own.
+ */
 export function GlobalEmergencyBanner() {
   const pathname = usePathname();
-  const { alerts } = useCrisisStore();
-  const [dismissedAlertId, setDismissedAlertId] = useState(null);
+  const { alerts, isSubscribed, fetchAlerts } = useCrisisStore();
+  const [collapsedAlertId, setCollapsedAlertId] = useState(null);
 
-  // Filter active critical alerts
+  // Load alerts (and live updates) on pages that don't load them themselves, e.g. Contact or Profile.
+  useEffect(() => {
+    if (!isSubscribed) fetchAlerts();
+  }, [isSubscribed, fetchAlerts]);
+
   const criticalAlerts = alerts.filter(
-    (a) => a.severity === "Critical" && a.status === "Active"
+    (a) => a.severity === "Critical" && a.status === "Active" && a.is_public !== false
   );
   const latestAlert = criticalAlerts[0];
 
-  /**
-   * FIX: Mahigpit na check para sa Admin Pages.
-   * Admin shells: /admin, /crisis/command, /crisis/roads, /crisis/hazards
-   */
+  // Admin shells: /admin, /crisis/command, /crisis/roads, /crisis/hazards
   const isAdminPage =
     pathname.startsWith("/admin") ||
     pathname.startsWith("/crisis/command") ||
@@ -29,23 +34,24 @@ export function GlobalEmergencyBanner() {
     pathname.includes("/admin");
 
   const isAuthPage = pathname === "/login" || pathname === "/register";
-  const latestAlertId = latestAlert?.id;
+  if (!latestAlert || isAdminPage || isAuthPage) return null;
 
-  useEffect(() => {
-    if (!latestAlertId || isAdminPage || isAuthPage || dismissedAlertId === latestAlertId) return undefined;
-    const timer = window.setTimeout(() => setDismissedAlertId(latestAlertId), 6000);
-    return () => window.clearTimeout(timer);
-  }, [latestAlertId, isAdminPage, isAuthPage, dismissedAlertId]);
+  const more = criticalAlerts.length > 1 ? ` (+${criticalAlerts.length - 1} more)` : "";
 
-  if (
-    !latestAlert ||
-    isAdminPage ||
-    isAuthPage ||
-    dismissedAlertId === latestAlertId
-  ) return null;
+  if (collapsedAlertId === latestAlert.id) {
+    return (
+      <Link
+        href="/crisis"
+        className="fixed top-[80px] right-4 z-[9999] flex items-center gap-2 rounded-full bg-red-600 px-3 py-2 text-[10px] font-black uppercase tracking-widest text-white shadow-2xl ring-2 ring-red-300 hover:bg-red-700"
+        aria-label={`Critical alert active: ${latestAlert.title}. Open Crisis Hub`}
+      >
+        <ShieldAlert size={14} className="animate-pulse" /> Critical alert{more}
+      </Link>
+    );
+  }
 
   return (
-    <div className="fixed top-[80px] right-4 z-[9999] w-full max-w-[300px] animate-in fade-in slide-in-from-right-4 duration-300">
+    <div role="alert" className="fixed top-[80px] right-4 z-[9999] w-full max-w-[300px] animate-in fade-in slide-in-from-right-4 duration-300">
       <div className="bg-slate-900 dark:bg-zinc-950 text-white rounded-2xl shadow-2xl border border-white/10 overflow-hidden ring-1 ring-red-500/50">
         <div className="p-4">
           <div className="flex justify-between items-start mb-2">
@@ -54,19 +60,19 @@ export function GlobalEmergencyBanner() {
                 <ShieldAlert size={14} className="text-white" />
               </span>
               <span className="bg-red-600 text-white px-2 py-1 rounded-md text-[10px] font-black uppercase tracking-widest">
-                Critical
+                Critical{more}
               </span>
             </div>
             <button
               type="button"
-              onClick={() => setDismissedAlertId(latestAlertId)}
+              onClick={() => setCollapsedAlertId(latestAlert.id)}
               className="text-zinc-300 hover:text-white"
-              aria-label="Dismiss critical alert"
+              aria-label="Minimize critical alert"
             >
               <X size={16} />
             </button>
           </div>
-          
+
           <h4 className="text-base font-black tracking-tight leading-tight mb-1">
             {latestAlert.title}
           </h4>
@@ -80,11 +86,16 @@ export function GlobalEmergencyBanner() {
           <div className="flex gap-2">
             <Link
               href="/crisis"
-              onClick={() => setDismissedAlertId(latestAlertId)}
               className="flex-1 bg-red-600 text-white py-2 rounded-lg text-[10px] font-black uppercase tracking-widest text-center hover:bg-red-700 transition-all"
             >
               Open Crisis Hub
             </Link>
+            <a
+              href="tel:911"
+              className="rounded-lg border border-white/20 px-3 py-2 text-[10px] font-black uppercase tracking-widest text-white hover:bg-white/10"
+            >
+              Call 911
+            </a>
           </div>
         </div>
       </div>

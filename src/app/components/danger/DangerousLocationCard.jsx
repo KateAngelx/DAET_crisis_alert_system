@@ -3,7 +3,7 @@
 import React from "react";
 import { Clock, MapPin, ShieldAlert } from "lucide-react";
 import { CardIconBox } from "@/app/components/ui/CardIconBox";
-import { DangerSeverityIcon } from "@/app/components/ui/cardTypeIcons";
+import { HazardTypeIcon } from "@/app/components/ui/cardTypeIcons";
 import { OutlinedCard } from "@/app/components/ui/OutlinedCard";
 import { AlternativeRouteDisplay } from "@/app/components/danger/AlternativeRouteDisplay";
 import {
@@ -28,7 +28,7 @@ export function DangerousLocationCard({ warning, affectsRoute = false, onClick, 
         <div className="flex flex-wrap items-start gap-3 justify-between">
           <div className="flex items-start gap-3 min-w-0">
             <CardIconBox boxClass={styles.icon}>
-              <DangerSeverityIcon severity={warning.severity} size={iconSize.stat} />
+              <HazardTypeIcon type={warning.danger_type} size={iconSize.stat} />
             </CardIconBox>
             <div className="min-w-0">
               <div className="flex flex-wrap gap-2 mb-2">

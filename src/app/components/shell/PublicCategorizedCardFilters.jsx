@@ -58,7 +58,7 @@ export function PublicCategorizedCardFilters({
   severityOrder = DEFAULT_SEVERITY_ORDER,
   className = "",
 }) {
-  const safeItems = items ?? [];
+  const safeItems = useMemo(() => items ?? [], [items]);
 
   const availableCategories = useMemo(() => {
     const set = new Set(safeItems.map((item) => getCategory(item)).filter(Boolean));

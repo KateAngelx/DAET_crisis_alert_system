@@ -44,19 +44,20 @@ import {
   normalizeIncidentStatusLabel,
 } from "@/lib/incidentStatusUtils";
 import { sortRecordsNewestFirst } from "@/lib/recordSorting";
+import { AlertTypeIcon } from "@/app/components/ui/cardTypeIcons";
+import { useHydrated } from "@/lib/useHydrated";
 
 export default function AdminArchivePage() {
   const { alerts, fetchAlerts, loading: alertsLoading } = useCrisisStore();
   const { incidents, fetchIncidents, loading: incidentsLoading } = useIncidentStore();
   const { advisories, fetchAdvisories, loading: routesLoading } = useRouteAdvisoryStore();
   const { warnings, fetchWarnings, loading: hazardsLoading } = useDangerousLocationStore();
-  const [mounted, setMounted] = useState(false);
+  const mounted = useHydrated();
   const [categoryFilter, setCategoryFilter] = useState("All");
   const [severityFilter, setSeverityFilter] = useState("All");
   const [selectedAlert, setSelectedAlert] = useState(null);
 
   useEffect(() => {
-    setMounted(true);
     fetchAlerts();
     fetchIncidents();
     fetchAdvisories();
@@ -88,6 +89,7 @@ export default function AdminArchivePage() {
       ? `${alert.title} · ${alert.location}`
       : alert.title || alert.location || "—",
     type: alert.type || "General",
+    typeIcon: <AlertTypeIcon type={alert.type} size={12} />,
     when: new Date(alert.published_at || alert.created_at).toLocaleString(),
     onSelect: () => setSelectedAlert(alert),
     ariaLabel: "View resolved alert",

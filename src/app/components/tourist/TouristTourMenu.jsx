@@ -48,8 +48,10 @@ export function TouristTourMenu({ children }) {
   const [requests, setRequests] = useState([]);
   const [busy, setBusy] = useState("");
 
+  const role = user?.role;
+  const userId = user?.id;
   const loadAssistance = useCallback(async () => {
-    if (!isAuthenticated || user?.role !== "tourist") return;
+    if (!isAuthenticated || role !== "tourist") return;
     const session = await getActiveSession();
     const headers = session?.access_token ? { Authorization: `Bearer ${session.access_token}` } : {};
     const response = await fetch("/api/tourist/guide-assistance", { cache: "no-store", headers });
@@ -57,17 +59,18 @@ export function TouristTourMenu({ children }) {
     if (!response.ok) return;
     setAssistance(result.assistance || null);
     setRequests(Array.isArray(result.requests) ? result.requests : []);
-  }, [isAuthenticated, user?.role]);
+  }, [isAuthenticated, role]);
 
   useEffect(() => {
-    if (!isAuthenticated || user?.role !== "tourist" || !user?.id) return;
-    fetchTouristActiveGroup(user.id);
-    fetchPendingAssignmentForTourist(user.id);
-    loadAssistance();
+    if (!isAuthenticated || role !== "tourist" || !userId) return;
+    fetchTouristActiveGroup(userId);
+    fetchPendingAssignmentForTourist(userId);
+    // Assistance requests load after the network reply, never synchronously.
+    Promise.resolve().then(loadAssistance);
   }, [
     isAuthenticated,
-    user?.id,
-    user?.role,
+    userId,
+    role,
     fetchTouristActiveGroup,
     fetchPendingAssignmentForTourist,
     loadAssistance,

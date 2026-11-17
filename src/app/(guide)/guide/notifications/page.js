@@ -17,8 +17,11 @@ import { ListPager } from "@/app/components/shell/ListPager";
 
 export default function GuideNotificationsPage() {
   const { user } = useAuthStore();
-  const { notifications, fetchNotifications, markAsRead, markAllAsRead, loading, error, clearNotifications } =
+  const { notifications: allNotifications, fetchNotifications, markAsRead, markAllAsRead, dismissNotification, loading, error, clearNotifications } =
     useNotificationStore();
+  const [showDismissed, setShowDismissed] = useState(false);
+  const dismissedCount = allNotifications.filter((n) => n.dismissed_at).length;
+  const notifications = allNotifications.filter((n) => Boolean(n.dismissed_at) === showDismissed);
   const [sessionChecked, setSessionChecked] = useState(false);
   const [page, setPage] = useState(1);
 
@@ -91,7 +94,25 @@ export default function GuideNotificationsPage() {
         }
       />
 
-      <GuidePanel title="Inbox" subtitle={`${notifications.length} total`} compact>
+      <GuidePanel
+        title={showDismissed ? "Dismissed" : "Inbox"}
+        subtitle={`${notifications.length} total`}
+        compact
+        action={
+          dismissedCount || showDismissed ? (
+            <button
+              type="button"
+              onClick={() => {
+                setShowDismissed((v) => !v);
+                setPage(1);
+              }}
+              className="text-[10px] font-black text-zinc-600 uppercase hover:underline"
+            >
+              {showDismissed ? "Back to inbox" : `Dismissed (${dismissedCount})`}
+            </button>
+          ) : null
+        }
+      >
         <AsyncState
           loading={loading}
           error={error}
@@ -114,6 +135,7 @@ export default function GuideNotificationsPage() {
                   variant="row"
                   relatedLink={getRelatedLink(n)}
                   onMarkRead={markAsRead}
+                  onDismiss={dismissNotification}
                 />
               </li>
             ))}

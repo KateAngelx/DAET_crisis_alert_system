@@ -5,6 +5,7 @@ import dynamic from "next/dynamic";
 import { useMap } from "react-leaflet";
 import { geocodeAlerts } from "@/lib/geocodeLocation";
 import { createCategoryPinIcon, getAlertPinCategory } from "@/lib/mapPinUtils";
+import { alertPinGlyph } from "./typePinGlyph";
 
 const Marker = dynamic(() => import("react-leaflet").then((mod) => mod.Marker), { ssr: false });
 const Popup = dynamic(() => import("react-leaflet").then((mod) => mod.Popup), { ssr: false });
@@ -73,7 +74,10 @@ function FitAlertBounds({ positions }) {
 export function CrisisAlertMapMarkers({ alerts, renderPopup, fitToAlerts = false }) {
   const [coordsById, setCoordsById] = useState({});
   const alertsRef = useRef(alerts);
-  alertsRef.current = alerts;
+  // Keep the latest alerts for the geocoding effect without re-running it on every render.
+  useEffect(() => {
+    alertsRef.current = alerts;
+  });
   const alertKey = useMemo(
     () => alerts.map((alert) => `${alert.id}:${alert.location}:${alert.latitude}:${alert.longitude}`).join("|"),
     [alerts]
@@ -83,10 +87,7 @@ export function CrisisAlertMapMarkers({ alerts, renderPopup, fitToAlerts = false
     let cancelled = false;
     const current = alertsRef.current;
 
-    if (!current.length) {
-      setCoordsById({});
-      return undefined;
-    }
+    if (!current.length) return undefined; // nothing to look up; only listed alerts are drawn
 
     (async () => {
       const resolved = await geocodeAlerts(current);
@@ -112,7 +113,7 @@ export function CrisisAlertMapMarkers({ alerts, renderPopup, fitToAlerts = false
         const category = getAlertPinCategory(alert);
 
         return (
-          <Marker key={alert.id} position={position} icon={createCategoryPinIcon(category)}>
+          <Marker key={alert.id} position={position} icon={createCategoryPinIcon(category, alertPinGlyph(alert))}>
             {renderPopup ? (
               renderPopup(alert)
             ) : (

@@ -7,6 +7,7 @@ import {
   Coins, Gift, Compass,
 } from "lucide-react";
 import { AdminPanel } from "@/app/components/admin/AdminPanel";
+import { EscalationSettingsPanel } from "@/app/components/admin/EscalationSettingsPanel";
 import { DashboardPageHeader } from "@/app/components/dashboard/DashboardPageHeader";
 import { adminShell } from "@/lib/designSystem";
 import { RoleContextBanner } from "@/app/components/dashboard/RoleContextBanner";
@@ -1008,6 +1009,8 @@ export default function AdminSettingsPage() {
           </button>
         </div>
       </AdminPanel>
+
+      <EscalationSettingsPanel />
 
       <AdminPanel title="System notes" bodyClassName="bg-zinc-50/80">
         <ul className="text-sm text-zinc-600 font-medium space-y-2 list-disc pl-5">

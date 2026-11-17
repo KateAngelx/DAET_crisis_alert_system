@@ -49,11 +49,22 @@ export default function TourGroupDetailPage({ params }) {
     setPendingMembers(pending);
   };
 
+  const userId = user?.id;
   useEffect(() => {
-    loadData();
+    let cancelled = false;
+    if (id && userId) {
+      fetchTourGroupById(id, userId);
+      fetchGroupMembers(id, userId);
+      fetchGroupPendingMembers(id, userId).then((pending) => {
+        if (!cancelled) setPendingMembers(pending);
+      });
+    }
     fetchAlerts();
     fetchAdvisories();
-  }, [id, user?.id, fetchAlerts, fetchAdvisories]);
+    return () => {
+      cancelled = true;
+    };
+  }, [id, userId, fetchTourGroupById, fetchGroupMembers, fetchGroupPendingMembers, fetchAlerts, fetchAdvisories]);
 
   const handleRemove = async (assignmentId) => {
     const ok = await confirm({

@@ -20,6 +20,8 @@ import {
   DEFAULT_SEVERITY_ORDER,
 } from "@/app/components/shell/PublicCategorizedCardFilters";
 import { siteInfo } from "@/lib/siteInfo";
+import { AlertTypeIcon } from "@/app/components/ui/cardTypeIcons";
+import { useHydrated } from "@/lib/useHydrated";
 
 const DAET_CENTER = [14.1122, 122.9553];
 
@@ -52,16 +54,13 @@ export default function CrisisPublicPage() {
   const visibility = usePublicVisibility();
   const [selectedAlert, setSelectedAlert] = useState(null);
   const [viewedAlerts, setViewedAlerts] = useState(new Set());
-  const [mounted, setMounted] = useState(false);
+  const mounted = useHydrated();
   const [categoryFilter, setCategoryFilter] = useState("all");
   const [severityFilter, setSeverityFilter] = useState("all");
   const [safetyOpen, setSafetyOpen] = useState(false);
   const router = useRouter();
-  const alertQueryHandled = useRef(false);
 
   useEffect(() => {
-    setMounted(true);
-
     const initRealtime = async () => {
       const cleanup = await fetchAlerts();
       return cleanup;
@@ -70,7 +69,6 @@ export default function CrisisPublicPage() {
     const cleanupPromise = initRealtime();
 
     return () => {
-      setMounted(false);
       cleanupPromise.then((cleanup) => {
         if (cleanup && typeof cleanup === "function") cleanup();
       });
@@ -95,21 +93,22 @@ export default function CrisisPublicPage() {
     }
   };
 
-  useEffect(() => {
-    if (alertQueryHandled.current) return;
-    const alertId = new URLSearchParams(window.location.search).get("alert");
-    if (!alertId) return;
-    const match = alerts.find((alert) => alert.id === alertId);
-    if (!match) return;
-    alertQueryHandled.current = true;
-    setSelectedAlert(match.id);
-    setViewedAlerts((prev) => {
-      if (prev.has(match.id)) return prev;
-      const next = new Set(prev);
-      next.add(match.id);
-      return next;
-    });
-  }, [alerts]);
+  // Open the alert named in the address (?alert=…) once, after the alerts load.
+  const alertParam = mounted ? new URLSearchParams(window.location.search).get("alert") : null;
+  const [alertParamHandled, setAlertParamHandled] = useState(false);
+  if (alertParam && !alertParamHandled) {
+    const match = alerts.find((alert) => alert.id === alertParam);
+    if (match) {
+      setAlertParamHandled(true);
+      setSelectedAlert(match.id);
+      setViewedAlerts((prev) => {
+        if (prev.has(match.id)) return prev;
+        const next = new Set(prev);
+        next.add(match.id);
+        return next;
+      });
+    }
+  }
 
   const alertRows = filteredAlerts.map((alert) => ({
     id: alert.id,
@@ -119,6 +118,7 @@ export default function CrisisPublicPage() {
       ? `${alert.title} · ${alert.location}`
       : alert.title || alert.location || "—",
     type: alert.type || "General",
+    typeIcon: <AlertTypeIcon type={alert.type} size={12} />,
     when: alert.published_at || alert.created_at
       ? new Date(alert.published_at || alert.created_at).toLocaleString()
       : "—",

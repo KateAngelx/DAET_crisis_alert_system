@@ -3,6 +3,7 @@ import { NOTIFICATION_CHANNELS } from '@/lib/constants';
 import { processNotificationDeliveries } from '@/lib/notificationQueue.server';
 import { verifiedDeliveryContacts } from '@/lib/verifiedDeliveryContacts';
 import { channelsFromProfile, getDispatchChannelsForProfile } from '@/lib/userNotificationChannels';
+import { normalizePhilippinePhone } from '@/lib/phoneUtils';
 
 function isMissingEventKeyColumn(error) {
   const message = String(error?.message || '').toLowerCase();
@@ -23,6 +24,10 @@ export async function dispatchNotificationServer({
   eventKey = null,
   channels = ['web', 'email'],
   criticalEmergency = false,
+  // Urgent safety notices only (missing person, "I need help"): when the phone is not verified
+  // in Supabase Auth, text the phone saved in Profile instead, as crisis broadcasts already do.
+  // Set only by server code; never from request data.
+  urgentSmsToProfilePhone = false,
   adminClient = null,
   processDeliveries = processNotificationDeliveries,
 }) {
@@ -52,7 +57,8 @@ export async function dispatchNotificationServer({
 
   const verified = await lookupVerifiedContacts(admin, userId);
   const emailTo = verified.email;
-  const phoneTo = verified.phone;
+  const phoneTo = verified.phone
+    || (urgentSmsToProfilePhone ? normalizePhilippinePhone(recipient.phone) : null);
   const effective = criticalEmergency
     ? {
         app: channels.includes('web') || channels.includes('app'),

@@ -14,13 +14,14 @@ export function PwaSplashScreen() {
     if (!isInstalledApp()) return;
     if (sessionStorage.getItem(SPLASH_KEY) === "1") return;
 
-    setPhase("visible");
     sessionStorage.setItem(SPLASH_KEY, "1");
+    const showFrame = requestAnimationFrame(() => setPhase("visible"));
 
     const fadeTimer = setTimeout(() => setPhase("fading"), 1400);
     const hideTimer = setTimeout(() => setPhase("hidden"), 1900);
 
     return () => {
+      cancelAnimationFrame(showFrame);
       clearTimeout(fadeTimer);
       clearTimeout(hideTimer);
     };

@@ -40,3 +40,12 @@ export const AUDIENCE_ROLE_OPTIONS = [
   { key: "guides", label: "Tourism Guides", description: "Assigned guides monitoring tour groups." },
   { key: "admins", label: "Administrators", description: "Tourism office staff with Command Center access." },
 ];
+
+/** Critical emergencies go to every role (tourists, guides and administrators), whatever the setting. */
+export const CRITICAL_NOTIFICATION_AUDIENCE = { tourists: true, guides: true, admins: true };
+
+export function audienceForSeverity(audience, severity) {
+  return String(severity || "").toLowerCase() === "critical"
+    ? { ...CRITICAL_NOTIFICATION_AUDIENCE }
+    : normalizeNotificationAudience(audience);
+}

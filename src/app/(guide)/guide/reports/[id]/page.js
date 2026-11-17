@@ -12,6 +12,8 @@ import { useGuideStore } from "@/app/store/guideStore";
 import { useIncidentStore } from "@/app/store/incidentStore";
 import { getStatusColor, getSeverityColor } from "@/lib/constants";
 import { ReportGeoLink } from "@/app/components/incidents/ReportGeoLink";
+import { IncidentChat } from "@/app/components/IncidentChat";
+import Image from "next/image";
 
 export default function GuideReportDetailPage({ params }) {
   const { id } = React.use(params);
@@ -129,9 +131,11 @@ export default function GuideReportDetailPage({ params }) {
           <p className="text-[10px] font-black uppercase tracking-widest text-zinc-400 mb-3 flex items-center gap-2">
             <ImageIcon size={14} /> Photo Evidence
           </p>
-          <img src={inc.photo_url} alt="Report evidence" className="rounded-xl max-h-64 object-cover w-full" />
+          <Image src={inc.photo_url} alt="Report evidence" width={800} height={512} sizes="(max-width: 768px) 100vw, 640px" className="rounded-xl max-h-64 object-cover w-full h-auto" />
         </Card>
       )}
+
+      <IncidentChat incidentId={inc.id} />
 
       {history?.length > 0 && (
         <Card className="p-6 border-zinc-100">

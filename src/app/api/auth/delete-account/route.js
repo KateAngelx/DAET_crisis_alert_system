@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import { getSupabaseAdmin } from "@/lib/supabaseAdmin";
-import { API_RATE_LIMITS, enforceRateLimitByKey } from "@/lib/apiRateLimit";
+import { API_RATE_LIMITS, enforceSharedRateLimitByKey } from "@/lib/apiRateLimit";
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
@@ -21,7 +21,7 @@ export async function DELETE(request) {
       return NextResponse.json({ error: "Invalid session" }, { status: 401 });
     }
 
-    const limited = enforceRateLimitByKey(user.id, {
+    const limited = await enforceSharedRateLimitByKey(user.id, {
       name: "delete-account",
       ...API_RATE_LIMITS.deleteAccount,
     });

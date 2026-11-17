@@ -1,4 +1,3 @@
-import { agentDebugLog } from "@/lib/agentDebugLog.server";
 import { formatPhoneForSemaphoreApi, normalizePhilippinePhone } from "@/lib/phoneUtils";
 import { isSemaphoreSenderNameError } from "@/lib/semaphoreSmsErrors";
 import { prepareSmsBody } from "@/lib/smsMessageFormat";
@@ -142,19 +141,6 @@ export async function sendSms({ to, message }) {
     provider === "semaphore" ? Boolean(semaphore.apiKey) : Boolean(iprog.apiToken)
   );
 
-  agentDebugLog({
-    sessionId: "197cec",
-    location: "smsService.js:sendSms:entry",
-    message: "sendSms called",
-    hypothesisId: "A",
-    runId: "sms-provider-failover-v1",
-    data: {
-      primaryProvider,
-      configuredProviders,
-      rawToPrefix: String(to || "").slice(0, 4),
-    },
-  });
-
   if (configurationError) {
     console.error(`[SmsService] ${configurationError}`);
     return { success: false, error: configurationError, permanent: true };
@@ -171,7 +157,6 @@ export async function sendSms({ to, message }) {
     return { success: false, error: `Invalid Philippine phone number: ${to}`, permanent: true };
   }
 
-  const rawLength = String(message ?? "").length;
   const smsMessage = prepareSmsBody(message);
   const attempts = [];
 
@@ -191,24 +176,6 @@ export async function sendSms({ to, message }) {
             });
 
       attempts.push({ provider, ...result });
-      agentDebugLog({
-        sessionId: "197cec",
-        location: "smsService.js:sendSms:response",
-        message: "SMS provider response",
-        hypothesisId: "G-semaphore",
-        runId: "sms-provider-failover-v1",
-        data: {
-          provider,
-          httpStatus: result.httpStatus,
-          ok: result.ok,
-          messageId: result.messageId || null,
-          rawLength,
-          sentLength: smsMessage.length,
-          apiStatus: result.deliveryStatus || null,
-          network: result.network || null,
-          errorMsg: result.ok ? null : result.error || null,
-        },
-      });
 
       if (result.ok) {
         return {
@@ -228,14 +195,6 @@ export async function sendSms({ to, message }) {
     } catch (err) {
       const error = `${provider} request failed (${err.name || "network error"})`;
       attempts.push({ provider, ok: false, error });
-      agentDebugLog({
-        sessionId: "197cec",
-        location: "smsService.js:sendSms:exception",
-        message: "SMS provider request failed",
-        hypothesisId: "C",
-        runId: "sms-provider-failover-v1",
-        data: { provider, errorName: err.name || "Error" },
-      });
     }
   }
 

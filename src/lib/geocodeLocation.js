@@ -6,12 +6,27 @@ function sleep(ms) {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
-async function requestCoords(trimmed) {
-  const locationQuery = `${trimmed}, Daet, Camarines Norte, Philippines`;
+/**
+ * Search Daet first, then the province, then the whole country, so places outside the
+ * town (or names that already include "Daet") still get a pin instead of none.
+ */
+export function buildGeocodeQueries(text) {
+  const trimmed = String(text || "").trim();
+  if (!trimmed) return [];
+  const lower = trimmed.toLowerCase();
+  const queries = [];
+  if (!lower.includes("daet")) queries.push(`${trimmed}, Daet, Camarines Norte, Philippines`);
+  if (!lower.includes("camarines")) queries.push(`${trimmed}, Camarines Norte, Philippines`);
+  queries.push(lower.includes("philippines") ? trimmed : `${trimmed}, Philippines`);
+  return queries;
+}
 
-  for (let attempt = 0; attempt < 2; attempt += 1) {
+async function requestCoords(trimmed) {
+  const queries = buildGeocodeQueries(trimmed);
+
+  for (let index = 0; index < queries.length; index += 1) {
     try {
-      const response = await fetch(`/api/geocode?q=${encodeURIComponent(locationQuery)}`);
+      const response = await fetch(`/api/geocode?q=${encodeURIComponent(queries[index])}`);
       const data = await response.json();
 
       if (data?.[0]?.lat && data?.[0]?.lon) {
@@ -21,7 +36,8 @@ async function requestCoords(trimmed) {
       console.error("Geocoding failed:", error);
     }
 
-    if (attempt === 0) await sleep(NOMINATIM_DELAY_MS);
+    // OpenStreetMap's search service allows about one request per second.
+    if (index < queries.length - 1) await sleep(NOMINATIM_DELAY_MS);
   }
 
   return null;
@@ -59,10 +75,13 @@ export async function geocodeAlerts(alerts) {
       continue;
     }
 
+    const key = alert.location?.trim().toLowerCase();
+    const alreadyKnown = Boolean(key) && cache.has(key);
     const coords = await geocodeLocation(alert.location);
     if (coords) resolved[alert.id] = coords;
 
-    if (alerts.length > 1) {
+    // Only pause after a real network lookup; places already found need no wait.
+    if (alerts.length > 1 && !alreadyKnown) {
       await sleep(NOMINATIM_DELAY_MS);
     }
   }

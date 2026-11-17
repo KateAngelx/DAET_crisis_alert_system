@@ -93,9 +93,13 @@ export function StatusRecordList({
   const [page, setPage] = useState(1);
   const signature = rows.map((row) => row.id).join("|");
 
-  useEffect(() => {
+  // Back to page 1 when the rows or page size change.
+  const pageKey = `${signature}#${pageSize}`;
+  const [pagedKey, setPagedKey] = useState(pageKey);
+  if (pagedKey !== pageKey) {
+    setPagedKey(pageKey);
     setPage(1);
-  }, [signature, pageSize]);
+  }
 
   if (!rows.length) {
     return (
@@ -140,7 +144,10 @@ export function StatusRecordList({
                 {row.reference ? <span className="block font-mono text-[9px] font-black text-blue-700">{row.reference}</span> : null}
                 <span className={row.reference ? "block mt-0.5" : "block"}>{row.place || "—"}</span>
               </span>
-              <span className="min-w-0 line-clamp-2 wrap-break-word text-[11px] font-medium leading-snug text-zinc-700" title={row.type}>{row.type || "—"}</span>
+              <span className="flex min-w-0 items-start gap-1 text-[11px] font-medium leading-snug text-zinc-700" title={row.type}>
+                {row.typeIcon ? <span className="mt-px shrink-0 text-zinc-500">{row.typeIcon}</span> : null}
+                <span className="min-w-0 line-clamp-2 wrap-break-word">{row.type || "—"}</span>
+              </span>
               <span className="min-w-0 line-clamp-2 wrap-break-word text-[11px] font-medium leading-snug text-zinc-700" title={row.when}>{row.when || "—"}</span>
             </>
           );

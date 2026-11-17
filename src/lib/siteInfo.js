@@ -18,6 +18,15 @@ export const siteInfo = {
   emailMunicipal: "info@lgudaet.gov.ph",
   facebook: "https://www.facebook.com/daettourism2019",
   facebookHandle: "@daettourism2019",
+  /**
+   * Local Daet / Camarines Norte responders, shown before the national numbers.
+   * Add only numbers confirmed with each office (MDRRMO, PNP Daet, BFP Daet,
+   * provincial hospital, Coast Guard). `tel` is the dialable form.
+   */
+  localHotlines: [
+    { name: "Daet Tourism Office", number: "0963-4646-708", tel: "+639634646708" },
+  ],
+  /** National emergency numbers */
   emergencyHotlines: [
     { name: "National Emergency Hotline", number: "911" },
     { name: "PNP", number: "117" },
@@ -26,3 +35,10 @@ export const siteInfo = {
     { name: "Red Cross", number: "143" },
   ],
 };
+
+/** Local numbers first, then national ones — the single list every page shows. */
+export const allEmergencyHotlines = [...siteInfo.localHotlines, ...siteInfo.emergencyHotlines];
+
+export function hotlineTel(hotline) {
+  return hotline.tel || hotline.number;
+}

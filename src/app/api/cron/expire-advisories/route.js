@@ -1,20 +1,6 @@
 import { NextResponse } from "next/server";
 import { getSupabaseAdmin } from "@/lib/supabaseAdmin";
-
-function requireCronSecret(request) {
-  const secret = process.env.CRON_SECRET || process.env.NOTIFICATION_INTERNAL_SECRET;
-  if (!secret) {
-    return {
-      ok: false,
-      response: NextResponse.json({ error: "CRON_SECRET is not configured" }, { status: 503 }),
-    };
-  }
-  const header = request.headers.get("x-cron-secret") || request.headers.get("authorization")?.replace("Bearer ", "");
-  if (header !== secret) {
-    return { ok: false, response: NextResponse.json({ error: "Unauthorized" }, { status: 401 }) };
-  }
-  return { ok: true };
-}
+import { requireCronSecret } from "@/lib/cronAuth.server";
 
 /** Deactivate route advisories and area hazards past warning_ends_at */
 export async function POST(request) {
@@ -52,8 +38,15 @@ export async function POST(request) {
     return NextResponse.json({ error: legacyError.message }, { status: 500 });
   }
 
+  // Privacy: delete shared tourist positions older than 48 hours (migration 049).
+  const { data: clearedLocations, error: locationError } = await admin.rpc("clear_stale_tourist_locations");
+  if (locationError && !["42883", "PGRST202"].includes(locationError.code)) {
+    console.error("[ExpireAdvisories] Could not clear old tourist locations:", locationError.message);
+  }
+
   return NextResponse.json({
     success: true,
+    clearedTouristLocations: Number(clearedLocations) || 0,
     expiredRouteAdvisories: expiredRoutes?.length || 0,
     expiredLegacyWarnings: expiredLegacy?.length || 0,
   });

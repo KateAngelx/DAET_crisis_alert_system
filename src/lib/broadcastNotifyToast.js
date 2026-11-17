@@ -92,7 +92,7 @@ function aggregateSmsSentences(counts) {
 
   const pendingPhrase = touristCountPhrase(counts.pending);
   if (pendingPhrase) {
-    lines.push(`${pendingPhrase}: SMS pending.`);
+    lines.push(`${pendingPhrase}: SMS queued and will be sent within a few minutes.`);
   }
 
   return lines;

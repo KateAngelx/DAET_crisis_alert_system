@@ -16,7 +16,8 @@ function removeActiveChannel() {
 }
 
 function countUnread(notifications) {
-  return (notifications || []).filter((notification) => !notification.is_read).length;
+  // Dismissed ("not affected") notices never count as unread.
+  return (notifications || []).filter((notification) => !notification.is_read && !notification.dismissed_at).length;
 }
 
 function applyIncomingNotification(state, incoming) {
@@ -164,6 +165,42 @@ export const useNotificationStore = create((set, get) => ({
         unreadCount: Math.max(0, state.unreadCount - 1),
       }));
     }
+  },
+
+  /** Hide (or show again) an alert notice the person says does not affect them. */
+  dismissNotification: async (notificationId, dismissed = true) => {
+    const session = await getActiveSession();
+    const sessionUserId = session?.user?.id;
+    if (!sessionUserId) return { success: false, error: "Sign in again to manage notifications." };
+
+    const changes = dismissed
+      ? { dismissed_at: new Date().toISOString(), is_read: true }
+      : { dismissed_at: null };
+    const { error } = await supabase
+      .from("notifications")
+      .update(changes)
+      .eq("id", notificationId)
+      .eq("user_id", sessionUserId);
+
+    if (error) {
+      const notSetUp = error.code === "PGRST204" || error.code === "42703";
+      return {
+        success: false,
+        error: notSetUp
+          ? "Dismissing is not set up yet."
+          : /cannot be dismissed/i.test(error.message)
+            ? "Critical alerts cannot be dismissed."
+            : "Could not update this notification.",
+      };
+    }
+
+    set((state) => {
+      const notifications = state.notifications.map((notification) =>
+        notification.id === notificationId ? { ...notification, ...changes } : notification
+      );
+      return { notifications, unreadCount: countUnread(notifications) };
+    });
+    return { success: true };
   },
 
   markAllAsRead: async (userId) => {

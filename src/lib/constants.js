@@ -1,4 +1,5 @@
 import { incidentReportEligibleForGuideAssignment } from '@/lib/incidentGuideEligibility';
+import { allEmergencyHotlines } from '@/lib/siteInfo';
 
 export const ROLES = {
   ADMIN: 'admin',
@@ -73,13 +74,7 @@ export const EMERGENCY_FALLBACK = {
   title: 'Important: This app does not replace emergency services',
   message:
     'In a life-threatening emergency, call 911 or 117 immediately. This app provides official crisis updates from the Daet Municipal Tourism Office and report tracking. It requires internet access and does not dispatch emergency responders.',
-  hotlines: [
-    { name: 'National Emergency Hotline', number: '911' },
-    { name: 'PNP', number: '117' },
-    { name: 'BFP', number: '160' },
-    { name: 'DOH', number: '1555' },
-    { name: 'Red Cross', number: '143' },
-  ],
+  hotlines: allEmergencyHotlines,
 };
 
 export function severityToPriority(severity) {

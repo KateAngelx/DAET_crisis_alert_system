@@ -16,6 +16,8 @@ import {
 import { ReportDetailSkeleton } from "@/app/components/ui/Skeletons";
 import { ErrorState, EmptyState } from "@/app/components/ui/AsyncState";
 import { ReportGeoLink } from "@/app/components/incidents/ReportGeoLink";
+import { IncidentChat } from "@/app/components/IncidentChat";
+import Image from "next/image";
 
 export default function ReportDetailPage({ params }) {
   const { id } = React.use(params);
@@ -141,7 +143,7 @@ export default function ReportDetailPage({ params }) {
                     className="block rounded-xl overflow-hidden border border-zinc-200 hover:border-zinc-300 transition-colors"
                   >
                     {att.file_type?.startsWith("image/") ? (
-                      <img src={att.file_url} alt={att.file_name} className="w-full h-32 object-cover" />
+                      <Image src={att.file_url} alt={att.file_name || "Report evidence"} width={400} height={256} sizes="(max-width: 640px) 50vw, 240px" className="w-full h-32 object-cover" />
                     ) : (
                       <div className="p-4 text-center text-xs font-bold text-zinc-500">{att.file_name}</div>
                     )}
@@ -156,6 +158,8 @@ export default function ReportDetailPage({ params }) {
               <p className="text-sm text-green-800 font-medium">{inc.response_actions}</p>
             </PublicPanel>
           ) : null}
+
+          <IncidentChat incidentId={inc.id} />
 
           {history.length > 0 ? (
             <PublicPanel title="Status history">

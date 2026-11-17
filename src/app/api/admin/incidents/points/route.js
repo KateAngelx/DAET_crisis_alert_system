@@ -31,11 +31,14 @@ export async function GET(request) {
       .select("incident_report_id, decision, decided_by, decided_at, awarded_by, awarded_at, awarded_points")
       .eq("incident_report_id", incidentReportId)
       .maybeSingle(),
-    auth.admin
-      .from("profiles")
-      .select("id, user_type")
-      .eq("id", incident.reporter_id)
-      .maybeSingle(),
+    // Guest reports have no account, so there is no profile and no points.
+    incident.reporter_id
+      ? auth.admin
+        .from("profiles")
+        .select("id, user_type")
+        .eq("id", incident.reporter_id)
+        .maybeSingle()
+      : Promise.resolve({ data: null, error: null }),
     getSystemSettings(auth.admin),
   ]);
 

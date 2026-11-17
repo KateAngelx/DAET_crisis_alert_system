@@ -17,15 +17,17 @@ import { AsyncState, EmptyState } from "@/app/components/ui/AsyncState";
 import { NotificationItemSkeleton, SessionInboxSkeleton } from "@/app/components/ui/Skeletons";
 import { getActiveSession } from "@/lib/authSession";
 import { getNotificationHref } from "@/lib/notificationLinks";
+import { splitRewardNotifications } from "@/lib/notificationCategory";
 import { portalShell, portalLayout } from "@/lib/designSystem";
 import { ListPager } from "@/app/components/shell/ListPager";
 
 export default function NotificationsPage() {
   const { user, isAuthenticated } = useAuthStore();
-  const { notifications, fetchNotifications, markAsRead, markAllAsRead, loading, error, clearNotifications } =
+  const { notifications, fetchNotifications, markAsRead, markAllAsRead, dismissNotification, loading, error, clearNotifications } =
     useNotificationStore();
   const [sessionChecked, setSessionChecked] = useState(false);
   const [page, setPage] = useState(1);
+  const [tab, setTab] = useState("updates");
 
   useEffect(() => {
     let cancelled = false;
@@ -87,10 +89,20 @@ export default function NotificationsPage() {
   }
 
   const getRelatedLink = (n) => getNotificationHref(n, user?.role);
+  const dismissedItems = notifications.filter((n) => n.dismissed_at);
+  const { updates, rewards } = splitRewardNotifications(notifications.filter((n) => !n.dismissed_at));
+  const tabItems = tab === "rewards" ? rewards : tab === "dismissed" ? dismissedItems : updates;
   const pageSize = 10;
-  const pageCount = Math.max(1, Math.ceil(notifications.length / pageSize));
+  const pageCount = Math.max(1, Math.ceil(tabItems.length / pageSize));
   const safePage = Math.min(page, pageCount);
-  const visibleNotifications = notifications.slice((safePage - 1) * pageSize, safePage * pageSize);
+  const visibleNotifications = tabItems.slice((safePage - 1) * pageSize, safePage * pageSize);
+  const tabs = [
+    { key: "updates", label: "Alerts & updates", count: updates.length },
+    { key: "rewards", label: "Rewards", count: rewards.length },
+    ...(dismissedItems.length || tab === "dismissed"
+      ? [{ key: "dismissed", label: "Dismissed", count: dismissedItems.length }]
+      : []),
+  ];
 
   return (
     <PublicPageShell>
@@ -102,7 +114,7 @@ export default function NotificationsPage() {
       <PublicPageContent>
         <PublicPanel
           title="Inbox"
-          subtitle={`${notifications.length} notification${notifications.length === 1 ? "" : "s"}`}
+          subtitle={`${tabItems.length} notification${tabItems.length === 1 ? "" : "s"}`}
           bodyClassName={portalLayout.panelBodyStack}
           action={
             <button
@@ -114,10 +126,31 @@ export default function NotificationsPage() {
             </button>
           }
         >
+          <div className="flex gap-2" role="tablist" aria-label="Notification type">
+            {tabs.map((t) => (
+              <button
+                key={t.key}
+                type="button"
+                role="tab"
+                aria-selected={tab === t.key}
+                onClick={() => {
+                  setTab(t.key);
+                  setPage(1);
+                }}
+                className={`rounded-full border px-3 py-1 text-[11px] font-black uppercase tracking-wide transition-colors ${
+                  tab === t.key
+                    ? "border-zinc-900 bg-zinc-900 text-white"
+                    : "border-zinc-200 bg-white text-zinc-600 hover:bg-zinc-50"
+                }`}
+              >
+                {t.label} ({t.count})
+              </button>
+            ))}
+          </div>
           <AsyncState
             loading={loading}
             error={error}
-            isEmpty={!loading && !error && notifications.length === 0}
+            isEmpty={!loading && !error && tabItems.length === 0}
             onRetry={() => fetchNotifications(user.id)}
             loadingFallback={
               <div className={publicLayout.stackTight}>
@@ -129,8 +162,14 @@ export default function NotificationsPage() {
             emptyFallback={
               <EmptyState
                 icon={Bell}
-                title="No notifications"
-                description="You'll see private updates here when the tourism office issues crisis alerts or responds to your reports."
+                title={tab === "rewards" ? "No rewards yet" : tab === "dismissed" ? "Nothing dismissed" : "No notifications"}
+                description={
+                  tab === "rewards"
+                    ? "Points you earn appear here, separate from crisis alerts."
+                    : tab === "dismissed"
+                      ? "Alert notices you mark as not affecting you appear here."
+                      : "You'll see private updates here when the tourism office issues crisis alerts or responds to your reports."
+                }
               />
             }
           >
@@ -142,6 +181,7 @@ export default function NotificationsPage() {
                     variant="row"
                     relatedLink={getRelatedLink(n)}
                     onMarkRead={markAsRead}
+                    onDismiss={dismissNotification}
                   />
                 </li>
               ))}

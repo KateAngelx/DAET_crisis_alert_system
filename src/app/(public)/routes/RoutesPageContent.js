@@ -65,9 +65,12 @@ function AdvisoryFormList({ items, onSelectRoute, onSelectHazard, highlightedHaz
   const [page, setPage] = useState(1);
   const signature = items.map((entry) => entry.key).join("|");
 
-  useEffect(() => {
+  // Back to page 1 when the list changes.
+  const [pagedSignature, setPagedSignature] = useState(signature);
+  if (pagedSignature !== signature) {
+    setPagedSignature(signature);
     setPage(1);
-  }, [signature]);
+  }
 
   if (!items.length) {
     return (
@@ -469,9 +472,10 @@ export default function RoutesPageContent() {
       />
 
       <PublicListModal
+        size="lg"
         open={!!selectedHazard}
         onClose={() => setSelectedHazard(null)}
-        title="Area hazard"
+        title="Area hazard details"
         subtitle={selectedHazard?.dangerous_location}
         viewKey={selectedHazard?.id}
         onContentViewed={setViewedHazardId}

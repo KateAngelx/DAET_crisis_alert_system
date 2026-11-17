@@ -37,6 +37,8 @@ export function ConfirmDialog({
   requireText,
   requireTextLabel,
   loading = false,
+  confirmDisabled = false,
+  children,
   onConfirm,
   onCancel,
 }) {
@@ -45,9 +47,12 @@ export function ConfirmDialog({
   const Icon = styles.icon;
   const textOk = !requireText || typed.trim() === requireText;
 
-  useEffect(() => {
+  // Clear the confirmation text each time the dialog opens.
+  const [wasOpen, setWasOpen] = useState(open);
+  if (wasOpen !== open) {
+    setWasOpen(open);
     if (open) setTyped("");
-  }, [open]);
+  }
 
   if (!open) return null;
 
@@ -95,7 +100,7 @@ export function ConfirmDialog({
           <button
             type="button"
             onClick={onConfirm}
-            disabled={loading || !textOk}
+            disabled={loading || !textOk || confirmDisabled}
             className={`flex-1 py-3.5 rounded-2xl font-black text-xs uppercase tracking-widest shadow-lg disabled:opacity-50 transition-colors ${styles.buttonClass}`}
           >
             {loading ? "Please wait…" : confirmLabel}
@@ -105,6 +110,7 @@ export function ConfirmDialog({
         {description ? (
           <p className="text-sm text-zinc-600 font-medium leading-relaxed">{description}</p>
         ) : null}
+        {children ? <div className="mt-4">{children}</div> : null}
 
         {requireText ? (
           <div className="mb-5">

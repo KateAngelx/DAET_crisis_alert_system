@@ -6,6 +6,7 @@ import { syncProfileFromServer, useAuthStore } from "@/app/store/crisisStore";
 import { useNotificationStore } from "@/app/store/notificationStore";
 import { clearInvalidAuthSession, fetchWithFreshSession, isInvalidRefreshError } from "@/lib/authSession";
 import { reconcileAccountPushSubscription } from "@/lib/webPushClient";
+import { reportLocationIfSharing } from "@/lib/locationSharing.client";
 
 async function sendHeartbeat() {
   await fetchWithFreshSession("/api/auth/heartbeat", {
@@ -56,12 +57,15 @@ export function AuthSessionSync() {
             created_at: profile?.created_at || null,
             notification_channels: profile?.notification_channels || { email: true, sms: true, app: true, push: false },
             notification_channels_configured: Boolean(profile?.notification_channels_configured),
+            location_sharing_enabled: profile?.location_sharing_enabled === true,
           },
           isAuthenticated: true,
         });
 
         if (profile?.user_type === "tourist") {
           useNotificationStore.getState().fetchNotifications(session.user.id);
+          // Opt-in only: saves a rounded position if the tourist turned sharing on.
+          void reportLocationIfSharing(useAuthStore.getState().user);
         }
       } catch (err) {
         if (isInvalidRefreshError(err)) {
@@ -79,7 +83,13 @@ export function AuthSessionSync() {
       } catch {
         /* ignore heartbeat errors */
       }
+      void reportLocationIfSharing(useAuthStore.getState().user);
     }, 5 * 60 * 1000);
+
+    const handleVisible = () => {
+      if (document.visibilityState === "visible") void reportLocationIfSharing(useAuthStore.getState().user);
+    };
+    document.addEventListener("visibilitychange", handleVisible);
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
       if (!mounted) return;
@@ -113,6 +123,7 @@ export function AuthSessionSync() {
       deferredTasks.forEach((timer) => window.clearTimeout(timer));
       deferredTasks.clear();
       clearInterval(heartbeatInterval);
+      document.removeEventListener("visibilitychange", handleVisible);
       window.removeEventListener("unhandledrejection", handleUnhandledRejection);
       subscription.unsubscribe();
     };

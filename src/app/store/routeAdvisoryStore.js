@@ -3,6 +3,7 @@ import { supabase } from "@/lib/supabaseClient";
 import { channelFlagsToDb, isMissingChannelsColumn } from "@/lib/alertChannels";
 import { isRouteAdvisoryRow } from "@/lib/areaAdvisoryAdapter";
 import { sortRecordsNewestFirst } from "@/lib/recordSorting";
+import { isConnectionError, loadOfflineSnapshot, saveOfflineSnapshot } from "@/lib/offlineSnapshot";
 export const useRouteAdvisoryStore = create((set, get) => ({
   advisories: [],
   loading: false,
@@ -23,8 +24,12 @@ export const useRouteAdvisoryStore = create((set, get) => ({
         (data || []).filter(isRouteAdvisoryRow),
         ["created_at"]
       );
-      set({ advisories, loading: false, error: null });    } catch (err) {
-      set({ loading: false, error: err.message || "Could not load route advisories." });
+      set({ advisories, loading: false, error: null, offlineSavedAt: null });
+      saveOfflineSnapshot("roads", advisories);
+    } catch (err) {
+      const saved = isConnectionError(err) ? loadOfflineSnapshot("roads") : null;
+      if (saved) set({ advisories: saved.items, loading: false, error: null, offlineSavedAt: saved.savedAt });
+      else set({ loading: false, error: err.message || "Could not load route advisories." });
       return;
     }
 

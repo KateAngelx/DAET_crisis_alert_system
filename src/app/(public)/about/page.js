@@ -1,6 +1,6 @@
 import { InfoPageHero, InfoSection, PublicPageShell, PublicPageContent } from "@/app/components/InfoPageHero";
 import { AboutNextSteps } from "@/app/components/AboutNextSteps";
-import { siteInfo } from "@/lib/siteInfo";
+import { allEmergencyHotlines, siteInfo } from "@/lib/siteInfo";
 
 export const metadata = {
   title: `About | ${siteInfo.brandName}`,
@@ -53,8 +53,8 @@ export default function AboutPage() {
 
         <InfoSection title="Emergency Contacts">
           <ul className="list-disc pl-5 space-y-2">
-            {siteInfo.emergencyHotlines.map((h) => (
-              <li key={h.number}><strong>{h.number}</strong> — {h.name}</li>
+            {allEmergencyHotlines.map((h) => (
+              <li key={h.name}><strong>{h.number}</strong> — {h.name}</li>
             ))}
             <li><strong>{siteInfo.phoneMunicipal}</strong> — Municipal hotline ({siteInfo.officeHours.toLowerCase()})</li>
           </ul>

@@ -24,6 +24,25 @@ export function getTourGroupEndAt(group) {
   return Number.isNaN(end.getTime()) ? null : end;
 }
 
+export const TOUR_REMINDER_LEAD_MS = 60 * 60 * 1000;
+
+/**
+ * Which end-of-tour reminder a guide should get now, if any:
+ * "due" once the planned end has passed, "one-hour" in the hour before it
+ * (only when the tour has an end time), or null. Each is sent once.
+ * Works even when the scheduler runs late: an overdue tour still gets its "due" reminder.
+ */
+export function getTourEndReminderKind(tour, nowMs = Date.now()) {
+  const endAt = getTourGroupEndAt(tour);
+  if (!endAt) return null;
+  const endMs = endAt.getTime();
+  if (endMs <= nowMs) return tour.end_reminder_due_sent_at ? null : "due";
+  if (tour.end_time && endMs <= nowMs + TOUR_REMINDER_LEAD_MS && !tour.end_reminder_1h_sent_at) {
+    return "one-hour";
+  }
+  return null;
+}
+
 /** True when the planned end date and time has passed (suggest marking done). */
 export function isTourPastEndDate(group, nowMs = Date.now()) {
   const end = getTourGroupEndAt(group);
@@ -151,4 +170,44 @@ export function groupToRouteForm(group) {
     estimated_travel_time: group.estimated_travel_time || "",
     destination_notes: group.destination_notes || "",
   };
+}
+
+/** Today's date in the Philippines as YYYY-MM-DD. */
+export function todayInPhilippines(nowMs = Date.now()) {
+  return new Date(nowMs + 8 * 60 * 60 * 1000).toISOString().slice(0, 10);
+}
+
+/**
+ * Tour schedule check: no start date in the past (Philippine time), and a new tour's end
+ * must still be ahead. An existing tour may keep the start date it already has.
+ * @returns {string|null} an error message, or null when the schedule is fine
+ */
+export function tourScheduleError({ start_date, end_date, end_time }, { originalStartDate = null, nowMs = Date.now() } = {}) {
+  const today = todayInPhilippines(nowMs);
+  if (start_date && start_date < today && start_date !== originalStartDate) {
+    return "The start date can't be in the past.";
+  }
+  if (start_date && end_date && end_date < start_date) {
+    return "The end date must be on or after the tour date.";
+  }
+  if (end_time && !end_date) return "Choose an end date before setting an end time.";
+  if (!originalStartDate && end_date) {
+    const endAt = getTourGroupEndAt({ end_date, end_time });
+    if (endAt && endAt.getTime() <= nowMs) return "The end date and time have already passed.";
+  }
+  return null;
+}
+
+/** What the group's tourists see one hour before ("one-hour") and at ("due") the tour's end. */
+export function touristTourReminderText(tour, kind) {
+  const when = formatTourEndDateTime(tour);
+  return kind === "due"
+    ? {
+        title: `Your tour ${tour.name} has ended`,
+        message: `The planned end time for ${tour.name} was ${when}. Stay with your guide until they confirm the tour is over. In an emergency, call 911.`,
+      }
+    : {
+        title: `Your tour ${tour.name} ends in about one hour`,
+        message: `${tour.name} is scheduled to end at ${when}. Keep your belongings together and follow your guide's instructions.`,
+      };
 }

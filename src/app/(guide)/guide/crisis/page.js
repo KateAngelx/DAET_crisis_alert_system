@@ -17,6 +17,7 @@ import { RouteDetailModal } from "@/app/components/routes/RouteDetailModal";
 import { CrisisHubMap } from "@/app/components/maps/CrisisHubMap";
 import { AlertDetailModal } from "@/app/(subsystems)/crisis/(public)/_components/AlertDetailModal";
 import { ListPager } from "@/app/components/shell/ListPager";
+import { GuideHeadcountPanel } from "@/app/components/guide/GuideHeadcountPanel";
 import { CategoryFilterSelect, StatusRecordList } from "@/app/components/shell/StatusRecordList";
 import {
   DEFAULT_CRISIS_TYPE_OPTIONS,
@@ -32,6 +33,7 @@ import { GuideDashboardQuickActions } from "@/app/components/guide/GuideDashboar
 import { PublicCategorizedCardList } from "@/app/components/shell/PublicCategorizedCardList";
 import { INCIDENT_SEVERITIES } from "@/lib/constants";
 import { sortRecordsNewestFirst } from "@/lib/recordSorting";
+import { AlertTypeIcon } from "@/app/components/ui/cardTypeIcons";
 
 export default function GuideCrisisHubPage() {
   const { user } = useAuthStore();
@@ -62,7 +64,7 @@ export default function GuideCrisisHubPage() {
 
   const activeAlerts = alerts.filter((a) => a.status === "Active" && a.is_public);
   const criticalAlerts = activeAlerts.filter((a) => a.severity === "Critical");
-  const activeGroups = tourGroups.filter((g) => g.status === "active");
+  const activeGroups = useMemo(() => tourGroups.filter((g) => g.status === "active"), [tourGroups]);
   const groupPageSize = 5;
   const groupPageCount = Math.max(1, Math.ceil(activeGroups.length / groupPageSize));
   const safeGroupPage = Math.min(groupPage, groupPageCount);
@@ -89,6 +91,7 @@ export default function GuideCrisisHubPage() {
       ? `${alert.title} · ${alert.location}`
       : alert.title || alert.location || "—",
     type: alert.type || "General",
+    typeIcon: <AlertTypeIcon type={alert.type} size={12} />,
     when: alert.published_at || alert.created_at
       ? new Date(alert.published_at || alert.created_at).toLocaleString()
       : "—",
@@ -109,7 +112,7 @@ export default function GuideCrisisHubPage() {
         .map((route) => ({ ...route, created_at: route.advisory?.created_at })),
       ["created_at"]
     );
-  }, [activeGroups, catalog.published, catalog.active, catalog.affected, catalog.alternative]);
+  }, [activeGroups, catalog]);
 
   const routeRows = relevantRouteAdvisories.map((route) => ({
     id: route.id,
@@ -165,6 +168,8 @@ export default function GuideCrisisHubPage() {
           </div>
         </Card>
       )}
+
+      <GuideHeadcountPanel alerts={activeAlerts} />
 
       {relevantRouteAdvisories.length > 0 && (
         <Card className="p-5 bg-orange-50 border-orange-200">

@@ -5,8 +5,15 @@ import { ensureRoadSnappedPath, hasRoutePath, isLikelyStraightLinePath, parseRou
 
 const roadPathCache = new Map();
 
+function pathSignature(advisory) {
+  const points = parseRoutePath(advisory);
+  if (!points.length) return "0";
+  return `${points.length}:${points[0].join(",")}:${points[points.length - 1].join(",")}`;
+}
+
+/** Includes Via and the stored path, so a changed route never shows an old cached line. */
 function advisoryCacheKey(advisory) {
-  return `${advisory?.id}:${advisory?.from_location}:${advisory?.to_location}:${advisory?.via_location}`;
+  return `${advisory?.id}:${advisory?.from_location}:${advisory?.to_location}:${advisory?.via_location}:${pathSignature(advisory)}`;
 }
 
 function rememberRoadPath(advisory) {
@@ -50,7 +57,9 @@ export function useResolvedRouteAdvisories(advisories = []) {
     [advisories]
   );
   const advisoriesRef = useRef(advisories);
-  advisoriesRef.current = advisories;
+  useEffect(() => {
+    advisoriesRef.current = advisories;
+  });
 
   const [resolved, setResolved] = useState(advisories);
 

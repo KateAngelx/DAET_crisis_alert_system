@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import { getSupabaseAdmin } from "@/lib/supabaseAdmin";
-import { API_RATE_LIMITS, enforceRateLimit } from "@/lib/apiRateLimit";
+import { API_RATE_LIMITS, enforceSharedRateLimit } from "@/lib/apiRateLimit";
 import { normalizePhilippinePhone } from "@/lib/phoneUtils";
 import { processNotificationDeliveries } from "@/lib/notificationQueue.server";
 
@@ -58,7 +58,7 @@ async function enqueueAndSend(admin, delivery) {
 }
 
 export async function POST(request) {
-  const limited = enforceRateLimit(request, {
+  const limited = await enforceSharedRateLimit(request, {
     name: "register",
     ...API_RATE_LIMITS.register,
   });
@@ -103,7 +103,7 @@ export async function POST(request) {
     return NextResponse.json({ error: "Select a valid nationality." }, { status: 400 });
   }
 
-  const emailLimited = enforceRateLimit(request, {
+  const emailLimited = await enforceSharedRateLimit(request, {
     name: "register-email",
     limit: 3,
     windowMs: 60 * 60_000,

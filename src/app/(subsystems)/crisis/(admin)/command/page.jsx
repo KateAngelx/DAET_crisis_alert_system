@@ -26,7 +26,7 @@ import { ErrorState } from "@/app/components/ui/AsyncState";
 import { DashboardPageHeader } from "@/app/components/dashboard/DashboardPageHeader";
 import { DashboardStatCard } from "@/app/components/dashboard/DashboardStatCard";
 import { 
-  AlertTriangle, Cloud, Heart, Shield, Info, MapPin, Search, CheckCircle, 
+  AlertTriangle, Shield, MapPin, Search, CheckCircle, 
   Radio, X, BellRing, FileText, ChevronLeft, ChevronRight,
   Mail, MessageSquare, Smartphone, Map, Plus, ArrowRight, Route, Users, Archive
 } from "lucide-react";
@@ -41,6 +41,16 @@ import { OutlinedCard } from "@/app/components/ui/OutlinedCard";
 import { CategoryFilterSelect, StatusRecordList } from "@/app/components/shell/StatusRecordList";
 import { DEFAULT_CRISIS_TYPE_OPTIONS } from "@/app/components/shell/PublicCategorizedCardFilters";
 import { ConfirmDialog } from "@/app/components/ui/ConfirmDialog";
+import { AlertTargetSelect } from "@/app/components/admin/AlertTargetSelect";
+import { AlertCheckinSummary } from "@/app/components/admin/AlertCheckinSummary";
+import { AlertDeliveryReport } from "@/app/components/admin/AlertDeliveryReport";
+import { MissingPersonsPanel } from "@/app/components/admin/MissingPersonsPanel";
+import { AlertTypeIcon } from "@/app/components/ui/cardTypeIcons";
+import {
+  ALL_CLEAR_MAX_LENGTH,
+  suggestAllClearMessage,
+  validateAllClearMessage,
+} from "@/lib/crisisAlertHistory";
 import { useConfirm } from "@/app/components/ui/ConfirmDialogProvider";
 import dynamic from 'next/dynamic';
 import "leaflet/dist/leaflet.css";
@@ -77,6 +87,9 @@ const createEmptyAlertFormData = () => ({
   longitude: null,
   rewards_eligible: false,
   channels: { email: true, sms: true, app: true },
+  target_scope: "all",
+  target_radius_km: 3,
+  checkin_requested: false,
 });
 
 export default function CrisisAdminPage() {
@@ -92,7 +105,9 @@ export default function CrisisAdminPage() {
 
   const [showCreateModal, setShowCreateModal] = useState(false); 
   const [showConfirmModal, setShowConfirmModal] = useState(false);
-  const [showResolveConfirm, setShowResolveConfirm] = useState(false); 
+  const [showResolveConfirm, setShowResolveConfirm] = useState(false);
+  const [allClearText, setAllClearText] = useState("");
+  const [isResolving, setIsResolving] = useState(false);
   const [selectedAlert, setSelectedAlert] = useState(null);
 
   const [isViewModalOpen, setIsViewModalOpen] = useState(false);
@@ -269,7 +284,10 @@ export default function CrisisAdminPage() {
       latitude: alert.latitude ?? null,
       longitude: alert.longitude ?? null,
       rewards_eligible: alert.rewards_eligible === true,
-      channels: alert.channels || { email: true, sms: true, app: true }
+      channels: alert.channels || { email: true, sms: true, app: true },
+      target_scope: alert.target_scope || "all",
+      target_radius_km: Number(alert.target_radius_km) || 3,
+      checkin_requested: alert.checkin_requested === true
     });
     setIsEditModalOpen(true);
   };
@@ -287,7 +305,10 @@ export default function CrisisAdminPage() {
       rewards_eligible: formData.rewards_eligible,
       latitude: formData.latitude,
       longitude: formData.longitude,
-      channels: formData.channels
+      channels: formData.channels,
+      target_scope: formData.target_scope,
+      target_radius_km: formData.target_radius_km,
+      checkin_requested: formData.checkin_requested === true
     };
 
     if (updatedPayload.latitude == null || updatedPayload.longitude == null) {
@@ -326,11 +347,17 @@ export default function CrisisAdminPage() {
 
   const handleResolveClick = (alert) => {
     setSelectedAlert(alert);
+    setAllClearText(suggestAllClearMessage(alert));
     setShowResolveConfirm(true);
   };
 
+  const allClearError = validateAllClearMessage(allClearText);
+
   const confirmResolve = async () => {
-    const result = await updateAlertStatus(selectedAlert.id, "Resolved");
+    if (allClearError || isResolving) return;
+    setIsResolving(true);
+    const result = await updateAlertStatus(selectedAlert.id, "Resolved", { allClearMessage: allClearText });
+    setIsResolving(false);
     setShowResolveConfirm(false);
 
     if (result && result.error) {
@@ -369,15 +396,6 @@ export default function CrisisAdminPage() {
     setShowToast(true);
   };
 
-  const getAlertIcon = (type) => {
-    switch (type) {
-      case "Weather": return <Cloud size={20} />;
-      case "Health": return <Heart size={20} />;
-      case "Security": return <Shield size={20} />;
-      default: return <Info size={20} />;
-    }
-  };
-
   const getSeverityStyles = (severity) => getSeverityOutline(severity);
 
   const filteredAlerts = useMemo(() => {
@@ -404,17 +422,9 @@ export default function CrisisAdminPage() {
               <h2 className="text-2xl font-black uppercase tracking-tighter text-zinc-900 dark:text-white leading-none">Alert Summary</h2>
               <button onClick={() => setIsViewModalOpen(false)} className="p-2 hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded-full transition-colors"><X size={20}/></button>
             </div>
-            <div className="grid shrink-0 grid-cols-2 gap-2 border-b border-zinc-100 px-8 py-3">
-              <button type="button" onClick={() => { setIsViewModalOpen(false); handleEditClick(selectedAlert); }} className="py-3 rounded-2xl border border-amber-200 text-amber-700 font-black uppercase text-[10px] tracking-widest hover:bg-amber-50">Edit</button>
-              {selectedAlert.status === "Active" ? (
-                <button type="button" onClick={() => { setIsViewModalOpen(false); handleResolveClick(selectedAlert); }} className="py-3 rounded-2xl border border-green-200 text-green-700 font-black uppercase text-[10px] tracking-widest hover:bg-green-50">Resolve</button>
-              ) : (
-                <span />
-              )}
-              <button type="button" onClick={() => { setIsViewModalOpen(false); handleDelete(selectedAlert.id); }} className="py-3 rounded-2xl border border-red-200 text-red-600 font-black uppercase text-[10px] tracking-widest hover:bg-red-50">Delete</button>
-              <button type="button" onClick={() => setIsViewModalOpen(false)} className="py-3 bg-zinc-900 dark:bg-zinc-100 text-white dark:text-black rounded-2xl font-black uppercase text-[10px] tracking-widest hover:opacity-90">Close</button>
-            </div>
             <div className="min-h-0 flex-1 space-y-5 overflow-y-auto px-8 py-6">
+              {selectedAlert.checkin_requested ? <AlertCheckinSummary alertId={selectedAlert.id} /> : null}
+              <AlertDeliveryReport alertId={selectedAlert.id} />
               <div className="p-4 bg-zinc-50 dark:bg-zinc-900 rounded-2xl border border-zinc-100 dark:border-white/5">
                 <p className="text-[10px] font-black uppercase text-zinc-400 tracking-widest mb-1">Title</p>
                 <p className="font-bold text-lg uppercase">{selectedAlert.title}</p>
@@ -429,7 +439,7 @@ export default function CrisisAdminPage() {
               </div>
               <div className="p-4 bg-zinc-50 dark:bg-zinc-900 rounded-2xl border border-zinc-100 dark:border-white/5">
                 <p className="text-[10px] font-black uppercase text-zinc-400 tracking-widest mb-1">Message</p>
-                <p className="text-sm font-medium leading-relaxed italic">"{selectedAlert.message}"</p>
+                <p className="text-sm font-medium leading-relaxed italic">&ldquo;{selectedAlert.message}&rdquo;</p>
               </div>
               <div className="space-y-1">
                 <p className="text-[10px] font-black uppercase text-zinc-400 tracking-widest ml-1 mb-1">Broadcast Channels</p>
@@ -446,6 +456,17 @@ export default function CrisisAdminPage() {
                 <MapPin size={16}/> {selectedAlert.location}
               </div>
             </div>
+            {/* Actions stay pinned to the bottom while the form scrolls. */}
+            <div className="grid shrink-0 grid-cols-2 gap-2 border-t border-zinc-100 px-8 py-3">
+              <button type="button" onClick={() => { setIsViewModalOpen(false); handleEditClick(selectedAlert); }} className="py-3 rounded-2xl border border-amber-200 text-amber-700 font-black uppercase text-[10px] tracking-widest hover:bg-amber-50">Edit</button>
+              {selectedAlert.status === "Active" ? (
+                <button type="button" onClick={() => { setIsViewModalOpen(false); handleResolveClick(selectedAlert); }} className="py-3 rounded-2xl border border-green-200 text-green-700 font-black uppercase text-[10px] tracking-widest hover:bg-green-50">Resolve</button>
+              ) : (
+                <span />
+              )}
+              <button type="button" onClick={() => { setIsViewModalOpen(false); handleDelete(selectedAlert.id); }} className="py-3 rounded-2xl border border-red-200 text-red-600 font-black uppercase text-[10px] tracking-widest hover:bg-red-50">Delete</button>
+              <button type="button" onClick={() => setIsViewModalOpen(false)} className="py-3 bg-zinc-900 dark:bg-zinc-100 text-white dark:text-black rounded-2xl font-black uppercase text-[10px] tracking-widest hover:opacity-90">Close</button>
+            </div>
           </div>
         </div>
       )}
@@ -457,10 +478,6 @@ export default function CrisisAdminPage() {
             <div className="flex shrink-0 items-center justify-between border-b border-zinc-100 px-8 py-6">
               <h2 className="text-2xl font-black uppercase tracking-tighter">Edit Broadcast Details</h2>
               <button onClick={() => setIsEditModalOpen(false)}><X size={24}/></button>
-            </div>
-            <div className="flex shrink-0 gap-3 border-b border-zinc-100 px-8 py-3">
-              <button type="button" onClick={() => setIsEditModalOpen(false)} className="flex-1 py-4 bg-zinc-100 dark:bg-zinc-800 text-zinc-500 rounded-2xl font-black uppercase text-xs">Cancel</button>
-              <button type="submit" form="edit-broadcast-form" className="flex-1 py-4 bg-blue-600 text-white rounded-2xl font-black uppercase text-xs shadow-lg shadow-blue-100">Update Entry</button>
             </div>
             <form id="edit-broadcast-form" onSubmit={onUpdateSubmit} className="min-h-0 flex-1 space-y-4 overflow-y-auto px-8 py-5">
               <input required className="w-full p-4 bg-zinc-50 dark:bg-zinc-900 border border-zinc-100 dark:border-white/5 rounded-2xl font-bold text-sm outline-none focus:ring-2 focus:ring-blue-500" value={formData.title} onChange={e => { const title = e.target.value; setFormData({...formData, title, rewards_eligible: formData.rewards_eligible && isAlertEligibleForReadingPoints({ ...formData, title })}); }} placeholder="Title" />
@@ -480,6 +497,29 @@ export default function CrisisAdminPage() {
                   </button>
                 ))}
               </div>
+              <AlertTargetSelect
+                value={formData.target_scope}
+                onChange={(target_scope) => setFormData({ ...formData, target_scope })}
+                radiusKm={formData.target_radius_km}
+                onRadiusChange={(target_radius_km) => setFormData({ ...formData, target_radius_km })}
+                severity={formData.severity}
+                latitude={formData.latitude}
+                longitude={formData.longitude}
+                location={formData.location}
+                title={formData.title}
+              />
+              <label className="flex items-start gap-3 rounded-xl border border-blue-100 bg-blue-50/50 p-3 text-xs">
+                <input
+                  type="checkbox"
+                  className="mt-0.5 h-4 w-4"
+                  checked={formData.checkin_requested === true}
+                  onChange={(event) => setFormData({ ...formData, checkin_requested: event.target.checked })}
+                />
+                <span>
+                  <span className="block font-black text-zinc-900">Ask tourists if they are safe</span>
+                  <span className="block font-medium text-zinc-600">Tourists can tap I&apos;m safe, I need help or Evacuated, and guides take a headcount. Recommended for High and Critical alerts.</span>
+                </span>
+              </label>
               <label className={`flex items-start gap-3 p-4 rounded-2xl border ${
                 formData.rewards_eligible ? "bg-blue-50 border-blue-200" : "bg-zinc-50 border-zinc-200"
               }`}>
@@ -515,6 +555,11 @@ export default function CrisisAdminPage() {
                 placeholder="Instructions"
               />
             </form>
+            {/* Actions stay pinned to the bottom while the form scrolls. */}
+            <div className="flex shrink-0 gap-3 border-t border-zinc-100 px-8 py-3">
+              <button type="button" onClick={() => setIsEditModalOpen(false)} className="flex-1 py-4 bg-zinc-100 dark:bg-zinc-800 text-zinc-500 rounded-2xl font-black uppercase text-xs">Cancel</button>
+              <button type="submit" form="edit-broadcast-form" className="flex-1 py-4 bg-blue-600 text-white rounded-2xl font-black uppercase text-xs shadow-lg shadow-blue-100">Update Entry</button>
+            </div>
           </div>
         </div>
       )}
@@ -526,11 +571,6 @@ export default function CrisisAdminPage() {
               <div className="flex shrink-0 items-center justify-between border-b border-zinc-100 px-8 py-6 leading-none">
                  <h2 className="text-2xl font-black tracking-tight uppercase text-zinc-900 dark:text-white">Emergency Broadcast</h2>
                  <button onClick={() => setShowCreateModal(false)} className="p-2 hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded-full transition-colors"><X size={24}/></button>
-              </div>
-              <div className="shrink-0 border-b border-zinc-100 px-8 py-3">
-                <button type="submit" form="create-broadcast-form" disabled={isPublishing} className={`w-full py-4 ${adminShell.btnDanger} !text-sm !py-4 disabled:opacity-50`}>
-                  {isPublishing ? "Broadcasting..." : (<><AlertTriangle size={20}/> Broadcast Alert Now</>)}
-                </button>
               </div>
               <div className="min-h-0 flex-1 overflow-y-auto px-8 py-5">
               <div className="leaflet-modal-map-shell h-[180px] rounded-2xl overflow-hidden border border-gray-100 dark:border-white/10 shadow-inner relative z-0 mb-4">
@@ -569,6 +609,29 @@ export default function CrisisAdminPage() {
                       </button>
                     ))}
                   </div>
+                  <AlertTargetSelect
+                    value={formData.target_scope}
+                    onChange={(target_scope) => setFormData({ ...formData, target_scope })}
+                    radiusKm={formData.target_radius_km}
+                    onRadiusChange={(target_radius_km) => setFormData({ ...formData, target_radius_km })}
+                    severity={formData.severity}
+                    latitude={formData.latitude}
+                    longitude={formData.longitude}
+                    location={formData.location}
+                    title={formData.title}
+                  />
+                  <label className="flex items-start gap-3 rounded-xl border border-blue-100 bg-blue-50/50 p-3 text-xs">
+                    <input
+                      type="checkbox"
+                      className="mt-0.5 h-4 w-4"
+                      checked={formData.checkin_requested === true}
+                      onChange={(event) => setFormData({ ...formData, checkin_requested: event.target.checked })}
+                    />
+                    <span>
+                      <span className="block font-black text-zinc-900">Ask tourists if they are safe</span>
+                      <span className="block font-medium text-zinc-600">Tourists can tap I&apos;m safe, I need help or Evacuated, and guides take a headcount. Recommended for High and Critical alerts.</span>
+                    </span>
+                  </label>
                   {formData.channels.email && (
                     <p className="text-[10px] text-blue-700 font-medium -mt-2 mb-1">
                       Email reaches all registered tourists with an email on file (see Admin → Settings → Notification Audience).
@@ -614,6 +677,12 @@ export default function CrisisAdminPage() {
                     onChange={(e) => { const message = e.target.value; setFormData({ ...formData, message, rewards_eligible: formData.rewards_eligible && isAlertEligibleForReadingPoints({ ...formData, message }) }); }}
                   />
               </form>
+              </div>
+              {/* Actions stay pinned to the bottom while the form scrolls. */}
+              <div className="shrink-0 border-t border-zinc-100 px-8 py-3">
+                <button type="submit" form="create-broadcast-form" disabled={isPublishing} className={`w-full py-4 ${adminShell.btnDanger} !text-sm !py-4 disabled:opacity-50`}>
+                  {isPublishing ? "Broadcasting..." : (<><AlertTriangle size={20}/> Broadcast Alert Now</>)}
+                </button>
               </div>
            </div>
         </div>
@@ -684,6 +753,8 @@ export default function CrisisAdminPage() {
               </div>
             </AdminDashboardKpiSection>
 
+            <MissingPersonsPanel />
+
             <AdminFilterBar
               compact
               title="Live command filters"
@@ -732,6 +803,7 @@ export default function CrisisAdminPage() {
                             ? `${alert.title} · ${alert.location}`
                             : alert.title || alert.location || "—",
                           type: alert.type || "General",
+                          typeIcon: <AlertTypeIcon type={alert.type} size={12} />,
                           when: alert.created_at ? new Date(alert.created_at).toLocaleString() : "",
                           actions: [
                             { label: "View", onClick: () => handleViewClick(alert) },
@@ -838,14 +910,31 @@ export default function CrisisAdminPage() {
 
       <ConfirmDialog
         open={showResolveConfirm && !!selectedAlert}
-        title="Mark as resolved?"
+        title="Send the All Clear?"
         description={resolvedBroadcastConfirmationText(notificationAudience, selectedAlert?.channels)}
-        confirmLabel="Yes, resolve"
+        confirmLabel="Resolve & send All Clear"
         cancelLabel="Not yet"
         variant="success"
+        loading={isResolving}
+        confirmDisabled={Boolean(allClearError)}
         onConfirm={confirmResolve}
-        onCancel={() => setShowResolveConfirm(false)}
-      />
+        onCancel={() => !isResolving && setShowResolveConfirm(false)}
+      >
+        <label htmlFor="all-clear-message" className="block text-[10px] font-black uppercase tracking-widest text-zinc-500 mb-1">
+          All Clear message for tourists (required)
+        </label>
+        <textarea
+          id="all-clear-message"
+          rows={4}
+          maxLength={ALL_CLEAR_MAX_LENGTH}
+          value={allClearText}
+          onChange={(event) => setAllClearText(event.target.value)}
+          className="w-full rounded-xl border border-zinc-200 bg-zinc-50 p-3 text-sm font-medium text-zinc-900 outline-none focus:ring-2 focus:ring-green-500"
+        />
+        <p className={`mt-1 text-[11px] font-medium ${allClearError ? "text-red-600" : "text-zinc-500"}`}>
+          {allClearError || "Say it is safe and anything tourists still need to do. This is sent with the resolved notice and shown on the alert."}
+        </p>
+      </ConfirmDialog>
 
       <ConfirmDialog
         open={showConfirmModal}

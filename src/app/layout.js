@@ -1,5 +1,8 @@
 import { Geist, Geist_Mono } from "next/font/google";
 import { GlobalEmergencyBanner } from "@/app/components/GlobalEmergencyBanner";
+import { OfflineStatusBanner } from "@/app/components/OfflineStatusBanner";
+import { MissingSelfBanner } from "@/app/components/MissingSelfBanner";
+import { LocationConsentPrompt } from "@/app/components/tourist/LocationConsentPrompt";
 import { AuthSessionSync } from "@/app/components/AuthSessionSync";
 import { PasswordRecoveryRedirect } from "@/app/components/PasswordRecoveryRedirect";
 import { AssignmentRequestHandler } from "@/app/components/tour/AssignmentRequestHandler";
@@ -64,6 +67,9 @@ export default function RootLayout({ children }) {
         <NotificationArrivalListener />
         <PushEnablePrompt />
         <RewardEarnedToast />
+        <OfflineStatusBanner />
+        <MissingSelfBanner />
+        <LocationConsentPrompt />
         <TouristStartGuide />
         <InstalledTouristSetup />
         <ConfirmDialogProvider>

@@ -4,7 +4,7 @@ import { sendEmail, getEmailDiagnostics } from "@/lib/emailService";
 import { buildPasswordResetEmail } from "@/lib/passwordResetEmail";
 import { getSiteUrl } from "@/lib/siteUrl";
 import { resolvePasswordResetLink } from "@/lib/passwordResetLink";
-import { API_RATE_LIMITS, enforceRateLimit } from "@/lib/apiRateLimit";
+import { API_RATE_LIMITS, enforceSharedRateLimit } from "@/lib/apiRateLimit";
 
 const GENERIC_SUCCESS = {
   success: true,
@@ -13,7 +13,7 @@ const GENERIC_SUCCESS = {
 };
 
 export async function POST(request) {
-  const limited = enforceRateLimit(request, { name: "forgot-password", ...API_RATE_LIMITS.forgotPassword });
+  const limited = await enforceSharedRateLimit(request, { name: "forgot-password", ...API_RATE_LIMITS.forgotPassword });
   if (limited) return limited;
 
   try {
@@ -27,7 +27,7 @@ export async function POST(request) {
       return NextResponse.json({ error: "Please enter a valid email address." }, { status: 400 });
     }
 
-    const emailLimited = enforceRateLimit(request, {
+    const emailLimited = await enforceSharedRateLimit(request, {
       name: "forgot-password-email",
       limit: 3,
       windowMs: 60 * 60_000,

@@ -61,7 +61,7 @@ export function PublicCategorizedCardList({
   const [catalogModalOpen, setCatalogModalOpen] = useState(false);
   const filtersRef = useRef(null);
 
-  const safeItems = items ?? [];
+  const safeItems = useMemo(() => items ?? [], [items]);
   const effectiveLimit = limit ?? PUBLIC_CARD_LIST_LIMIT;
 
   const availableCategories = useMemo(() => {

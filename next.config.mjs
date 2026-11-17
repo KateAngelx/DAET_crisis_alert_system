@@ -8,12 +8,28 @@ const withPWA = withPWAInit({
   dest: "public",
   disable: process.env.NODE_ENV === "development",
   cacheOnFrontEndNav: true,
+  // Keep pages people already visited so they open without internet.
+  aggressiveFrontEndNavCaching: true,
   reloadOnOnline: true,
+  // When a page cannot load offline, show the emergency page (hotlines + saved alerts).
+  fallbacks: { document: "/~offline" },
 });
+
+// Report photos are stored in Supabase Storage; let next/image serve smaller, optimised copies.
+const supabaseHost = (() => {
+  try {
+    return new URL(process.env.NEXT_PUBLIC_SUPABASE_URL).hostname;
+  } catch {
+    return "*.supabase.co";
+  }
+})();
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   serverExternalPackages: ["nodemailer", "web-push"],
+  images: {
+    remotePatterns: [{ protocol: "https", hostname: supabaseHost, pathname: "/storage/v1/object/public/**" }],
+  },
   turbopack: {
     root: __dirname,
   },

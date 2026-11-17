@@ -2,7 +2,7 @@
 
 import React, { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
-import { User, Mail, Phone, Globe, Shield, Loader2, CheckCircle, Trash2, AlertTriangle, Coins, History, ChevronLeft, ChevronRight, BookOpen } from "lucide-react";
+import { User, Mail, Phone, Globe, Shield, ShieldAlert, Loader2, CheckCircle, Trash2, AlertTriangle, Coins, History, ChevronLeft, ChevronRight, BookOpen } from "lucide-react";
 import { portalShell } from "@/lib/designSystem";
 import { useAuthStore } from "@/app/store/crisisStore";
 import { InfoPageHero, PublicPageShell, PublicPageContent, PublicPanel } from "@/app/components/InfoPageHero";
@@ -17,6 +17,8 @@ import { getActiveSession } from "@/lib/authSession";
 import { useInstalledApp } from "@/lib/useInstalledApp";
 import { parseApiJson } from "@/lib/parseApiJson";
 import { usePublicVisibility } from "@/lib/usePublicVisibility";
+import { VisitDatesPanel } from "@/app/components/tourist/VisitDatesPanel";
+import { LocationSharingPanel } from "@/app/components/tourist/LocationSharingPanel";
 
 const POINTS_HISTORY_PAGE_SIZE = 20;
 
@@ -447,6 +449,7 @@ export default function ProfilePage() {
           >
           {user?.role !== "admin" ? (
             <PublicPanel title="Communication preferences" subtitle="Email, SMS, and in-app updates">
+              <p className="mb-4 flex items-start gap-2 rounded-2xl border border-red-200 bg-red-50 p-3 text-sm font-bold text-red-800"><ShieldAlert size={16} className="mt-0.5 shrink-0" /> Critical emergency alerts always reach you on every channel the Tourism Office uses, even if you turn that channel off here.</p>
               <p className="text-sm text-zinc-500 font-medium mb-4">
                 These preferences control your account updates. For crisis and area-hazard broadcasts, the Tourism Office selects channels for each alert; broadcast emails may be sent to eligible accounts with an email on file even when your Email preference is off. SMS and in-app broadcasts also require the matching preference to be on.
                 {user?.notification_channels && !user.notification_channels.sms ? (
@@ -474,8 +477,9 @@ export default function ProfilePage() {
           ) : (
             <PublicPanel section="channels" title="Communication preferences" bodyClassName="bg-zinc-50/50">
               <p className="text-sm text-zinc-600 font-medium">
-                Administrator accounts manage alerts in Command Center and do not receive tourist/guide SMS or email broadcasts.
+                Administrator accounts manage alerts in Command Center. Routine tourist and guide broadcasts are not sent to administrators.
               </p>
+              <p className="mt-3 flex items-start gap-2 text-sm font-bold text-red-800"><ShieldAlert size={16} className="mt-0.5 shrink-0" /> Critical emergency alerts are sent to administrators too, by in-app, SMS and email.</p>
             </PublicPanel>
           )}
 
@@ -489,10 +493,16 @@ export default function ProfilePage() {
 
           <ProfileFold
             title="Account"
-            text="Name, phone, and nationality."
+            text={user?.role === "tourist" ? "Name, phone, nationality, visit dates, and location sharing." : "Name, phone, and nationality."}
             open={openPanel === "account"}
             onToggle={() => setOpenPanel((current) => (current === "account" ? null : "account"))}
           >
+            {user?.role === "tourist" ? (
+              <PublicPanel title="Your visit to Daet" subtitle="Helps the Tourism Office alert visitors who are here now">
+                <VisitDatesPanel userId={user?.id} />
+                <LocationSharingPanel userId={user?.id} />
+              </PublicPanel>
+            ) : null}
             <PublicPanel title="Account details">
               {message && (
                 <div className={`mb-6 flex items-start gap-3 rounded-2xl p-4 text-sm font-medium ${
@@ -586,7 +596,7 @@ export default function ProfilePage() {
                 <AlertTriangle size={18} className="text-red-600 shrink-0 mt-0.5" />
                 <span>
                 If you no longer want alerts from CONNECT-DAET, you can permanently delete your account.
-                After 30 days without signing in, SMS may be paused automatically. Signing in does not turn it back on; re-enable SMS in Communication Preferences if you want text alerts.
+                After 30 days without signing in, SMS may be paused automatically. Signing in does not turn it back on; re-enable SMS in Communication Preferences if you want text alerts. Critical emergency alerts are still sent by SMS while it is paused, unless you turned SMS off yourself.
                 </span>
               </p>
               {deleteError && (

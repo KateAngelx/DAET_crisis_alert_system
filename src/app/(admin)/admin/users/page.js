@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import {
   User,
@@ -105,15 +105,6 @@ function CreateUserModal({ open, onClose, onCreated }) {
           </button>
         </div>
         <form onSubmit={handleSubmit} className="flex min-h-0 flex-1 flex-col">
-          <div className="shrink-0 border-b border-zinc-100 px-6 py-3">
-            <button
-              type="submit"
-              disabled={saving}
-              className="w-full py-3 bg-blue-600 text-white rounded-xl font-black uppercase text-xs tracking-widest disabled:opacity-50"
-            >
-              {saving ? "Creating..." : "Create User"}
-            </button>
-          </div>
           <div className="min-h-0 flex-1 space-y-3 overflow-y-auto p-6">
           <input
             required
@@ -166,6 +157,16 @@ function CreateUserModal({ open, onClose, onCreated }) {
           </div>
           {error && <p className="text-sm text-red-600 font-medium">{error}</p>}
           </div>
+          {/* Actions stay pinned to the bottom while the form scrolls. */}
+          <div className="shrink-0 border-t border-zinc-100 px-6 py-3">
+            <button
+              type="submit"
+              disabled={saving}
+              className="w-full py-3 bg-blue-600 text-white rounded-xl font-black uppercase text-xs tracking-widest disabled:opacity-50"
+            >
+              {saving ? "Creating..." : "Create User"}
+            </button>
+          </div>
         </form>
       </Card>
     </div>
@@ -187,9 +188,12 @@ function UserAdminCard({ user, currentUserId, onChanged }) {
   const inactiveDays = getInactiveDays(user);
   const isInactive = inactiveDays !== null && inactiveDays >= INACTIVE_THRESHOLD_DAYS;
 
-  useEffect(() => {
+  // Show the saved role again whenever the user record changes.
+  const [roleSource, setRoleSource] = useState(user);
+  if (roleSource !== user) {
+    setRoleSource(user);
     setRole(user.user_type || "tourist");
-  }, [user]);
+  }
 
   const handleSave = async () => {
     const ok = await confirm({
@@ -318,14 +322,14 @@ export default function AdminUsersPage() {
   const { user: currentUser } = useAuthStore();
   const [showCreate, setShowCreate] = useState(false);
 
-  const refresh = () => {
+  const refresh = useCallback(() => {
     fetchAllUsers();
     fetchUserStats();
-  };
+  }, [fetchAllUsers, fetchUserStats]);
 
   useEffect(() => {
     refresh();
-  }, [fetchAllUsers, fetchUserStats]);
+  }, [refresh]);
 
   const roleCounts = useMemo(() => {
     return allUsers.reduce((acc, u) => {

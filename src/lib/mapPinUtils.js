@@ -68,16 +68,24 @@ export function getPinColor(categoryId) {
   return getLegendItem(categoryId).color;
 }
 
-export function createCategoryPinIcon(categoryId) {
+/**
+ * A map pin in the category color. `glyphSvg` (white icon markup from the shared type icons)
+ * is drawn inside the pin head so the type is visible at a glance.
+ */
+export function createCategoryPinIcon(categoryId, glyphSvg = "") {
   if (typeof window === "undefined") return undefined;
 
   const color = getPinColor(categoryId);
   const L = require("leaflet");
+  const glyph = glyphSvg
+    ? `<div style="position:absolute;top:6px;left:6px;width:12px;height:12px;display:flex;align-items:center;justify-content:center;color:#fff;line-height:0">${glyphSvg}</div>`
+    : "";
 
   return L.divIcon({
     className: "map-category-pin",
     html: `<div aria-hidden="true" style="width:24px;height:32px;position:relative">
       <div style="background:${color};width:20px;height:20px;border-radius:50% 50% 50% 0;transform:rotate(-45deg);border:2.5px solid #fff;box-shadow:0 2px 8px rgba(0,0,0,.35);position:absolute;top:2px;left:2px"></div>
+      ${glyph}
       <div style="background:${color};width:8px;height:8px;border-radius:50%;position:absolute;bottom:0;left:8px;opacity:.35"></div>
     </div>`,
     iconSize: [24, 32],

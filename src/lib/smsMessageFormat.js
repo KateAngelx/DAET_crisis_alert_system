@@ -23,6 +23,7 @@ export function formatCrisisAlertSms(alert, { resolved = false } = {}) {
       labeledLine("CATEGORY", alert.type),
       labeledLine("LOCATION", location),
       "STATUS: This alert is no longer active.",
+      labeledLine("ALL CLEAR", alert.all_clear_message),
     ]);
   }
 
@@ -33,6 +34,7 @@ export function formatCrisisAlertSms(alert, { resolved = false } = {}) {
     labeledLine("SEVERITY", alert.severity),
     labeledLine("LOCATION", location),
     labeledLine("DETAILS", alert.message),
+    alert.checkin_requested ? "PLEASE REPLY: Open CONNECT-DAET and tap I'm safe or I need help." : "",
   ]);
 }
 

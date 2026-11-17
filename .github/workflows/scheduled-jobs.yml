@@ -1,0 +1,69 @@
+# Runs the CONNECT-DAET jobs that need to run more often than once a day.
+# Vercel's Hobby plan only allows daily cron jobs (see vercel.json for those).
+#
+# Setup (GitHub repo → Settings → Secrets and variables → Actions):
+#   Secret   CRON_SECRET = the same CRON_SECRET set in Vercel
+#   Variable APP_URL     = the production URL, e.g. https://your-app.vercel.app (no trailing slash)
+#
+# GitHub may start scheduled runs several minutes late; the jobs are written to handle that.
+name: Scheduled jobs
+
+on:
+  schedule:
+    - cron: "*/5 * * * *" # queued SMS/email, tour end reminders, escalations
+    - cron: "17 * * * *" # expire advisories (hourly)
+  workflow_dispatch:
+
+permissions: {}
+
+concurrency:
+  group: scheduled-jobs-${{ github.event.schedule || 'manual' }}
+  cancel-in-progress: false
+
+jobs:
+  run:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    env:
+      APP_URL: ${{ vars.APP_URL }}
+      CRON_SECRET: ${{ secrets.CRON_SECRET }}
+    steps:
+      - name: Check configuration
+        id: config
+        run: |
+          if [ -z "$APP_URL" ] || [ -z "$CRON_SECRET" ]; then
+            echo "::warning::APP_URL variable or CRON_SECRET secret is not set; skipping scheduled jobs."
+            echo "ready=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "ready=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Send queued SMS and email
+        if: steps.config.outputs.ready == 'true' && (github.event_name == 'workflow_dispatch' || github.event.schedule == '*/5 * * * *')
+        run: |
+          curl --silent --show-error --fail-with-body --max-time 90 \
+            -X POST "$APP_URL/api/notifications/process-queue" \
+            -H "Authorization: Bearer $CRON_SECRET" \
+            -H "Content-Type: application/json" \
+            -d '{}'
+
+      - name: Tour end reminders
+        if: steps.config.outputs.ready == 'true' && (github.event_name == 'workflow_dispatch' || github.event.schedule == '*/5 * * * *')
+        run: |
+          curl --silent --show-error --fail-with-body --max-time 60 \
+            -X POST "$APP_URL/api/cron/tour-end-reminders" \
+            -H "Authorization: Bearer $CRON_SECRET"
+
+      - name: Escalate unanswered urgent reports
+        if: steps.config.outputs.ready == 'true' && (github.event_name == 'workflow_dispatch' || github.event.schedule == '*/5 * * * *')
+        run: |
+          curl --silent --show-error --fail-with-body --max-time 90 \
+            -X POST "$APP_URL/api/cron/escalations" \
+            -H "Authorization: Bearer $CRON_SECRET"
+
+      - name: Expire advisories
+        if: steps.config.outputs.ready == 'true' && (github.event_name == 'workflow_dispatch' || github.event.schedule == '17 * * * *')
+        run: |
+          curl --silent --show-error --fail-with-body --max-time 60 \
+            -X POST "$APP_URL/api/cron/expire-advisories" \
+            -H "Authorization: Bearer $CRON_SECRET"

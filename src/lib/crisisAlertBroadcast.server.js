@@ -1,7 +1,6 @@
 import { channelsFromDb } from '@/lib/alertChannels';
 import { NOTIFICATION_CHANNELS, severityToPriority } from '@/lib/constants';
 import { processNotificationDeliveries } from '@/lib/notificationQueue.server';
-import { agentDebugLog } from '@/lib/agentDebugLog.server';
 import {
   crisisAlertEventKey,
   crisisAlertEventStatusError,
@@ -10,16 +9,21 @@ import {
   planCrisisRecipientNotification,
 } from '@/lib/crisisAlertBroadcastPolicy';
 import {
+  channelsForBroadcast,
   channelsFromProfile,
+  isCriticalSeverity,
   getBroadcastAlertChannels,
   hasProfileEmail,
 } from '@/lib/userNotificationChannels';
-import { audienceToUserTypes, isProfileInAudience } from '@/lib/notificationAudience';
+import { audienceForSeverity, audienceToUserTypes, isProfileInAudience } from '@/lib/notificationAudience';
 import { getSystemSettings } from '@/lib/systemSettings.server';
 import { formatCrisisAlertSms } from '@/lib/smsMessageFormat';
 import { normalizePhilippinePhone } from '@/lib/phoneUtils';
 import { isSmsSuspended } from '@/lib/userActivity';
 import { sendWebPushToSubscriptions } from '@/lib/webPush.server';
+import { normalizeTargetScope } from '@/lib/alertTargeting';
+import { CHECKIN_REQUEST_LINE } from '@/lib/alertCheckins';
+import { narrowRecipientsForAlert, TARGETING_PROFILE_COLUMNS } from '@/lib/alertAudience.server';
 
 async function loadExistingDeliveryKeys(admin, keys) {
   const found = new Set();
@@ -116,9 +120,10 @@ export async function broadcastCrisisAlertToTourists(admin, alertId, eventType =
     : isUpdate
       ? `${alert.severity} Crisis Alert Updated: ${alert.title}`
       : `${alert.severity} Crisis Alert: ${alert.title}`;
+  const allClear = String(alert.all_clear_message || '').trim();
   const message = isResolved
-    ? `This alert is resolved. ${alert.title} at ${alert.location} is no longer an active emergency.`
-    : `${alert.type} alert for ${alert.location}. ${alert.message}`;
+    ? allClear || `This alert is resolved. ${alert.title} at ${alert.location} is no longer an active emergency.`
+    : `${alert.type} alert for ${alert.location}. ${alert.message}${alert.checkin_requested ? ` ${CHECKIN_REQUEST_LINE}` : ''}`;
   const smsBody = formatCrisisAlertSms(alert, { resolved: isResolved });
   const notificationType = isResolved
     ? 'crisis_alert_resolved'
@@ -127,7 +132,8 @@ export async function broadcastCrisisAlertToTourists(admin, alertId, eventType =
       : 'crisis_alert';
 
   const settings = await getSystemSettings(admin);
-  const audience = settings.notification_audience;
+  // Critical alerts go to tourists, guides and administrators regardless of the audience setting.
+  const audience = audienceForSeverity(settings.notification_audience, alert.severity);
   const audienceTypes = audienceToUserTypes(audience);
 
   if (audienceTypes.length === 0) {
@@ -149,9 +155,15 @@ export async function broadcastCrisisAlertToTourists(admin, alertId, eventType =
 
   const existingNotificationByUser = new Map((existing || []).map((row) => [row.user_id, row.id]));
 
+  // Who the alert targets: everyone (default), tourists in Daet now, or near the alert's area.
+  const targetScope = normalizeTargetScope(alert.target_scope);
+  results.targetScope = targetScope;
+  const profileColumns = 'id, email, phone, user_type, notification_channels, sms_suspended_at, inactive_notice_sent_at'
+    + (targetScope === 'all' ? '' : TARGETING_PROFILE_COLUMNS);
+
   const { data: recipients, error: recipientError } = await admin
     .from('profiles')
-    .select('id, email, phone, user_type, notification_channels, sms_suspended_at, inactive_notice_sent_at')
+    .select(profileColumns)
     .in('user_type', audienceTypes)
     .eq('is_active', true);
 
@@ -160,7 +172,16 @@ export async function broadcastCrisisAlertToTourists(admin, alertId, eventType =
     return results;
   }
 
-  const toNotify = (recipients || []).filter((profile) => isProfileInAudience(profile, audience));
+  let toNotify = (recipients || []).filter((profile) => isProfileInAudience(profile, audience));
+
+  // Narrow tourists only; guides and administrators get the alert as before.
+  if (targetScope !== 'all') {
+    const narrowed = await narrowRecipientsForAlert(admin, toNotify, alert);
+    // On a targeting error everyone is kept: never silently drop people from a crisis alert.
+    if (narrowed.error) results.errors.push(narrowed.error);
+    toNotify = narrowed.profiles;
+    results.outsideTarget = narrowed.outsideTarget;
+  }
   results.skipped = (recipients || []).length - toNotify.length;
 
   const candidateKeys = toNotify.flatMap((profile) => [
@@ -178,10 +199,15 @@ export async function broadcastCrisisAlertToTourists(admin, alertId, eventType =
   }
 
   const deliveryRecords = [];
+  // Critical alerts reach everyone on every channel the alert uses, even channels people turned
+  // off in Profile and SMS paused for inactivity. Other severities follow each person's settings.
+  const isCritical = isCriticalSeverity(alert.severity);
 
   for (const profile of toNotify) {
     const isTourist = profile.user_type === 'tourist';
-    const userChannels = channelsFromProfile(profile);
+    const userChannels = isCritical
+      ? channelsForBroadcast(profile, alert.severity)
+      : channelsFromProfile(profile);
     const effective = getBroadcastAlertChannels(alertChannelFlags, userChannels);
     const sendEmail = effective.email && hasProfileEmail(profile);
     const normalizedPhone = normalizePhilippinePhone(profile.phone);
@@ -203,7 +229,7 @@ export async function broadcastCrisisAlertToTourists(admin, alertId, eventType =
 
     if (alertChannelFlags.sms && isTourist) {
       let skipReason = null;
-      if (isSmsSuspended(profile)) {
+      if (isSmsSuspended(profile) && !isCritical) {
         results.smsDiagnostics.touristSmsSuspended += 1;
         skipReason = 'sms_suspended';
       } else if (!profile.phone) {
@@ -310,14 +336,6 @@ export async function broadcastCrisisAlertToTourists(admin, alertId, eventType =
   }
 
   if (deliveryRecords.length === 0) {
-    agentDebugLog({
-      sessionId: '197cec',
-      location: 'crisisAlertBroadcast.server.js:noDeliveries',
-      message: 'No delivery records created',
-      hypothesisId: 'T-sms-skip',
-      runId: 'tourist-sms-v1',
-      data: { alertId, smsDiagnostics: results.smsDiagnostics, alertSmsChannel: alertChannelFlags.sms },
-    });
     return results;
   }
 
@@ -330,20 +348,6 @@ export async function broadcastCrisisAlertToTourists(admin, alertId, eventType =
 
   results.emailQueued = (deliveries || []).filter((d) => d.channel === 'email').length;
   results.smsQueued = (deliveries || []).filter((d) => d.channel === 'sms').length;
-
-  agentDebugLog({
-    sessionId: '197cec',
-    location: 'crisisAlertBroadcast.server.js:queue',
-    message: 'deliveries queued',
-    hypothesisId: 'T-sms-skip',
-    runId: 'tourist-sms-v1',
-    data: {
-      emailQueued: results.emailQueued,
-      smsQueued: results.smsQueued,
-      recipientCount: toNotify.length,
-      smsDiagnostics: results.smsDiagnostics,
-    },
-  });
 
   const processResult = await processNotificationDeliveries({
     deliveryIds: (deliveries || []).map((d) => d.id),
@@ -368,15 +372,6 @@ export async function broadcastCrisisAlertToTourists(admin, alertId, eventType =
     row.error = outcome.error || null;
     row.detectedNetwork = outcome.detectedNetwork || row.network;
   }
-
-  agentDebugLog({
-    sessionId: '197cec',
-    location: 'crisisAlertBroadcast.server.js:smsPerRecipient',
-    message: 'Per-tourist SMS breakdown',
-    hypothesisId: 'T-sms-mismatch',
-    runId: 'alert-vs-diagnose',
-    data: { alertId, smsPerRecipient: results.smsPerRecipient },
-  });
 
   if (processResult.message) {
     results.errors.push(`Delivery processing failed: ${processResult.message}`);

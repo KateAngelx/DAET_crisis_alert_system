@@ -1,28 +1,12 @@
 import { NextResponse } from "next/server";
 import { getSupabaseAdmin } from "@/lib/supabaseAdmin";
+import { requireCronSecret } from "@/lib/cronAuth.server";
 import { INACTIVE_THRESHOLD_DAYS, isInactiveOverThreshold } from "@/lib/userActivity";
 import { sendEmail } from "@/lib/emailService";
 
 const INACTIVE_NOTICE_TITLE = "Account inactive — SMS paused";
 const INACTIVE_NOTICE_BODY =
-  "You have not signed in to CONNECT-DAET for over 30 days. SMS alerts are paused. Sign in again and re-enable SMS in your profile if you want to receive text messages. You can also delete your account from your profile page if you no longer need the service.";
-
-function requireCronSecret(request) {
-  const secret = process.env.CRON_SECRET || process.env.NOTIFICATION_INTERNAL_SECRET;
-  if (!secret) {
-    return {
-      ok: false,
-      response: NextResponse.json({ error: "CRON_SECRET is not configured" }, { status: 503 }),
-    };
-  }
-  const header =
-    request.headers.get("x-cron-secret") ||
-    request.headers.get("authorization")?.replace("Bearer ", "");
-  if (header !== secret) {
-    return { ok: false, response: NextResponse.json({ error: "Unauthorized" }, { status: 401 }) };
-  }
-  return { ok: true };
-}
+  "You have not signed in to CONNECT-DAET for over 30 days. SMS alerts are paused, except Critical emergency alerts. Sign in again and re-enable SMS in your profile if you want to receive text messages. You can also delete your account from your profile page if you no longer need the service.";
 
 /** Suspend SMS for accounts inactive 30+ days; notify in-app and by email when configured */
 export async function POST(request) {

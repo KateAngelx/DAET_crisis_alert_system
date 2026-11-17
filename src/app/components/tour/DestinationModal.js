@@ -11,6 +11,8 @@ import {
   formatTourEndDateTime,
   getRelevantAlertsForGroup,
   getRelevantRouteAdvisoriesForGroup,
+  todayInPhilippines,
+  tourScheduleError,
 } from "@/lib/tourGroupRoute";
 import {
   buildRouteCatalog,
@@ -53,24 +55,27 @@ export function DestinationModal({
 
   const catalog = useMemo(() => buildRouteCatalog(routeAdvisories), [routeAdvisories]);
 
-  useEffect(() => {
-    if (open && group) {
-      setForm({
-        starting_location: group.starting_location || "",
-        destination: group.destination || "",
-        trip_info: group.trip_info || "",
-        start_date: group.start_date || "",
-        end_date: group.end_date || "",
-        end_time: group.end_time?.slice(0, 5) || "",
-        meeting_location: group.meeting_location || "",
-        estimated_travel_time: group.estimated_travel_time || "",
-        destination_notes: group.destination_notes || "",
-      });
-      setEditing(false);
-      setError(null);
-      setSelectedRoute(null);
-    }
-  }, [open, group, members.length]);
+  // Load the group into the form each time the window opens (or the group or members change).
+  const formKey = open && group ? [group.id, group.updated_at || "", members.length].join("|") : null;
+  const [loadedFormKey, setLoadedFormKey] = useState(null);
+  if (formKey && loadedFormKey !== formKey) {
+    setLoadedFormKey(formKey);
+    setForm({
+      starting_location: group.starting_location || "",
+      destination: group.destination || "",
+      trip_info: group.trip_info || "",
+      start_date: group.start_date || "",
+      end_date: group.end_date || "",
+      end_time: group.end_time?.slice(0, 5) || "",
+      meeting_location: group.meeting_location || "",
+      estimated_travel_time: group.estimated_travel_time || "",
+      destination_notes: group.destination_notes || "",
+    });
+    setEditing(false);
+    setError(null);
+    setSelectedRoute(null);
+  }
+  if (!formKey && loadedFormKey !== null) setLoadedFormKey(null); // closed: reload on next open
 
   const relevantAlerts = useMemo(
     () => getRelevantAlertsForGroup(alerts, group),
@@ -89,12 +94,9 @@ export function DestinationModal({
   const handleSave = async (e) => {
     e.preventDefault();
     if (!onSave) return;
-    if (form.start_date && form.end_date && form.end_date < form.start_date) {
-      setError("The end date must be on or after the tour date.");
-      return;
-    }
-    if (form.end_time && !form.end_date) {
-      setError("Choose an end date before setting an end time.");
+    const scheduleError = tourScheduleError(form, { originalStartDate: group.start_date || null });
+    if (scheduleError) {
+      setError(scheduleError);
       return;
     }
     setSaving(true);
@@ -195,7 +197,7 @@ export function DestinationModal({
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div className="space-y-1">
                   <label className="text-[10px] font-black uppercase text-zinc-400">Tour Date</label>
-                  <input type="date" value={form.start_date} onChange={(e) => setForm({ ...form, start_date: e.target.value })} className="w-full p-3 bg-zinc-50 border border-zinc-200 rounded-xl text-sm font-bold" />
+                  <input type="date" min={group.start_date && group.start_date < todayInPhilippines() ? group.start_date : todayInPhilippines()} value={form.start_date} onChange={(e) => setForm({ ...form, start_date: e.target.value })} className="w-full p-3 bg-zinc-50 border border-zinc-200 rounded-xl text-sm font-bold" />
                 </div>
                 <div className="space-y-1">
                   <label className="text-[10px] font-black uppercase text-zinc-400">End Date (optional)</label>

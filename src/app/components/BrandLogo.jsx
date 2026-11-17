@@ -1,8 +1,11 @@
+import Image from "next/image";
+
 const LOGO_SRC = "/icons/icons.svg";
 
 export function BrandLogo({ size = 32, className = "" }) {
   return (
-    <img
+    <Image
+      unoptimized
       src={LOGO_SRC}
       alt="Daet Municipal Tourism Office"
       width={size}

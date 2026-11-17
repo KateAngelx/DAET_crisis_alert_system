@@ -7,6 +7,7 @@ import { fetchWithFreshSession, getActiveSession } from '@/lib/authSession';
 import { DEFAULT_USER_NOTIFICATION_CHANNELS } from '@/lib/userNotificationChannels';
 import { parseApiJson } from '@/lib/parseApiJson';
 import { sortRecordsNewestFirst } from '@/lib/recordSorting';
+import { isConnectionError, loadOfflineSnapshot, saveOfflineSnapshot } from '@/lib/offlineSnapshot';
 
 export const useCrisisStore = create((set, get) => ({
   alerts: [], 
@@ -16,6 +17,7 @@ export const useCrisisStore = create((set, get) => ({
   loading: false,
   error: null,
   isSubscribed: false, // Flag para i-track ang realtime status
+  offlineSavedAt: null, // set when alerts shown are the copy saved on this phone
 
   fetchAlerts: async () => {
     // 1. Initial Data Fetch
@@ -33,15 +35,21 @@ export const useCrisisStore = create((set, get) => ({
           (data || []).map(normalizeAlert),
           ['published_at', 'created_at']
         );
-        set({ alerts: normalizedAlerts, loading: false, error: null });
+        set({ alerts: normalizedAlerts, loading: false, error: null, offlineSavedAt: null });
+        saveOfflineSnapshot('alerts', normalizedAlerts);
       } else {
         console.error("Fetch Error:", error.message);
-        set({ loading: false, error: error.message });
+        const saved = isConnectionError(error) ? loadOfflineSnapshot('alerts') : null;
+        if (saved) set({ alerts: saved.items, loading: false, error: null, offlineSavedAt: saved.savedAt });
+        else set({ loading: false, error: error.message });
       }
     } catch (err) {
       const message = err?.message || 'Could not load alerts.';
       console.error("Fetch Error:", message);
-      set({ loading: false, error: message });
+      // No connection: show the alerts saved on this phone instead of an error.
+      const saved = isConnectionError(err) ? loadOfflineSnapshot('alerts') : null;
+      if (saved) set({ alerts: saved.items, loading: false, error: null, offlineSavedAt: saved.savedAt });
+      else set({ loading: false, error: message });
       return;
     }
 
@@ -274,6 +282,11 @@ export const useCrisisStore = create((set, get) => ({
         rewards_eligible: alertData.rewards_eligible === true,
         channels: channelFlagsToDb(alertData.channels ?? { email: true, sms: true, app: true })
       };
+      if (alertData.checkin_requested) insertPayload.checkin_requested = true;
+      if (alertData.target_scope && alertData.target_scope !== 'all') {
+        insertPayload.target_scope = alertData.target_scope;
+        if (alertData.target_scope === 'radius') insertPayload.target_radius_km = Number(alertData.target_radius_km) || 3;
+      }
 
       if (alertData.latitude != null && alertData.longitude != null) {
         insertPayload.latitude = Number(alertData.latitude);
@@ -297,6 +310,17 @@ export const useCrisisStore = create((set, get) => ({
         ({ data, error } = await supabase
           .from('crisis_alerts')
           .insert([fallbackPayload])
+          .select()
+          .abortSignal(controller.signal));
+      }
+
+      // Before migrations 048/049 the targeting columns or the "radius" option do not exist:
+      // publish to everyone instead of failing.
+      if (error && (insertPayload.target_scope || insertPayload.checkin_requested) && ['PGRST204', '42703', '23514'].includes(error.code)) {
+        const { target_scope: _scope, target_radius_km: _radius, checkin_requested: _checkin, ...withoutScope } = insertPayload;
+        ({ data, error } = await supabase
+          .from('crisis_alerts')
+          .insert([withoutScope])
           .select()
           .abortSignal(controller.signal));
       }
@@ -326,6 +350,11 @@ export const useCrisisStore = create((set, get) => ({
         channels: channelFlagsToDb(updatedData.channels),
         is_public: true
       };
+      if (typeof updatedData.checkin_requested === 'boolean') updatePayload.checkin_requested = updatedData.checkin_requested;
+      if (updatedData.target_scope) {
+        updatePayload.target_scope = updatedData.target_scope;
+        if (updatedData.target_scope === 'radius') updatePayload.target_radius_km = Number(updatedData.target_radius_km) || 3;
+      }
 
       if (updatedData.latitude != null && updatedData.longitude != null) {
         updatePayload.latitude = Number(updatedData.latitude);
@@ -336,6 +365,17 @@ export const useCrisisStore = create((set, get) => ({
         .from('crisis_alerts')
         .update(updatePayload)
         .eq('id', id);
+
+      // Before migrations 048/049 the targeting columns or the "radius" option do not exist.
+      if (error && (updatePayload.target_scope || 'checkin_requested' in updatePayload) && ['PGRST204', '42703', '23514'].includes(error.code)) {
+        delete updatePayload.target_scope;
+        delete updatePayload.target_radius_km;
+        delete updatePayload.checkin_requested;
+        ({ error } = await supabase
+          .from('crisis_alerts')
+          .update(updatePayload)
+          .eq('id', id));
+      }
 
       if (error && updatePayload.latitude != null) {
         const { latitude, longitude, ...fallbackPayload } = updatePayload;
@@ -353,16 +393,22 @@ export const useCrisisStore = create((set, get) => ({
     }
   },
 
-  updateAlertStatus: async (id, status) => {
+  updateAlertStatus: async (id, status, { allClearMessage } = {}) => {
     try {
       const updatePayload = { status };
       if (status === 'Resolved') {
         updatePayload.resolved_at = new Date().toISOString();
+        if (allClearMessage) updatePayload.all_clear_message = String(allClearMessage).trim();
       } else if (status === 'Active') {
         updatePayload.resolved_at = null;
       }
 
-      const { error } = await supabase.from('crisis_alerts').update(updatePayload).eq('id', id);
+      let { error } = await supabase.from('crisis_alerts').update(updatePayload).eq('id', id);
+      // Before migration 047 the all_clear_message column does not exist yet.
+      if (error && updatePayload.all_clear_message && (error.code === 'PGRST204' || error.code === '42703')) {
+        const { all_clear_message: _unused, ...withoutAllClear } = updatePayload;
+        ({ error } = await supabase.from('crisis_alerts').update(withoutAllClear).eq('id', id));
+      }
       if (error) throw error;
       return { success: true };
     } catch (err) {
@@ -397,6 +443,7 @@ function mapProfileToUser(profile) {
     },
     notification_channels_configured: Boolean(profile.notification_channels_configured),
     is_active: profile.is_active === true,
+    location_sharing_enabled: profile.location_sharing_enabled === true,
   };
 }
 

@@ -13,7 +13,7 @@ import { useRouteAdvisoryStore } from "@/app/store/routeAdvisoryStore";
 import { StatCardSkeletonGrid } from "@/app/components/ui/Skeletons";
 import { DashboardStatCard } from "@/app/components/dashboard/DashboardStatCard";
 import { EmptyState } from "@/app/components/ui/AsyncState";
-import { EMPTY_ROUTE_FORM } from "@/lib/tourGroupRoute";
+import { EMPTY_ROUTE_FORM, todayInPhilippines, tourScheduleError } from "@/lib/tourGroupRoute";
 import { GuideDashboardQuickActions } from "@/app/components/guide/GuideDashboardQuickActions";
 import { ListPager } from "@/app/components/shell/ListPager";
 import { typography, iconSize, statGrid } from "@/lib/designSystem";
@@ -82,12 +82,9 @@ export default function GuideTourGroupsPage() {
   const handleCreate = async (e) => {
     e.preventDefault();
     setError(null);
-    if (form.start_date && form.end_date && form.end_date < form.start_date) {
-      setError("The end date must be on or after the tour date.");
-      return;
-    }
-    if (form.end_time && !form.end_date) {
-      setError("Choose an end date before setting an end time.");
+    const scheduleError = tourScheduleError(form);
+    if (scheduleError) {
+      setError(scheduleError);
       return;
     }
     if (!form.name.trim() || !form.starting_location.trim() || !form.destination.trim()) {
@@ -217,22 +214,6 @@ export default function GuideTourGroupsPage() {
             </button>
           </div>
           {setupStep === "details" ? (
-            <div className="shrink-0 border-b border-zinc-100 bg-white px-5 py-3 sm:px-6">
-              <button type="submit" form="tour-group-create-form" disabled={saving} className="px-6 py-3 bg-purple-600 text-white rounded-xl font-black uppercase text-xs tracking-widest hover:bg-purple-700 disabled:opacity-50 flex items-center gap-2">
-                {saving ? <><Loader2 size={14} className="animate-spin" /> Creating...</> : "Create Tour Group"}
-              </button>
-            </div>
-          ) : (
-            <div className="flex shrink-0 flex-col-reverse gap-2 border-b border-zinc-100 bg-white px-5 py-3 sm:flex-row sm:justify-end sm:px-6">
-              <button type="button" onClick={closeSetup} className="rounded-xl border border-zinc-200 px-4 py-3 text-sm font-bold text-zinc-700">
-                Skip for now
-              </button>
-              <button type="button" onClick={closeSetup} className="rounded-xl bg-purple-600 px-5 py-3 text-sm font-black text-white hover:bg-purple-700">
-                Done
-              </button>
-            </div>
-          )}
-          {setupStep === "details" ? (
             <div className="min-h-0 flex-1 overflow-y-auto p-5 sm:p-6">
           {error && <p role="alert" className="text-sm text-red-600 font-medium mb-4">{error}</p>}
           <form id="tour-group-create-form" onSubmit={handleCreate} className="space-y-4">
@@ -271,16 +252,16 @@ export default function GuideTourGroupsPage() {
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div className="space-y-1">
                 <label className="text-[10px] font-black uppercase text-zinc-400">Tour Date</label>
-                <input type="date" value={form.start_date} onChange={(e) => setForm({ ...form, start_date: e.target.value })} className="w-full p-3 bg-white border border-zinc-200 rounded-xl text-sm font-bold" />
+                <input type="date" min={todayInPhilippines()} value={form.start_date} onChange={(e) => setForm({ ...form, start_date: e.target.value })} className="w-full p-3 bg-white border border-zinc-200 rounded-xl text-sm font-bold" />
               </div>
               <div className="space-y-1">
                 <label className="text-[10px] font-black uppercase text-zinc-400">End Date (optional)</label>
-                <input type="date" min={form.start_date || undefined} value={form.end_date} onChange={(e) => setForm({ ...form, end_date: e.target.value, end_time: e.target.value ? form.end_time : "" })} className="w-full p-3 bg-white border border-zinc-200 rounded-xl text-sm font-bold" />
+                <input type="date" min={form.start_date || todayInPhilippines()} value={form.end_date} onChange={(e) => setForm({ ...form, end_date: e.target.value, end_time: e.target.value ? form.end_time : "" })} className="w-full p-3 bg-white border border-zinc-200 rounded-xl text-sm font-bold" />
               </div>
               <div className="space-y-1">
                 <label className="text-[10px] font-black uppercase text-zinc-400">End Time (optional)</label>
                 <input type="time" disabled={!form.end_date} value={form.end_time} onChange={(e) => setForm({ ...form, end_time: e.target.value })} className="w-full p-3 bg-white border border-zinc-200 rounded-xl text-sm font-bold disabled:cursor-not-allowed disabled:bg-zinc-100" />
-                <p className="text-[10px] text-zinc-400">Daet local time (PHT). The guide is reminded about 1 hour before and when due.</p>
+                <p className="text-[10px] text-zinc-400">Daet local time (PHT). You and your tourists are reminded about 1 hour before and when it ends.</p>
               </div>
             </div>
             <div className="space-y-1">
@@ -338,6 +319,23 @@ export default function GuideTourGroupsPage() {
                   tourGroupName={createdGroup.name}
                 />
               ) : null}
+            </div>
+          )}
+          {/* Actions stay pinned to the bottom while the form scrolls. */}
+          {setupStep === "details" ? (
+            <div className="shrink-0 border-t border-zinc-100 bg-white px-5 py-3 sm:px-6">
+              <button type="submit" form="tour-group-create-form" disabled={saving} className="px-6 py-3 bg-purple-600 text-white rounded-xl font-black uppercase text-xs tracking-widest hover:bg-purple-700 disabled:opacity-50 flex items-center gap-2">
+                {saving ? <><Loader2 size={14} className="animate-spin" /> Creating...</> : "Create Tour Group"}
+              </button>
+            </div>
+          ) : (
+            <div className="flex shrink-0 flex-col-reverse gap-2 border-t border-zinc-100 bg-white px-5 py-3 sm:flex-row sm:justify-end sm:px-6">
+              <button type="button" onClick={closeSetup} className="rounded-xl border border-zinc-200 px-4 py-3 text-sm font-bold text-zinc-700">
+                Skip for now
+              </button>
+              <button type="button" onClick={closeSetup} className="rounded-xl bg-purple-600 px-5 py-3 text-sm font-black text-white hover:bg-purple-700">
+                Done
+              </button>
             </div>
           )}
           </section>

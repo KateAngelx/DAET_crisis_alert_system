@@ -37,6 +37,7 @@ import { ROLE_INTERFACE } from "@/lib/roleInterfaceCopy";
 import { RoleContextBanner } from "@/app/components/dashboard/RoleContextBanner";
 import { GuideDashboardQuickActions } from "@/app/components/guide/GuideDashboardQuickActions";
 import { sortRecordsNewestFirst } from "@/lib/recordSorting";
+import { HazardTypeIcon } from "@/app/components/ui/cardTypeIcons";
 
 export default function GuideRoutesPage() {
   const { user } = useAuthStore();
@@ -123,12 +124,17 @@ export default function GuideRoutesPage() {
     onFocusAreas: focusAreas,
   });
 
-  useEffect(() => {
-    const hazardId = searchParams.get("hazard");
-    if (!hazardId) return;
-    const warning = activeAreaHazards.find((item) => String(item.id) === String(hazardId));
-    if (warning) setSelectedHazard(warning);
-  }, [searchParams, activeAreaHazards]);
+  // Open the hazard named in the address (?hazard=…) once it has loaded.
+  const hazardParam = searchParams.get("hazard");
+  const [openedHazardParam, setOpenedHazardParam] = useState(null);
+  if (hazardParam && hazardParam !== openedHazardParam) {
+    const warning = activeAreaHazards.find((item) => String(item.id) === String(hazardParam));
+    if (warning) {
+      setOpenedHazardParam(hazardParam);
+      setSelectedHazard(warning);
+    }
+  }
+  if (!hazardParam && openedHazardParam !== null) setOpenedHazardParam(null);
 
   const openRoute = useCallback((route) => setSelectedRoute(route), []);
 
@@ -139,10 +145,13 @@ export default function GuideRoutesPage() {
     }
   }, [router, searchParams]);
 
-  useEffect(() => {
-    const routeId = searchParams.get("route");
-    const viewParam = searchParams.get("view");
-    if (!routeId || loading) return;
+  // Open the route named in the address (?route=…&view=…) once the catalog has loaded.
+  const routeParam = searchParams.get("route");
+  const viewParam = searchParams.get("view");
+  const routeParamKey = routeParam ? `${routeParam}|${viewParam || ""}` : null;
+  const [openedRouteKey, setOpenedRouteKey] = useState(null);
+  if (routeParamKey && routeParamKey !== openedRouteKey && !loading) {
+    const routeId = routeParam;
 
     const view =
       viewParam === "alternative"
@@ -154,16 +163,14 @@ export default function GuideRoutesPage() {
             : null;
 
     const fromCatalog = findRouteItem(catalog, routeId, view || undefined);
-    if (fromCatalog) {
-      setSelectedRoute(fromCatalog);
-      return;
+    const advisory = fromCatalog ? null : catalog.published.find((a) => a.id === routeId);
+    const item = fromCatalog || (advisory ? getRouteItemFromAdvisory(advisory, view || resolveRouteItemView(advisory)) : null);
+    if (item) {
+      setOpenedRouteKey(routeParamKey);
+      setSelectedRoute(item);
     }
-
-    const advisory = catalog.published.find((a) => a.id === routeId);
-    if (advisory) {
-      setSelectedRoute(getRouteItemFromAdvisory(advisory, view || resolveRouteItemView(advisory)));
-    }
-  }, [searchParams, catalog, loading]);
+  }
+  if (!routeParamKey && openedRouteKey !== null) setOpenedRouteKey(null);
 
   const showClosed = activeFilter === "all" || activeFilter === "urgent" || activeFilter === "closed";
   const showCaution = activeFilter === "all" || activeFilter === "urgent" || activeFilter === "caution";
@@ -212,6 +219,7 @@ export default function GuideRoutesPage() {
         statusClass: styles.badge,
         place: warning.dangerous_location,
         type: warning.danger_type,
+        typeIcon: <HazardTypeIcon type={warning.danger_type} size={12} />,
         when: formatWarningTimeRange(warning),
         onSelect: () => setSelectedHazard(warning),
         ariaLabel: "View hazard details",
@@ -374,12 +382,13 @@ export default function GuideRoutesPage() {
       />
 
       <PublicListModal
+        size="lg"
         open={!!selectedHazard}
         onClose={() => {
           setSelectedHazard(null);
           if (searchParams.get("hazard")) router.replace("/guide/routes", { scroll: false });
         }}
-        title="Area hazard"
+        title="Area hazard details"
         subtitle={selectedHazard?.dangerous_location}
       >
         {selectedHazard ? <DangerousLocationCard warning={selectedHazard} /> : null}

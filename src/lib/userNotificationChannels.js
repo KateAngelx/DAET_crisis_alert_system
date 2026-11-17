@@ -9,7 +9,12 @@ export const DEFAULT_USER_NOTIFICATION_CHANNELS = {
   push: false,
 };
 
-export function channelsFromProfile(profile) {
+/**
+ * @param {object} [options]
+ * @param {boolean} [options.ignoreSmsSuspension] Keep the user's own SMS choice even when SMS is
+ *   paused for inactivity — used for Critical crisis alerts.
+ */
+export function channelsFromProfile(profile, { ignoreSmsSuspension = false } = {}) {
   const raw = profile?.notification_channels;
   let channels;
   if (raw && typeof raw === "object" && !Array.isArray(raw)) {
@@ -23,7 +28,7 @@ export function channelsFromProfile(profile) {
     channels = { ...DEFAULT_USER_NOTIFICATION_CHANNELS };
   }
 
-  if (isSmsSuspended(profile)) {
+  if (isSmsSuspended(profile) && !ignoreSmsSuspension) {
     channels.sms = false;
   }
 
@@ -78,4 +83,17 @@ export function getEffectiveUserChannels(userChannels, requested = ["web", "emai
  */
 export function getDispatchChannelsForProfile(profile, requestedChannels = []) {
   return getEffectiveUserChannels(channelsFromProfile(profile), requestedChannels);
+}
+
+/**
+ * Critical emergencies reach people on every channel, even ones they turned off in Profile.
+ * Push still only goes to devices that subscribed; SMS and email still need a phone or email.
+ */
+export function isCriticalSeverity(severity) {
+  return String(severity || "").toLowerCase() === "critical";
+}
+
+export function channelsForBroadcast(profile, severity) {
+  if (isCriticalSeverity(severity)) return { email: true, sms: true, app: true, push: true };
+  return channelsFromProfile(profile);
 }

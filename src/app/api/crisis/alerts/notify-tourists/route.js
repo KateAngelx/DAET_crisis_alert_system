@@ -3,6 +3,9 @@ import { requireAdmin } from '@/lib/adminAuth';
 import { broadcastCrisisAlertToTourists } from '@/lib/crisisAlertBroadcast.server';
 import { API_RATE_LIMITS, enforceRateLimitByKey } from '@/lib/apiRateLimit';
 
+/** Seconds this request may run while it sends the broadcast (Vercel Hobby allows up to 60). */
+export const maxDuration = 60;
+
 export async function POST(request) {
   try {
     const auth = await requireAdmin(request);
