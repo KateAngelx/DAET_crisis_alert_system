@@ -1,5 +1,4 @@
 import { dispatchNotificationServer } from "@/lib/notificationDispatch.server";
-import { sendSms } from "@/lib/smsService";
 import {
   ESCALATION_KIND_LABELS,
   escalationLevelDue,
@@ -16,7 +15,7 @@ export function isEscalationNotSetUp(error) {
 export async function getEscalationSettings(admin) {
   const { data, error } = await admin
     .from("system_settings")
-    .select("escalation_enabled, escalation_minutes, escalation_contacts")
+    .select("escalation_enabled, escalation_minutes")
     .eq("id", SETTINGS_ID)
     .maybeSingle();
   if (error) return { settings: null, error };
@@ -29,7 +28,7 @@ export async function saveEscalationSettings(admin, value, userId) {
     .update({
       escalation_enabled: value.enabled,
       escalation_minutes: value.minutes,
-      escalation_contacts: value.contacts,
+      escalation_contacts: [], // outside contacts are no longer used; clear any saved numbers
       updated_at: new Date().toISOString(),
       updated_by: userId,
     })
@@ -125,7 +124,7 @@ async function notifyAdmins(admin, item, level, minutes) {
     (admins || []).map((a) =>
       dispatchNotificationServer({
         userId: a.id,
-        title: level >= 2 ? `Escalated to outside contacts: ${label}` : `Still unanswered: ${label}`,
+        title: level >= 2 ? `Still unanswered after ${minutes * 2} min: ${label}` : `Still unanswered: ${label}`,
         message: escalationMessage(item, level, minutes),
         notificationType: "urgent_escalation",
         priority: "CRITICAL",
@@ -150,7 +149,7 @@ export async function runEscalations(admin, nowMs = Date.now()) {
   if (!settings.enabled) return { ok: true, skipped: "Escalation is turned off in Settings.", escalated: 0 };
 
   const { items, errors } = await collectOpenUrgentItems(admin);
-  const summary = { ok: true, checked: items.length, escalated: 0, toAdmins: 0, toContacts: 0, errors: errors.map((e) => e.message) };
+  const summary = { ok: true, checked: items.length, escalated: 0, toAdmins: 0, errors: errors.map((e) => e.message) };
 
   for (const item of items) {
     const due = escalationLevelDue(item.startedAt, settings.minutes, nowMs);
@@ -171,19 +170,6 @@ export async function runEscalations(admin, nowMs = Date.now()) {
     summary.escalated += 1;
     summary.errors.push(...(await notifyAdmins(admin, item, due, settings.minutes)));
     summary.toAdmins += 1;
-
-    if (due >= 2 && item.level < 2) {
-      const text = escalationMessage(item, 2, settings.minutes);
-      for (const contact of settings.contacts) {
-        try {
-          const sent = await sendSms({ to: contact.phone, message: text });
-          if (sent?.success === false) summary.errors.push(`SMS to ${contact.name}: ${sent.error || "failed"}`);
-          else summary.toContacts += 1;
-        } catch (err) {
-          summary.errors.push(`SMS to ${contact.name}: ${err.message}`);
-        }
-      }
-    }
   }
   return summary;
 }

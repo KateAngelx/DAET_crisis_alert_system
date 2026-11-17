@@ -1,19 +1,18 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
-import { Loader2, Plus, Trash2 } from "lucide-react";
+import { Loader2 } from "lucide-react";
 import { AdminPanel } from "@/app/components/admin/AdminPanel";
 import { fetchWithFreshSession } from "@/lib/authSession";
 import { adminShell } from "@/lib/designSystem";
-import { MAX_ESCALATION_CONTACTS } from "@/lib/escalation";
 import { HelpTip } from "@/app/components/ui/HelpTip";
 
 const label = "block text-[10px] font-black uppercase tracking-widest text-zinc-500";
 
-/** Admin → Settings: how long before unanswered urgent reports escalate, and who gets them. */
+/** Admin → Settings: how long before unanswered urgent reports re-alert the admins. */
 export function EscalationSettingsPanel() {
   const [state, setState] = useState({ loading: true, available: true, error: "" });
-  const [form, setForm] = useState({ enabled: true, minutes: 10, contacts: [] });
+  const [form, setForm] = useState({ enabled: true, minutes: 10 });
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState(null);
 
@@ -53,9 +52,6 @@ export function EscalationSettingsPanel() {
     }
   };
 
-  const setContact = (i, patch) =>
-    setForm((f) => ({ ...f, contacts: f.contacts.map((c, j) => (j === i ? { ...c, ...patch } : c)) }));
-
   return (
     <AdminPanel title="Escalation" subtitle="What happens when nobody responds to an urgent report">
       {state.loading ? (
@@ -65,10 +61,10 @@ export function EscalationSettingsPanel() {
       ) : (
         <div className="space-y-4">
           <p className="text-sm text-zinc-600">
-            <span className="font-bold text-zinc-800">Escalation<HelpTip label="escalation">If nobody acts on an urgent case in time, the system texts admins again, then the outside contacts below (for example MDRRMO).</HelpTip></span>{" "}
+            <span className="font-bold text-zinc-800">Escalation<HelpTip label="escalation">If nobody acts on an urgent case in time, the system alerts all admins again by SMS and in the app. It never texts anyone outside the Tourism Office.</HelpTip></span>{" "}
             Applies to: tourists who answer <b>I need help</b> or are marked <b>Missing</b>, missing-person reports,
             Critical incident reports and guide emergency reports. Admins are alerted at once. If nobody acts, admins are
-            re-alerted by SMS after the time below, and the outside contacts get an SMS after twice that time.
+            re-alerted by SMS after the time below, and again after twice that time.
           </p>
           <label className="flex items-center gap-3 text-sm font-bold text-zinc-800">
             <input type="checkbox" className="h-4 w-4" checked={form.enabled} onChange={(e) => setForm({ ...form, enabled: e.target.checked })} />
@@ -85,48 +81,7 @@ export function EscalationSettingsPanel() {
               value={form.minutes}
               onChange={(e) => setForm({ ...form, minutes: e.target.value })}
             />
-            <p className="mt-1 text-[11px] text-zinc-500">Outside contacts are texted after {Number(form.minutes) * 2 || "—"} minutes.</p>
-          </div>
-          <div className="space-y-2">
-            <span className={label}>Outside contacts (e.g. MDRRMO duty officer) — up to {MAX_ESCALATION_CONTACTS}</span>
-            {form.contacts.length === 0 ? (
-              <p className="text-[11px] font-medium text-amber-700">No outside contact yet. Unanswered reports will only re-alert admins.</p>
-            ) : null}
-            {form.contacts.map((c, i) => (
-              <div key={i} className="flex flex-wrap gap-2">
-                <input
-                  aria-label="Contact name"
-                  placeholder="Name or office (e.g. MDRRMO Daet)"
-                  className={`${adminShell.input} min-w-0 flex-1`}
-                  value={c.name}
-                  onChange={(e) => setContact(i, { name: e.target.value })}
-                />
-                <input
-                  aria-label="Mobile number"
-                  placeholder="09XXXXXXXXX"
-                  className={`${adminShell.input} w-40`}
-                  value={c.phone}
-                  onChange={(e) => setContact(i, { phone: e.target.value })}
-                />
-                <button
-                  type="button"
-                  aria-label="Remove contact"
-                  onClick={() => setForm((f) => ({ ...f, contacts: f.contacts.filter((_, j) => j !== i) }))}
-                  className="rounded-lg p-2 text-red-600 hover:bg-red-50"
-                >
-                  <Trash2 size={16} />
-                </button>
-              </div>
-            ))}
-            {form.contacts.length < MAX_ESCALATION_CONTACTS ? (
-              <button
-                type="button"
-                onClick={() => setForm((f) => ({ ...f, contacts: [...f.contacts, { name: "", phone: "" }] }))}
-                className="inline-flex items-center gap-1 text-[10px] font-black uppercase text-blue-700"
-              >
-                <Plus size={12} /> Add outside contact
-              </button>
-            ) : null}
+            <p className="mt-1 text-[11px] text-zinc-500">A second reminder goes to admins after {Number(form.minutes) * 2 || "—"} minutes.</p>
           </div>
           {message ? (
             <p role={message.ok ? "status" : "alert"} className={`text-sm font-bold ${message.ok ? "text-green-700" : "text-red-700"}`}>{message.text}</p>

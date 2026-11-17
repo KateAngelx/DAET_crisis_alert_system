@@ -32,7 +32,7 @@ export function buildAdminNeeds({ incidents = [], missingCases = [], pendingHelp
           id: "escalated",
           href: "/admin/incidents",
           title: `${plural(escalated.length, "report")} escalated`,
-          description: "No one answered in time, so the escalation contacts were alerted. Respond now.",
+          description: "No one answered in time, so all admins were alerted again. Respond now.",
           urgent: true,
         }]
       : []),

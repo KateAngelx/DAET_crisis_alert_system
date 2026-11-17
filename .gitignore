@@ -51,3 +51,6 @@ debug-*.log
 next-env.d.ts
 
 /.claude/
+
+# automated tests: kept on this computer only, not pushed to GitHub
+/scripts/

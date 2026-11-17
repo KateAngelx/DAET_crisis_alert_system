@@ -127,7 +127,7 @@ export function MissingPersonsPanel() {
                       <span className="rounded bg-blue-100 px-1.5 py-0.5 text-[9px] font-black uppercase text-blue-700">Acknowledged</span>
                     ) : c.escalation_level > 0 ? (
                       <span className="rounded bg-red-600 px-1.5 py-0.5 text-[9px] font-black uppercase text-white">
-                        {c.escalation_level >= 2 ? "Escalated outside" : "Unanswered"}
+                        {c.escalation_level >= 2 ? "Unanswered (2nd reminder)" : "Unanswered"}
                       </span>
                     ) : null}
                   </div>

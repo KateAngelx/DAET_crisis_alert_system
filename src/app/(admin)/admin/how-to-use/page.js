@@ -66,8 +66,8 @@ const SECTIONS = [
     icon: Settings,
     title: "Set up escalation",
     steps: [
-      "Escalation: if nobody acknowledges an urgent report or missing tourist in time, the system texts the contacts you list.",
-      "Add MDRRMO and office contacts in Settings, Escalation.",
+      "Escalation: if nobody acknowledges an urgent report or missing tourist in time, all admins are alerted again by SMS and in the app, then once more after twice that time.",
+      "Set the waiting time in Settings, Escalation. Nothing is sent outside the Tourism Office.",
     ],
     href: "/admin/settings",
     action: "Open Settings",

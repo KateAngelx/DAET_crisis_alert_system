@@ -3,7 +3,7 @@ import { getSupabaseAdmin } from "@/lib/supabaseAdmin";
 import { requireCronSecret } from "@/lib/cronAuth.server";
 import { runEscalations } from "@/lib/escalation.server";
 
-/** Every 5 minutes: re-alert admins, then outside contacts, about urgent items nobody has acted on. */
+/** Every 5 minutes: re-alert admins (after N, then 2N minutes) about urgent items nobody has acted on. */
 export async function POST(request) {
   const gate = requireCronSecret(request);
   if (!gate.ok) return gate.response;
