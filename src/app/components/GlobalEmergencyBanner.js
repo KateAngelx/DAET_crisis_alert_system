@@ -43,7 +43,7 @@ export function GlobalEmergencyBanner() {
       <Link
         href="/crisis"
         className="fixed top-[80px] right-4 z-[9999] flex items-center gap-2 rounded-full bg-red-600 px-3 py-2 text-[10px] font-black uppercase tracking-widest text-white shadow-2xl ring-2 ring-red-300 hover:bg-red-700"
-        aria-label={`Critical alert active: ${latestAlert.title}. Open Crisis Hub`}
+        aria-label={`Critical alert active: ${latestAlert.title}. Open Alerts`}
       >
         <ShieldAlert size={14} className="animate-pulse" /> Critical alert{more}
       </Link>
@@ -88,7 +88,7 @@ export function GlobalEmergencyBanner() {
               href="/crisis"
               className="flex-1 bg-red-600 text-white py-2 rounded-lg text-[10px] font-black uppercase tracking-widest text-center hover:bg-red-700 transition-all"
             >
-              Open Crisis Hub
+              Open Alerts
             </Link>
             <a
               href="tel:911"

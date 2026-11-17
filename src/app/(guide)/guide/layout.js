@@ -2,6 +2,7 @@ import { GuideSidebar, GuideHeader } from "@/app/components/GuideShell";
 import { GuidePageShell } from "@/app/components/guide/GuidePageShell";
 import { AuthGuard } from "@/app/components/AuthGuard";
 import { guideShell } from "@/lib/designSystem";
+import { GuideStartGuide } from "@/app/components/guide/GuideStartGuide";
 
 export default function GuideLayout({ children }) {
   return (
@@ -13,6 +14,7 @@ export default function GuideLayout({ children }) {
           <main className={`${guideShell.main} installed-app-main scrollbar-none`}>
             <GuidePageShell>{children}</GuidePageShell>
           </main>
+          <GuideStartGuide />
         </div>
       </div>
     </AuthGuard>

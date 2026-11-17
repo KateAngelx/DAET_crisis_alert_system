@@ -11,7 +11,9 @@ import {
   Loader2,
   Map,
   MessageSquare,
+  Phone,
   ShieldAlert,
+  Siren,
   UserRound,
 } from "lucide-react";
 import { InfoPageHero, PublicPageContent, PublicPageShell, PublicPanel } from "@/app/components/InfoPageHero";
@@ -21,6 +23,62 @@ import { getActiveSession } from "@/lib/authSession";
 import { notifyRewardEarned } from "@/lib/rewardFeedback";
 import { portalShell } from "@/lib/designSystem";
 
+/** Guests (and anyone not signed in as a tourist): the five things to know, no account needed. */
+const GUEST_SECTIONS = [
+  {
+    id: "safe",
+    icon: ShieldAlert,
+    title: "1. Check if Daet is safe",
+    summary: "The coloured bar at the top of Home and Alerts tells you in one line.",
+    steps: [
+      "Green means no active alerts. Yellow or orange means take care in the named areas. Red means a critical alert: tap it to see what to do.",
+      "Open Alerts for the full list and the map. Past alerts has the ones already cleared.",
+    ],
+    href: "/crisis",
+    action: "Open Alerts",
+  },
+  {
+    id: "roads",
+    icon: Map,
+    title: "2. Check roads before you go",
+    summary: "Closed roads, detours and places to avoid, on one map.",
+    steps: ["Open Roads & Hazards in the menu.", "Tap a road or pin to read the details."],
+    href: "/routes",
+    action: "Open Roads & Hazards",
+  },
+  {
+    id: "report",
+    icon: FileText,
+    title: "3. Report a problem, no account needed",
+    summary: "Tell the Tourism Office what happened and how to reach you.",
+    steps: [
+      "Tap Report a problem in the menu.",
+      "Add your name, a mobile number or email, what happened and where. Tap My location to fill in the place.",
+    ],
+    href: "/crisis/report",
+    action: "Report a problem",
+  },
+  {
+    id: "emergency",
+    icon: Siren,
+    title: "4. In an emergency, call first",
+    summary: "The red Emergency button at the bottom right of every page has every hotline.",
+    steps: ["If someone is in danger, call 911 right away.", "Then report it here when you are safe."],
+    href: "tel:911",
+    action: "Call 911",
+  },
+  {
+    id: "account",
+    icon: Bell,
+    title: "5. Get alerts on your phone",
+    summary: "A free account sends alerts by SMS, email and the app, and lets you follow your reports.",
+    steps: ["Tap Register and fill in your details.", "In your Profile, choose SMS, email or app alerts."],
+    href: "/register",
+    action: "Create an account",
+    guestOnly: true,
+  },
+];
+
 const GUIDE_SECTIONS = [
   {
     id: "alerts",
@@ -28,11 +86,11 @@ const GUIDE_SECTIONS = [
     title: "View crisis alerts and advisories",
     summary: "Check official updates before and during your visit.",
     steps: [
-      "Open Crisis Hub to see current public alerts, their affected locations, and safety instructions.",
+      "Open Alerts to see current public alerts, their affected locations, and safety instructions.",
       "Open an alert for its full details. Check its status and date for the latest information.",
     ],
     href: "/crisis",
-    action: "Open Crisis Hub",
+    action: "Open Alerts",
   },
   {
     id: "maps",
@@ -40,23 +98,23 @@ const GUIDE_SECTIONS = [
     title: "Read hazard maps and route advisories",
     summary: "Use the map and route list together when planning where to go.",
     steps: [
-      "Open Roads & Travel to view published routes and area hazards.",
+      "Open Roads & Hazards to view published routes and area hazards.",
       "Select a route or hazard to see its status, affected place, dates, and safety instructions. Follow official detours and avoid closed areas.",
     ],
     href: "/routes",
-    action: "Open Roads & Travel",
+    action: "Open Roads & Hazards",
   },
   {
     id: "reports",
     icon: FileText,
-    title: "Submit and track incident reports",
+    title: "Report a problem and follow it",
     summary: "Report a safety concern and keep its reference number for follow-up.",
     steps: [
-      "Open My Reports and choose Report an incident. Add a clear description and location.",
+      "Open Reports and choose Report a problem. Add a clear description and location.",
       "Use the report list to search, filter, and check the current status. Select a report's Details action to see its information and status history.",
     ],
     href: "/crisis/reports",
-    action: "Open My Reports",
+    action: "Open Reports",
   },
   {
     id: "feedback",
@@ -73,10 +131,10 @@ const GUIDE_SECTIONS = [
   {
     id: "assistance",
     icon: UserRound,
-    title: "Request Tourist Guide Assistance",
-    summary: "When enabled, the Tourist Dashboard has a Tourist Guide Assistance section.",
+    title: "Ask a guide for help",
+    summary: "When enabled, your home page has an Ask a guide for help section.",
     steps: [
-      "Open the Tourist Dashboard and select Request Guide Assistance in that section.",
+      "On your home page, tap Ask a guide for help.",
       "Choose a request type, provide the destination, and add any useful details. Requests depend on guide availability and Tourism Office coordination; this is not an emergency service.",
     ],
     href: "/#guide-assistance",
@@ -183,14 +241,41 @@ export default function HowToUsePage() {
   };
 
   if (!isAuthenticated || user?.role !== "tourist") {
+    const sections = GUEST_SECTIONS.filter((section) => !section.guestOnly || !isAuthenticated);
     return (
       <PublicPageShell>
-        <InfoPageHero title="How to Use CONNECT-DAET" description="A simple guide for registered tourists." />
+        <InfoPageHero title="How to Use CONNECT-DAET" description="Five things to know. No account needed." />
         <PublicPageContent>
-          <PublicPanel title="Tourist account required">
-            <p className="text-sm font-medium text-zinc-600">Sign in with a registered tourist account to use this guide and mark it complete.</p>
-            <Link href="/login" className={`mt-4 ${portalShell.btnPrimary}`}>Sign in</Link>
+          <PublicPanel title="Start here" subtitle="Each step has a button that takes you there.">
+            <div className="divide-y divide-zinc-100 rounded-xl border border-zinc-200 bg-white">
+              {sections.map(({ id, icon: Icon, title, summary, steps, href, action }) => (
+                <section key={id} id={id} className="grid gap-3 p-4 sm:grid-cols-[2rem_minmax(0,1fr)_auto] sm:items-start sm:gap-4">
+                  <Icon size={20} className={id === "emergency" ? "text-red-600" : "text-blue-700"} aria-hidden />
+                  <div className="min-w-0">
+                    <h2 className="text-sm font-black text-zinc-900">{title}</h2>
+                    <p className="mt-1 text-xs leading-relaxed text-zinc-600">{summary}</p>
+                    <ol className="mt-3 list-decimal space-y-1.5 pl-4 text-xs leading-relaxed text-zinc-700 marker:font-bold marker:text-zinc-400">
+                      {steps.map((step) => <li key={step}>{step}</li>)}
+                    </ol>
+                  </div>
+                  {href.startsWith("tel:") ? (
+                    <a href={href} className={`${portalShell.btnGhost} w-fit text-red-700 sm:mt-0.5`}>
+                      <Phone size={14} /> {action}
+                    </a>
+                  ) : (
+                    <Link href={href} className={`${portalShell.btnGhost} w-fit sm:mt-0.5`}>
+                      {action} <ChevronRight size={14} />
+                    </Link>
+                  )}
+                </section>
+              ))}
+            </div>
           </PublicPanel>
+          {!isAuthenticated ? (
+            <p className="text-xs font-medium text-zinc-500">
+              Already have a tourist account? <Link href="/login" className="font-bold text-blue-600 hover:underline">Sign in</Link> for the full tourist guide.
+            </p>
+          ) : null}
         </PublicPageContent>
       </PublicPageShell>
     );
@@ -217,7 +302,7 @@ export default function HowToUsePage() {
                   <p className="mt-1 text-xs leading-relaxed text-zinc-600">{summary}</p>
                   {id === "assistance" ? (
                     <p className="mt-2 text-xs font-semibold text-amber-800">
-                      If the request option is not shown on your dashboard, Tourist Guide Assistance is currently disabled.
+                      If the request option is not shown on your dashboard, guide help is turned off for now.
                     </p>
                   ) : null}
                   <ol className="mt-3 list-decimal space-y-1.5 pl-4 text-xs leading-relaxed text-zinc-700 marker:font-bold marker:text-zinc-400">

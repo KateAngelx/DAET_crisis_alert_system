@@ -82,7 +82,7 @@ export function GuideAssistanceRequestForm({ assistance, onClose, onSubmitted })
       >
         <div className="flex shrink-0 items-start justify-between gap-4 border-b border-zinc-100 bg-white px-5 py-4 sm:px-7">
           <div>
-            <p className="text-[10px] font-black uppercase tracking-widest text-purple-700">Tourist Guide Assistance</p>
+            <p className="text-[10px] font-black uppercase tracking-widest text-purple-700">Ask a guide for help</p>
             <h2 className="mt-1 text-xl font-black text-zinc-900">Request local assistance</h2>
             <p className="mt-1 text-sm text-zinc-600">
               Requests depend on guide availability and Tourism Office coordination. This is not an emergency service.

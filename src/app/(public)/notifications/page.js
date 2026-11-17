@@ -77,7 +77,7 @@ export default function NotificationsPage() {
           <PublicPanel title="Sign in required">
             <Bell size={32} className="mb-3 text-zinc-300" />
             <p className="text-sm text-zinc-600 font-medium mb-4 max-w-md">
-              In-app notifications are only available to registered, signed-in users. Public crisis alerts remain on the Crisis Hub.
+              In-app notifications are only available to registered, signed-in users. Public crisis alerts stay on the Alerts page.
             </p>
             <Link href="/login" className={portalShell.btnPrimary}>
               Sign in
@@ -108,7 +108,7 @@ export default function NotificationsPage() {
     <PublicPageShell>
       <InfoPageHero
         title="Notifications"
-        description="Your private updates on crisis alerts, incident reports, and account activity. Public crisis advisories are also available on the Crisis Hub."
+        description="Your own updates about alerts, your reports, and your account. Public alerts are also on the Alerts page."
       />
 
       <PublicPageContent>

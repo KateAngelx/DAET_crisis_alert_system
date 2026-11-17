@@ -130,7 +130,7 @@ export function TouristTourMenu({ children }) {
               <div>
                 <p className="text-[10px] font-black uppercase tracking-[0.2em] text-purple-700">My tour</p>
                 <h2 id="my-tour-title" className="mt-1 text-lg font-black text-zinc-900">
-                  {group?.name || "Tourist guide"}
+                  {group?.name || "My tour"}
                 </h2>
               </div>
               <button

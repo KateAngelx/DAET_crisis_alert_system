@@ -19,6 +19,7 @@ import {
   DEFAULT_SEVERITY_ORDER,
   DEFAULT_CRISIS_TYPE_OPTIONS,
 } from "@/app/components/shell/PublicCategorizedCardFilters";
+import { AlertsTabs } from "@/app/components/AlertsTabs";
 import { ROLE_INTERFACE } from "@/lib/roleInterfaceCopy";
 import { RoleContextBanner } from "@/app/components/dashboard/RoleContextBanner";
 import { CategoryFilterSelect, StatusRecordList } from "@/app/components/shell/StatusRecordList";
@@ -102,6 +103,7 @@ export default function ResolvedAlertsPage() {
       />
 
       <PublicPageContent>
+          <AlertsTabs active="past" />
           <RoleContextBanner helper={ROLE_INTERFACE.public.resolvedAlerts.helper} tone="info" />
 
           <PublicPanel title="Overview" subtitle="Resolved counts">
@@ -132,9 +134,9 @@ export default function ResolvedAlertsPage() {
               emptyFallback={
                 <div className="text-center py-8 bg-zinc-50 rounded-2xl border-2 border-dashed border-zinc-200">
                   <Info size={iconSize.emptyLg} className="mx-auto text-zinc-300 mb-4" />
-                  <p className="font-bold text-zinc-400 uppercase tracking-widest text-xs">No Resolved Alerts Yet</p>
+                  <p className="font-bold text-zinc-400 uppercase tracking-widest text-xs">No past alerts yet</p>
                   <p className="text-zinc-400 text-sm mt-2 font-medium max-w-md mx-auto">
-                    When the Daet Municipal Tourism Office marks an emergency alert as resolved, it will appear here for reference. Use Crisis Hub in the menu for active alerts.
+                    When the Daet Municipal Tourism Office marks an emergency alert as resolved, it will appear here for reference. Open Alerts in the menu for active alerts.
                   </p>
                 </div>
               }
@@ -157,14 +159,14 @@ export default function ResolvedAlertsPage() {
             </AsyncState>
           </PublicPanel>
 
-          <PublicPanel title="Your incident reports">
+          <PublicPanel title="Your reports">
             <PublicInfoCallout variant="zinc" className="border-0 bg-transparent p-0">
               <div className="flex items-start gap-3">
                 <Bell className="text-blue-600 shrink-0 mt-0.5" size={20} />
                 <p className="text-sm text-zinc-600 font-medium leading-relaxed">
                   Resolved or closed reports you submitted personally are tracked under{" "}
                   <Link href="/crisis/reports" className="text-blue-600 font-black hover:underline">
-                    My Reports
+                    Reports
                   </Link>
                   , not on this page.
                 </p>

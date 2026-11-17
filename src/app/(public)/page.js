@@ -1,49 +1,32 @@
 "use client";
 
-import React, { useEffect, useState, useLayoutEffect } from "react";
+import React, { useEffect, useLayoutEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { AlertTriangle, ArrowRight, Bell, Compass, FileText, Route, ShieldCheck, Users } from "lucide-react";
+import { AlertTriangle, ArrowRight, Bell, FileText, FileWarning, Phone, Route, ShieldCheck } from "lucide-react";
 import { useCrisisStore, useAuthStore } from "@/app/store/crisisStore";
 import { typography } from "@/lib/designSystem";
 import { BrandLogo } from "@/app/components/BrandLogo";
 import { siteInfo } from "@/lib/siteInfo";
 import { sortRecordsNewestFirst } from "@/lib/recordSorting";
 import { usePublicVisibility } from "@/lib/usePublicVisibility";
-import { GuideAssistanceRequestForm } from "@/app/components/tourist/GuideAssistanceRequestForm";
+import { TouristHomeCards } from "@/app/components/tourist/TouristHomeCards";
 import { PublicFeedbackSection } from "@/app/components/feedback/PublicFeedbackSection";
 import { useHydrated } from "@/lib/useHydrated";
+import { SafetyStatusBar } from "@/app/components/SafetyStatusBar";
+import { FEATURE_NAMES } from "@/lib/featureNames";
 
 export default function Home() {
-  const { fetchAlerts, alerts, loading, error } = useCrisisStore();
+  const { fetchAlerts, alerts, alertsLoaded, loading: fetching, error } = useCrisisStore();
+  const loading = fetching || (!alertsLoaded && !error);
   const { isAuthenticated, user } = useAuthStore();
   const mounted = useHydrated();
-  const [guideAssistance, setGuideAssistance] = useState(null);
-  const [guideRequestOpen, setGuideRequestOpen] = useState(false);
-  const [guideRequestSubmitted, setGuideRequestSubmitted] = useState(false);
   const visibility = usePublicVisibility();
   const router = useRouter();
 
   useEffect(() => {
     fetchAlerts();
   }, [fetchAlerts]);
-
-  useEffect(() => {
-    if (!isAuthenticated || user?.role !== "tourist") return undefined;
-    let active = true;
-    fetch("/api/tourist/guide-assistance", { cache: "no-store" })
-      .then(async (response) => {
-        const result = await response.json();
-        if (!response.ok) throw new Error(result.error || "Unable to load service availability.");
-        if (active) setGuideAssistance(result.assistance);
-      })
-      .catch(() => {
-        if (active) setGuideAssistance(null);
-      });
-    return () => {
-      active = false;
-    };
-  }, [isAuthenticated, user?.role]);
 
   useLayoutEffect(() => {
     if (!mounted || !isAuthenticated) return;
@@ -57,12 +40,11 @@ export default function Home() {
     alerts.filter((alert) => alert.status === "Active" && alert.is_public),
     ["published_at", "created_at"]
   );
-  const criticalCount = activeAlerts.filter((alert) => alert.severity === "Critical").length;
   const previewAlerts = activeAlerts.slice(0, 3);
-  const showGuideHelp = isAuthenticated && user?.role === "tourist" && guideAssistance?.enabled === true;
+  const isTourist = isAuthenticated && user?.role === "tourist";
   const featureCards = [
     {
-      title: "Crisis alerts",
+      title: "Alerts",
       text: "Open the map and the active list.",
       href: "/crisis",
       icon: AlertTriangle,
@@ -70,7 +52,7 @@ export default function Home() {
     },
     visibility.roadsAndHazards
       ? {
-          title: "Roads and travel",
+          title: FEATURE_NAMES.roads,
           text: "Check road closures and hazards.",
           href: "/routes",
           icon: Route,
@@ -78,7 +60,7 @@ export default function Home() {
         }
       : null,
     {
-      title: isAuthenticated ? "My reports" : "Report an incident",
+      title: isAuthenticated ? "Reports" : "Report a problem",
       text: isAuthenticated ? "Send a report and follow it." : "No account needed. Tell the Tourism Office what happened.",
       href: isAuthenticated ? "/crisis/reports" : "/crisis/report",
       icon: FileText,
@@ -99,7 +81,7 @@ export default function Home() {
     <div className="flex flex-col bg-white font-sans text-left">
       <section
         data-landing-section="hero"
-        className="relative flex min-h-[100dvh] w-full flex-col justify-center overflow-hidden bg-cover bg-center bg-no-repeat pt-[calc(4.5rem+env(safe-area-inset-top))] pb-10 md:-mt-16 md:py-16"
+        className="relative flex w-full flex-col justify-center overflow-hidden bg-cover bg-center bg-no-repeat pt-[calc(4rem+env(safe-area-inset-top))] pb-8 md:-mt-16 md:min-h-[100dvh] md:py-16"
         style={{ backgroundImage: "url('/images/hero-bg.jpg')" }}
       >
         <div className="absolute inset-0 bg-gradient-to-b from-slate-950/80 via-blue-900/60 to-indigo-950/80" aria-hidden="true" />
@@ -107,6 +89,8 @@ export default function Home() {
         <div className="relative z-10 mx-auto w-full max-w-7xl px-4 sm:px-6 lg:px-8">
           <div className="flex w-full flex-col gap-6 md:flex-row md:items-end md:justify-between">
           <div className="min-w-0 flex-1">
+            <SafetyStatusBar alerts={alerts} loading={loading} error={error} loaded={alertsLoaded} className="mb-5 max-w-2xl" />
+
             {isAuthenticated ? (
               <h2 className="mb-3 text-2xl font-black tracking-tight text-white md:text-[28px]">
                 Mabuhay, {user?.name || "Traveler"}!
@@ -129,57 +113,45 @@ export default function Home() {
               Real-time crisis alerts, safe routes, and official guidance from the {siteInfo.officeName}.
             </p>
 
-            <div className="mt-5 flex w-full flex-col gap-2.5 sm:w-auto sm:flex-row">
+            <div className="mt-5 grid w-full max-w-2xl grid-cols-1 gap-2.5 sm:grid-cols-3">
               <Link
                 href="/crisis"
-                className="inline-flex items-center justify-center gap-2 rounded-full bg-blue-600 px-6 py-3.5 text-[11px] font-black uppercase tracking-widest text-white hover:bg-blue-700"
+                className="inline-flex min-h-12 items-center justify-center gap-2 rounded-2xl bg-blue-600 px-5 py-3.5 text-[11px] font-black uppercase tracking-widest text-white hover:bg-blue-700"
               >
-                {isAuthenticated ? "Open Crisis Hub" : "View Live Alerts"}
+                See alerts
                 <ArrowRight size={16} />
               </Link>
-              {isAuthenticated ? (
-                <Link
-                  href="/crisis/reports"
-                  className="inline-flex items-center justify-center gap-2 rounded-full bg-white px-6 py-3.5 text-[11px] font-black uppercase tracking-widest text-zinc-900"
-                >
-                  <FileText size={16} className="text-blue-600" />
-                  My Reports
-                </Link>
-              ) : (
-                <Link
-                  href="/register"
-                  className="inline-flex items-center justify-center gap-2 rounded-full bg-white px-6 py-3.5 text-[11px] font-black uppercase tracking-widest text-zinc-900"
-                >
-                  <Users size={16} className="text-blue-600" />
-                  Register
-                </Link>
-              )}
+              <Link
+                href="/crisis/report"
+                className="inline-flex min-h-12 items-center justify-center gap-2 rounded-2xl bg-red-600 px-5 py-3.5 text-[11px] font-black uppercase tracking-widest text-white hover:bg-red-700"
+              >
+                <FileWarning size={16} />
+                {FEATURE_NAMES.reportProblem}
+              </Link>
+              <a
+                href="tel:911"
+                className="inline-flex min-h-12 items-center justify-center gap-2 rounded-2xl bg-white px-5 py-3.5 text-[11px] font-black uppercase tracking-widest text-red-700 hover:bg-red-50"
+              >
+                <Phone size={16} />
+                Call 911
+              </a>
             </div>
 
-            {isAuthenticated ? (
-              <p className="mt-5 text-sm font-bold text-white md:hidden">
-                {loading ? "Checking alerts..." : `${activeAlerts.length} active alert${activeAlerts.length === 1 ? "" : "s"}`}
+            {!isAuthenticated ? (
+              <p className="mt-4 text-sm font-medium text-zinc-200">
+                Want SMS or email alerts?{" "}
+                <Link href="/register" className="font-black text-white underline underline-offset-4 hover:text-blue-200">
+                  Create a free account
+                </Link>
               </p>
             ) : null}
 
             </div>
-            <div className="hidden w-full max-w-xs shrink-0 grid-cols-2 gap-2 rounded-2xl border border-white/20 bg-white/10 px-3 py-4 text-center md:grid">
-              <div>
-                <p className="text-2xl font-black text-white">{loading ? "—" : activeAlerts.length}</p>
-                <p className="text-[10px] font-bold uppercase tracking-widest text-blue-100">Active alerts</p>
-              </div>
-              <div className="border-l border-white/15">
-                <p className="text-2xl font-black text-red-300">{loading ? "—" : criticalCount}</p>
-                <p className="text-[10px] font-bold uppercase tracking-widest text-blue-100">Critical</p>
-              </div>
-            </div>
-            {error ? (
-              <p className="mt-2 text-xs font-bold text-red-300 md:text-right">Could not load alert counts.</p>
-            ) : null}
           </div>
         </div>
       </section>
 
+      {isTourist ? <TouristHomeCards alerts={alerts} loading={loading} /> : (
       <section className="border-b border-zinc-100 bg-white py-6 md:py-10">
         <div className="mx-auto max-w-7xl px-3 sm:px-6">
           <h2 className={typography.pageTitle}>Live alerts</h2>
@@ -218,6 +190,7 @@ export default function Home() {
           )}
         </div>
       </section>
+      )}
 
       <section className="border-b border-zinc-100 bg-zinc-50 py-6 md:py-10">
         <div className="mx-auto max-w-7xl px-3 sm:px-6">
@@ -246,50 +219,7 @@ export default function Home() {
         </div>
       </section>
 
-      {showGuideHelp ? (
-        <section className="border-b border-zinc-100 bg-white py-6 md:py-10">
-          <div className="mx-auto max-w-7xl px-3 sm:px-6">
-            <h2 className={typography.pageTitle}>Guide help</h2>
-            <p className={`${typography.description} mb-4 mt-1`}>Tourism help from a local guide. This is not an emergency service.</p>
-            <div id="guide-assistance" className="flex items-start gap-3 rounded-2xl border border-purple-200 bg-purple-50/70 p-4">
-              <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-purple-700 text-white">
-                <Compass size={18} />
-              </span>
-              <div className="min-w-0">
-                <p className="text-sm font-black text-zinc-900">Request a local guide</p>
-                <p className="mt-1 text-xs font-medium leading-relaxed text-zinc-600">
-                  Tourism help from a local guide. This is not an emergency service.
-                </p>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setGuideRequestSubmitted(false);
-                    setGuideRequestOpen(true);
-                  }}
-                  className="mt-3 inline-flex min-h-11 items-center justify-center gap-2 rounded-xl bg-purple-700 px-4 py-2.5 text-sm font-black text-white hover:bg-purple-800"
-                >
-                  <Compass size={16} /> Request guide help
-                </button>
-                {guideRequestSubmitted ? (
-                  <p role="status" className="mt-2 text-sm font-bold text-green-700">
-                    Your request was submitted. The Tourism Office will coordinate a guide.
-                  </p>
-                ) : null}
-              </div>
-            </div>
-          </div>
-        </section>
-      ) : null}
-
       <PublicFeedbackSection />
-
-      {guideRequestOpen && guideAssistance?.enabled === true ? (
-        <GuideAssistanceRequestForm
-          assistance={guideAssistance}
-          onClose={() => setGuideRequestOpen(false)}
-          onSubmitted={() => setGuideRequestSubmitted(true)}
-        />
-      ) : null}
     </div>
   );
 }

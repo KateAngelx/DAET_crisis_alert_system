@@ -142,13 +142,13 @@ export async function POST(request) {
       .maybeSingle();
     if (settingsError) {
       return NextResponse.json(
-        { error: "Unable to verify Tourist Guide Assistance availability." },
+        { error: "Unable to check if guide help is available." },
         { status: 503 }
       );
     }
     if (!settings?.tourist_guide_assistance_enabled) {
       return NextResponse.json(
-        { error: "Tourist Guide Assistance requests are currently unavailable." },
+        { error: "Guide help requests are turned off for now." },
         { status: 403 }
       );
     }
@@ -192,7 +192,7 @@ export async function POST(request) {
     );
   } catch (error) {
     return NextResponse.json(
-      { error: error.message || "Unable to submit Tourist Guide Assistance request." },
+      { error: error.message || "Unable to send your help request." },
       { status: 500 }
     );
   }

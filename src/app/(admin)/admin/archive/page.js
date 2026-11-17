@@ -15,6 +15,7 @@ import {
   XCircle,
 } from "lucide-react";
 import { DashboardPageHeader } from "@/app/components/dashboard/DashboardPageHeader";
+import { AdminHistoryTabs } from "@/app/components/admin/AdminTabs";
 import { DashboardStatCard } from "@/app/components/dashboard/DashboardStatCard";
 import { AdminDashboardKpiSection } from "@/app/components/admin/AdminDashboardKpiSection";
 import {
@@ -141,17 +142,19 @@ export default function AdminArchivePage() {
   return (
     <>
       <DashboardPageHeader
-        title="Archive & History"
+        title="History"
         description="Admin-only record of closed incidents, inactive routes and hazards, and resolved crisis alerts."
         action={
           <Link href="/crisis/command" className={`${adminShell.btnPrimary} no-underline`}>
-            Command Center <ArrowRight size={iconSize.inline} />
+            Alerts <ArrowRight size={iconSize.inline} />
           </Link>
         }
       />
 
+      <AdminHistoryTabs active="archive" />
+
       <RoleContextBanner
-        helper="Status changes on Incident Reports (Approved, Rejected, Resolved, Closed) appear here after the next refresh."
+        helper="Status changes on Reports (Approved, Rejected, Resolved, Closed) appear here after the next refresh."
         tone="info"
       />
 
@@ -159,7 +162,7 @@ export default function AdminArchivePage() {
         pageId="archive"
         footer={
           <AdminDashboardQuickNavRow>
-            <AdminDashboardQuickNavLink href="/crisis/command" icon={Radio} label="Command Center" />
+            <AdminDashboardQuickNavLink href="/crisis/command" icon={Radio} label="Alerts" />
             <AdminDashboardQuickNavDivider />
             <AdminDashboardQuickNavLink
               href="/admin/incidents"
@@ -198,7 +201,7 @@ export default function AdminArchivePage() {
             />
             <DashboardStatCard
               compact
-              label="Resolved alerts"
+              label="Past alerts"
               value={resolvedAlerts.length}
               icon={<CheckCircle size={iconSize.stat} />}
               accent="green"
@@ -390,7 +393,7 @@ export default function AdminArchivePage() {
               <Navigation size={iconSize.inline} /> Roads & hazards
             </Link>
             <Link href="/crisis/command" className={`${adminShell.btnGhost} no-underline justify-center`}>
-              <Radio size={iconSize.inline} /> Command Center
+              <Radio size={iconSize.inline} /> Alerts
             </Link>
           </div>
         </AdminPanel>

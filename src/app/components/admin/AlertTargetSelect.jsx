@@ -9,6 +9,7 @@ import {
   normalizeTargetScope,
 } from "@/lib/alertTargeting";
 import { fetchWithFreshSession } from "@/lib/authSession";
+import { HelpTip } from "@/app/components/ui/HelpTip";
 
 /** Live "about N tourists will get this" using the same rules as the broadcast. */
 function useAudienceCount({ scope, radiusKm, latitude, longitude, location, title }) {
@@ -55,6 +56,7 @@ export function AlertTargetSelect({ value, onChange, radiusKm, onRadiusChange, s
     <div className="space-y-1">
       <label htmlFor="alert-target-scope" className="block text-[10px] font-black uppercase tracking-widest text-zinc-500">
         Who gets notified
+        <HelpTip label="targeting">Everyone: all registered tourists. In Daet now: tourists whose location, visit dates, tour or recent app use say they are here. Near the pin: within the distance you pick. Tour groups: groups going to the named place.</HelpTip>
       </label>
       <div className="flex gap-2">
         <select
@@ -81,7 +83,7 @@ export function AlertTargetSelect({ value, onChange, radiusKm, onRadiusChange, s
         ) : null}
       </div>
       <p className="text-[10px] font-medium text-zinc-500">
-        {option?.description} Guides and the alert on Crisis Hub are not affected.
+        {option?.description} Guides and the public Alerts page are not affected.
       </p>
       {current === "radius" && (latitude == null || longitude == null) ? (
         <p className="text-[10px] font-bold text-yellow-800">

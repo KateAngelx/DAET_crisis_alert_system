@@ -18,7 +18,7 @@ async function dispatchToUser(userId, title, message, requestId, notificationTyp
 export async function notifyGuideAssistanceAssignment(request, guide) {
   return dispatchToUser(
     guide.id,
-    "New Tourist Guide Assistance Request",
+    "New help request",
     `You have been selected to assist with a tourist request at ${request.location}. Review and accept or decline it in your Guide Portal.`,
     request.id,
     "tourist_guide_assistance_assigned"
@@ -31,7 +31,7 @@ export async function notifyGuideAssistanceOutcome(request, outcome) {
 
   const touristResult = await dispatchToUser(
     request.tourist_id,
-    outcome === "Accepted" ? "Guide Assistance Accepted" : "Guide Assistance Update",
+    outcome === "Accepted" ? "Help request accepted" : "Help request update",
     outcome === "Accepted"
       ? "Your selected tourist guide accepted the request. The Tourism Office will coordinate the assistance details."
       : "The selected guide declined your request. The Tourism Office has been notified and may select another guide.",
@@ -50,8 +50,8 @@ export async function notifyGuideAssistanceOutcome(request, outcome) {
     dispatchToUser(
       profile.id,
       outcome === "Accepted"
-        ? "Tourist Guide Assistance Accepted"
-        : "Tourist Guide Assistance Declined",
+        ? "Help request accepted"
+        : "Help request declined",
       outcome === "Accepted"
         ? `The guide assigned to request ${request.id} accepted. Coordinate the assistance with the tourist.`
         : `The guide assigned to request ${request.id} declined. Select another active guide or cancel the request.`,
@@ -68,8 +68,8 @@ export async function notifyGuideAssistanceCompletion(request) {
   const results = [
     await dispatchToUser(
       request.tourist_id,
-      "Tourist Guide Assistance Completed",
-      "The Tourism Office marked your Tourist Guide Assistance request as completed.",
+      "Help request completed",
+      "The Tourism Office marked your help request as completed.",
       request.id,
       "tourist_guide_assistance_completed"
     ),
@@ -77,7 +77,7 @@ export async function notifyGuideAssistanceCompletion(request) {
   if (request.assigned_guide_id) {
     results.push(await dispatchToUser(
       request.assigned_guide_id,
-      "Tourist Guide Assistance Completed",
+      "Help request completed",
       "The Tourism Office marked the assistance request assigned to you as completed.",
       request.id,
       "tourist_guide_assistance_completed"
@@ -93,8 +93,8 @@ export async function notifyGuideAssistanceCancellation(request) {
   const results = [
     await dispatchToUser(
       request.tourist_id,
-      "Tourist Guide Assistance Cancelled",
-      "Your Tourist Guide Assistance request was cancelled by the Tourism Office.",
+      "Help request cancelled",
+      "The Tourism Office cancelled your help request.",
       request.id,
       "tourist_guide_assistance_cancelled"
     ),
@@ -102,8 +102,8 @@ export async function notifyGuideAssistanceCancellation(request) {
   if (request.assigned_guide_id) {
     results.push(await dispatchToUser(
       request.assigned_guide_id,
-      "Tourist Guide Assistance Cancelled",
-      "The Tourism Office cancelled the Tourist Guide Assistance request assigned to you.",
+      "Help request cancelled",
+      "The Tourism Office cancelled the help request assigned to you.",
       request.id,
       "tourist_guide_assistance_cancelled"
     ));

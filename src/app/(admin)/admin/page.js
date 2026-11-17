@@ -33,6 +33,7 @@ import { PublicCardListPreview } from "@/app/components/shell/PublicCardListPrev
 import { AdminQuickActions } from "@/app/components/admin/AdminQuickActions";
 import { AdminPanel } from "@/app/components/admin/AdminPanel";
 import { sortRecordsNewestFirst } from "@/lib/recordSorting";
+import { AdminNeedsAction } from "@/app/components/admin/AdminNeedsAction";
 
 const PENDING_STATUSES = ["Submitted", "Approved", "Received", "Under Review"];
 const ACTION_STATUSES = ["Assigned", "Responding"];
@@ -167,20 +168,19 @@ export default function AdminDashboard() {
         title={ROLE_INTERFACE.admin.dashboard.title}
         description={ROLE_INTERFACE.admin.dashboard.description}
         action={
-          !isLoading && metrics.latestActivity ? (
-            <div className="flex items-center gap-2 bg-zinc-50 text-zinc-600 px-4 py-2 rounded-2xl border border-zinc-100">
-              <Clock size={14} className="text-zinc-400 shrink-0" />
-              <div>
-                <p className="text-[9px] font-black uppercase tracking-widest text-zinc-400">
-                  Latest Activity
-                </p>
-                <p className="text-xs font-bold text-zinc-700">
-                  {formatRelativeTime(metrics.latestActivity)}
-                </p>
-              </div>
-            </div>
-          ) : null
+          <Link
+            href="/crisis/command?new=1"
+            className="inline-flex items-center gap-2 rounded-2xl bg-red-600 px-5 py-3 text-xs font-black uppercase tracking-widest text-white shadow-lg shadow-red-600/20 hover:bg-red-700"
+          >
+            <Radio size={16} /> Send alert
+          </Link>
         }
+      />
+
+      <AdminNeedsAction
+        incidents={incidents}
+        activeAlerts={metrics.activeAlerts}
+        ready={!isLoading}
       />
 
       <RoleContextBanner helper={ROLE_INTERFACE.admin.dashboard.helper} tone="info" />
@@ -261,14 +261,20 @@ export default function AdminDashboard() {
             />
             <DashboardStatCard
               compact
-              label="Needs Action"
+              label="In progress"
               value={metrics.actionRequired.length}
               icon={<Bell size={iconSize.stat} />}
               accent="blue"
               href="/admin/incidents"
-              hrefLabel="Respond"
+              hrefLabel="Open"
             />
           </div>
+
+          {metrics.latestActivity ? (
+            <p className="flex items-center gap-2 text-xs font-medium text-zinc-500">
+              <Clock size={13} className="text-zinc-400" /> Latest activity: {formatRelativeTime(metrics.latestActivity)}
+            </p>
+          ) : null}
 
           <AdminDashboardCharts />
 
@@ -315,30 +321,30 @@ export default function AdminDashboard() {
         <AdminQuickActions
           items={[
             {
-              href: "/crisis/command",
+              href: "/crisis/command?new=1",
               icon: AlertTriangle,
-              title: "Broadcast Alert",
+              title: "Send alert",
               sub: `${metrics.activeAlerts.length} active`,
               color: "text-red-600",
             },
             {
               href: "/admin/incidents",
               icon: FileWarning,
-              title: "Manage Incidents",
+              title: "Reports",
               sub: `${metrics.pendingReports.length} pending · ${metrics.actionRequired.length} in progress`,
               color: "text-orange-600",
             },
             {
               href: "/admin/guide-assistance",
               icon: Users,
-              title: "Guide Assistance",
+              title: "Help requests",
               sub: "Review tourist assistance requests",
               color: "text-purple-600",
             },
             {
               href: "/admin/users",
               icon: Users,
-              title: "User Management",
+              title: "People",
               sub: `${totalUsers.toLocaleString()} registered`,
               color: "text-blue-600",
             },

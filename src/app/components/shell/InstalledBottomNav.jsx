@@ -6,11 +6,12 @@ import { Menu } from "lucide-react";
 import { isNavActive } from "@/lib/dashboardNav";
 import { useInstalledApp } from "@/lib/useInstalledApp";
 
-export function InstalledBottomNav({ items, onMore, menuOpen = false }) {
+/** `always`: show on phones in a browser too, not only in the installed app. */
+export function InstalledBottomNav({ items, onMore, menuOpen = false, always = false }) {
   const pathname = usePathname();
   const installedApp = useInstalledApp();
 
-  if (!installedApp) return null;
+  if (!installedApp && !always) return null;
 
   return (
     <nav

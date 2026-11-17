@@ -4,8 +4,9 @@ import React, { useCallback, useEffect, useState } from "react";
 import { SettingsPanelSkeleton } from "@/app/components/ui/Skeletons";
 import {
   Users, FileText, Download, Bell, Loader2, CheckCircle, AlertCircle, Mail, MessageSquare, Map, Route,
-  Coins, Gift, Compass,
+  Coins, Gift, Compass, BookOpen, ChevronRight,
 } from "lucide-react";
+import Link from "next/link";
 import { AdminPanel } from "@/app/components/admin/AdminPanel";
 import { EscalationSettingsPanel } from "@/app/components/admin/EscalationSettingsPanel";
 import { DashboardPageHeader } from "@/app/components/dashboard/DashboardPageHeader";
@@ -27,6 +28,23 @@ async function authFetch(url, options = {}) {
     },
   });
 }
+
+const REWARD_ROWS = [
+  { key: "registration_points_enabled", valueKey: "registration_points_value", label: "New account", description: "Once, when a tourist registers.", icon: Coins },
+  { key: "profile_completion_points_enabled", valueKey: "profile_completion_points_value", label: "Complete profile", description: "Once, when all profile fields are filled in.", icon: Users },
+  { key: "alert_reading_points_enabled", valueKey: "alert_reading_points_value", label: "Read an alert", description: "Only alerts you mark as eligible for points.", icon: Bell },
+  { key: "road_viewing_points_enabled", valueKey: "road_viewing_points_value", label: "View a road update", description: "Published road details.", icon: Route },
+  { key: "hazard_viewing_points_enabled", valueKey: "hazard_viewing_points_value", label: "View a hazard", description: "Published area hazard details.", icon: Map },
+  { key: "incident_report_points_enabled", valueKey: "incident_report_points_value", label: "Approved report", description: "Only after an admin approves the points. Never delays the response.", icon: FileText },
+  { key: "crisis_feedback_points_enabled", valueKey: "crisis_feedback_points_value", label: "Approved feedback", description: "Suggested amount. The admin picks the final amount when approving.", icon: MessageSquare, limits: true },
+  { key: "tourist_guide_completion_points_enabled", fixed: 10, label: "Finish How to Use", description: "Once, when a tourist finishes the guide.", icon: CheckCircle },
+];
+
+const FEEDBACK_LIMITS = [
+  { key: "crisis_feedback_points_min_value", label: "Lowest" },
+  { key: "crisis_feedback_points_max_value", label: "Highest" },
+  { key: "crisis_feedback_daily_submission_cap", label: "Per tourist per day", unit: "awards" },
+];
 
 function ToggleIndicator({ enabled, enabledLabel = "On", disabledLabel = "Off" }) {
   return (
@@ -208,14 +226,14 @@ export default function AdminSettingsPage() {
         }),
       });
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error || "Failed to save Tourist Guide Assistance settings");
+      if (!res.ok) throw new Error(data.error || "Failed to save help request settings");
       setGuideAssistance({
         enabled: data.settings.tourist_guide_assistance_enabled === true,
         introductoryInformation: data.settings.tourist_guide_assistance_intro || "",
         availabilityMessage: data.settings.tourist_guide_assistance_availability || "",
       });
       setUpdatedAt(data.settings.updated_at);
-      setMessage({ type: "success", text: "Tourist Guide Assistance settings saved." });
+      setMessage({ type: "success", text: "Help request settings saved." });
     } catch (err) {
       setMessage({ type: "error", text: err.message });
     } finally {
@@ -376,6 +394,20 @@ export default function AdminSettingsPage() {
       />
       <RoleContextBanner helper={ROLE_INTERFACE.admin.settings.helper} tone="info" />
 
+      <Link
+        href="/admin/how-to-use"
+        className="flex items-center justify-between gap-3 rounded-2xl border border-blue-200 bg-blue-50/60 px-4 py-3 transition-colors hover:bg-blue-50"
+      >
+        <span className="flex min-w-0 items-center gap-3">
+          <BookOpen size={20} className="shrink-0 text-blue-600" />
+          <span className="min-w-0">
+            <span className="block text-sm font-black text-zinc-900">How to Use</span>
+            <span className="block text-xs font-medium text-zinc-600">Eight short steps for running CONNECT-DAET, from sending alerts to escalation.</span>
+          </span>
+        </span>
+        <ChevronRight size={18} className="shrink-0 text-blue-600" />
+      </Link>
+
       {message && (
         <div className={`p-4 rounded-2xl flex items-start gap-3 text-sm font-medium ${
           message.type === "success"
@@ -392,7 +424,7 @@ export default function AdminSettingsPage() {
       )}
 
       <AdminPanel
-        title="Tourist Guide Assistance"
+        title="Help requests"
         subtitle="Control whether registered tourists can submit guide assistance requests."
       >
         {loading ? (
@@ -475,7 +507,7 @@ export default function AdminSettingsPage() {
             >
               {savingGuideAssistance
                 ? <><Loader2 size={16} className="animate-spin" /> Saving...</>
-                : "Save Tourist Guide Assistance"}
+                : "Save help request settings"}
             </button>
           </>
         )}
@@ -493,14 +525,14 @@ export default function AdminSettingsPage() {
               {[
                 {
                   key: "map",
-                  label: "Crisis Hub map",
-                  description: "The affected-areas map on the public Crisis Hub.",
+                  label: "Alerts map",
+                  description: "The affected-areas map on the public Alerts page.",
                   icon: Map,
                 },
                 {
                   key: "roadsAndHazards",
                   label: "Roads and hazards",
-                  description: "The public Roads & Travel page, area hazards, and those links in the visitor menu.",
+                  description: "The public Roads & Hazards page, area hazards, and those links in the visitor menu.",
                   icon: Route,
                 },
               ].map(({ key, label, description, icon: Icon }) => (
@@ -548,292 +580,116 @@ export default function AdminSettingsPage() {
           <SettingsPanelSkeleton rows={3} />
         ) : (
           <>
-            <div className="mb-5 grid grid-cols-1 gap-3 sm:grid-cols-2">
-              {[
-                {
-                  key: "rewards_enabled",
-                  label: "Rewards program",
-                  description: "When off, no reward points are awarded.",
-                  icon: Gift,
-                },
-                {
-                  key: "registration_points_enabled",
-                  label: "Registration points",
-                  description: "Award points once when a new tourist profile is created.",
-                  icon: Coins,
-                },
-                {
-                  key: "profile_completion_points_enabled",
-                  label: "Profile completion points",
-                  description: "Award points once when a tourist first completes all required profile fields.",
-                  icon: Users,
-                },
-                {
-                  key: "alert_reading_points_enabled",
-                  label: "Alert reading points",
-                  description: "Allow points for reading explicitly eligible public advisories.",
-                  icon: Bell,
-                },
-                {
-                  key: "road_viewing_points_enabled",
-                  label: "Viewing road information",
-                  description: "Allow points for viewing published road advisory details.",
-                  icon: Route,
-                },
-                {
-                  key: "hazard_viewing_points_enabled",
-                  label: "Viewing hazard information",
-                  description: "Allow points for viewing published area hazard details.",
-                  icon: Map,
-                },
-                {
-                  key: "crisis_feedback_points_enabled",
-                  label: "Crisis feedback rewards",
-                  description: "Allow optional point awards for approved registered-tourist submissions. Approval itself never awards points.",
-                  icon: MessageSquare,
-                },
-                {
-                  key: "incident_report_points_enabled",
-                  label: "Incident reporting rewards",
-                  description: "Allow optional points for eligible tourist incident reports after an administrator approves the points decision. Incident response is never delayed by this setting.",
-                  icon: FileText,
-                },
-                {
-                  key: "tourist_guide_completion_points_enabled",
-                  label: "Tourist guide completion reward",
-                  description: "Award exactly 10 points once when a tourist marks the How to Use guide as completed.",
-                  icon: CheckCircle,
-                },
-              ].map(({ key, label, description, icon: Icon }) => (
-                <button
-                  key={key}
-                  type="button"
-                  role="switch"
-                  aria-checked={rewardsSettings[key]}
-                  onClick={() => {
-                    setRewardsSettings((prev) => ({ ...prev, [key]: !prev[key] }));
-                    setMessage(null);
-                  }}
-                  className={`w-full flex items-start gap-4 p-4 rounded-2xl border text-left transition-all ${
-                    rewardsSettings[key]
-                      ? "bg-blue-50 border-blue-200"
-                      : "bg-zinc-50 border-zinc-100 opacity-75"
-                  }`}
-                >
-                  <Icon size={18} className={rewardsSettings[key] ? "text-blue-600 shrink-0 mt-0.5" : "text-zinc-400 shrink-0 mt-0.5"} />
-                  <div className="flex-1">
-                    <p className="font-black text-sm uppercase tracking-wide text-zinc-900">{label}</p>
-                    <p className="text-xs text-zinc-500 mt-1 font-medium">{description}</p>
-                  </div>
-                  <ToggleIndicator enabled={rewardsSettings[key]} />
-                </button>
-              ))}
+            <button
+              type="button"
+              role="switch"
+              aria-checked={rewardsSettings.rewards_enabled}
+              onClick={() => {
+                setRewardsSettings((prev) => ({ ...prev, rewards_enabled: !prev.rewards_enabled }));
+                setMessage(null);
+              }}
+              className={`mb-4 flex w-full items-center gap-3 rounded-2xl border p-4 text-left transition-all ${
+                rewardsSettings.rewards_enabled ? "bg-blue-50 border-blue-200" : "bg-zinc-50 border-zinc-200"
+              }`}
+            >
+              <Gift size={18} className={rewardsSettings.rewards_enabled ? "shrink-0 text-blue-600" : "shrink-0 text-zinc-400"} />
+              <span className="flex-1">
+                <span className="block text-sm font-black uppercase tracking-wide text-zinc-900">Rewards program</span>
+                <span className="mt-0.5 block text-xs font-medium text-zinc-500">Main switch. When off, no points are given for anything below.</span>
+              </span>
+              <ToggleIndicator enabled={rewardsSettings.rewards_enabled} />
+            </button>
+
+            <div className={`overflow-hidden rounded-2xl border border-zinc-200 ${rewardsSettings.rewards_enabled ? "" : "opacity-60"}`}>
+              <div className="hidden grid-cols-[minmax(0,1fr)_6.5rem_8rem] gap-4 bg-zinc-50 px-4 py-2 text-[10px] font-black uppercase tracking-widest text-zinc-500 sm:grid">
+                <span>Tourists earn points for</span>
+                <span>On / off</span>
+                <span className="text-right">Points</span>
+              </div>
+              <ul className="divide-y divide-zinc-100">
+                {REWARD_ROWS.map(({ key, valueKey, fixed, label, description, icon: Icon, limits }) => {
+                  const on = rewardsSettings[key] === true;
+                  return (
+                    <li key={key} className="px-4 py-3">
+                      <div className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-x-3 gap-y-2 sm:grid-cols-[minmax(0,1fr)_6.5rem_8rem] sm:gap-4">
+                        <div className="flex min-w-0 items-start gap-3">
+                          <Icon size={16} className={on ? "mt-0.5 shrink-0 text-blue-600" : "mt-0.5 shrink-0 text-zinc-400"} />
+                          <div className="min-w-0">
+                            <p className="text-sm font-black text-zinc-900">{label}</p>
+                            <p className="text-xs font-medium text-zinc-500">{description}</p>
+                          </div>
+                        </div>
+                        <button
+                          type="button"
+                          role="switch"
+                          aria-checked={on}
+                          aria-label={`${label}: ${on ? "on" : "off"}`}
+                          onClick={() => {
+                            setRewardsSettings((prev) => ({ ...prev, [key]: !prev[key] }));
+                            setMessage(null);
+                          }}
+                          className="justify-self-end sm:justify-self-start"
+                        >
+                          <ToggleIndicator enabled={on} />
+                        </button>
+                        <div className="col-span-2 flex items-center justify-end gap-2 sm:col-span-1">
+                          {fixed ? (
+                            <span className="text-sm font-black text-zinc-700">{fixed} pts</span>
+                          ) : (
+                            <label className="flex items-center gap-2">
+                              <span className="sr-only">Points for {label}</span>
+                              <input
+                          type="number"
+                          min="0"
+                          max="1000000"
+                          step="1"
+                          disabled={!on}
+                          value={rewardsSettings[valueKey]}
+                          onChange={(event) => {
+                            const value = event.target.value;
+                            setRewardsSettings((prev) => ({ ...prev, [valueKey]: value === "" ? "" : Number(value) }));
+                            setMessage(null);
+                          }}
+                          className="w-20 rounded-lg border border-zinc-200 bg-white px-2 py-1.5 text-right text-sm font-bold text-zinc-900 focus:border-blue-400 focus:outline-none disabled:bg-zinc-100 disabled:text-zinc-400"
+                        />
+                              <span className="text-xs font-black text-zinc-500">pts</span>
+                            </label>
+                          )}
+                        </div>
+                      </div>
+                      {limits && on ? (
+                        <div className="mt-2 flex flex-wrap items-center justify-end gap-x-4 gap-y-2 rounded-xl bg-zinc-50 px-3 py-2 text-xs font-bold text-zinc-600">
+                          <span className="mr-auto">Award limits</span>
+                          {FEEDBACK_LIMITS.map(({ key: limitKey, label: limitLabel, unit = "pts" }) => (
+                            <label key={limitKey} className="flex items-center gap-2">
+                              <span>{limitLabel}</span>
+                              <input
+                          type="number"
+                          min="0"
+                          max="1000000"
+                          step="1"
+                          disabled={false}
+                          value={rewardsSettings[limitKey]}
+                          onChange={(event) => {
+                            const value = event.target.value;
+                            setRewardsSettings((prev) => ({ ...prev, [limitKey]: value === "" ? "" : Number(value) }));
+                            setMessage(null);
+                          }}
+                          className="w-20 rounded-lg border border-zinc-200 bg-white px-2 py-1.5 text-right text-sm font-bold text-zinc-900 focus:border-blue-400 focus:outline-none disabled:bg-zinc-100 disabled:text-zinc-400"
+                        />
+                              <span className="text-zinc-500">{unit}</span>
+                            </label>
+                          ))}
+                        </div>
+                      ) : null}
+                    </li>
+                  );
+                })}
+              </ul>
             </div>
-
-            <label className="block mb-5">
-              <span className="block text-xs font-black uppercase tracking-widest text-zinc-600 mb-2">
-                Points for registration
-              </span>
-              <input
-                type="number"
-                min="0"
-                max="1000000"
-                step="1"
-                value={rewardsSettings.registration_points_value}
-                onChange={(event) => {
-                  const value = event.target.value;
-                  setRewardsSettings((prev) => ({
-                    ...prev,
-                    registration_points_value: value === "" ? "" : Number(value),
-                  }));
-                  setMessage(null);
-                }}
-                className="w-full sm:max-w-xs rounded-xl border border-zinc-200 bg-white px-4 py-3 text-sm font-bold text-zinc-900 focus:border-blue-400 focus:outline-none"
-              />
-              <span className="block text-xs text-zinc-500 mt-2">
-                Enter a whole number from 0 to 1,000,000. Set to 0 to disable the award without disabling the program.
-              </span>
-            </label>
-
-            <label className="block mb-5">
-              <span className="block text-xs font-black uppercase tracking-widest text-zinc-600 mb-2">
-                Points for completing a tourist profile
-              </span>
-              <input
-                type="number"
-                min="0"
-                max="1000000"
-                step="1"
-                value={rewardsSettings.profile_completion_points_value}
-                onChange={(event) => {
-                  const value = event.target.value;
-                  setRewardsSettings((prev) => ({
-                    ...prev,
-                    profile_completion_points_value: value === "" ? "" : Number(value),
-                  }));
-                  setMessage(null);
-                }}
-                className="w-full sm:max-w-xs rounded-xl border border-zinc-200 bg-white px-4 py-3 text-sm font-bold text-zinc-900 focus:border-blue-400 focus:outline-none"
-              />
-              <span className="block text-xs text-zinc-500 mt-2">
-                Enter a whole number from 0 to 1,000,000. The award is issued only on first completion.
-              </span>
-            </label>
-
-            <label className="block mb-5">
-              <span className="block text-xs font-black uppercase tracking-widest text-zinc-600 mb-2">
-                Points for reading an eligible advisory
-              </span>
-              <input
-                type="number"
-                min="0"
-                max="1000000"
-                step="1"
-                value={rewardsSettings.alert_reading_points_value}
-                onChange={(event) => {
-                  const value = event.target.value;
-                  setRewardsSettings((prev) => ({
-                    ...prev,
-                    alert_reading_points_value: value === "" ? "" : Number(value),
-                  }));
-                  setMessage(null);
-                }}
-                className="w-full sm:max-w-xs rounded-xl border border-zinc-200 bg-white px-4 py-3 text-sm font-bold text-zinc-900 focus:border-blue-400 focus:outline-none"
-              />
-              <span className="block text-xs text-zinc-500 mt-2">
-                Enter a whole number from 0 to 1,000,000. Registration points have separate controls.
-              </span>
-            </label>
-
-            <label className="block mb-5">
-              <span className="block text-xs font-black uppercase tracking-widest text-zinc-600 mb-2">
-                Points for viewing road information
-              </span>
-              <input
-                type="number"
-                min="0"
-                max="1000000"
-                step="1"
-                value={rewardsSettings.road_viewing_points_value}
-                onChange={(event) => {
-                  const value = event.target.value;
-                  setRewardsSettings((prev) => ({
-                    ...prev,
-                    road_viewing_points_value: value === "" ? "" : Number(value),
-                  }));
-                  setMessage(null);
-                }}
-                className="w-full sm:max-w-xs rounded-xl border border-zinc-200 bg-white px-4 py-3 text-sm font-bold text-zinc-900 focus:border-blue-400 focus:outline-none"
-              />
-              <span className="block text-xs text-zinc-500 mt-2">
-                Enter a whole number from 0 to 1,000,000. Only published road advisory details qualify.
-              </span>
-            </label>
-
-            <div className="mb-5 grid gap-4 sm:grid-cols-2">
-              {[
-                {
-                  key: "crisis_feedback_points_min_value",
-                  label: "Minimum points per award",
-                  min: 1,
-                  helper: "Lowest amount an admin may award.",
-                },
-                {
-                  key: "crisis_feedback_points_value",
-                  label: "Suggested default points",
-                  min: 1,
-                  helper: "Prefills the award form; it never triggers an automatic award.",
-                },
-                {
-                  key: "crisis_feedback_points_max_value",
-                  label: "Maximum points per award",
-                  min: 1,
-                  helper: "Highest amount an admin may award.",
-                },
-                {
-                  key: "crisis_feedback_daily_submission_cap",
-                  label: "Daily submissions rewarded per tourist",
-                  min: 1,
-                  helper: "Maximum number of submissions rewarded per tourist per Asia/Manila calendar day.",
-                },
-              ].map(({ key, label, min, helper }) => (
-                <label key={key} className="block">
-                  <span className="mb-2 block text-xs font-black uppercase tracking-widest text-zinc-600">
-                    {label}
-                  </span>
-                  <input
-                    type="number"
-                    min={min}
-                    max="1000000"
-                    step="1"
-                    value={rewardsSettings[key]}
-                    onChange={(event) => {
-                      const value = event.target.value;
-                      setRewardsSettings((prev) => ({
-                        ...prev,
-                        [key]: value === "" ? "" : Number(value),
-                      }));
-                      setMessage(null);
-                    }}
-                    className="w-full rounded-xl border border-zinc-200 bg-white px-4 py-3 text-sm font-bold text-zinc-900 focus:border-blue-400 focus:outline-none"
-                  />
-                  <span className="mt-2 block text-xs text-zinc-500">{helper}</span>
-                </label>
-              ))}
-            </div>
-            <p className="mb-5 text-xs font-medium text-zinc-500">
-              Award limits must satisfy minimum ≤ default ≤ maximum. Daily limits count awarded submissions, not points.
+            <p className="mb-4 mt-3 text-xs font-medium text-zinc-500">
+              Whole numbers from 0 to 1,000,000. Set a reward to 0, or switch it off, to stop just that one. Points are a placeholder balance and cannot be redeemed.
             </p>
-
-            <label className="block mb-5">
-              <span className="block text-xs font-black uppercase tracking-widest text-zinc-600 mb-2">
-                Points for an approved incident report
-              </span>
-              <input
-                type="number"
-                min="0"
-                max="1000000"
-                step="1"
-                value={rewardsSettings.incident_report_points_value}
-                onChange={(event) => {
-                  const value = event.target.value;
-                  setRewardsSettings((prev) => ({
-                    ...prev,
-                    incident_report_points_value: value === "" ? "" : Number(value),
-                  }));
-                  setMessage(null);
-                }}
-                className="w-full sm:max-w-xs rounded-xl border border-zinc-200 bg-white px-4 py-3 text-sm font-bold text-zinc-900 focus:border-blue-400 focus:outline-none"
-              />
-              <span className="block text-xs text-zinc-500 mt-2">
-                Enter a whole number from 0 to 1,000,000. Points are awarded only after an administrator explicitly approves the separate points decision; the global rewards switch also applies.
-              </span>
-            </label>
-
-            <label className="block mb-5">
-              <span className="block text-xs font-black uppercase tracking-widest text-zinc-600 mb-2">
-                Points for viewing hazard information
-              </span>
-              <input
-                type="number"
-                min="0"
-                max="1000000"
-                step="1"
-                value={rewardsSettings.hazard_viewing_points_value}
-                onChange={(event) => {
-                  const value = event.target.value;
-                  setRewardsSettings((prev) => ({
-                    ...prev,
-                    hazard_viewing_points_value: value === "" ? "" : Number(value),
-                  }));
-                  setMessage(null);
-                }}
-                className="w-full sm:max-w-xs rounded-xl border border-zinc-200 bg-white px-4 py-3 text-sm font-bold text-zinc-900 focus:border-blue-400 focus:outline-none"
-              />
-              <span className="block text-xs text-zinc-500 mt-2">
-                Enter a whole number from 0 to 1,000,000. Only published area hazard details qualify.
-              </span>
-            </label>
 
             <button
               type="button"
@@ -1014,7 +870,7 @@ export default function AdminSettingsPage() {
 
       <AdminPanel title="System notes" bodyClassName="bg-zinc-50/80">
         <ul className="text-sm text-zinc-600 font-medium space-y-2 list-disc pl-5">
-          <li>Crisis Command Center alert channels (email/SMS/app) control <em>how</em> an alert is sent; this page controls <em>who</em> receives it.</li>
+          <li>Alert channels (email/SMS/app) control <em>how</em> an alert is sent; this page controls <em>who</em> receives it.</li>
           <li>
             SMS tries the configured primary provider and falls back to the other provider if sending fails. Configure <code className="text-xs bg-white px-1 rounded">SMS_PRIMARY_PROVIDER</code>, <code className="text-xs bg-white px-1 rounded">SEMAPHORE_API_KEY</code>, and <code className="text-xs bg-white px-1 rounded">IPROG_SMS_API_TOKEN</code>.
             An optional Semaphore sender name can be set with <code className="text-xs bg-white px-1 rounded">SEMAPHORE_SENDER_NAME</code>. Manage sender names in your{" "}

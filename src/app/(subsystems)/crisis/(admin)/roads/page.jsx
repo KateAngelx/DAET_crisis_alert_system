@@ -427,7 +427,7 @@ function RouteAdvisoriesAdminPanel({
         pageId="roads-hazards"
         footer={
           <AdminDashboardQuickNavRow>
-            <AdminDashboardQuickNavLink href="/crisis/command" icon={Radio} label="Command Center" />
+            <AdminDashboardQuickNavLink href="/crisis/command" icon={Radio} label="Alerts" />
             {!embedded ? (
               <>
                 <AdminDashboardQuickNavDivider />

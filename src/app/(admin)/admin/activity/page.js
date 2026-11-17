@@ -3,6 +3,7 @@
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { Activity, ClipboardList, Eye, Radio, FileWarning } from "lucide-react";
 import { DashboardPageHeader } from "@/app/components/dashboard/DashboardPageHeader";
+import { AdminHistoryTabs } from "@/app/components/admin/AdminTabs";
 import { DashboardStatCard } from "@/app/components/dashboard/DashboardStatCard";
 import { AdminFilterBar } from "@/app/components/admin/AdminFilterBar";
 import { AdminPanel } from "@/app/components/admin/AdminPanel";
@@ -122,6 +123,8 @@ export default function AdminActivityLogPage() {
           </button>
         }
       />
+
+      <AdminHistoryTabs active="activity" />
 
       <RoleContextBanner
         helper="Select any row and open Details for the full record, status change, and notes."

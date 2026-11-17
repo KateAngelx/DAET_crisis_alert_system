@@ -1,9 +1,9 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { AlertTriangle, BookOpen, CheckCircle2, CircleHelp, CircleUserRound, Compass, FileText, FileWarning, Home, Info, LogOut, Menu, MessageSquare, Route, User, X } from "lucide-react";
+import { AlertTriangle, BookOpen, ChevronDown, CircleHelp, CircleUserRound, Compass, FileText, FileWarning, Home, Info, LifeBuoy, LogOut, Mail, Menu, MessageSquare, Route, User, X } from "lucide-react";
 import { BrandLogo } from "@/app/components/BrandLogo";
 import { siteInfo } from "@/lib/siteInfo";
 import { useAuthStore } from "../store/crisisStore";
@@ -13,41 +13,40 @@ import { isPublicNavActive } from "@/lib/navUtils";
 import { useInstalledApp } from "@/lib/useInstalledApp";
 import { usePublicVisibility } from "@/lib/usePublicVisibility";
 import { TouristTourMenu } from "@/app/components/tourist/TouristTourMenu";
+import { FEATURE_NAMES } from "@/lib/featureNames";
 
 const PRIMARY_NAV = [
   { name: "Home", short: "Home", href: "/", icon: Home },
-  { name: "Crisis Hub", short: "Crisis", href: "/crisis", icon: AlertTriangle },
-  { name: "Roads & Travel", short: "Roads", href: "/routes", icon: Route },
+  { name: FEATURE_NAMES.alerts, short: "Alerts", href: "/crisis", icon: AlertTriangle },
+  { name: FEATURE_NAMES.roads, short: "Roads", href: "/routes", icon: Route },
 ];
 
-const GUEST_INFO_NAV = [
-  { name: "About", short: "About", href: "/about", icon: Info },
-  { name: "FAQs", short: "FAQs", href: "/faq", icon: CircleHelp },
+/** Guests: all help pages sit under one Help menu, so the main menu stays short. */
+const HELP_ITEMS = [
+  { name: "How to Use", href: "/how-to-use", icon: BookOpen },
+  { name: "FAQs", href: "/faq", icon: CircleHelp },
+  { name: "About", href: "/about", icon: Info },
+  { name: "Contact", href: "/contact", icon: Mail },
 ];
+const HELP_PATHS = HELP_ITEMS.map((item) => item.href);
 
+/** Signed-in menu: everything about "me" in one short list. Past alerts is a tab on Alerts. */
 const ACCOUNT_SECTIONS = [
   {
-    title: "Account",
+    title: "Me",
     tone: "text-blue-600",
     items: [
-      { name: "My Profile", href: "/profile", icon: User },
-      { name: "How to Use", href: "/how-to-use", icon: BookOpen, touristOnly: true },
+      { name: "Profile & alert settings", href: "/profile", icon: User },
+      { name: FEATURE_NAMES.feedback, href: "/crisis/feedback", icon: MessageSquare },
     ],
   },
   {
-    title: "Information",
+    title: "Help",
     tone: "text-zinc-500",
     items: [
-      { name: "About", href: "/about", icon: Info },
+      { name: "How to Use", href: "/how-to-use", icon: BookOpen },
       { name: "FAQs", href: "/faq", icon: CircleHelp },
-    ],
-  },
-  {
-    title: "Alerts",
-    tone: "text-orange-600",
-    items: [
-      { name: "Feedback", href: "/crisis/feedback", icon: MessageSquare },
-      { name: "Resolved alerts", href: "/crisis/resolved", icon: CheckCircle2 },
+      { name: "About", href: "/about", icon: Info },
     ],
   },
 ];
@@ -56,6 +55,7 @@ export function PublicHeader() {
   const pathname = usePathname();
   const [accountOpen, setAccountOpen] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
+  const [helpOpen, setHelpOpen] = useState(false);
   const { user, isAuthenticated, logout } = useAuthStore();
   const visibility = usePublicVisibility();
   const installedApp = useInstalledApp();
@@ -66,17 +66,33 @@ export function PublicHeader() {
     setMenuPath(pathname);
     setAccountOpen(false);
     setMenuOpen(false);
+    setHelpOpen(false);
   }
 
   const signedIn = isAuthenticated;
   const primaryNav = [
     ...PRIMARY_NAV.filter((item) => visibility.roadsAndHazards || item.href !== "/routes"),
     ...(signedIn
-      ? [{ name: "My Reports", short: "Reports", href: "/crisis/reports", icon: FileText }]
-      : [{ name: "Report", short: "Report", href: "/crisis/report", icon: FileWarning }]),
+      ? [{ name: FEATURE_NAMES.reports, short: "Reports", href: "/crisis/reports", icon: FileText }]
+      : [{ name: FEATURE_NAMES.reportProblem, short: "Report", href: "/crisis/report", icon: FileWarning }]),
   ];
-  const mobileNav = signedIn ? primaryNav : [...primaryNav, ...GUEST_INFO_NAV];
-  const browserNav = signedIn ? primaryNav : [...primaryNav, ...GUEST_INFO_NAV];
+  // The fifth item: Me when signed in, Help for guests.
+  const lastItem = signedIn
+    ? { name: "Me", short: "Me", href: "/profile", icon: CircleUserRound }
+    : { name: "Help", short: "Help", href: "/how-to-use", icon: LifeBuoy };
+  const mobileNav = [...primaryNav, lastItem];
+  const browserNav = signedIn ? mobileNav : primaryNav;
+  // Phones: signed-in users get the bottom bar in the browser too (guests keep the ☰ menu).
+  const showDock = installedApp || signedIn;
+
+  useEffect(() => {
+    if (!signedIn) return undefined;
+    document.documentElement.dataset.mobileDock = "true";
+    return () => {
+      delete document.documentElement.dataset.mobileDock;
+    };
+  }, [signedIn]);
+  const helpActive = HELP_PATHS.some((href) => isPublicNavActive(pathname, href));
   const accountSections = ACCOUNT_SECTIONS.map((section) => ({
     ...section,
     items: section.items.filter((item) => !item.touristOnly || user?.role === "tourist"),
@@ -118,7 +134,7 @@ export function PublicHeader() {
           <div data-public-header-shell className="max-md:rounded-xl max-md:bg-white max-md:border max-md:border-zinc-200 max-md:shadow-[0_4px_18px_rgba(15,23,42,0.08)] md:rounded-none md:bg-transparent md:shadow-none md:border-0">
             <div className="mx-auto grid h-12 w-full max-w-7xl min-w-0 grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center gap-1.5 overflow-visible px-2 md:h-16 md:gap-2 md:px-6 lg:px-8">
               <div className="col-start-1 flex min-w-0 items-center gap-1.5">
-              {!installedApp ? (
+              {!showDock ? (
                 <button
                   type="button"
                   className="lg:hidden -ml-0.5 inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-zinc-700 hover:bg-zinc-100"
@@ -160,6 +176,39 @@ export function PublicHeader() {
                     <span className="font-sans leading-none">{item.name}</span>
                   </Link>
                 ))}
+                {!signedIn ? (
+                  <div className="relative">
+                    <button
+                      type="button"
+                      aria-expanded={helpOpen}
+                      aria-haspopup="true"
+                      onClick={() => setHelpOpen((open) => !open)}
+                      className={`inline-flex shrink-0 items-center gap-1 whitespace-nowrap rounded-full px-2 py-2 text-[10px] lg:text-[11px] font-black uppercase tracking-wider transition-all ${
+                        helpActive ? "bg-blue-600 text-white shadow-lg shadow-blue-200" : "text-zinc-600 hover:bg-white/80"
+                      }`}
+                    >
+                      Help <ChevronDown size={12} />
+                    </button>
+                    {helpOpen ? (
+                      <div className="absolute left-1/2 top-full z-50 mt-2 w-52 -translate-x-1/2 rounded-2xl border border-zinc-200 bg-white p-2 shadow-xl">
+                        {HELP_ITEMS.map((item) => {
+                          const Icon = item.icon;
+                          return (
+                            <Link
+                              key={item.href}
+                              href={item.href}
+                              onClick={() => setHelpOpen(false)}
+                              className="flex items-center gap-3 rounded-xl px-3 py-2.5 text-[11px] font-black uppercase tracking-widest text-zinc-700 hover:bg-zinc-50"
+                            >
+                              <Icon size={16} className="shrink-0 text-blue-600" />
+                              {item.name}
+                            </Link>
+                          );
+                        })}
+                      </div>
+                    ) : null}
+                  </div>
+                ) : null}
               </nav>
 
               <div className="relative z-20 col-start-3 flex items-center justify-end gap-1.5 bg-white md:gap-2">
@@ -207,7 +256,7 @@ export function PublicHeader() {
                                 <p className={`px-3 pb-1 pt-3 text-[10px] font-black uppercase tracking-[0.2em] ${section.tone}`}>
                                   {section.title}
                                 </p>
-                                {section.title === "Account" && showTour ? (
+                                {section.title === "Me" && showTour ? (
                                   <button
                                     type="button"
                                     className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left text-[11px] font-black uppercase tracking-widest text-purple-700 hover:bg-purple-50"
@@ -264,7 +313,7 @@ export function PublicHeader() {
 
       <div className="hidden md:block h-16 shrink-0" aria-hidden="true" />
 
-      {menuOpen && !installedApp ? (
+      {menuOpen && !showDock ? (
         <>
           <button
             type="button"
@@ -296,8 +345,35 @@ export function PublicHeader() {
                 </Link>
               );
             })}
+            {!signedIn ? (
+              <>
+                <p className="px-4 pb-1 pt-4 text-[10px] font-black uppercase tracking-[0.2em] text-zinc-500">Help</p>
+                {HELP_ITEMS.map((item) => {
+                  const Icon = item.icon;
+                  const active = isPublicNavActive(pathname, item.href);
+                  return (
+                    <Link
+                      key={item.href}
+                      href={item.href}
+                      aria-current={active ? "page" : undefined}
+                      className={`flex items-center gap-3 border-b border-zinc-100 px-4 py-3 text-sm font-semibold ${
+                        active ? "bg-blue-50 text-blue-700" : "text-zinc-800"
+                      }`}
+                      onClick={() => setMenuOpen(false)}
+                    >
+                      <Icon size={18} />
+                      {item.name}
+                    </Link>
+                  );
+                })}
+              </>
+            ) : null}
           </nav>
         </>
+      ) : null}
+
+      {helpOpen ? (
+        <button type="button" className="fixed inset-0 z-40 cursor-default" aria-label="Close help menu" onClick={() => setHelpOpen(false)} />
       ) : null}
 
       {accountOpen && (
@@ -309,7 +385,7 @@ export function PublicHeader() {
         />
       )}
 
-      {installedApp ? (
+      {showDock ? (
       <nav
         data-public-mobile-nav
         className="public-mobile-dock lg:hidden fixed z-50 bottom-[max(0.75rem,env(safe-area-inset-bottom))] inset-x-3 sm:inset-x-4 pointer-events-none"

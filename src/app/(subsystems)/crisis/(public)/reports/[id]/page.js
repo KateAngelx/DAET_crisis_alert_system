@@ -44,7 +44,7 @@ export default function ReportDetailPage({ params }) {
   if (loading) {
     return (
       <PublicPageShell>
-        <InfoPageHero title="Report Details" description="Loading incident report..." />
+        <InfoPageHero title="Report Details" description="Loading report..." />
         <PublicPageContent>
           <ReportDetailSkeleton />
         </PublicPageContent>
@@ -66,7 +66,11 @@ export default function ReportDetailPage({ params }) {
     return (
       <PublicPageShell>
         <PublicPageContent>
-          <EmptyState title="Report not found" description="This report may have been removed or you may not have access." />
+          <EmptyState
+            title="Report not found"
+            description="This report may have been removed or you may not have access."
+            action={<Link href="/crisis/reports" className="inline-flex items-center gap-2 rounded-xl bg-blue-600 px-4 py-2.5 text-[11px] font-black uppercase tracking-widest text-white hover:bg-blue-700">Back to Reports</Link>}
+          />
         </PublicPageContent>
       </PublicPageShell>
     );
@@ -98,7 +102,7 @@ export default function ReportDetailPage({ params }) {
             href="/crisis/reports"
             className="inline-flex items-center gap-2 text-xs font-black uppercase text-zinc-400 hover:text-blue-600"
           >
-            <ArrowLeft size={14} /> My Reports
+            <ArrowLeft size={14} /> Reports
           </Link>
           <div className="flex gap-2">
             <span className={`px-3 py-1.5 rounded-full text-[10px] font-black uppercase ${getSeverityColor(inc.severity)}`}>

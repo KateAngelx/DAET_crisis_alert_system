@@ -15,7 +15,7 @@ export function ReportIncidentModal({
 }) {
   if (!open) return null;
   const isGuideAssistance = mode === "guide-assistance";
-  const modalTitle = isGuideAssistance ? "Request Tourist Guide Assistance" : "Report an Incident";
+  const modalTitle = isGuideAssistance ? "Ask a guide for help" : "Report a problem";
   const modalDescription = isGuideAssistance
     ? "Tell the tourism office where you need assistance and what kind of help you need."
     : "Include location, severity, and a clear description. Tourism office staff will review and update the response status.";

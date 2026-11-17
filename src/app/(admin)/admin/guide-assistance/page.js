@@ -139,7 +139,7 @@ export default function AdminGuideAssistancePage() {
   return (
     <>
       <DashboardPageHeader
-        title="Tourist Guide Assistance"
+        title="Help requests"
         description="Review tourist requests, select an active guide, and monitor responses through completion."
         action={
           <button type="button" onClick={loadRequests} disabled={loading} className={adminShell.btnGhost}>
@@ -196,7 +196,7 @@ export default function AdminGuideAssistancePage() {
           error={null}
           isEmpty={!loading && requests.length === 0}
           loadingFallback={<div className="rounded-2xl border border-zinc-200 bg-white p-8 text-center text-sm font-medium text-zinc-500">Loading requests…</div>}
-          emptyFallback={<EmptyState icon={Compass} title="No assistance requests found" description="Try a different search or status filter." />}
+          emptyFallback={<EmptyState icon={Compass} title="No help requests found" description="Try a different search or set the status filter to All." />}
         >
           <ResponsiveAdminTable label="Tourist guide assistance requests">
             <table className="w-full min-w-[1450px] border-collapse text-left">

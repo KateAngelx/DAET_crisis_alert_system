@@ -5,23 +5,24 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useAuthStore } from "@/app/store/crisisStore";
 import {
-  LayoutDashboard, Users, AlertTriangle, FileWarning, LogOut, Archive, ClipboardList, MessageSquare, Compass,
+  LayoutDashboard, Users, AlertTriangle, FileWarning, LogOut, Archive, LifeBuoy, Route, Settings,
 } from "lucide-react";
 import { BrandLogo } from "@/app/components/BrandLogo";
-import { ADMIN_NAV, isNavActive } from "@/lib/dashboardNav";
+import { ADMIN_NAV_SECTIONS, isNavActive } from "@/lib/dashboardNav";
 import { typography, iconSize } from "@/lib/designSystem";
 import { useDashboardNavCounts } from "@/app/components/dashboard/DashboardNavCountsProvider";
 import { DashboardNavCountBadge } from "@/app/components/dashboard/DashboardNavCountBadge";
 
+/** Icons by nav item id (labels can change; ids do not). */
 const ICONS = {
-  Dashboard: LayoutDashboard,
-  "Activity Log": ClipboardList,
-  Users,
-  "Command Center": AlertTriangle,
-  "Incident Reports": FileWarning,
-  "Tourist Guide Assistance": Compass,
-  "Crisis Feedback": MessageSquare,
-  "Archive & History": Archive,
+  dashboard: LayoutDashboard,
+  alerts: AlertTriangle,
+  reports: FileWarning,
+  help: LifeBuoy,
+  roads: Route,
+  people: Users,
+  history: Archive,
+  settings: Settings,
 };
 
 function Logo() {
@@ -37,7 +38,7 @@ function Logo() {
 }
 
 function NavLink({ item, pathname, variant = "default", counts }) {
-  const Icon = ICONS[item.label] || LayoutDashboard;
+  const Icon = ICONS[item.id] || LayoutDashboard;
   const active = isNavActive(pathname, item.path);
   const activeClass =
     variant === "crisis" && active
@@ -68,27 +69,16 @@ export function AdminSidebar() {
       <Logo />
 
       <div className="flex-1 overflow-y-auto px-4 py-6 custom-scrollbar">
-        <div className="mb-8">
-          <h3 className="text-[10px] font-black text-zinc-400 uppercase tracking-[0.2em] mb-4 px-4">
-            Administration
-          </h3>
-          <div className="space-y-1">
-            {ADMIN_NAV.coreAdmin.map((item) => (
-              <NavLink key={item.path} item={item} pathname={pathname} counts={counts} />
-            ))}
+        {ADMIN_NAV_SECTIONS.map(([title, items], index) => (
+          <div key={title} className={index === ADMIN_NAV_SECTIONS.length - 1 ? "" : "mb-6"}>
+            <h3 className="text-[10px] font-black text-zinc-400 uppercase tracking-[0.2em] mb-3 px-4">{title}</h3>
+            <div className="space-y-1">
+              {items.map((item) => (
+                <NavLink key={item.path} item={item} pathname={pathname} variant={index === 0 ? "crisis" : "default"} counts={counts} />
+              ))}
+            </div>
           </div>
-        </div>
-
-        <div>
-          <h3 className="text-[10px] font-black text-zinc-400 uppercase tracking-[0.2em] mb-4 px-4">
-            Crisis Operations
-          </h3>
-          <div className="space-y-1">
-            {ADMIN_NAV.crisisOps.map((item) => (
-              <NavLink key={item.path} item={item} pathname={pathname} variant="crisis" counts={counts} />
-            ))}
-          </div>
-        </div>
+        ))}
       </div>
 
       <div className="p-4 border-t border-zinc-100 space-y-3">

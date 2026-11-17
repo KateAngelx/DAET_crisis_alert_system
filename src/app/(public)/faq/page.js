@@ -40,7 +40,7 @@ const faqs = [
 
     q: "Do I need an account to view alerts?",
 
-    a: "No. Active alerts are visible on the Crisis Hub and Advisories pages without logging in. Registering lets you receive notifications and submit incident reports.",
+    a: "No. Active alerts are visible on the Alerts and Roads & Hazards pages without logging in. You can also report a problem without an account. Registering lets you get SMS and email alerts and follow your reports.",
 
   },
 
@@ -56,7 +56,7 @@ const faqs = [
 
     q: "How do I report an emergency or incident?",
 
-    a: "Open My Reports, tap Report an Incident, and complete the form with category, severity, location, and description. Track response status on the same page.",
+    a: "Tap Report a problem in the menu, and complete the form with category, severity, location, and description. Track response status on the same page.",
 
   },
 
@@ -88,7 +88,7 @@ const faqs = [
 
     q: "What should I do during a Critical alert?",
 
-    a: "Read the alert message carefully. Follow the listed safety instructions, avoid named affected areas, and call 911 or 117 if you need immediate help. Continue checking the Crisis Hub for status updates until the alert is marked Resolved.",
+    a: "Read the alert message carefully. Follow the listed safety instructions, avoid named affected areas, and call 911 or 117 if you need immediate help. Continue checking the Alerts pagb for status updates until the alert is marked Resolved.",
 
   },
 

@@ -2,7 +2,8 @@
 
 import React, { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
-import { User, Mail, Phone, Globe, Shield, ShieldAlert, Loader2, CheckCircle, Trash2, AlertTriangle, Coins, History, ChevronLeft, ChevronRight, BookOpen } from "lucide-react";
+import { usePathname, useRouter } from "next/navigation";
+import { User, Mail, Phone, Globe, Shield, ShieldAlert, Loader2, CheckCircle, Trash2, AlertTriangle, Coins, History, ChevronLeft, ChevronRight, BookOpen, Bell, FileText, MessageSquare, CircleHelp } from "lucide-react";
 import { portalShell } from "@/lib/designSystem";
 import { useAuthStore } from "@/app/store/crisisStore";
 import { InfoPageHero, PublicPageShell, PublicPageContent, PublicPanel } from "@/app/components/InfoPageHero";
@@ -118,11 +119,39 @@ async function fetchPointsData(page, pageSize, action) {
   return result;
 }
 
+/** Shortcuts on the profile card: each role gets its own pages, not the tourist ones. */
+const PROFILE_LINKS = {
+  tourist: [
+    { href: "/notifications", label: "Inbox", icon: Bell },
+    { href: "/crisis/reports", label: "My reports", icon: FileText },
+    { href: "/crisis/feedback", label: "Feedback", icon: MessageSquare },
+    { href: "/how-to-use", label: "How to Use", icon: BookOpen },
+    { href: "/faq", label: "FAQs", icon: CircleHelp },
+  ],
+  guide: [
+    { href: "/guide", label: "Today", icon: Bell },
+    { href: "/guide/notifications", label: "Inbox", icon: Bell },
+    { href: "/guide/reports", label: "Reports", icon: FileText },
+    { href: "/guide/how-to-use", label: "How to Use", icon: BookOpen },
+  ],
+  admin: [
+    { href: "/admin", label: "Dashboard", icon: Bell },
+    { href: "/admin/settings", label: "Settings", icon: CircleHelp },
+    { href: "/admin/how-to-use", label: "How to Use", icon: BookOpen },
+  ],
+};
+
 export default function ProfilePage() {
   const installedApp = useInstalledApp();
   const visibility = usePublicVisibility();
   const { confirm } = useConfirm();
   const { user, isAuthenticated, loading, fetchProfile, updateProfile, updateNotificationChannels, deleteAccount } = useAuthStore();
+  const pathname = usePathname();
+  const router = useRouter();
+  const isGuideOnPublicPage = user?.role === "guide" && pathname === "/profile";
+  useEffect(() => {
+    if (isGuideOnPublicPage) router.replace("/guide/profile");
+  }, [isGuideOnPublicPage, router]);
   const [form, setForm] = useState({ full_name: "", phone: "", nationality: "Filipino" });
   const [channelForm, setChannelForm] = useState({ email: true, sms: true, app: true });
   const [channelSaving, setChannelSaving] = useState(false);
@@ -339,8 +368,8 @@ export default function ProfilePage() {
   return (
     <PublicPageShell>
       <InfoPageHero
-        title="My Profile"
-        description="View and update your account details for alerts and incident reporting."
+        title={user?.role === "tourist" ? "Me" : "My Profile"}
+        description="Your details, alert settings, and visit to Daet. Everything about your account is here."
       />
 
       <PublicPageContent className="installed-profile-stack !gap-8">
@@ -428,22 +457,23 @@ export default function ProfilePage() {
                 In-app {user?.notification_channels?.app === false ? "off" : "on"}
               </p>
             ) : null}
-            <div className="mt-4 flex flex-wrap gap-x-4 gap-y-2 border-t border-zinc-100 pt-4">
-              <Link href="/notifications" className="text-xs font-black uppercase tracking-widest text-blue-600 hover:underline">
-                Notification inbox
-              </Link>
-              <Link href="/crisis/reports" className="text-xs font-black uppercase tracking-widest text-blue-600 hover:underline">
-                My Reports
-              </Link>
-              <Link href="/how-to-use" className="inline-flex items-center gap-1.5 text-xs font-black uppercase tracking-widest text-blue-600 hover:underline">
-                <BookOpen size={13} /> How to Use
-              </Link>
+            <div className="mt-4 grid grid-cols-2 gap-2 border-t border-zinc-100 pt-4 sm:grid-cols-4 lg:grid-cols-5">
+              {(PROFILE_LINKS[user?.role] || PROFILE_LINKS.tourist).map(({ href, label, icon: Icon }) => (
+                <Link
+                  key={href}
+                  href={href}
+                  className="flex min-h-11 items-center gap-2 rounded-xl border border-zinc-200 bg-zinc-50 px-3 py-2 text-[11px] font-black uppercase tracking-widest text-zinc-700 hover:border-blue-200 hover:bg-blue-50 hover:text-blue-700"
+                >
+                  <Icon size={15} className="shrink-0 text-blue-600" />
+                  <span className="truncate">{label}</span>
+                </Link>
+              ))}
             </div>
           </div>
 
           <ProfileFold
-            title="Alerts"
-            text="Manage email, SMS, in-app, and browser push notifications."
+            title="Alert settings"
+            text="Choose how alerts reach you: SMS, email, app, and phone notifications."
             open={openPanel === "alerts"}
             onToggle={() => setOpenPanel((current) => (current === "alerts" ? null : "alerts"))}
           >
@@ -477,7 +507,7 @@ export default function ProfilePage() {
           ) : (
             <PublicPanel section="channels" title="Communication preferences" bodyClassName="bg-zinc-50/50">
               <p className="text-sm text-zinc-600 font-medium">
-                Administrator accounts manage alerts in Command Center. Routine tourist and guide broadcasts are not sent to administrators.
+                Administrator accounts send alerts from Admin → Alerts. Routine tourist and guide broadcasts are not sent to administrators.
               </p>
               <p className="mt-3 flex items-start gap-2 text-sm font-bold text-red-800"><ShieldAlert size={16} className="mt-0.5 shrink-0" /> Critical emergency alerts are sent to administrators too, by in-app, SMS and email.</p>
             </PublicPanel>

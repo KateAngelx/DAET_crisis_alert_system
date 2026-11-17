@@ -33,11 +33,11 @@ export default function ReportIncidentPage() {
   return (
     <PublicPageShell>
       <InfoPageHero
-        title="Report an Incident"
+        title="Report a problem"
         description="No account needed. Tell the Daet Municipal Tourism Office what happened and how to reach you."
       />
       <PublicPageContent>
-        <PublicPanel title="Incident report">
+        <PublicPanel title="Your report">
           <GuestIncidentReportForm />
         </PublicPanel>
       </PublicPageContent>

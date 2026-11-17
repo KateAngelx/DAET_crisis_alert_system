@@ -6,6 +6,7 @@ import { AdminPanel } from "@/app/components/admin/AdminPanel";
 import { fetchWithFreshSession } from "@/lib/authSession";
 import { adminShell } from "@/lib/designSystem";
 import { MAX_ESCALATION_CONTACTS } from "@/lib/escalation";
+import { HelpTip } from "@/app/components/ui/HelpTip";
 
 const label = "block text-[10px] font-black uppercase tracking-widest text-zinc-500";
 
@@ -64,6 +65,7 @@ export function EscalationSettingsPanel() {
       ) : (
         <div className="space-y-4">
           <p className="text-sm text-zinc-600">
+            <span className="font-bold text-zinc-800">Escalation<HelpTip label="escalation">If nobody acts on an urgent case in time, the system texts admins again, then the outside contacts below (for example MDRRMO).</HelpTip></span>{" "}
             Applies to: tourists who answer <b>I need help</b> or are marked <b>Missing</b>, missing-person reports,
             Critical incident reports and guide emergency reports. Admins are alerted at once. If nobody acts, admins are
             re-alerted by SMS after the time below, and the outside contacts get an SMS after twice that time.

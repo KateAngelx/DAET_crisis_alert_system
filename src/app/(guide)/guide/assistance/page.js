@@ -100,7 +100,7 @@ export default function GuideAssistanceRequestsPage() {
   return (
     <>
       <GuidePageHeader
-        title="Guide Assistance Requests"
+        title="Help requests"
         description={`Requests selected for ${user?.name || "you"} by the Tourism Office. Only an administrator can assign guides.`}
         action={
           <button type="button" onClick={loadRequests} disabled={loading} className={guideShell.btnGhost}>
@@ -111,13 +111,13 @@ export default function GuideAssistanceRequestsPage() {
       {error ? <p role="alert" className="rounded-xl border border-red-200 bg-red-50 p-3 text-sm font-bold text-red-800">{error}</p> : null}
       {feedback ? <p role="status" className="rounded-xl border border-green-200 bg-green-50 p-3 text-sm font-bold text-green-800">{feedback}</p> : null}
 
-      <GuidePanel title="Guide Assistance Requests" subtitle={`${requests.length} current assignment(s)`}>
+      <GuidePanel title="Help requests" subtitle={`${requests.length} current assignment(s)`}>
         <AsyncState
           loading={loading}
           error={null}
           isEmpty={!loading && requests.length === 0}
           loadingFallback={<div className="rounded-xl border border-zinc-200 p-8 text-center text-sm text-zinc-500">Loading assigned requests…</div>}
-          emptyFallback={<EmptyState icon={Compass} title="No assigned requests" description="When the Tourism Office selects you for a request, it will appear here." />}
+          emptyFallback={<EmptyState icon={Compass} title="No help requests for you" description="When the Tourism Office selects you for a request, it will appear here." />}
         >
           <div className="grid gap-3 lg:grid-cols-2">
             {visibleRequests.map((item) => (

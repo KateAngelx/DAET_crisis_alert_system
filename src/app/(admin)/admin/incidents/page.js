@@ -538,7 +538,7 @@ export default function AdminIncidentsPage() {
         pageId="incidents"
         footer={
           <AdminDashboardQuickNavRow>
-            <AdminDashboardQuickNavLink href="/crisis/command" icon={Radio} label="Command Center" />
+            <AdminDashboardQuickNavLink href="/crisis/command" icon={Radio} label="Alerts" />
             <AdminDashboardQuickNavDivider />
             <AdminDashboardQuickNavLink
               href="/crisis/roads"
@@ -682,7 +682,7 @@ export default function AdminIncidentsPage() {
 
             emptyFallback={
 
-              <EmptyState icon={FileText} title="No incidents found" description="Incident reports from tourists will appear here." />
+              <EmptyState icon={FileText} title="No reports found" description="New reports from tourists, guides and guests appear here. If you used a filter, try All." />
 
             }
 

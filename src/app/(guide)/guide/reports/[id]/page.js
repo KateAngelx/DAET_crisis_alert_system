@@ -63,7 +63,7 @@ export default function GuideReportDetailPage({ params }) {
           description="This report may not belong to your tour groups or you may not have access."
         />
         <Link href="/guide/reports" className="text-blue-600 text-xs font-black uppercase mt-4 inline-block">
-          Back to Group Reports
+          Back to Reports
         </Link>
       </Card>
     );

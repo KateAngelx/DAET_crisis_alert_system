@@ -38,7 +38,7 @@ export function isProfileInAudience(profile, audience) {
 export const AUDIENCE_ROLE_OPTIONS = [
   { key: "tourists", label: "Tourists", description: "All registered tourists — crisis emails go to every profile with an email when Email is enabled on the broadcast." },
   { key: "guides", label: "Tourism Guides", description: "Assigned guides monitoring tour groups." },
-  { key: "admins", label: "Administrators", description: "Tourism office staff with Command Center access." },
+  { key: "admins", label: "Administrators", description: "Tourism office staff who send alerts." },
 ];
 
 /** Critical emergencies go to every role (tourists, guides and administrators), whatever the setting. */

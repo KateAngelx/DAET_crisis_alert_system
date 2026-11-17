@@ -7,6 +7,7 @@ import {
 import { AdminPanel } from "@/app/components/admin/AdminPanel";
 import { ResponsiveAdminTable } from "@/app/components/admin/ResponsiveAdminTable";
 import { DashboardPageHeader } from "@/app/components/dashboard/DashboardPageHeader";
+import { AdminHistoryTabs } from "@/app/components/admin/AdminTabs";
 import { useConfirm } from "@/app/components/ui/ConfirmDialogProvider";
 import { getActiveSession } from "@/lib/authSession";
 import { ListPager } from "@/app/components/shell/ListPager";
@@ -142,6 +143,8 @@ export default function AdminCrisisFeedbackPage() {
         description="Review public comments, feedback, and suggestions in a separate moderation workflow."
       />
 
+      <AdminHistoryTabs active="feedback" />
+
       {error && (
         <p role="alert" className="rounded-xl border border-red-200 bg-red-50 p-4 text-sm font-medium text-red-700">
           {error}
@@ -233,7 +236,7 @@ export default function AdminCrisisFeedbackPage() {
                         </p>
                         <p className="mt-2 break-words text-[10px] leading-relaxed text-zinc-500">
                           <span className="font-bold text-zinc-400">Alert:</span>{" "}
-                          {item.related_alert?.title || (item.crisis_alert_id ? item.crisis_alert_id : "General Crisis Hub")}
+                          {item.related_alert?.title || (item.crisis_alert_id ? item.crisis_alert_id : "General (not about one alert)")}
                         </p>
                         {item.moderation_note && (
                           <p className="mt-2 break-words rounded-md bg-zinc-50 p-2 text-[10px] text-zinc-600">

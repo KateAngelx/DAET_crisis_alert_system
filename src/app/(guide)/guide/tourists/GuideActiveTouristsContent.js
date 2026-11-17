@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { Users, Compass, Clock, ArrowRight, UserPlus, UserCheck, Search } from "lucide-react";
 import { Card } from "@/app/components/ui/Card";
+import { GuideGroupTabs } from "@/app/components/guide/GuideTabs";
 import { GuidePageHeader } from "@/app/components/guide/GuidePageHeader";
 import { DashboardStatCard } from "@/app/components/dashboard/DashboardStatCard";
 import { ActiveTouristsPanel } from "@/app/components/tour/ActiveTouristsPanel";
@@ -137,7 +138,7 @@ export default function GuideActiveTouristsPage() {
   return (
     <>
       <GuidePageHeader
-        title="Active Tourists"
+        title="Tourists & invites"
         description="View tourists who confirmed your tour group, or find registered tourists and invite them to join."
         action={
           <Link
@@ -148,6 +149,8 @@ export default function GuideActiveTouristsPage() {
           </Link>
         }
       />
+
+      <GuideGroupTabs active="tourists" />
 
       {loading && activeGroups.length === 0 ? (
         <StatCardSkeletonGrid count={3} className={statGrid.dashboardThree} />

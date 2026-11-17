@@ -1,22 +1,26 @@
 "use client";
 
+import React from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
-  Menu, X, LayoutDashboard, Users, AlertTriangle, FileWarning, MessageSquare, Compass,
+  Menu, X, LayoutDashboard, Users, AlertTriangle, FileWarning, Archive, LifeBuoy, Route, Settings,
 } from "lucide-react";
 import { BrandLogo } from "@/app/components/BrandLogo";
-import { ADMIN_NAV, isNavActive } from "@/lib/dashboardNav";
+import { ADMIN_NAV_SECTIONS, isNavActive } from "@/lib/dashboardNav";
 import { useDashboardNavCounts } from "@/app/components/dashboard/DashboardNavCountsProvider";
 import { DashboardNavCountBadge } from "@/app/components/dashboard/DashboardNavCountBadge";
 
+/** Icons by nav item id (labels can change; ids do not). */
 const ICONS = {
-  Dashboard: LayoutDashboard,
-  Users,
-  "Command Center": AlertTriangle,
-  "Incident Reports": FileWarning,
-  "Tourist Guide Assistance": Compass,
-  "Crisis Feedback": MessageSquare,
+  dashboard: LayoutDashboard,
+  alerts: AlertTriangle,
+  reports: FileWarning,
+  help: LifeBuoy,
+  roads: Route,
+  people: Users,
+  history: Archive,
+  settings: Settings,
 };
 
 export function MobileAdminMenu({ open, onOpen, onClose }) {
@@ -28,7 +32,7 @@ export function MobileAdminMenu({ open, onOpen, onClose }) {
       <h3 className="text-[10px] font-black text-zinc-400 uppercase tracking-[0.2em] mb-4 px-4">{title}</h3>
       <div className="space-y-1">
         {items.map((item) => {
-          const Icon = ICONS[item.label] || LayoutDashboard;
+          const Icon = ICONS[item.id] || LayoutDashboard;
           const active = isNavActive(pathname, item.path);
           const activeClass =
             variant === "crisis" && active
@@ -79,8 +83,9 @@ export function MobileAdminMenu({ open, onOpen, onClose }) {
             </div>
 
             <div className="p-4 space-y-6">
-              {renderSection("Administration", ADMIN_NAV.coreAdmin)}
-              {renderSection("Crisis Operations", ADMIN_NAV.crisisOps, "crisis")}
+              {ADMIN_NAV_SECTIONS.map(([title, items], index) => (
+                <React.Fragment key={title}>{renderSection(title, items, index === 0 ? "crisis" : "default")}</React.Fragment>
+              ))}
             </div>
           </div>
         </>

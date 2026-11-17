@@ -10,7 +10,7 @@ export function AboutNextSteps() {
     return (
       <PublicPanel title="Quick access" subtitle="Signed-in shortcuts">
         <p className="text-sm text-zinc-600 font-medium">
-          Use the menu above to open Crisis Hub, My Reports, or Notifications.
+          Use the menu above to open Alerts, Reports, or Notifications.
         </p>
       </PublicPanel>
     );
@@ -19,7 +19,7 @@ export function AboutNextSteps() {
   return (
     <PublicPanel title="Next steps" subtitle="Get started with CONNECT-DAET">
       <p className="text-sm text-zinc-600 font-medium">
-        Register to receive alert notifications, or open Crisis Hub from the menu to check current alerts.
+        Register to receive alert notifications, or open Alerts from the menu to check current alerts.
       </p>
     </PublicPanel>
   );

@@ -42,6 +42,8 @@ import { CategoryFilterSelect, StatusRecordList } from "@/app/components/shell/S
 import { DEFAULT_CRISIS_TYPE_OPTIONS } from "@/app/components/shell/PublicCategorizedCardFilters";
 import { ConfirmDialog } from "@/app/components/ui/ConfirmDialog";
 import { AlertTargetSelect } from "@/app/components/admin/AlertTargetSelect";
+import { HelpTip } from "@/app/components/ui/HelpTip";
+import { useHydrated } from "@/lib/useHydrated";
 import { AlertCheckinSummary } from "@/app/components/admin/AlertCheckinSummary";
 import { AlertDeliveryReport } from "@/app/components/admin/AlertDeliveryReport";
 import { MissingPersonsPanel } from "@/app/components/admin/MissingPersonsPanel";
@@ -196,6 +198,23 @@ export default function CrisisAdminPage() {
   const mapBlocked = showCreateModal || showConfirmModal || showResolveConfirm || isViewModalOpen || isEditModalOpen;
   const activeAlerts = alerts.filter((a) => a.status === "Active");
   const activeDangerWarnings = warnings.filter((w) => w.status === "Active");
+  const hydrated = useHydrated();
+  const wantsNewAlert = hydrated && new URLSearchParams(window.location.search).get("new") === "1";
+  const [newAlertHandled, setNewAlertHandled] = useState(false);
+  if (wantsNewAlert && !newAlertHandled) {
+    setNewAlertHandled(true);
+    setFormData(createEmptyAlertFormData());
+    setShowCreateModal(true);
+  }
+  // Drop ?new=1 from the address once used, so a reload does not open the form again.
+  useEffect(() => {
+    if (!newAlertHandled) return;
+    const url = new URL(window.location.href);
+    if (!url.searchParams.has("new")) return;
+    url.searchParams.delete("new");
+    window.history.replaceState(window.history.state, "", url.pathname + url.search + url.hash);
+  }, [newAlertHandled]);
+
   const activeRouteAdvisories = advisories.filter((a) => a.status === "Active");
 
   const handleExportCSV = () => {
@@ -481,6 +500,10 @@ export default function CrisisAdminPage() {
             </div>
             <form id="edit-broadcast-form" onSubmit={onUpdateSubmit} className="min-h-0 flex-1 space-y-4 overflow-y-auto px-8 py-5">
               <input required className="w-full p-4 bg-zinc-50 dark:bg-zinc-900 border border-zinc-100 dark:border-white/5 rounded-2xl font-bold text-sm outline-none focus:ring-2 focus:ring-blue-500" value={formData.title} onChange={e => { const title = e.target.value; setFormData({...formData, title, rewards_eligible: formData.rewards_eligible && isAlertEligibleForReadingPoints({ ...formData, title })}); }} placeholder="Title" />
+              <div className="grid grid-cols-2 gap-4 -mb-2 px-1 text-[10px] font-black uppercase tracking-widest text-zinc-500">
+                <span>Type</span>
+                <span className="inline-flex items-center">Severity<HelpTip label="severity">Low and Medium: be aware. High: take care, avoid the area. Critical: lives at risk. Critical reaches everyone on every channel, even people who turned a channel off.</HelpTip></span>
+              </div>
               <div className="grid grid-cols-2 gap-4">
                 <select aria-label="Alert type" className="w-full p-4 bg-zinc-50 dark:bg-zinc-900 border border-zinc-100 dark:border-white/5 rounded-2xl font-bold text-xs" value={formData.type} onChange={e => setFormData({...formData, type: e.target.value, rewards_eligible: formData.rewards_eligible && isAlertEligibleForReadingPoints({ ...formData, type: e.target.value })})}>
                   <option>Weather</option><option>Health</option><option>Security</option><option>General</option>
@@ -569,7 +592,7 @@ export default function CrisisAdminPage() {
         <div className="fixed inset-0 z-[2000] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-300">
            <div className="relative z-[2001] flex max-h-[90vh] w-full max-w-xl flex-col overflow-hidden rounded-[40px] border border-gray-200 bg-background shadow-2xl animate-in zoom-in-95 duration-300 dark:border-white/10">
               <div className="flex shrink-0 items-center justify-between border-b border-zinc-100 px-8 py-6 leading-none">
-                 <h2 className="text-2xl font-black tracking-tight uppercase text-zinc-900 dark:text-white">Emergency Broadcast</h2>
+                 <h2 className="text-2xl font-black tracking-tight uppercase text-zinc-900 dark:text-white">Send alert</h2>
                  <button onClick={() => setShowCreateModal(false)} className="p-2 hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded-full transition-colors"><X size={24}/></button>
               </div>
               <div className="min-h-0 flex-1 overflow-y-auto px-8 py-5">
@@ -638,6 +661,10 @@ export default function CrisisAdminPage() {
                     </p>
                   )}
                   <input required className="w-full p-4 bg-zinc-50 border border-gray-100 rounded-xl font-bold text-sm outline-none focus:ring-2 focus:ring-blue-500 transition-all" placeholder="Alert Title" value={formData.title} onChange={e => { const title = e.target.value; setFormData({...formData, title, rewards_eligible: formData.rewards_eligible && isAlertEligibleForReadingPoints({ ...formData, title })}); }} />
+                  <div className="grid grid-cols-2 gap-4 -mb-2 px-1 text-[10px] font-black uppercase tracking-widest text-zinc-500">
+                    <span>Type</span>
+                    <span className="inline-flex items-center">Severity<HelpTip label="severity">Low and Medium: be aware. High: take care, avoid the area. Critical: lives at risk. Critical reaches everyone on every channel, even people who turned a channel off.</HelpTip></span>
+                  </div>
                   <div className="grid grid-cols-2 gap-4">
                     <select className="w-full p-4 bg-zinc-50 border border-gray-100 rounded-xl font-bold text-xs outline-none focus:ring-2 focus:ring-blue-500" value={formData.type} onChange={e => setFormData({...formData, type: e.target.value, rewards_eligible: formData.rewards_eligible && isAlertEligibleForReadingPoints({ ...formData, type: e.target.value })})}><option>Weather</option><option>Health</option><option>Security</option><option>General</option></select>
                     <select className="w-full p-4 bg-zinc-50 border border-gray-100 rounded-xl font-bold text-xs outline-none focus:ring-2 focus:ring-blue-500" value={formData.severity} onChange={e => setFormData({...formData, severity: e.target.value, rewards_eligible: formData.rewards_eligible && isAlertEligibleForReadingPoints({ ...formData, severity: e.target.value })})}><option>Low</option><option>Medium</option><option>High</option><option>Critical</option></select>
@@ -681,7 +708,7 @@ export default function CrisisAdminPage() {
               {/* Actions stay pinned to the bottom while the form scrolls. */}
               <div className="shrink-0 border-t border-zinc-100 px-8 py-3">
                 <button type="submit" form="create-broadcast-form" disabled={isPublishing} className={`w-full py-4 ${adminShell.btnDanger} !text-sm !py-4 disabled:opacity-50`}>
-                  {isPublishing ? "Broadcasting..." : (<><AlertTriangle size={20}/> Broadcast Alert Now</>)}
+                  {isPublishing ? "Sending..." : (<><AlertTriangle size={20}/> Send alert now</>)}
                 </button>
               </div>
            </div>
@@ -697,7 +724,7 @@ export default function CrisisAdminPage() {
                   onClick={() => { setFormData(createEmptyAlertFormData()); setShowCreateModal(true); }}
                   className={adminShell.btnDanger}
                 >
-                  <Plus size={18} /> New Broadcast
+                  <Plus size={18} /> Send alert
                 </button>
               }
             />
@@ -746,7 +773,7 @@ export default function CrisisAdminPage() {
                       badge="Live"
                     />
                     <DashboardStatCard compact label="Active Alerts" value={alerts.filter(a => a.status === 'Active').length} icon={<Radio size={iconSize.stat} />} accent="red" />
-                    <DashboardStatCard compact label="Resolved Alerts" value={alerts.filter(a => a.status === 'Resolved').length} icon={<CheckCircle size={iconSize.stat} />} accent="green" />
+                    <DashboardStatCard compact label="Past alerts" value={alerts.filter(a => a.status === 'Resolved').length} icon={<CheckCircle size={iconSize.stat} />} accent="green" />
                     <DashboardStatCard compact label="Critical Alerts" value={alerts.filter(a => a.severity === 'Critical' && a.status === 'Active').length} icon={<AlertTriangle size={iconSize.stat} />} accent="red" />
                   </>
                 )}
@@ -757,7 +784,7 @@ export default function CrisisAdminPage() {
 
             <AdminFilterBar
               compact
-              title="Live command filters"
+              title="Filters"
               searchPlaceholder="Search by area or alert name..."
               searchValue={searchTerm}
               onSearchChange={(e) => setSearchTerm(e.target.value)}

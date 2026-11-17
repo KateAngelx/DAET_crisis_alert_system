@@ -5,6 +5,7 @@ import { Compass, MapPin, Users, Phone, Mail } from "lucide-react";
 import { AdminPanel } from "@/app/components/admin/AdminPanel";
 import { AdminTablePanel, adminTableClasses } from "@/app/components/admin/AdminTablePanel";
 import { DashboardPageHeader } from "@/app/components/dashboard/DashboardPageHeader";
+import { AdminPeopleTabs } from "@/app/components/admin/AdminTabs";
 import { DashboardStatCard } from "@/app/components/dashboard/DashboardStatCard";
 import { DestinationButton, DestinationModal } from "@/app/components/tour/DestinationModal";
 import { useGuideStore } from "@/app/store/guideStore";
@@ -86,9 +87,11 @@ export default function AdminGuideMonitoringPage() {
   return (
     <>
       <DashboardPageHeader
-        title="Tour Group Management"
+        title="Guide monitoring"
         description="Administrative oversight of tour groups, routes, guides, and tourist assignments."
       />
+
+      <AdminPeopleTabs active="guides" />
 
       {loading ? (
         <StatCardSkeletonGrid count={3} className={statGrid.dashboardThree} />

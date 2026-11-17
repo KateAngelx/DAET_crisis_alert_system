@@ -56,9 +56,10 @@ body {
     padding-bottom: 0;
   }
 
+  /* Phones: a short hero, so the status bar and main buttons fit on the first screen. */
   html:not([data-installed-app="true"]) [data-landing-section="hero"] {
-    min-height: 100dvh;
-    padding-bottom: 2.5rem;
+    min-height: auto;
+    padding-bottom: 2rem;
   }
 
   .installed-app-hide {
@@ -100,6 +101,26 @@ body {
 
   html[data-installed-app="true"] [data-public-browser-nav] {
     display: none;
+  }
+
+  /* Signed-in users in a phone browser: same bottom bar as the installed app. */
+  html[data-mobile-dock="true"] .public-mobile-dock,
+  html[data-mobile-dock="true"] .installed-app-bottom-nav {
+    display: block;
+  }
+
+  html[data-mobile-dock="true"] .installed-app-main {
+    padding-bottom: calc(4.5rem + env(safe-area-inset-bottom));
+  }
+
+  html[data-mobile-dock="true"]:not([data-installed-app="true"]) [data-public-footer] {
+    padding-bottom: 5.5rem;
+  }
+
+  /* Floating buttons sit above whichever bottom bar is showing. */
+  html[data-installed-app="true"],
+  html[data-mobile-dock="true"] {
+    --dock-offset: 4.5rem;
   }
 }
 

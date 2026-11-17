@@ -9,46 +9,22 @@ import { notifyRewardEarned } from "@/lib/rewardFeedback";
 
 const SKIP_PREFIX = "connect-daet-start-guide-skipped:";
 
+/** Three steps only: the things a new tourist must know. The rest is in How to Use. */
 const STEPS = [
   {
-    title: "Welcome to CONNECT-DAET",
-    where: "This short guide shows where each section is.",
-    detail: "Stay here until you are ready to enter, or skip it. You can open How to Use later from your profile.",
+    title: "1. Alerts appear on Home",
+    where: "The coloured bar at the top tells you if Daet is safe.",
+    detail: "Green means no active alerts. Red means a critical alert: tap it to see what to do. \"Alerts for you\" lists the ones that are serious or on your tour route.",
   },
   {
-    title: "Crisis alerts",
-    where: "Open Crisis Hub in the menu.",
-    detail: "Active alerts, affected places, and safety instructions are listed there.",
+    title: "2. Something happened? Tap Report",
+    where: "Use Report a problem, or the red Emergency button at the bottom right.",
+    detail: "If someone is in danger, call 911 first. Your reports and the replies from the Tourism Office are under Reports.",
   },
   {
-    title: "Roads and hazards",
-    where: "Open Roads & Travel in the menu.",
-    detail: "Published routes, closures, and area hazards are on that page.",
-  },
-  {
-    title: "Incident reports",
-    where: "Open My Reports in the menu.",
-    detail: "Submit a report from there, then use the same list to check its status.",
-  },
-  {
-    title: "Feedback",
-    where: "Open Feedback from the account menu.",
-    detail: "Use it for comments about public safety and crisis alerts.",
-  },
-  {
-    title: "Help from a tourist guide",
-    where: "The request section is on the home page when the office has it turned on.",
-    detail: "It is for tourism help, not emergencies. The office assigns a guide after you send a request.",
-  },
-  {
-    title: "Notifications",
-    where: "Use the bell in the header. Preferences are in Profile.",
-    detail: "Your in-app inbox is there. Manage email, SMS, and in-app preferences in Profile; browser push is a separate setting on supported devices.",
-  },
-  {
-    title: "Points",
-    where: "Your points number is in the header. The full history is in Profile.",
-    detail: "This is a placeholder balance only: points are not redeemable or connected to the main wallet. Marking this guide complete can add 10 points when the office has that reward turned on.",
+    title: "3. Turn on SMS alerts in Me",
+    where: "Open Me, then Alert settings.",
+    detail: "Choose SMS, email or app alerts. Me also has your visit dates, points, feedback and How to Use.",
   },
 ];
 
@@ -176,7 +152,7 @@ export function TouristStartGuide() {
       >
         <div className="border-b border-zinc-100 px-5 py-4 sm:px-6">
           <p className="text-[10px] font-black uppercase tracking-widest text-blue-700">
-            Start guide · {step + 1} of {STEPS.length}
+            Welcome · step {step + 1} of {STEPS.length}
           </p>
           <h2 id="start-guide-title" className="mt-1 text-xl font-black tracking-tight text-zinc-900">
             {current.title}

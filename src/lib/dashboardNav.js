@@ -1,36 +1,42 @@
+import { FEATURE_NAMES as N } from "@/lib/featureNames";
+
+/** Admins: eight items in three groups. Old pages live on as tabs (People, History). */
 export const ADMIN_NAV = {
-  coreAdmin: [
-    { path: "/admin", label: "Dashboard" },
-    { path: "/admin/activity", label: "Activity Log" },
-    { path: "/admin/users", label: "Users" },
-    { path: "/admin/guides", label: "Guide Monitoring" },
-    { path: "/admin/settings", label: "Settings" },
+  respond: [
+    { id: "dashboard", path: "/admin", label: "Dashboard" },
+    { id: "alerts", path: "/crisis/command", label: N.alerts, countKey: "commandCenter", countDescription: "unread crisis and emergency notifications" },
+    { id: "reports", path: "/admin/incidents", label: N.reports, countKey: "incidentReports", countDescription: "unread incident notifications" },
+    { id: "help", path: "/admin/guide-assistance", label: N.helpRequests, countKey: "guideAssistance", countDescription: "unread help-request notifications" },
   ],
-  crisisOps: [
-    { path: "/crisis/command", label: "Command Center", countKey: "commandCenter", countDescription: "unread crisis and emergency notifications" },
-    { path: "/crisis/roads", label: "Roads & Hazards", countKey: "roadsHazards", countDescription: "unread road and hazard notifications" },
-    { path: "/admin/incidents", label: "Incident Reports", countKey: "incidentReports", countDescription: "unread incident notifications" },
-    { path: "/admin/guide-assistance", label: "Tourist Guide Assistance", countKey: "guideAssistance", countDescription: "unread guide-assistance notifications" },
-    { path: "/admin/crisis-feedback", label: "Crisis Feedback", countKey: "crisisFeedback", countDescription: "unread crisis-feedback notifications" },
-    { path: "/admin/archive", label: "Archive & History" },
+  manage: [
+    { id: "roads", path: "/crisis/roads", label: N.roads, countKey: "roadsHazards", countDescription: "unread road and hazard notifications" },
+    { id: "people", path: "/admin/users", label: "People" },
+  ],
+  records: [
+    { id: "history", path: "/admin/archive", label: "History", countKey: "crisisFeedback", countDescription: "unread feedback notifications" },
+    { id: "settings", path: "/admin/settings", label: "Settings" },
   ],
 };
 
+export const ADMIN_NAV_SECTIONS = [
+  ["Respond now", ADMIN_NAV.respond],
+  ["Manage", ADMIN_NAV.manage],
+  ["Records & setup", ADMIN_NAV.records],
+];
+
+/** Guides: four main items + More. Tourists & invites and Roads & Hazards are tabs inside Groups and Alerts. */
 export const GUIDE_NAV = {
-  work: [
-    { path: "/guide", label: "Dashboard" },
-    { path: "/guide/groups", label: "Tour groups" },
-    { path: "/guide/tourists", label: "Tourists & invitations" },
-    { path: "/guide/assistance", label: "Assistance requests" },
+  main: [
+    { id: "dashboard", path: "/guide", label: "Today", short: "Today" },
+    { id: "groups", path: "/guide/groups", label: "Groups", short: "Groups" },
+    { id: "help", path: "/guide/assistance", label: N.helpRequests, short: "Help" },
+    { id: "alerts", path: "/guide/crisis", label: N.alerts, short: "Alerts" },
   ],
-  records: [
-    { path: "/guide/completed", label: "Completed tours" },
-    { path: "/guide/history", label: "History" },
-    { path: "/guide/reports", label: "My reports" },
-  ],
-  alerts: [
-    { path: "/guide/crisis", label: "Crisis alerts" },
-    { path: "/guide/routes", label: "Road & travel advisories" },
+  more: [
+    { id: "history", path: "/guide/history", label: "Past tours" },
+    { id: "reports", path: "/guide/reports", label: N.reports },
+    { id: "howto", path: "/guide/how-to-use", label: "How to Use" },
+    { id: "profile", path: "/guide/profile", label: "My profile" },
   ],
 };
 
@@ -39,16 +45,22 @@ export function isNavActive(pathname, path) {
     return pathname === path;
   }
   if (path === "/guide/groups") {
-    return pathname === "/guide/groups" || pathname.startsWith("/guide/groups/");
+    return pathname === "/guide/groups" || pathname.startsWith("/guide/groups/") || pathname === "/guide/tourists";
   }
-  if (path === "/guide/completed") {
-    return pathname === "/guide/completed";
+  if (path === "/guide/crisis") {
+    return pathname === "/guide/crisis" || pathname === "/guide/routes" || pathname.startsWith("/guide/routes/");
   }
   if (path === "/guide/history") {
     return pathname === "/guide/history";
   }
   if (path === "/admin/archive") {
-    return pathname === "/admin/archive";
+    return ["/admin/archive", "/admin/activity", "/admin/crisis-feedback"].includes(pathname);
+  }
+  if (path === "/admin/settings") {
+    return pathname === "/admin/settings" || pathname === "/admin/how-to-use";
+  }
+  if (path === "/admin/users") {
+    return pathname === "/admin/users" || pathname === "/admin/guides";
   }
   if (path.startsWith("/guide/")) {
     return pathname === path || pathname.startsWith(`${path}/`);
@@ -57,7 +69,7 @@ export function isNavActive(pathname, path) {
     return pathname === "/crisis/command";
   }
   if (path === "/crisis/roads") {
-    return pathname === "/crisis/roads" || pathname.startsWith("/crisis/roads/");
+    return pathname === "/crisis/roads" || pathname.startsWith("/crisis/roads/") || pathname.startsWith("/crisis/hazards");
   }
   return pathname === path || pathname.startsWith(`${path}/`);
 }

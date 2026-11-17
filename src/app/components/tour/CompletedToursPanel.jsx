@@ -71,7 +71,7 @@ export function CompletedToursPanel({
       {limit && !pageSize && groups.length > limit && (
         <p className="text-xs text-zinc-500 font-medium text-center">
           {groups.length - limit} more completed tour{groups.length - limit !== 1 ? "s" : ""} —{" "}
-          <Link href="/guide/completed" className="text-green-600 font-black hover:underline">
+          <Link href="/guide/history" className="text-green-600 font-black hover:underline">
             View all
           </Link>
         </p>
@@ -112,7 +112,7 @@ export function GuideCompletedToursLink({ count: countProp, className = "", comp
           </div>
         </div>
         <Link
-          href="/guide/completed"
+          href="/guide/history"
           className={`inline-flex items-center justify-center gap-1.5 bg-green-600 text-white rounded-xl font-black uppercase tracking-widest hover:bg-green-700 transition-colors shrink-0 ${
             compact ? "w-full px-3 py-2 text-[9px]" : "px-4 py-2.5 text-[10px]"
           }`}

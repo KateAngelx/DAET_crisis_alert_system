@@ -87,8 +87,8 @@ export default function CrisisFeedbackPage() {
       setFeedbackMessage({
         type: "success",
         text: isAuthenticated
-          ? "Your submission is awaiting admin review. Points are awarded only if an eligible tourist submission is approved."
-          : "Your submission is awaiting admin review.",
+          ? "Thanks! We will read it soon. You earn points only if it is approved."
+          : "Thanks! We will read it soon.",
       });
       setRefresh((value) => value + 1);
     } catch (error) {
@@ -102,7 +102,7 @@ export default function CrisisFeedbackPage() {
     <PublicPageShell>
       <InfoPageHero
         title="Crisis & Alert Feedback"
-        description="Share a comment, feedback, or suggestion about crisis alerts and public safety information. Submissions are reviewed before they appear publicly."
+        description="Tell us what you think about the alerts and safety information. We read each one before it is shown to others."
       />
       <PublicPageContent>
         <div className="grid gap-6 lg:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)]">
@@ -137,7 +137,7 @@ export default function CrisisFeedbackPage() {
                     onChange={(event) => setAlertId(event.target.value)}
                     className="w-full rounded-xl border border-zinc-200 bg-white px-4 py-3 text-sm font-semibold"
                   >
-                    <option value="">General Crisis Hub</option>
+                    <option value="">General (not about one alert)</option>
                     {activeAlerts.map((alert) => (
                       <option key={alert.id} value={alert.id}>{alert.title}</option>
                     ))}
@@ -209,7 +209,7 @@ export default function CrisisFeedbackPage() {
             )}
           </PublicPanel>
 
-          <PublicPanel title="Approved submissions" subtitle="Only submissions approved by an administrator appear here.">
+          <PublicPanel title="What others said" subtitle="Only feedback approved by the Tourism Office appears here.">
             {loadingItems ? (
               <p className="flex items-center gap-2 text-sm text-zinc-500" role="status">
                 <Loader2 size={16} className="animate-spin" /> Loading approved submissions...

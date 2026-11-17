@@ -13,6 +13,7 @@ import { useGuideStore } from "@/app/store/guideStore";
 import { CrisisHubMap } from "@/app/components/maps/CrisisHubMap";
 import { RouteDetailModal } from "@/app/components/routes/RouteDetailModal";
 import { DangerousLocationCard } from "@/app/components/danger/DangerousLocationCard";
+import { GuideAlertTabs } from "@/app/components/guide/GuideTabs";
 import { GuidePageHeader } from "@/app/components/guide/GuidePageHeader";
 import { DashboardStatCard } from "@/app/components/dashboard/DashboardStatCard";
 import { StatCardSkeletonGrid, MapSkeleton } from "@/app/components/ui/Skeletons";
@@ -254,6 +255,8 @@ export default function GuideRoutesPage() {
         }
       />
 
+      <GuideAlertTabs active="roads" />
+
       <RoleContextBanner helper={ROLE_INTERFACE.guide.routes.helper} tone="info" />
 
       {statsLoading ? (
@@ -289,7 +292,7 @@ export default function GuideRoutesPage() {
         emptyFallback={
           <EmptyState
             icon={Route}
-            title="No travel advisories"
+            title="No road or hazard updates"
             description="The tourism office has not published any active routes or area hazards yet."
           />
         }

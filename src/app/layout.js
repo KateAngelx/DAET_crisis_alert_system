@@ -13,6 +13,7 @@ import { TouristStartGuide } from "@/app/components/tourist/TouristStartGuide";
 import { InstalledTouristSetup } from "@/app/components/tourist/InstalledTouristSetup";
 import { ConfirmDialogProvider } from "@/app/components/ui/ConfirmDialogProvider";
 import { InstallPwaPrompt } from "@/app/components/InstallPwaPrompt";
+import { EmergencyButton } from "@/app/components/EmergencyButton";
 import { PwaSplashScreen } from "@/app/components/PwaSplashScreen";
 import { DevServiceWorkerCleanup } from "@/app/components/DevServiceWorkerCleanup";
 import { PublicSiteChrome } from "@/app/components/shell/PublicSiteChrome";
@@ -76,6 +77,7 @@ export default function RootLayout({ children }) {
           <PublicSiteChrome>{children}</PublicSiteChrome>
         </ConfirmDialogProvider>
         <InstallPwaPrompt />
+        <EmergencyButton />
       </body>
     </html>
   );

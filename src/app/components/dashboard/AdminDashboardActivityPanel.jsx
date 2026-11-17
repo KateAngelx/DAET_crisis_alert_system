@@ -114,7 +114,7 @@ export function AdminDashboardActivityPanel({
             activeCount={activeAlertCount}
             activeLabel="active"
             href="/crisis/command"
-            hrefLabel="Command"
+            hrefLabel="Open Alerts"
           />
           {recentAlerts.length > 0 ? (
             <PublicCategorizedCardList

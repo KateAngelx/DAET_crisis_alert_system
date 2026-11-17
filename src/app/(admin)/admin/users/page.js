@@ -19,6 +19,7 @@ import {
 import { useCrisisStore, useAuthStore } from "@/app/store/crisisStore";
 import { Card } from "@/app/components/ui/Card";
 import { DashboardPageHeader } from "@/app/components/dashboard/DashboardPageHeader";
+import { AdminPeopleTabs } from "@/app/components/admin/AdminTabs";
 import { RoleContextBanner } from "@/app/components/dashboard/RoleContextBanner";
 import { ROLE_INTERFACE } from "@/lib/roleInterfaceCopy";
 import { DashboardStatCard } from "@/app/components/dashboard/DashboardStatCard";
@@ -369,6 +370,8 @@ export default function AdminUsersPage() {
           </div>
         }
       />
+
+      <AdminPeopleTabs active="users" />
       <RoleContextBanner helper={ROLE_INTERFACE.admin.users.helper} tone="info" />
 
       {loading ? (

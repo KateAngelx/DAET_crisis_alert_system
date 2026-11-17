@@ -6,6 +6,7 @@ import {
   AlertTriangle, Bell, ShieldCheck, Users, Compass, ArrowRight, Navigation, Route,
 } from "lucide-react";
 import { Card } from "@/app/components/ui/Card";
+import { GuideAlertTabs } from "@/app/components/guide/GuideTabs";
 import { GuidePageHeader } from "@/app/components/guide/GuidePageHeader";
 import { DashboardStatCard } from "@/app/components/dashboard/DashboardStatCard";
 import { MapSkeleton, StatCardSkeletonGrid } from "@/app/components/ui/Skeletons";
@@ -132,15 +133,9 @@ export default function GuideCrisisHubPage() {
       <GuidePageHeader
         title={ROLE_INTERFACE.guide.crisis.title}
         description={ROLE_INTERFACE.guide.crisis.description}
-        action={
-          <Link
-            href="/guide/routes"
-            className="flex items-center gap-2 bg-blue-600 text-white px-5 py-2.5 rounded-2xl font-black uppercase text-xs tracking-widest hover:bg-blue-700 transition-colors"
-          >
-            <Route size={16} /> Roads & Travel
-          </Link>
-        }
       />
+
+      <GuideAlertTabs active="alerts" />
 
       <RoleContextBanner helper={ROLE_INTERFACE.guide.crisis.helper} tone="info" />
 
@@ -197,7 +192,7 @@ export default function GuideCrisisHubPage() {
       <div className={portalLayout.splitGrid}>
         <GuidePanel
           title="Active announcements"
-          subtitle="Same public alerts as Crisis Hub. Status, place, type, and when."
+          subtitle="Same alerts tourists see. Status, place, type, and when."
           className={portalLayout.panelFill}
           bodyClassName={portalLayout.panelBodyStack}
         >

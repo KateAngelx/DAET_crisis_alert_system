@@ -11,6 +11,7 @@ import { isConnectionError, loadOfflineSnapshot, saveOfflineSnapshot } from '@/l
 
 export const useCrisisStore = create((set, get) => ({
   alerts: [], 
+  alertsLoaded: false, // true once alerts arrived (live or saved); "no alerts" means nothing until then
   allUsers: [], 
   totalUsers: 0,
   userStats: null,
@@ -35,12 +36,12 @@ export const useCrisisStore = create((set, get) => ({
           (data || []).map(normalizeAlert),
           ['published_at', 'created_at']
         );
-        set({ alerts: normalizedAlerts, loading: false, error: null, offlineSavedAt: null });
+        set({ alerts: normalizedAlerts, alertsLoaded: true, loading: false, error: null, offlineSavedAt: null });
         saveOfflineSnapshot('alerts', normalizedAlerts);
       } else {
         console.error("Fetch Error:", error.message);
         const saved = isConnectionError(error) ? loadOfflineSnapshot('alerts') : null;
-        if (saved) set({ alerts: saved.items, loading: false, error: null, offlineSavedAt: saved.savedAt });
+        if (saved) set({ alerts: saved.items, alertsLoaded: true, loading: false, error: null, offlineSavedAt: saved.savedAt });
         else set({ loading: false, error: error.message });
       }
     } catch (err) {
@@ -48,7 +49,7 @@ export const useCrisisStore = create((set, get) => ({
       console.error("Fetch Error:", message);
       // No connection: show the alerts saved on this phone instead of an error.
       const saved = isConnectionError(err) ? loadOfflineSnapshot('alerts') : null;
-      if (saved) set({ alerts: saved.items, loading: false, error: null, offlineSavedAt: saved.savedAt });
+      if (saved) set({ alerts: saved.items, alertsLoaded: true, loading: false, error: null, offlineSavedAt: saved.savedAt });
       else set({ loading: false, error: message });
       return;
     }

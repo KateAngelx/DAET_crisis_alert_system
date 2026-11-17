@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useMemo, useRef } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { FileWarning, Info, Phone, Shield } from "lucide-react";
+import { FileWarning, Info, Phone } from "lucide-react";
 import { useCrisisStore, useAuthStore } from "@/app/store/crisisStore";
 import { InfoPageHero, PublicPageShell, PublicPageContent, PublicPanel } from "@/app/components/InfoPageHero";
 import { AsyncState, ErrorState } from "@/app/components/ui/AsyncState";
@@ -23,6 +23,8 @@ import {
 import { siteInfo } from "@/lib/siteInfo";
 import { AlertTypeIcon } from "@/app/components/ui/cardTypeIcons";
 import { useHydrated } from "@/lib/useHydrated";
+import { SafetyStatusBar } from "@/app/components/SafetyStatusBar";
+import { AlertsTabs } from "@/app/components/AlertsTabs";
 
 const DAET_CENTER = [14.1122, 122.9553];
 
@@ -50,7 +52,8 @@ function FilterSelect({ label, value, onChange, options }) {
 }
 
 export default function CrisisPublicPage() {
-  const { alerts, fetchAlerts, loading, error } = useCrisisStore();
+  const { alerts, fetchAlerts, alertsLoaded, loading: fetching, error } = useCrisisStore();
+  const loading = fetching || (!alertsLoaded && !error);
   const { isAuthenticated } = useAuthStore();
   const visibility = usePublicVisibility();
   const [selectedAlert, setSelectedAlert] = useState(null);
@@ -137,7 +140,7 @@ export default function CrisisPublicPage() {
         action={
           <>
             <Link href="/crisis/report" className="inline-flex items-center gap-2 rounded-xl bg-red-600 px-4 py-2.5 text-[11px] font-black uppercase tracking-widest text-white shadow-sm hover:bg-red-700">
-              <FileWarning size={14} /> Report an incident
+              <FileWarning size={14} /> Report a problem
             </Link>
             <a href="tel:911" className="inline-flex items-center gap-2 rounded-xl border border-red-200 bg-white px-4 py-2.5 text-[11px] font-black uppercase tracking-widest text-red-700 hover:bg-red-50">
               <Phone size={14} /> Emergency? Call 911
@@ -151,43 +154,16 @@ export default function CrisisPublicPage() {
 
       <PublicPageContent>
         <div className={portalLayout.stackPublic}>
-          <PublicPanel title="Overview" subtitle="Alert counts" className="installed-app-hide">
-            {loading ? (
-              <PublicStatCardSkeleton count={3} className={statGrid.crisisHub} compact />
-            ) : (
-              <div className={statGrid.crisisHub}>
-                <PublicStatCard compact value={activeAlerts.length} label="Active Alerts" accent="blue" />
-                <PublicStatCard compact value={criticalAlerts.length} label="Need immediate action" accent="red" />
-                <PublicStatCard compact value={viewedAlerts.size} label="Alerts Acknowledged" accent="green" />
-              </div>
-            )}
-            {!loading && criticalAlerts.length > 0 ? (
-              <div className="p-3 rounded-xl bg-red-50 border border-red-200 flex items-start gap-3 mt-4">
-                <Shield className="text-red-600 shrink-0 mt-0.5" size={18} />
-                <div>
-                  <p className="text-xs font-black uppercase text-red-700 tracking-widest">Critical alerts active</p>
-                  <p className="text-sm text-red-900 font-medium mt-0.5">
-                    {criticalAlerts.length} alert{criticalAlerts.length > 1 ? "s" : ""} need immediate attention. Review the active announcements below.
-                  </p>
-                </div>
-              </div>
-            ) : null}
-          </PublicPanel>
-
-          {!loading && criticalAlerts.length > 0 ? (
-            <div className="installed-app-show items-start gap-3 rounded-xl border border-red-200 bg-red-50 p-3">
-              <Shield className="mt-0.5 shrink-0 text-red-600" size={18} />
-              <p className="text-sm font-medium text-red-900">
-                {criticalAlerts.length} critical alert{criticalAlerts.length > 1 ? "s" : ""} need immediate attention.
-              </p>
-            </div>
-          ) : null}
+          <div className="flex flex-col gap-3">
+            <AlertsTabs active="active" />
+            <SafetyStatusBar alerts={alerts} loading={loading} error={error} loaded={alertsLoaded} />
+          </div>
 
           <div className={visibility.map ? portalLayout.splitGridPublic : "grid grid-cols-1 gap-4"}>
             <PublicPanel
-              title="Active announcements"
-              subtitle="Status, place, type, and when. View opens the full details."
-              className="order-2 lg:order-1"
+              title="Active alerts"
+              subtitle="Newest first. Tap View to read what to do."
+              className="order-1"
             >
               <AsyncState
                 loading={loading}
@@ -199,9 +175,9 @@ export default function CrisisPublicPage() {
                 emptyFallback={
                   <div className="text-center py-8 bg-zinc-50 rounded-2xl border-2 border-dashed border-zinc-200">
                     <Info size={32} className="mx-auto text-zinc-300 mb-4" />
-                    <p className="font-bold text-zinc-400 uppercase tracking-widest text-xs">No Active Alerts</p>
+                    <p className="font-bold text-zinc-400 uppercase tracking-widest text-xs">No active alerts</p>
                     <p className="text-zinc-400 text-sm mt-2 font-medium">
-                      No crisis is currently reported for Daet. Check back when the tourism office issues a new advisory.
+                      Nothing is reported for Daet right now. Past alerts are in the Past alerts tab.
                     </p>
                   </div>
                 }
@@ -227,7 +203,7 @@ export default function CrisisPublicPage() {
             {visibility.map ? (
             <PublicPanel
               title="Affected areas map"
-              className={`${portalLayout.panelFill} order-1 lg:order-2 ${selectedAlert ? "pointer-events-none opacity-40" : ""}`}
+              className={`${portalLayout.panelFill} order-2 ${selectedAlert ? "pointer-events-none opacity-40" : ""}`}
               noPadding
               bodyClassName={portalLayout.mapColumnBody}
             >
@@ -247,6 +223,18 @@ export default function CrisisPublicPage() {
             </PublicPanel>
             ) : null}
           </div>
+
+          <PublicPanel title="Counts" subtitle="Active alerts right now" className="installed-app-hide">
+            {loading ? (
+              <PublicStatCardSkeleton count={3} className={statGrid.crisisHub} compact />
+            ) : (
+              <div className={statGrid.crisisHub}>
+                <PublicStatCard compact value={activeAlerts.length} label="Active alerts" accent="blue" />
+                <PublicStatCard compact value={criticalAlerts.length} label="Critical" accent="red" />
+                <PublicStatCard compact value={viewedAlerts.size} label="Alerts you've seen" accent="green" />
+              </div>
+            )}
+          </PublicPanel>
         </div>
 
         <div className="installed-app-hide overflow-hidden rounded-2xl border border-zinc-200 bg-white">

@@ -1,9 +1,9 @@
 /**
- * Route-aware nav active state. Crisis Hub is active only on /crisis exactly.
+ * Route-aware nav active state. Alerts is active on /crisis and its Past alerts tab.
  */
 export function isPublicNavActive(pathname, href) {
   if (href === "/") return pathname === "/";
-  if (href === "/crisis") return pathname === "/crisis";
+  if (href === "/crisis") return pathname === "/crisis" || pathname === "/crisis/resolved";
   if (href === "/crisis/resolved") {
     return pathname === "/crisis/resolved" || pathname.startsWith("/crisis/resolved/");
   }

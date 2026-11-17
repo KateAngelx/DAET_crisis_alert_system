@@ -86,8 +86,8 @@ export default function GuideHistoryPage() {
   return (
     <>
       <GuidePageHeader
-        title="History & Records"
-        description="Completed tours, closed group reports, and resolved crisis alerts for your reference."
+        title="Past tours"
+        description="Finished tours, closed reports and past alerts, in one place."
         action={
           <Link href="/guide/groups" className={`${guideShell.btnGuide} no-underline`}>
             Active groups <ArrowRight size={14} />
@@ -101,7 +101,7 @@ export default function GuideHistoryPage() {
         <div className={statGrid.dashboardThree}>
           <DashboardStatCard compact label="Completed Tours" value={completedGroups.length} icon={<Compass size={iconSize.stat} />} accent="green" />
           <DashboardStatCard compact label="Closed Reports" value={closedReports.length} icon={<FileText size={iconSize.stat} />} accent="blue" />
-          <DashboardStatCard compact label="Resolved Alerts" value={resolvedAlerts.length} icon={<CheckCircle size={iconSize.stat} />} accent="green" />
+          <DashboardStatCard compact label="Past alerts" value={resolvedAlerts.length} icon={<CheckCircle size={iconSize.stat} />} accent="green" />
         </div>
       )}
 
@@ -188,7 +188,7 @@ export default function GuideHistoryPage() {
       <AlertDetailModal alert={selectedAlert} onClose={() => setSelectedAlert(null)} />
 
       <div className="flex items-center gap-2 text-zinc-400 text-[10px] font-bold uppercase tracking-widest px-1">
-        <History size={14} /> For live emergencies, use Crisis Hub and Group Reports.
+        <History size={14} /> For live emergencies, open Alerts and Reports.
       </div>
     </>
   );

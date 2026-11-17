@@ -72,12 +72,12 @@ export function PublicFooter() {
             <div>
               <h3 className="mb-2 text-[10px] font-bold uppercase tracking-[0.18em] text-zinc-400">Services</h3>
               <ul className="space-y-1.5">
-                <li><Link href="/crisis" className="text-zinc-600 hover:text-blue-600">Crisis Hub</Link></li>
+                <li><Link href="/crisis" className="text-zinc-600 hover:text-blue-600">Alerts</Link></li>
                 {visibility.roadsAndHazards ? (
-                  <li><Link href="/routes" className="text-zinc-600 hover:text-blue-600">Roads & Travel</Link></li>
+                  <li><Link href="/routes" className="text-zinc-600 hover:text-blue-600">Roads & Hazards</Link></li>
                 ) : null}
-                <li><Link href="/crisis/report" className="text-zinc-600 hover:text-blue-600">Report an Incident</Link></li>
-                <li><Link href="/crisis/reports" className="text-zinc-600 hover:text-blue-600">My Reports</Link></li>
+                <li><Link href="/crisis/report" className="text-zinc-600 hover:text-blue-600">Report a problem</Link></li>
+                <li><Link href="/crisis/reports" className="text-zinc-600 hover:text-blue-600">Reports</Link></li>
               </ul>
             </div>
             <div>
@@ -118,13 +118,13 @@ export function PublicFooter() {
           <div>
             <h3 className="mb-4 text-[10px] font-bold uppercase tracking-[0.2em] text-zinc-400">Crisis Services</h3>
             <ul className="space-y-3 text-sm font-medium">
-              <li><Link href="/crisis" className="text-zinc-600 transition-colors hover:text-blue-600">Crisis Hub</Link></li>
-              <li><Link href="/crisis/resolved" className="text-zinc-600 transition-colors hover:text-blue-600">Resolved Alerts</Link></li>
+              <li><Link href="/crisis" className="text-zinc-600 transition-colors hover:text-blue-600">Alerts</Link></li>
+              <li><Link href="/crisis/resolved" className="text-zinc-600 transition-colors hover:text-blue-600">Past alerts</Link></li>
               {visibility.roadsAndHazards ? (
-                <li><Link href="/routes" className="text-zinc-600 transition-colors hover:text-blue-600">Roads & Travel</Link></li>
+                <li><Link href="/routes" className="text-zinc-600 transition-colors hover:text-blue-600">Roads & Hazards</Link></li>
               ) : null}
-              <li><Link href="/crisis/report" className="text-zinc-600 transition-colors hover:text-blue-600">Report an Incident</Link></li>
-              <li><Link href="/crisis/reports" className="text-zinc-600 transition-colors hover:text-blue-600">My Reports</Link></li>
+              <li><Link href="/crisis/report" className="text-zinc-600 transition-colors hover:text-blue-600">Report a problem</Link></li>
+              <li><Link href="/crisis/reports" className="text-zinc-600 transition-colors hover:text-blue-600">Reports</Link></li>
             </ul>
           </div>
           <div>

@@ -160,7 +160,7 @@ export async function GET(request) {
     );
   } catch (error) {
     return NextResponse.json(
-      { error: error.message || "Unable to load Tourist Guide Assistance requests." },
+      { error: error.message || "Unable to load help requests." },
       { status: 500, headers: { "Cache-Control": "no-store" } }
     );
   }

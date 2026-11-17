@@ -46,7 +46,7 @@ export default function GuideReportsPage() {
             onClick={() => setModalOpen(true)}
             className="flex items-center gap-2 bg-red-600 text-white px-5 py-2.5 rounded-2xl font-black uppercase text-xs tracking-widest hover:bg-red-700 transition-colors"
           >
-            <Plus size={16} /> Report incident
+            <Plus size={16} /> Report a problem
           </button>
         }
       />
@@ -70,12 +70,17 @@ export default function GuideReportsPage() {
         emptyFallback={
           <EmptyState
             icon={FileText}
-            title="No group reports"
-            description="Reports from tourists in your tour groups will appear here."
+            title="No reports yet"
+            description="Reports from you and the tourists in your groups appear here."
+            action={
+              <button type="button" onClick={() => setModalOpen(true)} className="inline-flex items-center gap-2 rounded-xl bg-red-600 px-4 py-2.5 text-[11px] font-black uppercase tracking-widest text-white hover:bg-red-700">
+                Report a problem
+              </button>
+            }
           />
         }
       >
-        <GuidePanel title="All group reports" subtitle="Create a report from the header. View opens the full record." bodyClassName={portalLayout.panelBodyStack}>
+        <GuidePanel title="All group reports" subtitle="Tap Report a problem to add one. View opens the full report." bodyClassName={portalLayout.panelBodyStack}>
           <StatusRecordList
             rows={guideIncidents.map((inc) => ({
               id: inc.id,

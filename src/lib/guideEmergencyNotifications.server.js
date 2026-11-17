@@ -27,7 +27,7 @@ export async function notifyGuideEmergencySubmitted(report, guide) {
     .eq("is_active", true);
   if (error) return [{ errors: [error.message] }];
 
-  const message = `${report.reference_number}: ${report.emergency_type} reported at ${report.location}. Open the Crisis Command Center for details.`;
+  const message = `${report.reference_number}: ${report.emergency_type} reported at ${report.location}. Open Admin → Alerts for details.`;
   const adminResults = await Promise.all((admins || []).map((profile) =>
     dispatch(
       profile.id,

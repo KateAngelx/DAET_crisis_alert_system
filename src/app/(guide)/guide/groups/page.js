@@ -2,6 +2,7 @@
 
 import React, { useEffect, useMemo, useState } from "react";
 import { Compass, Plus, Users, Loader2, CheckCircle, X } from "lucide-react";
+import { GuideGroupTabs } from "@/app/components/guide/GuideTabs";
 import { GuidePageHeader } from "@/app/components/guide/GuidePageHeader";
 import { guideShell } from "@/lib/designSystem";
 import { DestinationModal } from "@/app/components/tour/DestinationModal";
@@ -132,7 +133,7 @@ export default function GuideTourGroupsPage() {
   return (
     <>
       <GuidePageHeader
-        title="Tour Groups"
+        title="Groups"
         description="Create routes, assign tourists, and mark tours done when your group reaches the destination."
         action={
           <button
@@ -153,13 +154,15 @@ export default function GuideTourGroupsPage() {
         }
       />
 
+      <GuideGroupTabs active="groups" />
+
       {loading && tourGroups.length === 0 ? (
         <StatCardSkeletonGrid count={3} className={statGrid.dashboardThree} />
       ) : (
         <div className={statGrid.dashboardThree}>
           <DashboardStatCard compact label="Active Groups" value={activeGroups.length} icon={<Compass size={iconSize.stat} />} accent="purple" />
           <DashboardStatCard compact label="Active Tourists" value={activeTourists} icon={<Users size={iconSize.stat} />} accent="blue" href="/guide/tourists" hrefLabel="Manage" />
-          <DashboardStatCard compact label="Completed Tours" value={completedGroups.length} icon={<CheckCircle size={iconSize.stat} />} accent="green" href="/guide/completed" hrefLabel="View" />
+          <DashboardStatCard compact label="Completed Tours" value={completedGroups.length} icon={<CheckCircle size={iconSize.stat} />} accent="green" href="/guide/history" hrefLabel="View" />
         </div>
       )}
 
@@ -356,6 +359,22 @@ export default function GuideTourGroupsPage() {
             tab === "completed"
               ? "When you mark a tour as done, it will appear here for your records."
               : "Create a tour group with a route to start adding tourists."
+          }
+          action={
+            tab === "completed" ? null : (
+              <button
+                type="button"
+                className="inline-flex items-center gap-2 rounded-xl bg-blue-600 px-4 py-2.5 text-[11px] font-black uppercase tracking-widest text-white hover:bg-blue-700"
+                onClick={() => {
+                  setError(null);
+                  setSetupStep("details");
+                  setCreatedGroup(null);
+                  setShowForm(true);
+                }}
+              >
+                Create your first group
+              </button>
+            )
           }
         />
       ) : (

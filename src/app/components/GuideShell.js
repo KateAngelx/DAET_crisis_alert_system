@@ -5,42 +5,33 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useAuthStore } from "@/app/store/crisisStore";
 import {
-  LayoutDashboard, ShieldCheck, FileText, Map, LogOut, Users, Compass, CheckCircle, History, Menu, X,
+  LayoutDashboard, ShieldCheck, FileText, LogOut, Compass, History, Menu, X, LifeBuoy, BookOpen, Sun, Users, UserRound,
 } from "lucide-react";
 import { BrandLogo } from "@/app/components/BrandLogo";
 import { GUIDE_NAV, isNavActive } from "@/lib/dashboardNav";
 import { NotificationPanel } from "@/app/components/NotificationPanel";
 import { typography, iconSize } from "@/lib/designSystem";
 import { InstalledBottomNav } from "@/app/components/shell/InstalledBottomNav";
-import { useInstalledApp } from "@/lib/useInstalledApp";
 
+/** Icons by nav item id (labels can change; ids do not). */
 const ICONS = {
-  Dashboard: LayoutDashboard,
-  "Tour groups": Compass,
-  "Completed tours": CheckCircle,
-  "Assistance requests": Compass,
-  History: History,
-  "Tourists & invitations": Users,
-  "Crisis alerts": ShieldCheck,
-  "Road & travel advisories": Map,
-  "My reports": FileText,
+  dashboard: Sun,
+  groups: Compass,
+  help: LifeBuoy,
+  alerts: ShieldCheck,
+  history: History,
+  reports: FileText,
+  howto: BookOpen,
+  profile: UserRound,
 };
 
 const GUIDE_SECTIONS = [
-  ["Tour Operations", GUIDE_NAV.work],
-  ["Records & Reports", GUIDE_NAV.records],
-  ["Safety", GUIDE_NAV.alerts],
+  ["Main", GUIDE_NAV.main],
+  ["More", GUIDE_NAV.more],
 ];
 
-const PHONE_BROWSER_PRIMARY = [...GUIDE_NAV.work, GUIDE_NAV.alerts[0]];
-const PHONE_BROWSER_MORE = [...GUIDE_NAV.records, GUIDE_NAV.alerts[1]];
-
-const GUIDE_BOTTOM_NAV = [
-  { href: "/guide", short: "Home", icon: LayoutDashboard },
-  { href: "/guide/groups", short: "Groups", icon: Compass },
-  { href: "/guide/assistance", short: "Assistance", icon: Users },
-  { href: "/guide/crisis", short: "Crisis", icon: ShieldCheck },
-];
+// Phones: the four main items in a bottom bar; More opens the side menu.
+const GUIDE_BOTTOM_NAV = GUIDE_NAV.main.map((item) => ({ href: item.path, short: item.short, icon: ICONS[item.id] }));
 
 function Logo() {
   return (
@@ -55,7 +46,7 @@ function Logo() {
 }
 
 function NavLink({ item, pathname }) {
-  const Icon = ICONS[item.label] || LayoutDashboard;
+  const Icon = ICONS[item.id] || LayoutDashboard;
   const active = isNavActive(pathname, item.path);
 
   return (
@@ -73,7 +64,7 @@ function NavLink({ item, pathname }) {
 
 export function GuideSidebar() {
   const pathname = usePathname();
-  const { logout } = useAuthStore();
+  const { user, logout } = useAuthStore();
 
   return (
     <aside className="w-[280px] bg-white border-r border-zinc-200 flex flex-col h-screen sticky top-0 hidden lg:flex dashboard-shell">
@@ -92,7 +83,21 @@ export function GuideSidebar() {
         ))}
       </div>
 
-      <div className="p-4 border-t border-zinc-100">
+      <div className="p-4 border-t border-zinc-100 space-y-3">
+        <Link
+          href="/guide/profile"
+          className={`flex items-center gap-3 rounded-2xl border px-4 py-3 transition-colors ${
+            pathname === "/guide/profile" ? "border-purple-200 bg-purple-50" : "border-zinc-100 bg-zinc-50 hover:bg-purple-50"
+          }`}
+        >
+          <span className="rounded-lg bg-purple-100 p-1.5">
+            <UserRound size={16} className="text-purple-700" />
+          </span>
+          <span className="min-w-0 flex-1 leading-tight">
+            <span className="block truncate text-sm font-black text-zinc-900">{user?.name || "My profile"}</span>
+            <span className="block text-[10px] font-black uppercase tracking-widest text-purple-700">My profile</span>
+          </span>
+        </Link>
         <button
           onClick={logout}
           className="w-full flex items-center justify-center gap-2 bg-red-50 text-red-600 px-4 py-3 rounded-2xl hover:bg-red-100 transition-colors font-black text-sm border border-red-100"
@@ -104,15 +109,14 @@ export function GuideSidebar() {
   );
 }
 
-export function MobileGuideMenu({ open, onOpen, onClose, installed = false }) {
+export function MobileGuideMenu({ open, onOpen, onClose }) {
   const pathname = usePathname();
-  const [moreOpen, setMoreOpen] = React.useState(false);
 
   return (
     <>
       <button
         onClick={onOpen}
-        className="lg:hidden p-2 hover:bg-zinc-100 rounded-lg transition-colors"
+        className="hidden p-2 hover:bg-zinc-100 rounded-lg transition-colors"
         aria-label="Open menu"
       >
         <Menu size={iconSize.nav} className="text-zinc-600" />
@@ -129,7 +133,7 @@ export function MobileGuideMenu({ open, onOpen, onClose, installed = false }) {
               </button>
             </div>
             <div className="p-4 space-y-6">
-              {installed ? GUIDE_SECTIONS.map(([title, items]) => (
+              {GUIDE_SECTIONS.map(([title, items]) => (
                 <div key={title}>
                   <h3 className="text-[10px] font-black text-zinc-400 uppercase tracking-[0.2em] mb-4 px-4">{title}</h3>
                   <div className="space-y-1">
@@ -140,34 +144,7 @@ export function MobileGuideMenu({ open, onOpen, onClose, installed = false }) {
                     ))}
                   </div>
                 </div>
-              )) : (
-                <>
-                  <div className="space-y-1">
-                    {PHONE_BROWSER_PRIMARY.map((item) => (
-                      <div key={item.path} onClick={onClose}>
-                        <NavLink item={item} pathname={pathname} />
-                      </div>
-                    ))}
-                  </div>
-                  <button
-                    type="button"
-                    className="px-4 text-[10px] font-black uppercase tracking-[0.2em] text-zinc-400"
-                    aria-expanded={moreOpen}
-                    onClick={() => setMoreOpen((value) => !value)}
-                  >
-                    {moreOpen ? "Hide more" : "More"}
-                  </button>
-                  {moreOpen ? (
-                    <div className="space-y-1">
-                      {PHONE_BROWSER_MORE.map((item) => (
-                        <div key={item.path} onClick={onClose}>
-                          <NavLink item={item} pathname={pathname} />
-                        </div>
-                      ))}
-                    </div>
-                  ) : null}
-                </>
-              )}
+              ))}
             </div>
           </div>
         </>
@@ -179,33 +156,42 @@ export function MobileGuideMenu({ open, onOpen, onClose, installed = false }) {
 export function GuideHeader() {
   const { user, logout } = useAuthStore();
   const [menuOpen, setMenuOpen] = React.useState(false);
-  const installedApp = useInstalledApp();
+
+  // Phones in a browser get the same bottom bar as the installed app.
+  React.useEffect(() => {
+    document.documentElement.dataset.mobileDock = "true";
+    return () => {
+      delete document.documentElement.dataset.mobileDock;
+    };
+  }, []);
 
   return (
     <header className="h-16 shrink-0 bg-white border-b border-zinc-200 px-3 sm:px-4 lg:px-6 flex items-center justify-between sticky top-0 z-10 dashboard-shell">
       <div className="flex min-w-0 items-center gap-2 sm:gap-4">
         <MobileGuideMenu
           open={menuOpen}
-          installed={installedApp}
           onOpen={() => setMenuOpen(true)}
           onClose={() => setMenuOpen(false)}
         />
         <div className="min-w-0">
           <p className={`${typography.statLabel} hidden tracking-[0.2em] text-zinc-400 leading-none mb-0.5 sm:block`}>Guide portal</p>
-          <h1 className="truncate text-sm font-black tracking-tight leading-tight text-zinc-800 sm:text-2xl md:text-[28px]">Tour operations</h1>
+          <h1 className="truncate text-sm font-black tracking-tight leading-tight text-zinc-800 sm:text-2xl md:text-[28px]">Guide</h1>
         </div>
       </div>
 
       <div className="flex shrink-0 items-center gap-1.5 sm:gap-3">
         <NotificationPanel />
         <div className="flex items-center gap-1 sm:gap-2 rounded-2xl border border-zinc-100 bg-zinc-50 px-1.5 py-1.5 sm:px-3 sm:py-2">
-          <div className="hidden rounded-lg bg-purple-100 p-1.5 sm:block">
-            <Users size={16} className="text-purple-600" />
-          </div>
-          <div className="hidden md:block leading-none text-left">
-            <p className="text-sm font-black text-zinc-900 truncate max-w-[120px]">{user?.name || "Guide"}</p>
-            <p className="text-[10px] text-zinc-400 font-bold uppercase tracking-widest">Tourism Guide</p>
-          </div>
+          <Link href="/guide/profile" className="flex items-center gap-1 sm:gap-2 rounded-xl hover:opacity-80" aria-label="My profile">
+            <div className="rounded-lg bg-purple-100 p-1.5">
+              <Users size={16} className="text-purple-600" />
+            </div>
+            <span className="text-[10px] font-black uppercase tracking-widest text-purple-700 md:hidden">Profile</span>
+            <div className="hidden md:block leading-none text-left">
+              <p className="text-sm font-black text-zinc-900 truncate max-w-[120px]">{user?.name || "Guide"}</p>
+              <p className="text-[10px] text-zinc-400 font-bold uppercase tracking-widest">Tourism Guide</p>
+            </div>
+          </Link>
           <button
             onClick={logout}
             className="lg:hidden p-2 text-red-500 hover:bg-red-50 rounded-lg transition-colors"
@@ -217,6 +203,7 @@ export function GuideHeader() {
         </div>
       </div>
       <InstalledBottomNav
+        always
         items={GUIDE_BOTTOM_NAV}
         onMore={() => setMenuOpen(true)}
         menuOpen={menuOpen}

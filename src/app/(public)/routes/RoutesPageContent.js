@@ -324,7 +324,7 @@ export default function RoutesPageContent() {
         <PublicPageContent>
           <PublicPanel title="Roads and hazards">
             <p className="text-sm font-medium text-zinc-600">
-              Roads and hazards are not shown on the public site right now. Active emergency alerts stay on Crisis Hub.
+              Roads and hazards are not shown on the public site right now. Active emergency alerts stay on the Alerts page.
             </p>
           </PublicPanel>
         </PublicPageContent>
@@ -367,7 +367,7 @@ export default function RoutesPageContent() {
           emptyFallback={
             <EmptyState
               icon={Route}
-              title="No travel advisories"
+              title="No road or hazard updates"
               description="The Daet Municipal Tourism Office has not published any active routes or area hazards right now. Check back before you head out."
             />
           }

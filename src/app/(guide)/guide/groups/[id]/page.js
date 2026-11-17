@@ -205,7 +205,12 @@ export default function TourGroupDetailPage({ params }) {
           <Users size={16} /> Confirmed Tourists ({groupMembers.length})
         </h2>
         {groupMembers.length === 0 ? (
-          <EmptyState icon={Users} title="No confirmed tourists" description="Send assignment requests from Active Tourists. Tourists must confirm before appearing here." />
+          <EmptyState
+            icon={Users}
+            title="No confirmed tourists"
+            description="Invite tourists to this group. They appear here after they accept."
+            action={<Link href="/guide/tourists" className="inline-flex items-center gap-2 rounded-xl bg-blue-600 px-4 py-2.5 text-[11px] font-black uppercase tracking-widest text-white hover:bg-blue-700">Invite tourists</Link>}
+          />
         ) : (
           <div className="space-y-3">
             {groupMembers.map((assignment) => (

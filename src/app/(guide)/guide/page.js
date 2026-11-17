@@ -19,12 +19,17 @@ import { ROLE_INTERFACE } from "@/lib/roleInterfaceCopy";
 import { GuideEmergencyReporting } from "@/app/components/guide/GuideEmergencyReporting";
 import { getActiveSession } from "@/lib/authSession";
 import { isTourPastEndDate } from "@/lib/tourGroupRoute";
+import { SafetyStatusBar } from "@/app/components/SafetyStatusBar";
+import { alertAcceptsCheckins } from "@/lib/alertCheckins";
+import { fetchWithFreshSession } from "@/lib/authSession";
+import { buildGuideNeeds } from "@/lib/guideNeeds";
 
 export default function GuideDashboard() {
   const { user } = useAuthStore();
-  const { alerts, fetchAlerts, loading: alertsLoading } = useCrisisStore();
+  const { alerts, fetchAlerts, alertsLoaded, error: alertsError, loading: alertsLoading } = useCrisisStore();
   const { advisories, fetchAdvisories } = useRouteAdvisoryStore();
   const [waitingAssistance, setWaitingAssistance] = useState(0);
+  const [unaccounted, setUnaccounted] = useState([]);
   const {
     tourGroups,
     guideIncidents,
@@ -74,6 +79,29 @@ export default function GuideDashboard() {
     };
   }, [user?.id]);
 
+  const checkinAlertIds = alerts.filter(alertAcceptsCheckins).map((a) => a.id).join(",");
+  useEffect(() => {
+    if (!user?.id || !checkinAlertIds) return undefined;
+    let cancelled = false;
+    Promise.all(
+      checkinAlertIds.split(",").map(async (alertId) => {
+        try {
+          const response = await fetchWithFreshSession(`/api/guide/headcount?alertId=${alertId}`);
+          const json = await response.json();
+          const open = (json.tourists || []).filter((t) => !t.checkin || ["need_help", "missing"].includes(t.checkin.status));
+          return { alertId, count: open.length };
+        } catch {
+          return { alertId, count: 0 };
+        }
+      })
+    ).then((rows) => {
+      if (!cancelled) setUnaccounted(rows.filter((row) => row.count > 0));
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [user?.id, checkinAlertIds]);
+
   const activeAlerts = alerts.filter((a) => a.status === "Active" && a.is_public);
   const criticalAlerts = activeAlerts.filter((a) => a.severity === "Critical");
   const openIncidents = guideIncidents.filter(
@@ -83,38 +111,13 @@ export default function GuideDashboard() {
   const totalTourists = activeGroups.reduce((sum, g) => sum + (g.member_count || 0), 0);
 
   const visibleGroups = activeGroups.slice(0, 3);
-  const attentionItems = [
-    ...(waitingAssistance > 0
-      ? [{
-          id: "assistance",
-          href: "/guide/assistance",
-          title: `${waitingAssistance} assistance request${waitingAssistance === 1 ? "" : "s"}`,
-          description: "Waiting for your response",
-        }]
-      : []),
-    ...(criticalAlerts.length > 0
-      ? [{
-          id: "critical-alerts",
-          href: "/guide/crisis",
-          title: `${criticalAlerts.length} critical alert${criticalAlerts.length === 1 ? "" : "s"}`,
-          description: "Review current safety information",
-        }]
-      : []),
-    ...(openIncidents.length > 0
-      ? [{
-          id: "reports",
-          href: "/guide/reports",
-          title: `${openIncidents.length} open report${openIncidents.length === 1 ? "" : "s"}`,
-          description: "Follow up on reports",
-        }]
-      : []),
-    ...overdueGroups.map((group) => ({
-      id: group.id,
-      href: `/guide/groups/${group.id}`,
-      title: group.name,
-      description: "End date reached — review and mark done when safe",
-    })),
-  ];
+  const attentionItems = buildGuideNeeds({
+    waitingAssistance,
+    criticalAlerts,
+    unaccounted: unaccounted.map((row) => ({ ...row, title: alerts.find((a) => a.id === row.alertId)?.title })),
+    incidents: guideIncidents,
+    overdueGroups,
+  });
 
   const openDestination = async (group) => {
     setModalGroup(group);
@@ -124,16 +127,16 @@ export default function GuideDashboard() {
   return (
     <>
       <GuidePageHeader
-        title={`Welcome, ${user?.name || "Guide"}`}
+        title="Today"
         description={ROLE_INTERFACE.guide.dashboard.description}
         action={
           <Link href="/guide/groups" className={`${guideShell.btnGuide} no-underline`}>
-            <Plus size={16} /> New Tour Group
+            <Plus size={16} /> New tour group
           </Link>
         }
       />
 
-      <GuideEmergencyReporting />
+      <SafetyStatusBar alerts={alerts} loading={alertsLoading} error={alertsError} loaded={alertsLoaded} href="/guide/crisis" />
 
       {attentionItems.length > 0 ? (
         <section
@@ -141,14 +144,14 @@ export default function GuideDashboard() {
           className="overflow-hidden rounded-2xl border border-amber-200 bg-white"
         >
           <h2 id="guide-needs-attention" className="bg-amber-50 px-4 py-3 text-[10px] font-black uppercase tracking-widest text-amber-800 sm:px-5">
-            Needs your attention <span className="ml-1 text-amber-600">({attentionItems.length})</span>
+            Needs you now <span className="ml-1 text-amber-600">({attentionItems.length})</span>
           </h2>
           <ul className="divide-y divide-zinc-100">
             {attentionItems.map((item) => (
               <li key={item.id}>
                 <Link
                   href={item.href}
-                  className="flex items-center justify-between gap-3 px-4 py-3 transition-colors hover:bg-amber-50/50 sm:px-5"
+                  className={`flex items-center justify-between gap-3 px-4 py-3 transition-colors hover:bg-amber-50/50 sm:px-5 ${item.urgent ? "border-l-4 border-red-500" : ""}`}
                 >
                   <span className="min-w-0">
                     <span className="block truncate text-sm font-bold text-zinc-900">{item.title}</span>
@@ -162,7 +165,13 @@ export default function GuideDashboard() {
             ))}
           </ul>
         </section>
-      ) : null}
+      ) : (
+        <p className="flex items-center gap-2 rounded-2xl border border-green-200 bg-green-50 px-4 py-3 text-sm font-bold text-green-900">
+          <ShieldCheck size={18} className="shrink-0 text-green-600" /> Nothing needs you right now.
+        </p>
+      )}
+
+      <GuideEmergencyReporting />
 
       {statsLoading ? (
         <StatCardSkeletonGrid count={3} className={statGrid.dashboardThree} />
@@ -170,7 +179,7 @@ export default function GuideDashboard() {
         <div className={statGrid.dashboardThree}>
           <DashboardStatCard compact label="Active Groups" value={activeGroups.length} icon={<Compass size={iconSize.stat} />} accent="purple" href="/guide/groups" hrefLabel="Manage" />
           <DashboardStatCard compact label="Active Tourists" value={totalTourists} icon={<Users size={iconSize.stat} />} accent="blue" href="/guide/tourists" hrefLabel="Manage" />
-          <DashboardStatCard compact label="Completed Tours" value={completedGroups.length} icon={<ShieldCheck size={iconSize.stat} />} accent="green" href="/guide/completed" hrefLabel="View" />
+          <DashboardStatCard compact label="Completed Tours" value={completedGroups.length} icon={<ShieldCheck size={iconSize.stat} />} accent="green" href="/guide/history" hrefLabel="View" />
         </div>
       )}
 

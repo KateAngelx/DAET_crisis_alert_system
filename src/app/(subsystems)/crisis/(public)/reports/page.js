@@ -178,8 +178,8 @@ function MyReportsContent() {
     return (
       <PublicPageShell>
         <InfoPageHero
-          title="My Reports"
-          description="Sign in to submit incident reports and track tourism office response."
+          title="Reports"
+          description="Sign in to follow your reports. No account? Use Report a problem."
         />
         <PublicPageContent>
           <PublicPanel title="Sign in required">
@@ -206,35 +206,24 @@ function MyReportsContent() {
         <InfoPageHero
           title={ROLE_INTERFACE.public.reports.title}
           description={ROLE_INTERFACE.public.reports.description}
+          action={
+            <>
+              <button type="button" onClick={() => setModalOpen(true)} className={portalShell.btnDanger}>
+                <Plus size={16} /> Report a problem
+              </button>
+              <a href="tel:911" className="inline-flex items-center gap-2 rounded-xl border border-red-200 bg-white px-4 py-2.5 text-[11px] font-black uppercase tracking-widest text-red-700 hover:bg-red-50">
+                Emergency? Call 911
+              </a>
+            </>
+          }
         />
 
         <PublicPageContent>
           <RoleContextBanner helper={ROLE_INTERFACE.public.reports.helper} tone="info" />
 
           <PublicPanel
-            title="Overview"
-            subtitle="Report counts"
-            action={
-              <button type="button" onClick={() => setModalOpen(true)} className={portalShell.btnDanger}>
-                <Plus size={16} /> Report an incident
-              </button>
-            }
-          >
-            {loading ? (
-              <PublicStatCardSkeleton count={3} className={`${statGrid.crisisHub} mb-4`} compact />
-            ) : (
-              <div className={`${statGrid.crisisHub} mb-4`}>
-                <PublicStatCard compact value={incidents.length} label="Total Reports" accent="blue" />
-                <PublicStatCard compact value={openReports.length} label="Open Cases" accent="orange" />
-                <PublicStatCard compact value={urgentReports.length} label="High / Critical" accent="red" />
-              </div>
-            )}
-          </PublicPanel>
-
-          <PublicPanel
-            title="Your incident reports"
+            title="Your reports"
             subtitle={`${filteredReports.length} matching reports`}
-            className="mt-2"
             bodyClassName={portalLayout.panelBodyStack}
           >
             {successRef ? (
@@ -268,7 +257,7 @@ function MyReportsContent() {
                       onClick={() => setModalOpen(true)}
                       className="text-blue-600 font-black text-xs uppercase hover:underline"
                     >
-                      Report an Incident
+                      Report a problem
                     </button>
                   }
                 />
@@ -285,7 +274,7 @@ function MyReportsContent() {
                     value={searchTerm}
                     onChange={(event) => { setSearchTerm(event.target.value); setPage(1); }}
                     placeholder="Reference, location, or details"
-                    aria-label="Search incident reports"
+                    aria-label="Search your reports"
                     className={`${portalShell.input} pl-10`}
                   />
                 </label>
@@ -350,6 +339,22 @@ function MyReportsContent() {
                 </div>
               ) : null}
             </AsyncState>
+          </PublicPanel>
+
+          <PublicPanel
+            title="Counts"
+            subtitle="Your reports in numbers"
+            className="mt-2"
+          >
+            {loading ? (
+              <PublicStatCardSkeleton count={3} className={`${statGrid.crisisHub} mb-4`} compact />
+            ) : (
+              <div className={`${statGrid.crisisHub} mb-4`}>
+                <PublicStatCard compact value={incidents.length} label="Total Reports" accent="blue" />
+                <PublicStatCard compact value={openReports.length} label="Open Cases" accent="orange" />
+                <PublicStatCard compact value={urgentReports.length} label="High / Critical" accent="red" />
+              </div>
+            )}
           </PublicPanel>
         </PublicPageContent>
       </PublicPageShell>

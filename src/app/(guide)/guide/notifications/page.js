@@ -54,7 +54,7 @@ export default function GuideNotificationsPage() {
   if (!sessionChecked) {
     return (
       <>
-        <GuidePageHeader title="Notifications" description="Private updates on alerts, tour group activity, and incident reports." />
+        <GuidePageHeader title="Notifications" description="Your updates about alerts, your groups, and reports." />
         <GuidePanel title="Inbox" compact>
           <SessionInboxSkeleton count={4} />
         </GuidePanel>
@@ -82,7 +82,7 @@ export default function GuideNotificationsPage() {
     <>
       <GuidePageHeader
         title="Notifications"
-        description="Private updates on alerts, tour group activity, and incident reports for your guide account."
+        description="Your updates about alerts, your groups, and reports."
         action={
           <button
             type="button"
