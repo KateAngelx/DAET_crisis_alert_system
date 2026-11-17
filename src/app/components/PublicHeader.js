@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { AlertTriangle, BookOpen, CheckCircle2, CircleHelp, CircleUserRound, Compass, FileText, Home, Info, LogOut, Menu, MessageSquare, Route, User, X } from "lucide-react";
+import { AlertTriangle, BookOpen, CheckCircle2, CircleHelp, CircleUserRound, Compass, FileText, FileWarning, Home, Info, LogOut, Menu, MessageSquare, Route, User, X } from "lucide-react";
 import { BrandLogo } from "@/app/components/BrandLogo";
 import { siteInfo } from "@/lib/siteInfo";
 import { useAuthStore } from "../store/crisisStore";
@@ -73,7 +73,7 @@ export function PublicHeader() {
     ...PRIMARY_NAV.filter((item) => visibility.roadsAndHazards || item.href !== "/routes"),
     ...(signedIn
       ? [{ name: "My Reports", short: "Reports", href: "/crisis/reports", icon: FileText }]
-      : []),
+      : [{ name: "Report", short: "Report", href: "/crisis/report", icon: FileWarning }]),
   ];
   const mobileNav = signedIn ? primaryNav : [...primaryNav, ...GUEST_INFO_NAV];
   const browserNav = signedIn ? primaryNav : [...primaryNav, ...GUEST_INFO_NAV];

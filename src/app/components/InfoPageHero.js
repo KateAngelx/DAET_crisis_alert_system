@@ -34,11 +34,12 @@ export function PublicPageContent({ children, className = "" }) {
   return <div className={`${portalLayout.stackPublic} ${className}`}>{children}</div>;
 }
 
-export function InfoPageHero({ title, description }) {
+export function InfoPageHero({ title, description, action = null }) {
   return (
     <div className={portalShell.pageIntro} data-page-intro>
       <h1 className={`${typography.pageTitle} mb-1 line-clamp-2`}>{title}</h1>
       {description ? <p data-page-intro-description className={portalShell.pageIntroDescription}>{description}</p> : null}
+      {action ? <div className="mt-3 flex flex-wrap gap-2">{action}</div> : null}
     </div>
   );
 }

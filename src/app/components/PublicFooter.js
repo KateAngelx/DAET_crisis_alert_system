@@ -76,6 +76,7 @@ export function PublicFooter() {
                 {visibility.roadsAndHazards ? (
                   <li><Link href="/routes" className="text-zinc-600 hover:text-blue-600">Roads & Travel</Link></li>
                 ) : null}
+                <li><Link href="/crisis/report" className="text-zinc-600 hover:text-blue-600">Report an Incident</Link></li>
                 <li><Link href="/crisis/reports" className="text-zinc-600 hover:text-blue-600">My Reports</Link></li>
               </ul>
             </div>
@@ -122,6 +123,7 @@ export function PublicFooter() {
               {visibility.roadsAndHazards ? (
                 <li><Link href="/routes" className="text-zinc-600 transition-colors hover:text-blue-600">Roads & Travel</Link></li>
               ) : null}
+              <li><Link href="/crisis/report" className="text-zinc-600 transition-colors hover:text-blue-600">Report an Incident</Link></li>
               <li><Link href="/crisis/reports" className="text-zinc-600 transition-colors hover:text-blue-600">My Reports</Link></li>
             </ul>
           </div>

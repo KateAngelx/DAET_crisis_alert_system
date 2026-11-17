@@ -78,9 +78,9 @@ export default function Home() {
         }
       : null,
     {
-      title: "My reports",
-      text: isAuthenticated ? "Send a report and follow it." : "Sign in to send and follow a report.",
-      href: isAuthenticated ? "/crisis/reports" : "/login",
+      title: isAuthenticated ? "My reports" : "Report an incident",
+      text: isAuthenticated ? "Send a report and follow it." : "No account needed. Tell the Tourism Office what happened.",
+      href: isAuthenticated ? "/crisis/reports" : "/crisis/report",
       icon: FileText,
       tile: "bg-sky-50 text-sky-700",
     },

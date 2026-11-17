@@ -2,7 +2,8 @@
 
 import React, { useState, useEffect, useMemo, useRef } from "react";
 import { useRouter } from "next/navigation";
-import { Info, Shield } from "lucide-react";
+import Link from "next/link";
+import { FileWarning, Info, Phone, Shield } from "lucide-react";
 import { useCrisisStore, useAuthStore } from "@/app/store/crisisStore";
 import { InfoPageHero, PublicPageShell, PublicPageContent, PublicPanel } from "@/app/components/InfoPageHero";
 import { AsyncState, ErrorState } from "@/app/components/ui/AsyncState";
@@ -133,6 +134,19 @@ export default function CrisisPublicPage() {
       <InfoPageHero
         title={ROLE_INTERFACE.public.crisisHub.title}
         description={ROLE_INTERFACE.public.crisisHub.description}
+        action={
+          <>
+            <Link href="/crisis/report" className="inline-flex items-center gap-2 rounded-xl bg-red-600 px-4 py-2.5 text-[11px] font-black uppercase tracking-widest text-white shadow-sm hover:bg-red-700">
+              <FileWarning size={14} /> Report an incident
+            </Link>
+            <a href="tel:911" className="inline-flex items-center gap-2 rounded-xl border border-red-200 bg-white px-4 py-2.5 text-[11px] font-black uppercase tracking-widest text-red-700 hover:bg-red-50">
+              <Phone size={14} /> Emergency? Call 911
+            </a>
+            {!isAuthenticated ? (
+              <span className="self-center text-[11px] font-medium text-zinc-500">No account needed to report.</span>
+            ) : null}
+          </>
+        }
       />
 
       <PublicPageContent>
