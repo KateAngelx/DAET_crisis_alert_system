@@ -12,9 +12,9 @@ const SKIP_PREFIX = "connect-daet-start-guide-skipped:";
 /** Three steps only: the things a new tourist must know. The rest is in How to Use. */
 const STEPS = [
   {
-    title: "1. Alerts appear on Home",
-    where: "The coloured bar at the top tells you if Daet is safe.",
-    detail: "Green means no active alerts. Red means a critical alert: tap it to see what to do. \"Alerts for you\" lists the ones that are serious or on your tour route.",
+    title: "1. Check Alerts first",
+    where: "Open Alerts: the coloured bar at the top tells you if Daet is safe.",
+    detail: "Green means no active alerts. Red means a critical alert: tap it to see what to do. On Home, \"Alerts for you\" lists the ones that are serious or on your tour route.",
   },
   {
     title: "2. Something happened? Tap Report",

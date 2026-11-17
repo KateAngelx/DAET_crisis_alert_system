@@ -2,16 +2,17 @@
 
 import { useEffect, useRef } from "react";
 import Link from "next/link";
-import { AlertTriangle, X } from "lucide-react";
+import { AlertTriangle, Phone, ShieldAlert, X } from "lucide-react";
 import { useAuthStore } from "@/app/store/crisisStore";
 import { useNotificationStore } from "@/app/store/notificationStore";
 import { OutlinedCard } from "@/app/components/ui/OutlinedCard";
 import { outlinedCard } from "@/lib/designSystem";
-import { unlockNotificationSound, playCrisisNotificationSound } from "@/lib/notificationSound";
+import { unlockNotificationSound, playCrisisNotificationSound, startCriticalAlarm } from "@/lib/notificationSound";
 import { buildAreaHazardTravelLink, isAreaHazardNotification } from "@/lib/travelLinks";
 import { getNotificationHref, getNotificationInboxHref } from "@/lib/notificationLinks";
 import {
   getNotificationSeverity,
+  isCriticalArrival,
   isCrisisAlertNotification,
   isRewardNotification,
 } from "@/lib/notificationCategory";
@@ -40,6 +41,7 @@ export function NotificationArrivalListener() {
   const { isAuthenticated, user } = useAuthStore();
   const { latestArrival, dismissLatestArrival, markAsRead } = useNotificationStore();
   const dismissTimerRef = useRef(null);
+  const stopAlarmRef = useRef(null);
 
   useEffect(() => {
     const unlock = () => unlockNotificationSound();
@@ -63,9 +65,18 @@ export function NotificationArrivalListener() {
       dismissLatestArrival();
       return;
     }
-    if (playedNotificationIds.has(latestArrival.id)) return;
+    // Critical: siren + vibration, no auto-close. Stopped when the pop-up closes.
+    if (isCriticalArrival(latestArrival, userRole)) {
+      stopAlarmRef.current = startCriticalAlarm({ durationMs: 8000 });
+      return () => {
+        stopAlarmRef.current?.();
+        stopAlarmRef.current = null;
+      };
+    }
 
+    if (playedNotificationIds.has(latestArrival.id)) return;
     playedNotificationIds.add(latestArrival.id);
+
     const urgent = userRole === "tourist" && isUrgentTouristNotification(latestArrival);
     const pushCanPlaySystemSound =
       urgent
@@ -107,6 +118,69 @@ export function NotificationArrivalListener() {
           ? `New ${level || ""} Crisis Alert`.replace(/\s+/g, " ")
           : "New notification";
   const detailLabel = isDanger ? "View safe route" : isAlert ? "View alert details" : "Open notification";
+
+  if (isCriticalArrival(latestArrival, user.role)) {
+    const close = () => {
+      stopAlarmRef.current?.();
+      stopAlarmRef.current = null;
+      dismissLatestArrival();
+    };
+    return (
+      <div className="fixed inset-0 z-[3000] flex items-center justify-center bg-red-950/70 p-4 backdrop-blur-sm animate-in fade-in duration-200">
+        <div
+          role="alertdialog"
+          aria-modal="true"
+          aria-labelledby="critical-arrival-title"
+          aria-describedby="critical-arrival-message"
+          className="w-full max-w-md overflow-hidden rounded-3xl bg-white shadow-2xl ring-4 ring-red-500 animate-in zoom-in-95 duration-200"
+        >
+          <div className="flex items-center gap-3 bg-red-600 px-5 py-4 text-white">
+            <ShieldAlert size={28} className="shrink-0 animate-pulse" />
+            <div>
+              <p className="text-[11px] font-black uppercase tracking-[0.2em] text-red-100">
+                {isDanger ? "Critical area hazard" : "Critical alert"}
+              </p>
+              <h2 id="critical-arrival-title" className="text-lg font-black leading-tight">{latestArrival.title}</h2>
+            </div>
+          </div>
+          <div className="space-y-4 px-5 py-5">
+            <p id="critical-arrival-message" className="text-sm font-medium leading-relaxed text-zinc-800">
+              {latestArrival.message}
+            </p>
+            <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+              <Link
+                href={detailHref}
+                onClick={() => {
+                  markAsRead(latestArrival.id);
+                  close();
+                }}
+                className="inline-flex min-h-12 items-center justify-center rounded-2xl bg-red-600 px-4 text-xs font-black uppercase tracking-widest text-white hover:bg-red-700"
+              >
+                {isDanger ? "See safe route" : "What to do"}
+              </Link>
+              <a
+                href="tel:911"
+                onClick={() => stopAlarmRef.current?.()}
+                className="inline-flex min-h-12 items-center justify-center gap-2 rounded-2xl border-2 border-red-200 px-4 text-xs font-black uppercase tracking-widest text-red-700 hover:bg-red-50"
+              >
+                <Phone size={14} /> Call 911
+              </a>
+            </div>
+            <button
+              type="button"
+              onClick={() => {
+                markAsRead(latestArrival.id);
+                close();
+              }}
+              className="w-full rounded-2xl px-4 py-3 text-xs font-black uppercase tracking-widest text-zinc-500 hover:bg-zinc-100"
+            >
+              I&apos;ve seen it
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <OutlinedCard

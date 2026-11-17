@@ -29,7 +29,7 @@ const GUEST_SECTIONS = [
     id: "safe",
     icon: ShieldAlert,
     title: "1. Check if Daet is safe",
-    summary: "The coloured bar at the top of Home and Alerts tells you in one line.",
+    summary: "The coloured bar at the top of Alerts tells you in one line.",
     steps: [
       "Green means no active alerts. Yellow or orange means take care in the named areas. Red means a critical alert: tap it to see what to do.",
       "Open Alerts for the full list and the map. Past alerts has the ones already cleared.",

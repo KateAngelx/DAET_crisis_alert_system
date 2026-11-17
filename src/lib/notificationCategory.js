@@ -1,4 +1,5 @@
 /** Sorts notifications into crisis/updates versus rewards so points never look like alerts. */
+import { isAreaHazardNotification } from "@/lib/travelLinks";
 
 export function isRewardNotification(notification) {
   const type = String(notification?.notification_type || "");
@@ -70,4 +71,14 @@ export function canDismissNotification(notification) {
 
 export function isDismissedNotification(notification) {
   return Boolean(notification?.dismissed_at);
+}
+
+/**
+ * Critical alerts (and critical area hazards) open in the middle of the screen with a long
+ * siren and vibration, for tourists and guides. They stay until the person closes them.
+ */
+export function isCriticalArrival(notification, role) {
+  if (!notification || role === "admin") return false;
+  if (!isCrisisAlertNotification(notification) && !isAreaHazardNotification(notification)) return false;
+  return getNotificationSeverity(notification) === "Critical";
 }

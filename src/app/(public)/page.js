@@ -13,7 +13,6 @@ import { usePublicVisibility } from "@/lib/usePublicVisibility";
 import { TouristHomeCards } from "@/app/components/tourist/TouristHomeCards";
 import { PublicFeedbackSection } from "@/app/components/feedback/PublicFeedbackSection";
 import { useHydrated } from "@/lib/useHydrated";
-import { SafetyStatusBar } from "@/app/components/SafetyStatusBar";
 import { FEATURE_NAMES } from "@/lib/featureNames";
 
 export default function Home() {
@@ -89,8 +88,6 @@ export default function Home() {
         <div className="relative z-10 mx-auto w-full max-w-7xl px-4 sm:px-6 lg:px-8">
           <div className="flex w-full flex-col gap-6 md:flex-row md:items-end md:justify-between">
           <div className="min-w-0 flex-1">
-            <SafetyStatusBar alerts={alerts} loading={loading} error={error} loaded={alertsLoaded} className="mb-5 max-w-2xl" />
-
             {isAuthenticated ? (
               <h2 className="mb-3 text-2xl font-black tracking-tight text-white md:text-[28px]">
                 Mabuhay, {user?.name || "Traveler"}!
