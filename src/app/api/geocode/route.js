@@ -7,15 +7,15 @@ export async function GET(request) {
   const limited = enforceRateLimit(request, { name: "geocode", ...API_RATE_LIMITS.geocode });
   if (limited) return limited;
 
-  const params = request.nextUrl.searchParams;
-  const rawLat = params.get("lat");
-  const rawLon = params.get("lon");
-  const lat = Number(rawLat);
-  const lon = Number(rawLon);
-  // Number(null) is 0, so a plain name search must not be treated as a reverse lookup at 0,0.
+  const latParam = request.nextUrl.searchParams.get("lat");
+  const lonParam = request.nextUrl.searchParams.get("lon");
+  const lat = Number(latParam);
+  const lon = Number(lonParam);
   const hasReverse =
-    rawLat !== null && rawLat.trim() !== "" &&
-    rawLon !== null && rawLon.trim() !== "" &&
+    latParam != null &&
+    latParam.trim() !== "" &&
+    lonParam != null &&
+    lonParam.trim() !== "" &&
     Number.isFinite(lat) &&
     Number.isFinite(lon) &&
     lat >= -90 &&

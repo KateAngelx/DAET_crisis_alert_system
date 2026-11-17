@@ -1,8 +1,8 @@
 "use client";
 
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import dynamic from "next/dynamic";
-import { geocodeAlerts, geocodeLocation } from "@/lib/geocodeLocation";
+import { geocodeAlerts, geocodeLocation, parseMapCoordinates } from "@/lib/geocodeLocation";
 import { createCategoryPinIcon, createSafeRoutePinIcon, getDangerPinCategory } from "@/lib/mapPinUtils";
 import { hazardPinGlyph } from "./typePinGlyph";
 import { MapViewController } from "@/app/components/maps/MapViewController";
@@ -11,22 +11,28 @@ const Marker = dynamic(() => import("react-leaflet").then((mod) => mod.Marker), 
 const Popup = dynamic(() => import("react-leaflet").then((mod) => mod.Popup), { ssr: false });
 
 export function DangerousLocationMapMarkers({ warnings, renderPopup, showSafeRoutePins = true, fitBounds = false }) {
-  const [coordsById, setCoordsById] = useState({});
-  const [safeCoordsById, setSafeCoordsById] = useState({});
+  const [geocoded, setGeocoded] = useState({ key: "", coords: {} });
+  const [safeGeocoded, setSafeGeocoded] = useState({ key: "", coords: {} });
+  const warningsRef = useRef(warnings);
+
+  useEffect(() => {
+    warningsRef.current = warnings;
+  }, [warnings]);
 
   const warningKey = useMemo(
     () =>
       warnings
-        .map((w) => `${w.id}:${w.dangerous_location}:${w.destination}:${w.latitude}:${w.longitude}`)
+        .map((w) => `${w.id}:${w.dangerous_location}:${w.destination}:${w.latitude}:${w.longitude}:${w.alt_latitude}:${w.alt_longitude}`)
         .join("|"),
     [warnings]
   );
 
   useEffect(() => {
     let cancelled = false;
-    if (!warnings.length) return undefined; // nothing to look up; positions below are only read for listed warnings
+    const currentWarnings = warningsRef.current;
+    if (!currentWarnings.length) return undefined;
 
-    const geocodeInput = warnings.map((w) => ({
+    const geocodeInput = currentWarnings.map((w) => ({
       id: w.id,
       location: w.dangerous_location,
       latitude: w.latitude,
@@ -36,36 +42,35 @@ export function DangerousLocationMapMarkers({ warnings, renderPopup, showSafeRou
     (async () => {
       const resolved = await geocodeAlerts(geocodeInput);
       if (cancelled) return;
-      setCoordsById(resolved);
+      setGeocoded({ key: warningKey, coords: resolved });
 
       if (!showSafeRoutePins) return;
 
       const safeResolved = {};
-      for (const warning of warnings) {
+      for (const warning of currentWarnings) {
         const dest = warning.destination?.trim();
         if (!dest) continue;
-        if (warning.alt_latitude != null && warning.alt_longitude != null) {
-          safeResolved[`${warning.id}-safe`] = [Number(warning.alt_latitude), Number(warning.alt_longitude)];
+        const storedCoordinates = parseMapCoordinates(warning.alt_latitude, warning.alt_longitude);
+        if (storedCoordinates) {
+          safeResolved[`${warning.id}-safe`] = storedCoordinates;
           continue;
         }
         const coords = await geocodeLocation(dest);
         if (coords) safeResolved[`${warning.id}-safe`] = coords;
       }
-      if (!cancelled) setSafeCoordsById(safeResolved);
+      if (!cancelled) setSafeGeocoded({ key: warningKey, coords: safeResolved });
     })();
 
     return () => {
       cancelled = true;
     };
-  }, [warningKey, warnings, showSafeRoutePins]);
+  }, [warningKey, showSafeRoutePins]);
 
+  const coordsById = geocoded.key === warningKey ? geocoded.coords : {};
+  const safeCoordsById = safeGeocoded.key === warningKey ? safeGeocoded.coords : {};
   const pinPositions = fitBounds
     ? warnings
-        .map((warning) =>
-          warning.latitude != null && warning.longitude != null
-            ? [Number(warning.latitude), Number(warning.longitude)]
-            : coordsById[warning.id]
-        )
+        .map((warning) => parseMapCoordinates(warning.latitude, warning.longitude) ?? coordsById[warning.id])
         .filter(Boolean)
     : [];
 
@@ -73,10 +78,7 @@ export function DangerousLocationMapMarkers({ warnings, renderPopup, showSafeRou
     <>
       {fitBounds && pinPositions.length > 0 ? <MapViewController positions={pinPositions} maxZoom={15} /> : null}
       {warnings.map((warning) => {
-        const stored =
-          warning.latitude != null && warning.longitude != null
-            ? [Number(warning.latitude), Number(warning.longitude)]
-            : null;
+        const stored = parseMapCoordinates(warning.latitude, warning.longitude);
         const position = stored ?? coordsById[warning.id];
         if (!position) return null;
 

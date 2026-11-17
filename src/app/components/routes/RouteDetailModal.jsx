@@ -305,7 +305,7 @@ export function RouteDetailModal({ open, route, catalog, onClose, onSelectRoute 
           </div>
           <div
             ref={detailBodyRef}
-            className="order-3 flex-1 overflow-y-auto p-6 bg-white"
+            className="order-2 flex-1 overflow-y-auto p-6 bg-white"
             onScroll={(e) => {
               const body = e.currentTarget;
               if (body.scrollTop + body.clientHeight >= body.scrollHeight - 8) {

@@ -453,6 +453,7 @@ export default function RoutesPageContent() {
                     showTouristSpots={false}
                     showSafeRoutePins
                     legendItems={ROUTES_MAP_LEGEND}
+                    fitToRoutes
                   />
                 ) : (
                   <MapSkeleton height={portalLayout.mapColumnFill} />

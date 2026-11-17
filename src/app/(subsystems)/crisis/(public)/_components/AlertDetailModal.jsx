@@ -211,7 +211,7 @@ export function AlertDetailModal({ alert, onClose }) {
         onClick={(e) => e.stopPropagation()}
       >
       <Card
-        className={`p-0 max-h-[90vh] overflow-hidden border-2 ${styles.border} shadow-2xl animate-in zoom-in-95 duration-200 flex flex-col`}
+        className={`!p-0 max-h-[90vh] overflow-hidden border-2 ${styles.border} shadow-2xl animate-in zoom-in-95 duration-200 flex flex-col`}
       >
         <div className={`${styles.headerBg} ${styles.headerFg} order-1 p-6 sm:p-8 text-left shrink-0 rounded-t-2xl`}>
           <div className="flex justify-between items-start mb-4">
@@ -235,7 +235,7 @@ export function AlertDetailModal({ alert, onClose }) {
         <div
           ref={detailBodyRef}
           onScroll={handleDetailScroll}
-          className="order-3 p-6 sm:p-8 space-y-5 bg-white text-left overflow-y-auto flex-1"
+          className="order-2 p-6 sm:p-8 space-y-5 bg-white text-left overflow-y-auto flex-1"
         >
           <p className="text-sm font-medium leading-relaxed text-zinc-700">{alert.message}</p>
 
