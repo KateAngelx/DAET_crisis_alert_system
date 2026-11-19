@@ -13,6 +13,7 @@ import { useGuideStore } from "@/app/store/guideStore";
 import { useRouteAdvisoryStore } from "@/app/store/routeAdvisoryStore";
 import { StatCardSkeletonGrid } from "@/app/components/ui/Skeletons";
 import { DashboardStatCard } from "@/app/components/dashboard/DashboardStatCard";
+import { DashboardKpiSection } from "@/app/components/dashboard/DashboardKpiSection";
 import { EmptyState } from "@/app/components/ui/AsyncState";
 import { EMPTY_ROUTE_FORM, todayInPhilippines, tourScheduleError } from "@/lib/tourGroupRoute";
 import { GuideDashboardQuickActions } from "@/app/components/guide/GuideDashboardQuickActions";
@@ -156,15 +157,17 @@ export default function GuideTourGroupsPage() {
 
       <GuideGroupTabs active="groups" />
 
-      {loading && tourGroups.length === 0 ? (
-        <StatCardSkeletonGrid count={3} className={statGrid.dashboardThree} />
-      ) : (
-        <div className={statGrid.dashboardThree}>
-          <DashboardStatCard compact label="Active Groups" value={activeGroups.length} icon={<Compass size={iconSize.stat} />} accent="purple" />
-          <DashboardStatCard compact label="Active Tourists" value={activeTourists} icon={<Users size={iconSize.stat} />} accent="blue" href="/guide/tourists" hrefLabel="Manage" />
-          <DashboardStatCard compact label="Completed Tours" value={completedGroups.length} icon={<CheckCircle size={iconSize.stat} />} accent="green" href="/guide/history" hrefLabel="View" />
-        </div>
-      )}
+      <DashboardKpiSection>
+        {loading && tourGroups.length === 0 ? (
+          <StatCardSkeletonGrid count={3} className={statGrid.dashboardThree} />
+        ) : (
+          <div className={statGrid.dashboardThree}>
+            <DashboardStatCard compact label="Active Groups" value={activeGroups.length} icon={<Compass size={iconSize.stat} />} accent="purple" />
+            <DashboardStatCard compact label="Active Tourists" value={activeTourists} icon={<Users size={iconSize.stat} />} accent="blue" href="/guide/tourists" hrefLabel="Manage" />
+            <DashboardStatCard compact label="Completed Tours" value={completedGroups.length} icon={<CheckCircle size={iconSize.stat} />} accent="green" href="/guide/history" hrefLabel="View" />
+          </div>
+        )}
+      </DashboardKpiSection>
 
       <div className="flex gap-2 p-1 bg-zinc-100 rounded-2xl w-full sm:w-auto">
         {[

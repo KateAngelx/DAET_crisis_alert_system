@@ -19,10 +19,10 @@ import {
 import { useCrisisStore, useAuthStore } from "@/app/store/crisisStore";
 import { Card } from "@/app/components/ui/Card";
 import { DashboardPageHeader } from "@/app/components/dashboard/DashboardPageHeader";
-import { AdminPeopleTabs } from "@/app/components/admin/AdminTabs";
 import { RoleContextBanner } from "@/app/components/dashboard/RoleContextBanner";
 import { ROLE_INTERFACE } from "@/lib/roleInterfaceCopy";
 import { DashboardStatCard } from "@/app/components/dashboard/DashboardStatCard";
+import { DashboardKpiSection } from "@/app/components/dashboard/DashboardKpiSection";
 import { StatCardSkeletonGrid, UserCardSkeletonList } from "@/app/components/ui/Skeletons";
 import { AsyncState, EmptyState } from "@/app/components/ui/AsyncState";
 import { getRedirectForRole } from "@/lib/authGuard";
@@ -371,20 +371,21 @@ export default function AdminUsersPage() {
         }
       />
 
-      <AdminPeopleTabs active="users" />
       <RoleContextBanner helper={ROLE_INTERFACE.admin.users.helper} tone="info" />
 
-      {loading ? (
-        <StatCardSkeletonGrid count={5} className={statGrid.dashboardFive} />
-      ) : (
-        <div className={statGrid.dashboardFive}>
-          <DashboardStatCard compact label="Tourists" value={roleCounts.tourist || 0} icon={<User size={iconSize.stat} />} accent="blue" />
-          <DashboardStatCard compact label="Guides" value={roleCounts.guide || 0} icon={<Shield size={iconSize.stat} />} accent="purple" />
-          <DashboardStatCard compact label="Admins" value={roleCounts.admin || 0} icon={<Shield size={iconSize.stat} />} accent="red" />
-          <DashboardStatCard compact label="Online" value={userStats?.onlineCount ?? 0} icon={<Wifi size={iconSize.stat} />} accent="green" />
-          <DashboardStatCard compact label="Inactive 30d+" value={userStats?.inactiveOver30Days ?? 0} icon={<UserX size={iconSize.stat} />} accent="orange" />
-        </div>
-      )}
+      <DashboardKpiSection>
+        {loading ? (
+          <StatCardSkeletonGrid count={5} className={statGrid.dashboardFive} />
+        ) : (
+          <div className={statGrid.dashboardFive}>
+            <DashboardStatCard compact label="Tourists" value={roleCounts.tourist || 0} icon={<User size={iconSize.stat} />} accent="blue" />
+            <DashboardStatCard compact label="Guides" value={roleCounts.guide || 0} icon={<Shield size={iconSize.stat} />} accent="purple" />
+            <DashboardStatCard compact label="Admins" value={roleCounts.admin || 0} icon={<Shield size={iconSize.stat} />} accent="red" />
+            <DashboardStatCard compact label="Online" value={userStats?.onlineCount ?? 0} icon={<Wifi size={iconSize.stat} />} accent="green" />
+            <DashboardStatCard compact label="Inactive 30d+" value={userStats?.inactiveOver30Days ?? 0} icon={<UserX size={iconSize.stat} />} accent="orange" />
+          </div>
+        )}
+      </DashboardKpiSection>
 
       <AsyncState
         loading={loading}

@@ -9,6 +9,7 @@ import { InfoPageHero, PublicPageShell, PublicPageContent, PublicPanel } from "@
 import { AsyncState, ErrorState } from "@/app/components/ui/AsyncState";
 import { PublicStatCardSkeleton, AlertCardSkeletonList, MapSkeleton } from "@/app/components/ui/Skeletons";
 import { PublicStatCard } from "@/app/components/dashboard/PublicStatCard";
+import { DashboardKpiSection } from "@/app/components/dashboard/DashboardKpiSection";
 import { getSeverityOutline, portalLayout, portalShell, statGrid } from "@/lib/designSystem";
 import { AlertDetailModal } from "@/app/(subsystems)/crisis/(public)/_components/AlertDetailModal";
 import { sortRecordsNewestFirst } from "@/lib/recordSorting";
@@ -159,6 +160,18 @@ export default function CrisisPublicPage() {
             <SafetyStatusBar alerts={alerts} loading={loading} error={error} loaded={alertsLoaded} />
           </div>
 
+          <DashboardKpiSection>
+            {loading ? (
+              <PublicStatCardSkeleton count={3} className={statGrid.crisisHub} compact />
+            ) : (
+              <div className={statGrid.crisisHub}>
+                <PublicStatCard compact value={activeAlerts.length} label="Active alerts" accent="blue" />
+                <PublicStatCard compact value={criticalAlerts.length} label="Critical" accent="red" />
+                <PublicStatCard compact value={viewedAlerts.size} label="Alerts you've seen" accent="green" />
+              </div>
+            )}
+          </DashboardKpiSection>
+
           <div className={visibility.map ? portalLayout.splitGridPublic : "grid grid-cols-1 gap-4"}>
             <PublicPanel
               title="Active alerts"
@@ -224,17 +237,6 @@ export default function CrisisPublicPage() {
             ) : null}
           </div>
 
-          <PublicPanel title="Counts" subtitle="Active alerts right now" className="installed-app-hide">
-            {loading ? (
-              <PublicStatCardSkeleton count={3} className={statGrid.crisisHub} compact />
-            ) : (
-              <div className={statGrid.crisisHub}>
-                <PublicStatCard compact value={activeAlerts.length} label="Active alerts" accent="blue" />
-                <PublicStatCard compact value={criticalAlerts.length} label="Critical" accent="red" />
-                <PublicStatCard compact value={viewedAlerts.size} label="Alerts you've seen" accent="green" />
-              </div>
-            )}
-          </PublicPanel>
         </div>
 
         <div className="installed-app-hide overflow-hidden rounded-2xl border border-zinc-200 bg-white">

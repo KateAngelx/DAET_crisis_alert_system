@@ -1,27 +1,33 @@
 import { FEATURE_NAMES as N } from "@/lib/featureNames";
 
-/** Admins: eight items in three groups. Old pages live on as tabs (People, History). */
+/** Admin sidebar: command → tourists → guides → accounts (placement only; routes unchanged). */
 export const ADMIN_NAV = {
-  respond: [
+  command: [
     { id: "dashboard", path: "/admin", label: "Dashboard" },
     { id: "alerts", path: "/crisis/command", label: N.alerts, countKey: "commandCenter", countDescription: "unread crisis and emergency notifications" },
-    { id: "reports", path: "/admin/incidents", label: N.reports, countKey: "incidentReports", countDescription: "unread incident notifications" },
-    { id: "help", path: "/admin/guide-assistance", label: N.helpRequests, countKey: "guideAssistance", countDescription: "unread help-request notifications" },
-  ],
-  manage: [
     { id: "roads", path: "/crisis/roads", label: N.roads, countKey: "roadsHazards", countDescription: "unread road and hazard notifications" },
-    { id: "people", path: "/admin/users", label: "People" },
   ],
-  records: [
+  tourists: [
+    { id: "reports", path: "/admin/incidents", label: "Incident reports", countKey: "incidentReports", countDescription: "unread incident notifications" },
+    { id: "help", path: "/admin/guide-assistance", label: N.helpRequests, countKey: "guideAssistance", countDescription: "unread help-request notifications" },
+    { id: "missing", path: "/admin/missing-persons", label: "Missing persons" },
+  ],
+  guides: [
+    { id: "guideEmergencies", path: "/admin/guide-emergencies", label: "Guide emergencies" },
+    { id: "guideMonitoring", path: "/admin/guides", label: "Guide monitoring" },
+  ],
+  accounts: [
+    { id: "people", path: "/admin/users", label: "People" },
     { id: "history", path: "/admin/archive", label: "History", countKey: "crisisFeedback", countDescription: "unread feedback notifications" },
     { id: "settings", path: "/admin/settings", label: "Settings" },
   ],
 };
 
 export const ADMIN_NAV_SECTIONS = [
-  ["Respond now", ADMIN_NAV.respond],
-  ["Manage", ADMIN_NAV.manage],
-  ["Records & setup", ADMIN_NAV.records],
+  ["Command center", ADMIN_NAV.command],
+  ["Tourists", ADMIN_NAV.tourists],
+  ["Guides", ADMIN_NAV.guides],
+  ["Accounts & records", ADMIN_NAV.accounts],
 ];
 
 /** Guides: four main items + More. Tourists & invites and Roads & Hazards are tabs inside Groups and Alerts. */
@@ -60,7 +66,10 @@ export function isNavActive(pathname, path) {
     return pathname === "/admin/settings" || pathname === "/admin/how-to-use";
   }
   if (path === "/admin/users") {
-    return pathname === "/admin/users" || pathname === "/admin/guides";
+    return pathname === "/admin/users";
+  }
+  if (path === "/admin/guides") {
+    return pathname === "/admin/guides";
   }
   if (path.startsWith("/guide/")) {
     return pathname === path || pathname.startsWith(`${path}/`);

@@ -9,6 +9,7 @@ import { Card } from "@/app/components/ui/Card";
 import { GuideAlertTabs } from "@/app/components/guide/GuideTabs";
 import { GuidePageHeader } from "@/app/components/guide/GuidePageHeader";
 import { DashboardStatCard } from "@/app/components/dashboard/DashboardStatCard";
+import { DashboardKpiSection } from "@/app/components/dashboard/DashboardKpiSection";
 import { MapSkeleton, StatCardSkeletonGrid } from "@/app/components/ui/Skeletons";
 import { AsyncState, EmptyState } from "@/app/components/ui/AsyncState";
 import { useAuthStore, useCrisisStore } from "@/app/store/crisisStore";
@@ -139,16 +140,18 @@ export default function GuideCrisisHubPage() {
 
       <RoleContextBanner helper={ROLE_INTERFACE.guide.crisis.helper} tone="info" />
 
-      {statsLoading ? (
-        <StatCardSkeletonGrid count={4} className={statGrid.dashboard} />
-      ) : (
-        <div className={statGrid.dashboard}>
-          <DashboardStatCard compact label="Active Alerts" value={activeAlerts.length} icon={<Bell size={iconSize.stat} />} accent="red" href="/guide/crisis" hrefLabel="View" />
-          <DashboardStatCard compact label="Critical" value={criticalAlerts.length} icon={<AlertTriangle size={iconSize.stat} />} accent="red" />
-          <DashboardStatCard compact label="Your Tourists" value={totalTourists} icon={<Users size={iconSize.stat} />} accent="blue" href="/guide/groups" hrefLabel="Groups" />
-          <DashboardStatCard compact label="Open Reports" value={openIncidents.length} icon={<ShieldCheck size={iconSize.stat} />} accent="orange" href="/guide/reports" hrefLabel="Reports" />
-        </div>
-      )}
+      <DashboardKpiSection>
+        {statsLoading ? (
+          <StatCardSkeletonGrid count={4} className={statGrid.dashboard} />
+        ) : (
+          <div className={statGrid.dashboard}>
+            <DashboardStatCard compact label="Active Alerts" value={activeAlerts.length} icon={<Bell size={iconSize.stat} />} accent="red" href="/guide/crisis" hrefLabel="View" />
+            <DashboardStatCard compact label="Critical" value={criticalAlerts.length} icon={<AlertTriangle size={iconSize.stat} />} accent="red" />
+            <DashboardStatCard compact label="Your Tourists" value={totalTourists} icon={<Users size={iconSize.stat} />} accent="blue" href="/guide/groups" hrefLabel="Groups" />
+            <DashboardStatCard compact label="Open Reports" value={openIncidents.length} icon={<ShieldCheck size={iconSize.stat} />} accent="orange" href="/guide/reports" hrefLabel="Reports" />
+          </div>
+        )}
+      </DashboardKpiSection>
 
       {criticalAlerts.length > 0 && (
         <Card className="p-5 bg-red-50 border-red-200">

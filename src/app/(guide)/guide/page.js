@@ -9,6 +9,7 @@ import { GuidePageHeader } from "@/app/components/guide/GuidePageHeader";
 import { GuidePanel } from "@/app/components/guide/GuidePanel";
 import { guideShell, iconSize, statGrid, portalLayout } from "@/lib/designSystem";
 import { DashboardStatCard } from "@/app/components/dashboard/DashboardStatCard";
+import { DashboardKpiSection } from "@/app/components/dashboard/DashboardKpiSection";
 import { DestinationModal } from "@/app/components/tour/DestinationModal";
 import { TourGroupCard } from "@/app/components/tour/TourGroupCard";
 import { StatCardSkeletonGrid } from "@/app/components/ui/Skeletons";
@@ -138,6 +139,18 @@ export default function GuideDashboard() {
 
       <SafetyStatusBar alerts={alerts} loading={alertsLoading} error={alertsError} loaded={alertsLoaded} href="/guide/crisis" />
 
+      <DashboardKpiSection>
+        {statsLoading ? (
+          <StatCardSkeletonGrid count={3} className={statGrid.dashboardThree} />
+        ) : (
+          <div className={statGrid.dashboardThree}>
+            <DashboardStatCard compact label="Active Groups" value={activeGroups.length} icon={<Compass size={iconSize.stat} />} accent="purple" href="/guide/groups" hrefLabel="Manage" />
+            <DashboardStatCard compact label="Active Tourists" value={totalTourists} icon={<Users size={iconSize.stat} />} accent="blue" href="/guide/tourists" hrefLabel="Manage" />
+            <DashboardStatCard compact label="Completed Tours" value={completedGroups.length} icon={<ShieldCheck size={iconSize.stat} />} accent="green" href="/guide/history" hrefLabel="View" />
+          </div>
+        )}
+      </DashboardKpiSection>
+
       {attentionItems.length > 0 ? (
         <section
           aria-labelledby="guide-needs-attention"
@@ -172,16 +185,6 @@ export default function GuideDashboard() {
       )}
 
       <GuideEmergencyReporting />
-
-      {statsLoading ? (
-        <StatCardSkeletonGrid count={3} className={statGrid.dashboardThree} />
-      ) : (
-        <div className={statGrid.dashboardThree}>
-          <DashboardStatCard compact label="Active Groups" value={activeGroups.length} icon={<Compass size={iconSize.stat} />} accent="purple" href="/guide/groups" hrefLabel="Manage" />
-          <DashboardStatCard compact label="Active Tourists" value={totalTourists} icon={<Users size={iconSize.stat} />} accent="blue" href="/guide/tourists" hrefLabel="Manage" />
-          <DashboardStatCard compact label="Completed Tours" value={completedGroups.length} icon={<ShieldCheck size={iconSize.stat} />} accent="green" href="/guide/history" hrefLabel="View" />
-        </div>
-      )}
 
       <GuidePanel
         title="Active tour groups"

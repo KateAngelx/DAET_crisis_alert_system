@@ -21,6 +21,7 @@ import { ReportCardSkeletonList } from "@/app/components/ui/Skeletons";
 import { portalShell, portalLayout, statGrid } from "@/lib/designSystem";
 import { getSeverityColor, getStatusColor, INCIDENT_CATEGORIES, INCIDENT_SEVERITIES } from "@/lib/constants";
 import { PublicStatCard } from "@/app/components/dashboard/PublicStatCard";
+import { DashboardKpiSection } from "@/app/components/dashboard/DashboardKpiSection";
 import { PublicStatCardSkeleton } from "@/app/components/ui/Skeletons";
 import { CategoryFilterSelect, StatusRecordList } from "@/app/components/shell/StatusRecordList";
 import { sortRecordsNewestFirst } from "@/lib/recordSorting";
@@ -223,6 +224,18 @@ function MyReportsContent() {
         <PublicPageContent>
           <RoleContextBanner helper={ROLE_INTERFACE.public.reports.helper} tone="info" />
 
+          <DashboardKpiSection>
+            {loading ? (
+              <PublicStatCardSkeleton count={3} className={statGrid.crisisHub} compact />
+            ) : (
+              <div className={statGrid.crisisHub}>
+                <PublicStatCard compact value={incidents.length} label="Total Reports" accent="blue" />
+                <PublicStatCard compact value={openReports.length} label="Open Cases" accent="orange" />
+                <PublicStatCard compact value={urgentReports.length} label="High / Critical" accent="red" />
+              </div>
+            )}
+          </DashboardKpiSection>
+
           <PublicPanel
             title="Your reports"
             subtitle={`${filteredReports.length} matching reports`}
@@ -341,22 +354,6 @@ function MyReportsContent() {
                 </div>
               ) : null}
             </AsyncState>
-          </PublicPanel>
-
-          <PublicPanel
-            title="Counts"
-            subtitle="Your reports in numbers"
-            className="mt-2"
-          >
-            {loading ? (
-              <PublicStatCardSkeleton count={3} className={`${statGrid.crisisHub} mb-4`} compact />
-            ) : (
-              <div className={`${statGrid.crisisHub} mb-4`}>
-                <PublicStatCard compact value={incidents.length} label="Total Reports" accent="blue" />
-                <PublicStatCard compact value={openReports.length} label="Open Cases" accent="orange" />
-                <PublicStatCard compact value={urgentReports.length} label="High / Critical" accent="red" />
-              </div>
-            )}
           </PublicPanel>
         </PublicPageContent>
       </PublicPageShell>

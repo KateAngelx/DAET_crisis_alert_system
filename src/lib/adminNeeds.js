@@ -21,9 +21,9 @@ export function buildAdminNeeds({ incidents = [], missingCases = [], pendingHelp
     ...(unacknowledged.length
       ? [{
           id: "missing",
-          href: "/crisis/command",
+          href: "/admin/missing-persons",
           title: `${plural(unacknowledged.length, "missing tourist")} not acknowledged`,
-          description: "In Alerts, find Missing persons: call the reporter, then tap Acknowledge.",
+          description: "Open Missing persons: call the reporter, then tap Acknowledge.",
           urgent: true,
         }]
       : []),

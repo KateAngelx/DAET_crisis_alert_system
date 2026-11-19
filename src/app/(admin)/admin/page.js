@@ -14,6 +14,7 @@ import {
 import { Card } from "@/app/components/ui/Card";
 import { DashboardPageHeader } from "@/app/components/dashboard/DashboardPageHeader";
 import { DashboardStatCard } from "@/app/components/dashboard/DashboardStatCard";
+import { DashboardKpiSection } from "@/app/components/dashboard/DashboardKpiSection";
 import { useCrisisStore } from "@/app/store/crisisStore";
 import { useDangerousLocationStore } from "@/app/store/dangerousLocationStore";
 import { useIncidentStore } from "@/app/store/incidentStore";
@@ -231,44 +232,46 @@ export default function AdminDashboard() {
             </Card>
           )}
 
-          <div className={`${statGrid.dashboard} mb-2`}>
-            <DashboardStatCard
-              compact
-              label="Active Crisis Alerts"
-              value={metrics.activeAlerts.length}
-              icon={<Radio size={iconSize.stat} />}
-              accent="red"
-              href="/crisis/command"
-              hrefLabel="Manage"
-            />
-            <DashboardStatCard
-              compact
-              label="Critical / High"
-              value={metrics.urgentAlerts.length}
-              icon={<AlertTriangle size={iconSize.stat} />}
-              accent="orange"
-              href="/crisis/command"
-              hrefLabel="Review"
-            />
-            <DashboardStatCard
-              compact
-              label="Pending Reports"
-              value={metrics.pendingReports.length}
-              icon={<FileWarning size={iconSize.stat} />}
-              accent="purple"
-              href="/admin/incidents"
-              hrefLabel="Review"
-            />
-            <DashboardStatCard
-              compact
-              label="In progress"
-              value={metrics.actionRequired.length}
-              icon={<Bell size={iconSize.stat} />}
-              accent="blue"
-              href="/admin/incidents"
-              hrefLabel="Open"
-            />
-          </div>
+          <DashboardKpiSection>
+            <div className={statGrid.dashboard}>
+              <DashboardStatCard
+                compact
+                label="Active Crisis Alerts"
+                value={metrics.activeAlerts.length}
+                icon={<Radio size={iconSize.stat} />}
+                accent="red"
+                href="/crisis/command"
+                hrefLabel="Manage"
+              />
+              <DashboardStatCard
+                compact
+                label="Critical / High"
+                value={metrics.urgentAlerts.length}
+                icon={<AlertTriangle size={iconSize.stat} />}
+                accent="orange"
+                href="/crisis/command"
+                hrefLabel="Review"
+              />
+              <DashboardStatCard
+                compact
+                label="Pending Reports"
+                value={metrics.pendingReports.length}
+                icon={<FileWarning size={iconSize.stat} />}
+                accent="purple"
+                href="/admin/incidents"
+                hrefLabel="Review"
+              />
+              <DashboardStatCard
+                compact
+                label="In progress"
+                value={metrics.actionRequired.length}
+                icon={<Bell size={iconSize.stat} />}
+                accent="blue"
+                href="/admin/incidents"
+                hrefLabel="Open"
+              />
+            </div>
+          </DashboardKpiSection>
 
           {metrics.latestActivity ? (
             <p className="flex items-center gap-2 text-xs font-medium text-zinc-500">

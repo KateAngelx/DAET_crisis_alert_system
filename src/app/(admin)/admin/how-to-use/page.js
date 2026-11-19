@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { BarChart3, ChevronRight, FileWarning, History, LifeBuoy, Radio, Route, Settings, ShieldAlert, Users } from "lucide-react";
+import { BarChart3, ChevronRight, FileWarning, History, LifeBuoy, Radio, Route, Settings, ShieldAlert, Siren, UserSearch, Users } from "lucide-react";
 import { DashboardPageHeader } from "@/app/components/dashboard/DashboardPageHeader";
 import { AdminPanel } from "@/app/components/admin/AdminPanel";
 
@@ -46,7 +46,16 @@ const SECTIONS = [
       "Use the chat inside a report to talk with the tourist and their guide.",
     ],
     href: "/admin/incidents",
-    action: "Open Reports",
+    action: "Open incident reports",
+  },
+  {
+    icon: UserSearch,
+    title: "Missing persons",
+    steps: [
+      "Under Tourists → Missing persons, review active searches and acknowledge after you contact the reporter.",
+    ],
+    href: "/admin/missing-persons",
+    action: "Open Missing persons",
   },
   {
     icon: LifeBuoy,
@@ -54,6 +63,16 @@ const SECTIONS = [
     steps: ["Open Help requests and assign a guide. The guide accepts or declines; you see the result there."],
     href: "/admin/guide-assistance",
     action: "Open Help requests",
+  },
+  {
+    icon: Siren,
+    title: "Guide emergencies",
+    steps: [
+      "Under Guides → Guide emergencies, review urgent reports submitted by guides in the field.",
+      "These are separate from crisis alerts and tourist incident reports.",
+    ],
+    href: "/admin/guide-emergencies",
+    action: "Open Guide emergencies",
   },
   {
     icon: Route,
@@ -75,7 +94,10 @@ const SECTIONS = [
   {
     icon: Users,
     title: "People and records",
-    steps: ["People has users and guide monitoring. History has the archive, the activity log and tourist feedback."],
+    steps: [
+      "People lists tourist and staff accounts. Guide monitoring lives under Guides in the sidebar.",
+      "History has the archive, the activity log, and tourist feedback.",
+    ],
     href: "/admin/users",
     action: "Open People",
   },

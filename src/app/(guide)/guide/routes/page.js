@@ -16,6 +16,7 @@ import { DangerousLocationCard } from "@/app/components/danger/DangerousLocation
 import { GuideAlertTabs } from "@/app/components/guide/GuideTabs";
 import { GuidePageHeader } from "@/app/components/guide/GuidePageHeader";
 import { DashboardStatCard } from "@/app/components/dashboard/DashboardStatCard";
+import { DashboardKpiSection } from "@/app/components/dashboard/DashboardKpiSection";
 import { StatCardSkeletonGrid, MapSkeleton } from "@/app/components/ui/Skeletons";
 import { AsyncState, EmptyState, ErrorState } from "@/app/components/ui/AsyncState";
 import { Card } from "@/app/components/ui/Card";
@@ -259,17 +260,19 @@ export default function GuideRoutesPage() {
 
       <RoleContextBanner helper={ROLE_INTERFACE.guide.routes.helper} tone="info" />
 
-      {statsLoading ? (
-        <StatCardSkeletonGrid count={5} className={statGrid.dashboardFive} />
-      ) : (
-        <div className={statGrid.dashboardFive}>
-          <DashboardStatCard compact label="Safe (Your Groups)" value={relevantSafe.length} accent="green" />
-          <DashboardStatCard compact label="Caution" value={relevantActive.length} accent="orange" />
-          <DashboardStatCard compact label="Closed / Avoid" value={relevantAffected.length} accent="red" />
-          <DashboardStatCard compact label="Detours" value={relevantAlternative.length} accent="blue" />
-          <DashboardStatCard compact label="Area Hazards" value={activeAreaHazards.length} accent="red" />
-        </div>
-      )}
+      <DashboardKpiSection>
+        {statsLoading ? (
+          <StatCardSkeletonGrid count={5} className={statGrid.dashboardFive} />
+        ) : (
+          <div className={statGrid.dashboardFive}>
+            <DashboardStatCard compact label="Safe (Your Groups)" value={relevantSafe.length} accent="green" />
+            <DashboardStatCard compact label="Caution" value={relevantActive.length} accent="orange" />
+            <DashboardStatCard compact label="Closed / Avoid" value={relevantAffected.length} accent="red" />
+            <DashboardStatCard compact label="Detours" value={relevantAlternative.length} accent="blue" />
+            <DashboardStatCard compact label="Area Hazards" value={activeAreaHazards.length} accent="red" />
+          </div>
+        )}
+      </DashboardKpiSection>
 
       <AsyncState
         loading={loading}

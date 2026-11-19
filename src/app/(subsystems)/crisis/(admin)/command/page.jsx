@@ -21,7 +21,6 @@ import {
   AdminDashboardQuickNavRow,
 } from "@/app/components/admin/AdminDashboardQuickNavLink";
 import { AdminTablePanel } from "@/app/components/admin/AdminTablePanel";
-import { GuideEmergencyReportsPanel } from "@/app/components/admin/GuideEmergencyReportsPanel";
 import { StatCardSkeleton, AlertCardSkeletonList, MapSkeleton, TableSkeleton } from "@/app/components/ui/Skeletons";
 import { ErrorState } from "@/app/components/ui/AsyncState";
 import { DashboardPageHeader } from "@/app/components/dashboard/DashboardPageHeader";
@@ -48,7 +47,6 @@ import { HelpTip } from "@/app/components/ui/HelpTip";
 import { useHydrated } from "@/lib/useHydrated";
 import { AlertCheckinSummary } from "@/app/components/admin/AlertCheckinSummary";
 import { AlertDeliveryReport } from "@/app/components/admin/AlertDeliveryReport";
-import { MissingPersonsPanel } from "@/app/components/admin/MissingPersonsPanel";
 import { AlertTypeIcon } from "@/app/components/ui/cardTypeIcons";
 import { formatRecordTimestamps } from "@/lib/formatEditedAt";
 import {
@@ -756,8 +754,6 @@ export default function CrisisAdminPage() {
               }
             />
 
-            <GuideEmergencyReportsPanel />
-
             {error && (
               <ErrorState message={error} onRetry={fetchAlerts} title="Could not load alerts" />
             )}
@@ -806,8 +802,6 @@ export default function CrisisAdminPage() {
                 )}
               </div>
             </AdminDashboardKpiSection>
-
-            <MissingPersonsPanel />
 
             <AdminFilterBar
               compact

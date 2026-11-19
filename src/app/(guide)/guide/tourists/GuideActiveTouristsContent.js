@@ -8,6 +8,7 @@ import { Card } from "@/app/components/ui/Card";
 import { GuideGroupTabs } from "@/app/components/guide/GuideTabs";
 import { GuidePageHeader } from "@/app/components/guide/GuidePageHeader";
 import { DashboardStatCard } from "@/app/components/dashboard/DashboardStatCard";
+import { DashboardKpiSection } from "@/app/components/dashboard/DashboardKpiSection";
 import { ActiveTouristsPanel } from "@/app/components/tour/ActiveTouristsPanel";
 import { useAuthStore } from "@/app/store/crisisStore";
 import { useGuideStore } from "@/app/store/guideStore";
@@ -152,15 +153,17 @@ export default function GuideActiveTouristsPage() {
 
       <GuideGroupTabs active="tourists" />
 
-      {loading && activeGroups.length === 0 ? (
-        <StatCardSkeletonGrid count={3} className={statGrid.dashboardThree} />
-      ) : (
-        <div className={statGrid.dashboardThree}>
-          <DashboardStatCard compact label="Active Groups" value={activeGroups.length} icon={<Compass size={iconSize.stat} />} accent="purple" href="/guide/groups" hrefLabel="Manage" />
-          <DashboardStatCard compact label="Confirmed Tourists" value={confirmedCount} icon={<Users size={iconSize.stat} />} accent="blue" />
-          <DashboardStatCard compact label="Pending Requests" value={pendingAll.length} icon={<Clock size={iconSize.stat} />} accent="orange" />
-        </div>
-      )}
+      <DashboardKpiSection>
+        {loading && activeGroups.length === 0 ? (
+          <StatCardSkeletonGrid count={3} className={statGrid.dashboardThree} />
+        ) : (
+          <div className={statGrid.dashboardThree}>
+            <DashboardStatCard compact label="Active Groups" value={activeGroups.length} icon={<Compass size={iconSize.stat} />} accent="purple" href="/guide/groups" hrefLabel="Manage" />
+            <DashboardStatCard compact label="Confirmed Tourists" value={confirmedCount} icon={<Users size={iconSize.stat} />} accent="blue" />
+            <DashboardStatCard compact label="Pending Requests" value={pendingAll.length} icon={<Clock size={iconSize.stat} />} accent="orange" />
+          </div>
+        )}
+      </DashboardKpiSection>
 
       {activeGroups.length === 0 ? (
         <Card className="p-10 text-center border-zinc-100">

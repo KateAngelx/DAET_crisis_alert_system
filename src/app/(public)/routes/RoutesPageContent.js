@@ -12,6 +12,7 @@ import { InfoPageHero, PublicPageShell, PublicPageContent, PublicPanel } from "@
 import { AsyncState, ErrorState, EmptyState } from "@/app/components/ui/AsyncState";
 import { AlertCardSkeletonList, MapSkeleton } from "@/app/components/ui/Skeletons";
 import { PublicStatCard } from "@/app/components/dashboard/PublicStatCard";
+import { DashboardKpiSection } from "@/app/components/dashboard/DashboardKpiSection";
 import {
   buildRouteCatalog,
   findRouteItem,
@@ -373,28 +374,27 @@ export default function RoutesPageContent() {
           }
         >
           <div className={portalLayout.stackPublic}>
-            <PublicPanel title="Overview" subtitle="Route and hazard counts" className="installed-app-hide">
-              <div className="grid grid-cols-5 gap-1 sm:gap-2 md:gap-3 mb-4 min-w-0">
+            <DashboardKpiSection className="installed-app-hide">
+              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-1 sm:gap-2 md:gap-3 min-w-0">
                 <PublicStatCard compact value={catalog.safe.length} label="Safe Routes" accent="green" />
                 <PublicStatCard compact value={catalog.active.length} label="Caution" accent="green" />
                 <PublicStatCard compact value={catalog.affected.length} label="Closed / Avoid" accent="red" />
                 <PublicStatCard compact value={catalog.alternative.length} label="Detours" accent="blue" />
                 <PublicStatCard compact value={activeAreaHazards.length} label="Area Hazards" accent="red" />
               </div>
+            </DashboardKpiSection>
 
-              {urgentCount > 0 && (
-                <div className="p-3 rounded-xl bg-orange-50 border border-orange-200 flex items-start gap-3 mb-4">
-                  <AlertTriangle className="text-orange-600 shrink-0 mt-0.5" size={18} />
-                  <div>
-                    <p className="text-xs font-black uppercase text-orange-700 tracking-widest">Check before you travel</p>
-                    <p className="text-sm text-orange-900 font-medium mt-0.5">
-                      {urgentCount} item{urgentCount > 1 ? "s" : ""} need attention. Review the advisories below before traveling.
-                    </p>
-                  </div>
+            {urgentCount > 0 ? (
+              <div className="p-3 rounded-xl bg-orange-50 border border-orange-200 flex items-start gap-3">
+                <AlertTriangle className="text-orange-600 shrink-0 mt-0.5" size={18} />
+                <div>
+                  <p className="text-xs font-black uppercase text-orange-700 tracking-widest">Check before you travel</p>
+                  <p className="text-sm text-orange-900 font-medium mt-0.5">
+                    {urgentCount} item{urgentCount > 1 ? "s" : ""} need attention. Review the advisories below before traveling.
+                  </p>
                 </div>
-              )}
-
-            </PublicPanel>
+              </div>
+            ) : null}
 
             {urgentCount > 0 ? (
               <div className="installed-app-show items-start gap-3 rounded-xl border border-orange-200 bg-orange-50 p-3">

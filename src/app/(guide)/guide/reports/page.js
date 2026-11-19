@@ -7,6 +7,7 @@ import { GuidePageHeader } from "@/app/components/guide/GuidePageHeader";
 import { RoleContextBanner } from "@/app/components/dashboard/RoleContextBanner";
 import { ROLE_INTERFACE } from "@/lib/roleInterfaceCopy";
 import { DashboardStatCard } from "@/app/components/dashboard/DashboardStatCard";
+import { DashboardKpiSection } from "@/app/components/dashboard/DashboardKpiSection";
 import { StatCardSkeletonGrid } from "@/app/components/ui/Skeletons";
 import { AsyncState, EmptyState } from "@/app/components/ui/AsyncState";
 import { useAuthStore } from "@/app/store/crisisStore";
@@ -52,15 +53,17 @@ export default function GuideReportsPage() {
       />
       <RoleContextBanner helper={ROLE_INTERFACE.guide.reports.helper} tone="info" />
 
-      {loading ? (
-        <StatCardSkeletonGrid count={3} className={statGrid.dashboardThree} />
-      ) : (
-        <div className={statGrid.dashboardThree}>
-          <DashboardStatCard compact label="Total Reports" value={guideIncidents.length} icon={<FileText size={iconSize.stat} />} accent="blue" />
-          <DashboardStatCard compact label="Open Cases" value={openReports.length} icon={<AlertTriangle size={iconSize.stat} />} accent="orange" />
-          <DashboardStatCard compact label="High Priority" value={criticalReports.length} icon={<AlertTriangle size={iconSize.stat} />} accent="purple" />
-        </div>
-      )}
+      <DashboardKpiSection>
+        {loading ? (
+          <StatCardSkeletonGrid count={3} className={statGrid.dashboardThree} />
+        ) : (
+          <div className={statGrid.dashboardThree}>
+            <DashboardStatCard compact label="Total Reports" value={guideIncidents.length} icon={<FileText size={iconSize.stat} />} accent="blue" />
+            <DashboardStatCard compact label="Open Cases" value={openReports.length} icon={<AlertTriangle size={iconSize.stat} />} accent="orange" />
+            <DashboardStatCard compact label="High Priority" value={criticalReports.length} icon={<AlertTriangle size={iconSize.stat} />} accent="purple" />
+          </div>
+        )}
+      </DashboardKpiSection>
 
       <AsyncState
         loading={loading}

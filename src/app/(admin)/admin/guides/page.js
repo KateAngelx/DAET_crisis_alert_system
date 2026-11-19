@@ -5,8 +5,8 @@ import { Compass, MapPin, Users, Phone, Mail } from "lucide-react";
 import { AdminPanel } from "@/app/components/admin/AdminPanel";
 import { AdminTablePanel, adminTableClasses } from "@/app/components/admin/AdminTablePanel";
 import { DashboardPageHeader } from "@/app/components/dashboard/DashboardPageHeader";
-import { AdminPeopleTabs } from "@/app/components/admin/AdminTabs";
 import { DashboardStatCard } from "@/app/components/dashboard/DashboardStatCard";
+import { DashboardKpiSection } from "@/app/components/dashboard/DashboardKpiSection";
 import { DestinationButton, DestinationModal } from "@/app/components/tour/DestinationModal";
 import { useGuideStore } from "@/app/store/guideStore";
 import { useCrisisStore } from "@/app/store/crisisStore";
@@ -91,17 +91,17 @@ export default function AdminGuideMonitoringPage() {
         description="Administrative oversight of tour groups, routes, guides, and tourist assignments."
       />
 
-      <AdminPeopleTabs active="guides" />
-
-      {loading ? (
-        <StatCardSkeletonGrid count={3} className={statGrid.dashboardThree} />
-      ) : (
-        <div className={statGrid.dashboardThree}>
-          <DashboardStatCard compact label="Guides with Groups" value={stats.guideCount} icon={<Users size={iconSize.stat} />} accent="purple" />
-          <DashboardStatCard compact label="Active Tour Groups" value={stats.activeGroups} icon={<Compass size={iconSize.stat} />} accent="blue" />
-          <DashboardStatCard compact label="Assigned Tourists" value={stats.totalTourists} icon={<Users size={iconSize.stat} />} accent="green" />
-        </div>
-      )}
+      <DashboardKpiSection>
+        {loading ? (
+          <StatCardSkeletonGrid count={3} className={statGrid.dashboardThree} />
+        ) : (
+          <div className={statGrid.dashboardThree}>
+            <DashboardStatCard compact label="Guides with Groups" value={stats.guideCount} icon={<Users size={iconSize.stat} />} accent="purple" />
+            <DashboardStatCard compact label="Active Tour Groups" value={stats.activeGroups} icon={<Compass size={iconSize.stat} />} accent="blue" />
+            <DashboardStatCard compact label="Assigned Tourists" value={stats.totalTourists} icon={<Users size={iconSize.stat} />} accent="green" />
+          </div>
+        )}
+      </DashboardKpiSection>
 
       {loading ? (
         <AdminTablePlaceholderSkeleton rows={6} columns={5} />

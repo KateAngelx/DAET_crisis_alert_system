@@ -14,6 +14,7 @@ import {
 import { AsyncState, ErrorState } from "@/app/components/ui/AsyncState";
 import { AlertCardSkeletonList, PublicStatCardSkeleton } from "@/app/components/ui/Skeletons";
 import { PublicStatCard } from "@/app/components/dashboard/PublicStatCard";
+import { DashboardKpiSection } from "@/app/components/dashboard/DashboardKpiSection";
 import { getSeverityOutline, iconSize, statGrid } from "@/lib/designSystem";
 import {
   DEFAULT_SEVERITY_ORDER,
@@ -106,7 +107,7 @@ export default function ResolvedAlertsPage() {
           <AlertsTabs active="past" />
           <RoleContextBanner helper={ROLE_INTERFACE.public.resolvedAlerts.helper} tone="info" />
 
-          <PublicPanel title="Overview" subtitle="Resolved counts">
+          <DashboardKpiSection>
             {loading ? (
               <PublicStatCardSkeleton count={3} className={statGrid.crisisHub} compact />
             ) : (
@@ -116,7 +117,7 @@ export default function ResolvedAlertsPage() {
                 <PublicStatCard compact value={monthCount} label="Resolved This Month" accent="green" />
               </div>
             )}
-          </PublicPanel>
+          </DashboardKpiSection>
 
           <PublicPanel
             title="Resolved incidents"

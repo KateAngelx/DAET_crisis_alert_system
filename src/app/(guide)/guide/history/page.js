@@ -19,6 +19,7 @@ import { AlertCardSkeletonList, MapSkeleton, StatCardSkeletonGrid } from "@/app/
 import { ListPager } from "@/app/components/shell/ListPager";
 import { getSeverityOutline, guideShell, portalLayout, statGrid, iconSize } from "@/lib/designSystem";
 import { DashboardStatCard } from "@/app/components/dashboard/DashboardStatCard";
+import { DashboardKpiSection } from "@/app/components/dashboard/DashboardKpiSection";
 import { AlertTypeIcon } from "@/app/components/ui/cardTypeIcons";
 import { useHydrated } from "@/lib/useHydrated";
 
@@ -95,15 +96,17 @@ export default function GuideHistoryPage() {
         }
       />
 
-      {loading && tourGroups.length === 0 ? (
-        <StatCardSkeletonGrid count={3} className={statGrid.dashboardThree} />
-      ) : (
-        <div className={statGrid.dashboardThree}>
-          <DashboardStatCard compact label="Completed Tours" value={completedGroups.length} icon={<Compass size={iconSize.stat} />} accent="green" />
-          <DashboardStatCard compact label="Closed Reports" value={closedReports.length} icon={<FileText size={iconSize.stat} />} accent="blue" />
-          <DashboardStatCard compact label="Past alerts" value={resolvedAlerts.length} icon={<CheckCircle size={iconSize.stat} />} accent="green" />
-        </div>
-      )}
+      <DashboardKpiSection>
+        {loading && tourGroups.length === 0 ? (
+          <StatCardSkeletonGrid count={3} className={statGrid.dashboardThree} />
+        ) : (
+          <div className={statGrid.dashboardThree}>
+            <DashboardStatCard compact label="Completed Tours" value={completedGroups.length} icon={<Compass size={iconSize.stat} />} accent="green" />
+            <DashboardStatCard compact label="Closed Reports" value={closedReports.length} icon={<FileText size={iconSize.stat} />} accent="blue" />
+            <DashboardStatCard compact label="Past alerts" value={resolvedAlerts.length} icon={<CheckCircle size={iconSize.stat} />} accent="green" />
+          </div>
+        )}
+      </DashboardKpiSection>
 
       <GuidePanel title="Completed tours" subtitle="Finished tour groups">
         {loading ? (

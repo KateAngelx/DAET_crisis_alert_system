@@ -5,7 +5,18 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useAuthStore } from "@/app/store/crisisStore";
 import {
-  LayoutDashboard, Users, AlertTriangle, FileWarning, LogOut, Archive, LifeBuoy, Route, Settings,
+  LayoutDashboard,
+  Users,
+  AlertTriangle,
+  FileWarning,
+  LogOut,
+  Archive,
+  LifeBuoy,
+  Route,
+  Settings,
+  Compass,
+  Siren,
+  UserSearch,
 } from "lucide-react";
 import { BrandLogo } from "@/app/components/BrandLogo";
 import { ADMIN_NAV_SECTIONS, isNavActive } from "@/lib/dashboardNav";
@@ -20,9 +31,19 @@ const ICONS = {
   reports: FileWarning,
   help: LifeBuoy,
   roads: Route,
+  missing: UserSearch,
+  guideEmergencies: Siren,
+  guideMonitoring: Compass,
   people: Users,
   history: Archive,
   settings: Settings,
+};
+
+const SECTION_ACCENT = {
+  "Command center": "crisis",
+  Tourists: "tourist",
+  Guides: "guide",
+  "Accounts & records": "default",
 };
 
 function Logo() {
@@ -43,9 +64,13 @@ function NavLink({ item, pathname, variant = "default", counts }) {
   const activeClass =
     variant === "crisis" && active
       ? "bg-blue-600 text-white shadow-lg shadow-blue-600/20"
-      : active
-        ? "bg-blue-50 text-blue-600 ring-1 ring-blue-100"
-        : "text-zinc-500 hover:bg-zinc-50 hover:text-zinc-900";
+      : variant === "tourist" && active
+        ? "bg-amber-50 text-amber-900 ring-1 ring-amber-200"
+        : variant === "guide" && active
+          ? "bg-violet-50 text-violet-900 ring-1 ring-violet-200"
+          : active
+            ? "bg-blue-50 text-blue-600 ring-1 ring-blue-100"
+            : "text-zinc-500 hover:bg-zinc-50 hover:text-zinc-900";
 
   return (
     <Link
@@ -69,12 +94,28 @@ export function AdminSidebar() {
       <Logo />
 
       <div className="flex-1 overflow-y-auto px-4 py-6 custom-scrollbar">
-        {ADMIN_NAV_SECTIONS.map(([title, items], index) => (
-          <div key={title} className={index === ADMIN_NAV_SECTIONS.length - 1 ? "" : "mb-6"}>
-            <h3 className="text-[10px] font-black text-zinc-400 uppercase tracking-[0.2em] mb-3 px-4">{title}</h3>
+        {ADMIN_NAV_SECTIONS.map(([title, items]) => (
+          <div key={title} className="mb-6 last:mb-0">
+            <h3
+              className={`text-[10px] font-black uppercase tracking-[0.2em] mb-3 px-4 ${
+                title === "Tourists"
+                  ? "text-amber-600"
+                  : title === "Guides"
+                    ? "text-violet-600"
+                    : "text-zinc-400"
+              }`}
+            >
+              {title}
+            </h3>
             <div className="space-y-1">
               {items.map((item) => (
-                <NavLink key={item.path} item={item} pathname={pathname} variant={index === 0 ? "crisis" : "default"} counts={counts} />
+                <NavLink
+                  key={item.path}
+                  item={item}
+                  pathname={pathname}
+                  variant={SECTION_ACCENT[title] || "default"}
+                  counts={counts}
+                />
               ))}
             </div>
           </div>

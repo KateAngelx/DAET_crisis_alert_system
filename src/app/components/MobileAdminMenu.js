@@ -4,7 +4,19 @@ import React from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
-  Menu, X, LayoutDashboard, Users, AlertTriangle, FileWarning, Archive, LifeBuoy, Route, Settings,
+  Menu,
+  X,
+  LayoutDashboard,
+  Users,
+  AlertTriangle,
+  FileWarning,
+  Archive,
+  LifeBuoy,
+  Route,
+  Settings,
+  Compass,
+  Siren,
+  UserSearch,
 } from "lucide-react";
 import { BrandLogo } from "@/app/components/BrandLogo";
 import { ADMIN_NAV_SECTIONS, isNavActive } from "@/lib/dashboardNav";
@@ -18,9 +30,19 @@ const ICONS = {
   reports: FileWarning,
   help: LifeBuoy,
   roads: Route,
+  missing: UserSearch,
+  guideEmergencies: Siren,
+  guideMonitoring: Compass,
   people: Users,
   history: Archive,
   settings: Settings,
+};
+
+const SECTION_ACCENT = {
+  "Command center": "crisis",
+  Tourists: "tourist",
+  Guides: "guide",
+  "Accounts & records": "default",
 };
 
 export function MobileAdminMenu({ open, onOpen, onClose }) {
@@ -29,7 +51,17 @@ export function MobileAdminMenu({ open, onOpen, onClose }) {
 
   const renderSection = (title, items, variant = "default") => (
     <div>
-      <h3 className="text-[10px] font-black text-zinc-400 uppercase tracking-[0.2em] mb-4 px-4">{title}</h3>
+      <h3
+        className={`text-[10px] font-black uppercase tracking-[0.2em] mb-4 px-4 ${
+          title === "Tourists"
+            ? "text-amber-600"
+            : title === "Guides"
+              ? "text-violet-600"
+              : "text-zinc-400"
+        }`}
+      >
+        {title}
+      </h3>
       <div className="space-y-1">
         {items.map((item) => {
           const Icon = ICONS[item.id] || LayoutDashboard;
@@ -37,9 +69,13 @@ export function MobileAdminMenu({ open, onOpen, onClose }) {
           const activeClass =
             variant === "crisis" && active
               ? "bg-blue-600 text-white font-bold shadow-lg shadow-blue-600/20"
-              : active
-                ? "bg-blue-50 text-blue-600 font-bold ring-1 ring-blue-100"
-                : "text-zinc-600 hover:bg-zinc-50";
+              : variant === "tourist" && active
+                ? "bg-amber-50 text-amber-900 font-bold ring-1 ring-amber-200"
+                : variant === "guide" && active
+                  ? "bg-violet-50 text-violet-900 font-bold ring-1 ring-violet-200"
+                  : active
+                    ? "bg-blue-50 text-blue-600 font-bold ring-1 ring-blue-100"
+                    : "text-zinc-600 hover:bg-zinc-50";
 
           return (
             <Link
@@ -83,8 +119,10 @@ export function MobileAdminMenu({ open, onOpen, onClose }) {
             </div>
 
             <div className="p-4 space-y-6">
-              {ADMIN_NAV_SECTIONS.map(([title, items], index) => (
-                <React.Fragment key={title}>{renderSection(title, items, index === 0 ? "crisis" : "default")}</React.Fragment>
+              {ADMIN_NAV_SECTIONS.map(([title, items]) => (
+                <React.Fragment key={title}>
+                  {renderSection(title, items, SECTION_ACCENT[title] || "default")}
+                </React.Fragment>
               ))}
             </div>
           </div>
