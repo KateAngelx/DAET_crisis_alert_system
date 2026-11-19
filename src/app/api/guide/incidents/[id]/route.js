@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { requireGuide } from "@/lib/guideAuth";
 import { enforceRateLimitByKey } from "@/lib/apiRateLimit";
-import { canGuideAccessIncident } from "@/lib/guideIncidentAccess.server";
+import { canAccessOwnIncident } from "@/lib/ownIncidentAccess.server";
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
@@ -37,7 +37,7 @@ export async function GET(request, { params }) {
       return NextResponse.json({ error: "Report not found." }, { status: 404 });
     }
 
-    const allowed = await canGuideAccessIncident(auth.admin, auth.user.id, incident);
+    const allowed = canAccessOwnIncident(auth.user.id, incident);
     if (!allowed) {
       return NextResponse.json({ error: "You do not have access to this report." }, { status: 403 });
     }

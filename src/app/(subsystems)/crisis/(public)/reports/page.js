@@ -25,7 +25,7 @@ import { PublicStatCardSkeleton } from "@/app/components/ui/Skeletons";
 import { CategoryFilterSelect, StatusRecordList } from "@/app/components/shell/StatusRecordList";
 import { sortRecordsNewestFirst } from "@/lib/recordSorting";
 import { PublicListModal } from "@/app/components/shell/PublicListModal";
-import { supabase } from "@/lib/supabaseClient";
+import { fetchWithFreshSession } from "@/lib/authSession";
 import { formatReportCoordinates, ReportGeoLink } from "@/app/components/incidents/ReportGeoLink";
 import Image from "next/image";
 import { IncidentChat } from "@/app/components/IncidentChat";
@@ -50,7 +50,7 @@ export default function MyReportsPage() {
 
 function MyReportsContent() {
   const { user, isAuthenticated } = useAuthStore();
-  const { incidents, fetchIncidents, loading, error } = useIncidentStore();
+  const { incidents, fetchMyIncidents, loading, error } = useIncidentStore();
   const [modalOpen, setModalOpen] = useState(false);
   const [successRef, setSuccessRef] = useState(null);
   const [notificationWarnings, setNotificationWarnings] = useState([]);
@@ -65,8 +65,8 @@ function MyReportsContent() {
   const OPEN_INCIDENT_MODAL_KEY = "daet-open-incident-modal";
 
   useEffect(() => {
-    if (user?.id) fetchIncidents({ reporterId: user.id });
-  }, [user?.id, fetchIncidents]);
+    if (user?.id) fetchMyIncidents();
+  }, [user?.id, fetchMyIncidents]);
 
   useEffect(() => {
     if (!isAuthenticated) return;
@@ -94,14 +94,15 @@ function MyReportsContent() {
 
     (async () => {
       try {
-        const { data, error: historyError } = await supabase
-          .from("incident_history")
-          .select("id, action, old_status, new_status, notes, created_at")
-          .eq("incident_id", selectedIncidentId)
-          .order("created_at", { ascending: false });
-        if (historyError) throw historyError;
+        const response = await fetchWithFreshSession(`/api/my/incidents/${selectedIncidentId}`, { cache: "no-store" });
+        const result = await response.json().catch(() => ({}));
+        if (!response.ok) throw new Error(result.error || "Could not load report history.");
         if (active) {
-          setReportHistoryState({ reportId: selectedIncidentId, rows: data || [], error: null });
+          setReportHistoryState({
+            reportId: selectedIncidentId,
+            rows: result.history || [],
+            error: null,
+          });
         }
       } catch (historyError) {
         if (active) {
@@ -117,7 +118,7 @@ function MyReportsContent() {
     setSuccessRef(incident.reference_number);
     setNotificationWarnings(warnings);
     setPage(1);
-    if (user?.id) fetchIncidents({ reporterId: user.id });
+    if (user?.id) fetchMyIncidents();
   };
 
   const filteredReports = useMemo(() => {
@@ -246,7 +247,7 @@ function MyReportsContent() {
               loading={loading}
               error={error}
               isEmpty={!loading && !error && incidents.length === 0}
-              onRetry={() => fetchIncidents({ reporterId: user.id })}
+              onRetry={() => user?.id && fetchMyIncidents()}
               loadingFallback={<ReportCardSkeletonList count={3} />}
               emptyFallback={
                 <EmptyState

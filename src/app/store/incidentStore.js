@@ -26,6 +26,39 @@ export const useIncidentStore = create((set, get) => ({
 
   setFilters: (filters) => set({ filters: { ...get().filters, ...filters } }),
 
+  fetchMyIncidents: async () => {
+    set({ loading: true, error: null });
+    try {
+      const response = await fetchWithFreshSession("/api/my/incidents", { cache: "no-store" });
+      const result = await response.json().catch(() => ({}));
+      if (!response.ok) throw new Error(result.error || "Unable to load your reports.");
+      const data = result.incidents || [];
+      set({ incidents: data, loading: false });
+      return data;
+    } catch (err) {
+      set({ loading: false, error: err.message, incidents: [] });
+      return [];
+    }
+  },
+
+  fetchMyIncidentById: async (id) => {
+    set({ loading: true, error: null });
+    try {
+      const response = await fetchWithFreshSession(`/api/my/incidents/${id}`, { cache: "no-store" });
+      const result = await response.json().catch(() => ({}));
+      if (response.status === 403) {
+        set({ currentIncident: null, history: [], loading: false, error: null });
+        return null;
+      }
+      if (!response.ok) throw new Error(result.error || "Could not load report.");
+      set({ currentIncident: result.incident, history: result.history || [], loading: false });
+      return result.incident;
+    } catch (err) {
+      set({ loading: false, error: err.message, currentIncident: null, history: [] });
+      return null;
+    }
+  },
+
   fetchIncidents: async (options = {}) => {
     set({ loading: true, error: null });
     try {

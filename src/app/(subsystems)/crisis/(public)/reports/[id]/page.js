@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import Link from "next/link";
 import { ArrowLeft, MapPin, Clock, User, Image as ImageIcon } from "lucide-react";
 import { useAuthStore } from "@/app/store/crisisStore";
@@ -23,11 +23,11 @@ import { scrollToHashOnMount } from "@/lib/scrollToHash";
 export default function ReportDetailPage({ params }) {
   const { id } = React.use(params);
   const { user, isAuthenticated } = useAuthStore();
-  const { currentIncident, history, fetchIncidentById, loading, error } = useIncidentStore();
-
+  const { currentIncident, history, fetchMyIncidentById, loading, error } = useIncidentStore();
   useEffect(() => {
-    if (id) fetchIncidentById(id);
-  }, [id, fetchIncidentById]);
+    if (!id || !user?.id) return;
+    fetchMyIncidentById(id);
+  }, [id, user?.id, fetchMyIncidentById]);
 
   useEffect(() => {
     if (typeof window === "undefined" || loading) return;
@@ -62,7 +62,7 @@ export default function ReportDetailPage({ params }) {
     return (
       <PublicPageShell>
         <PublicPageContent>
-          <ErrorState message={error} onRetry={() => fetchIncidentById(id)} title="Could not load report" />
+          <ErrorState message={error} onRetry={() => fetchMyIncidentById(id)} title="Could not load report" />
         </PublicPageContent>
       </PublicPageShell>
     );
@@ -83,17 +83,6 @@ export default function ReportDetailPage({ params }) {
   }
 
   const inc = currentIncident;
-  const isOwner = inc.reporter_id === user?.id;
-
-  if (!isOwner && user?.role !== "admin" && user?.role !== "guide") {
-    return (
-      <PublicPageShell>
-        <PublicPageContent className="text-center">
-          <p className="text-red-500 font-bold">You do not have access to this report.</p>
-        </PublicPageContent>
-      </PublicPageShell>
-    );
-  }
 
   return (
     <PublicPageShell>

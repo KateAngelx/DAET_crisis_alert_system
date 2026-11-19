@@ -99,7 +99,7 @@ export default function GuideReportDetailPage({ params }) {
       <Card className="p-10 text-center">
         <EmptyState
           title="Report not found"
-          description="This report may not belong to your tour groups or you may not have access."
+          description="You can only open reports that you submitted."
         />
         <Link href="/guide/reports" className="text-blue-600 text-xs font-black uppercase mt-4 inline-block">
           Back to Reports

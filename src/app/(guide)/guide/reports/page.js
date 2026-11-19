@@ -33,7 +33,7 @@ export default function GuideReportsPage() {
   const openReports = guideIncidents.filter(
     (i) => !["Resolved", "Closed", "Rejected"].includes(i.status)
   );
-  const assignedToMe = guideIncidents.filter((i) => i.assigned_to === user?.id);
+  const criticalReports = guideIncidents.filter((i) => i.severity === "Critical" || i.severity === "High");
 
   return (
     <>
@@ -58,7 +58,7 @@ export default function GuideReportsPage() {
         <div className={statGrid.dashboardThree}>
           <DashboardStatCard compact label="Total Reports" value={guideIncidents.length} icon={<FileText size={iconSize.stat} />} accent="blue" />
           <DashboardStatCard compact label="Open Cases" value={openReports.length} icon={<AlertTriangle size={iconSize.stat} />} accent="orange" />
-          <DashboardStatCard compact label="Assigned to You" value={assignedToMe.length} icon={<FileText size={iconSize.stat} />} accent="purple" />
+          <DashboardStatCard compact label="High Priority" value={criticalReports.length} icon={<AlertTriangle size={iconSize.stat} />} accent="purple" />
         </div>
       )}
 
@@ -71,7 +71,7 @@ export default function GuideReportsPage() {
           <EmptyState
             icon={FileText}
             title="No reports yet"
-            description="Reports from you and the tourists in your groups appear here."
+            description="Only reports you submitted appear here."
             action={
               <button type="button" onClick={() => setModalOpen(true)} className="inline-flex items-center gap-2 rounded-xl bg-red-600 px-4 py-2.5 text-[11px] font-black uppercase tracking-widest text-white hover:bg-red-700">
                 Report a problem
@@ -80,7 +80,7 @@ export default function GuideReportsPage() {
           />
         }
       >
-        <GuidePanel title="Your visible reports" subtitle="Reports you filed, reports assigned to you, and reports from tourists on your active tours." bodyClassName={portalLayout.panelBodyStack}>
+        <GuidePanel title="Your reports" subtitle="Only incident reports you personally filed." bodyClassName={portalLayout.panelBodyStack}>
           <StatusRecordList
             rows={guideIncidents.map((inc) => ({
               id: inc.id,
