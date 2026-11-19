@@ -3,6 +3,7 @@
 import React, { useRef, useState } from "react";
 import { getActiveSession } from "@/lib/authSession";
 import { toast } from "sonner";
+import { nowLocalDateTimeInput } from "@/lib/dateTimeInput";
 
 const ASSISTANCE_TYPES = [
   "Help finding a tourist guide",
@@ -152,6 +153,7 @@ export function GuideAssistanceRequestForm({ assistance, onClose, onSubmitted })
               Preferred date and time <span className="font-medium text-zinc-500">(optional)</span>
               <input
                 type="datetime-local"
+                min={nowLocalDateTimeInput()}
                 value={form.preferredAt}
                 onChange={(event) => updateForm({ preferredAt: event.target.value })}
                 className="mt-1.5 w-full rounded-xl border border-zinc-200 p-3 font-medium"

@@ -2,6 +2,10 @@ import { NextResponse } from "next/server";
 import { requireTourist } from "@/lib/touristAuth";
 import { getSupabaseAdmin } from "@/lib/supabaseAdmin";
 import { API_RATE_LIMITS, enforceRateLimitByKey } from "@/lib/apiRateLimit";
+import {
+  getNotificationWarnings,
+  notifyAdminsOfNewGuideAssistanceRequest,
+} from "@/lib/guideAssistanceNotifications.server";
 
 const ALLOWED_ASSISTANCE_TYPES = new Set([
   "Help finding a tourist guide",
@@ -186,8 +190,22 @@ export async function POST(request) {
       return NextResponse.json({ error: insertError.message }, { status: 500 });
     }
 
+    const { data: touristProfile } = await auth.admin
+      .from("profiles")
+      .select("full_name")
+      .eq("id", auth.user.id)
+      .maybeSingle();
+    const notifyResults = await notifyAdminsOfNewGuideAssistanceRequest(
+      assistanceRequest,
+      touristProfile?.full_name || "A tourist"
+    );
+
     return NextResponse.json(
-      { success: true, request: assistanceRequest },
+      {
+        success: true,
+        request: assistanceRequest,
+        notificationWarnings: getNotificationWarnings(notifyResults),
+      },
       { status: 201, headers: { "Cache-Control": "no-store" } }
     );
   } catch (error) {

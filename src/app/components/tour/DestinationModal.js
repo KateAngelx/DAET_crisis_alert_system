@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useEffect, useMemo, useState } from "react";
+import { createPortal } from "react-dom";
 import {
   X, MapPin, Calendar, Clock, Users, Phone, Mail, AlertTriangle, ShieldCheck, Loader2, Pencil, Navigation,
 } from "lucide-react";
@@ -123,14 +124,26 @@ export function DestinationModal({
   const routeLabel = formatTourRoute(group);
   const tourDate = formatTourDate(group);
 
-  return (
-    <div className="fixed inset-0 z-[200] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
-      <div className="bg-white rounded-3xl max-w-2xl w-full max-h-[90vh] flex flex-col overflow-hidden shadow-2xl">
+  const modal = (
+    <div
+      className="fixed inset-0 z-[210] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm"
+      role="presentation"
+      onClick={(event) => {
+        if (event.target === event.currentTarget) onClose();
+      }}
+    >
+      <div
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="destination-route-title"
+        className="bg-white rounded-3xl max-w-2xl w-full max-h-[90vh] flex flex-col overflow-hidden shadow-2xl"
+        onClick={(event) => event.stopPropagation()}
+      >
         <div className="shrink-0 bg-white border-b border-zinc-100 px-6 py-4 flex items-start justify-between gap-4">
           <div>
             <div className="flex items-center gap-2 mb-1">
               <Navigation size={18} className="text-blue-600" />
-              <h2 className="text-lg font-black uppercase tracking-tight text-zinc-900">Destination & Route</h2>
+              <h2 id="destination-route-title" className="text-lg font-black uppercase tracking-tight text-zinc-900">Destination & Route</h2>
             </div>
             <p className="text-sm font-bold text-zinc-700">{group.name}</p>
             {!editing && (
@@ -197,11 +210,17 @@ export function DestinationModal({
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div className="space-y-1">
                   <label className="text-[10px] font-black uppercase text-zinc-400">Tour Date</label>
-                  <input type="date" min={group.start_date && group.start_date < todayInPhilippines() ? group.start_date : todayInPhilippines()} value={form.start_date} onChange={(e) => setForm({ ...form, start_date: e.target.value })} className="w-full p-3 bg-zinc-50 border border-zinc-200 rounded-xl text-sm font-bold" />
+                  <input type="date" min={todayInPhilippines()} value={form.start_date} onChange={(e) => setForm({ ...form, start_date: e.target.value })} className="w-full p-3 bg-zinc-50 border border-zinc-200 rounded-xl text-sm font-bold" />
                 </div>
                 <div className="space-y-1">
                   <label className="text-[10px] font-black uppercase text-zinc-400">End Date (optional)</label>
-                  <input type="date" min={form.start_date || undefined} value={form.end_date} onChange={(e) => setForm({ ...form, end_date: e.target.value, end_time: e.target.value ? form.end_time : "" })} className="w-full p-3 bg-zinc-50 border border-zinc-200 rounded-xl text-sm font-bold" />
+                  <input
+                    type="date"
+                    min={form.start_date && form.start_date > todayInPhilippines() ? form.start_date : todayInPhilippines()}
+                    value={form.end_date}
+                    onChange={(e) => setForm({ ...form, end_date: e.target.value, end_time: e.target.value ? form.end_time : "" })}
+                    className="w-full p-3 bg-zinc-50 border border-zinc-200 rounded-xl text-sm font-bold"
+                  />
                 </div>
                 <div className="space-y-1">
                   <label className="text-[10px] font-black uppercase text-zinc-400">End Time (optional)</label>
@@ -360,6 +379,8 @@ export function DestinationModal({
       />
     </div>
   );
+
+  return typeof document !== "undefined" ? createPortal(modal, document.body) : null;
 }
 
 export function DestinationButton({ onClick, className = "" }) {

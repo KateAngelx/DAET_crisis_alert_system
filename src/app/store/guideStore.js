@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import { supabase } from '@/lib/supabaseClient';
-import { getActiveSession } from '@/lib/authSession';
+import { fetchWithFreshSession, getActiveSession } from '@/lib/authSession';
 import { isUserOnline } from '@/lib/userActivity';
 import { notifyGuideAssignment, notifyTouristGuideAssigned, notifyTouristAssignmentRequest, notifyGuideAssignmentAccepted, notifyGuideAssignmentDeclined } from '@/lib/notificationService';
 
@@ -111,41 +111,33 @@ export const useGuideStore = create((set, get) => ({
   },
 
   getGuideTouristIds: async (guideId) => {
+    const { data: activeGroups } = await supabase
+      .from("tour_groups")
+      .select("id")
+      .eq("guide_id", guideId)
+      .eq("status", "active");
+    const groupIds = (activeGroups || []).map((group) => group.id);
+    if (!groupIds.length) return [];
+
     const { data } = await supabase
-      .from('guide_assignments')
-      .select('tourist_id')
-      .eq('guide_id', guideId)
-      .eq('status', 'active');
-    return (data || []).map((a) => a.tourist_id);
+      .from("guide_assignments")
+      .select("tourist_id")
+      .eq("guide_id", guideId)
+      .eq("status", "active")
+      .in("tour_group_id", groupIds);
+    return [...new Set((data || []).map((assignment) => assignment.tourist_id).filter(Boolean))];
   },
 
   fetchGuideIncidents: async (guideId) => {
+    if (!guideId) return [];
     set({ loading: true, error: null });
     try {
-      const touristIds = await get().getGuideTouristIds(guideId);
-      let query = supabase
-        .from('incident_reports')
-        .select(`
-          *,
-          reporter:profiles!incident_reports_reporter_id_fkey(id, full_name, phone)
-        `)
-        .order('created_at', { ascending: false, nullsFirst: false })
-        .order('id', { ascending: false });
-
-      if (touristIds.length > 0) {
-        query = query.or(
-          `assigned_to.eq.${guideId},reporter_id.in.(${touristIds.join(',')})`
-        );
-      } else {
-        query = query.eq('assigned_to', guideId);
-      }
-
-      const { data, error } = await query;
-      if (error) throw error;
-
-
-      set({ guideIncidents: data || [], loading: false });
-      return data || [];
+      const response = await fetchWithFreshSession("/api/guide/incidents", { cache: "no-store" });
+      const result = await response.json().catch(() => ({}));
+      if (!response.ok) throw new Error(result.error || "Unable to load reports.");
+      const data = result.incidents || [];
+      set({ guideIncidents: data, loading: false });
+      return data;
     } catch (err) {
       set({ loading: false, error: err.message, guideIncidents: [] });
       return [];

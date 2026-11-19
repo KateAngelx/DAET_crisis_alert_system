@@ -22,6 +22,7 @@ import { getDangerPinCategory, HAZARDS_MAP_LEGEND } from "@/lib/mapPinUtils";
 import { createCategoryPinIcon } from "@/lib/mapPinIcons";
 import { MapLegend } from "@/app/components/maps/MapLegend";
 import { adminShell, iconSize, statGrid, portalLayout } from "@/lib/designSystem";
+import { minDateTimeLocalNoBackdate, nowLocalDateTimeInput } from "@/lib/dateTimeInput";
 import { AdminFilterBar } from "@/app/components/admin/AdminFilterBar";
 import { AdminPanel } from "@/app/components/admin/AdminPanel";
 import { RoadsHazardsSectionFilters } from "@/app/components/admin/RoadsHazardsSectionFilters";
@@ -545,11 +546,23 @@ export function AreaHazardsAdminPanel({
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
                   <label className="text-[10px] font-black uppercase text-zinc-400 ml-1">Warning starts</label>
-                  <input type="datetime-local" className="w-full mt-1 p-3 bg-zinc-50 border border-zinc-100 rounded-xl font-bold text-xs" value={formData.warning_starts_at} onChange={(e) => setFormData({ ...formData, warning_starts_at: e.target.value })} />
+                  <input
+                    type="datetime-local"
+                    min={minDateTimeLocalNoBackdate(formData.warning_starts_at)}
+                    className="w-full mt-1 p-3 bg-zinc-50 border border-zinc-100 rounded-xl font-bold text-xs"
+                    value={formData.warning_starts_at}
+                    onChange={(e) => setFormData({ ...formData, warning_starts_at: e.target.value })}
+                  />
                 </div>
                 <div>
                   <label className="text-[10px] font-black uppercase text-zinc-400 ml-1">Warning ends (optional)</label>
-                  <input type="datetime-local" className="w-full mt-1 p-3 bg-zinc-50 border border-zinc-100 rounded-xl font-bold text-xs" value={formData.warning_ends_at} onChange={(e) => setFormData({ ...formData, warning_ends_at: e.target.value })} />
+                  <input
+                    type="datetime-local"
+                    min={formData.warning_starts_at || nowLocalDateTimeInput()}
+                    className="w-full mt-1 p-3 bg-zinc-50 border border-zinc-100 rounded-xl font-bold text-xs"
+                    value={formData.warning_ends_at}
+                    onChange={(e) => setFormData({ ...formData, warning_ends_at: e.target.value })}
+                  />
                 </div>
               </div>
 

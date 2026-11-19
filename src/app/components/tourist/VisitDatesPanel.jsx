@@ -4,12 +4,14 @@ import React, { useEffect, useState } from "react";
 import { CalendarDays, Loader2 } from "lucide-react";
 import { supabase } from "@/lib/supabaseClient";
 import { getActiveSession } from "@/lib/authSession";
-import { validateVisitDates } from "@/lib/alertTargeting";
+import { philippineDate, validateVisitDates } from "@/lib/alertTargeting";
+import { laterPhilippineDate } from "@/lib/dateTimeInput";
 import { portalShell } from "@/lib/designSystem";
 
 /** Optional visit dates so the Tourism Office can alert tourists who are in Daet now. */
 export function VisitDatesPanel({ userId }) {
   const [dates, setDates] = useState({ start: "", end: "" });
+  const [originalDates, setOriginalDates] = useState({ start: "", end: "" });
   const [loaded, setLoaded] = useState(false);
   const [available, setAvailable] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -28,7 +30,10 @@ export function VisitDatesPanel({ userId }) {
         if (error) {
           setAvailable(false); // migration 048 not applied yet
         } else {
-          setDates({ start: data?.visit_start_date || "", end: data?.visit_end_date || "" });
+          const start = data?.visit_start_date || "";
+          const end = data?.visit_end_date || "";
+          setDates({ start, end });
+          setOriginalDates({ start, end });
         }
         setLoaded(true);
       });
@@ -38,7 +43,10 @@ export function VisitDatesPanel({ userId }) {
   }, [userId]);
 
   const save = async (next) => {
-    const problem = validateVisitDates(next.start || null, next.end || null);
+    const problem = validateVisitDates(next.start || null, next.end || null, {
+      originalStart: originalDates.start || null,
+      originalEnd: originalDates.end || null,
+    });
     if (problem) {
       setMessage({ type: "error", text: problem });
       return;
@@ -54,7 +62,10 @@ export function VisitDatesPanel({ userId }) {
       });
       const data = await response.json().catch(() => ({}));
       if (!response.ok) throw new Error(data.error || "Could not save your visit dates.");
-      setDates({ start: data.visit_start_date || "", end: data.visit_end_date || "" });
+      const start = data.visit_start_date || "";
+      const end = data.visit_end_date || "";
+      setDates({ start, end });
+      setOriginalDates({ start, end });
       setMessage({ type: "success", text: next.start || next.end ? "Visit dates saved." : "Visit dates cleared." });
     } catch (error) {
       setMessage({ type: "error", text: error.message });
@@ -66,6 +77,9 @@ export function VisitDatesPanel({ userId }) {
   if (loaded && !available) return null;
 
   const label = "block text-[10px] font-black uppercase tracking-widest text-zinc-500 mb-1";
+  const today = philippineDate();
+  const arrivalMin = dates.start === originalDates.start && dates.start && dates.start < today ? dates.start : today;
+  const leaveMin = laterPhilippineDate(dates.start || arrivalMin, arrivalMin);
 
   return (
     <div className="space-y-3">
@@ -76,12 +90,12 @@ export function VisitDatesPanel({ userId }) {
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
         <div>
           <label htmlFor="visit-start" className={label}>Arriving</label>
-          <input id="visit-start" type="date" className={portalShell.input} value={dates.start} disabled={!loaded || saving}
+          <input id="visit-start" type="date" className={portalShell.input} value={dates.start} min={arrivalMin} disabled={!loaded || saving}
             onChange={(e) => setDates((d) => ({ ...d, start: e.target.value }))} />
         </div>
         <div>
           <label htmlFor="visit-end" className={label}>Leaving</label>
-          <input id="visit-end" type="date" className={portalShell.input} value={dates.end} min={dates.start || undefined} disabled={!loaded || saving}
+          <input id="visit-end" type="date" className={portalShell.input} value={dates.end} min={leaveMin || undefined} disabled={!loaded || saving}
             onChange={(e) => setDates((d) => ({ ...d, end: e.target.value }))} />
         </div>
       </div>

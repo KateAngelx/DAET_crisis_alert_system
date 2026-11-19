@@ -147,10 +147,21 @@ export function touristMatchesAlertTarget({ scope, profile, groups = [], alert, 
 }
 
 /** Validate dates a tourist enters in Profile. Returns an error message or null. */
-export function validateVisitDates(start, end, nowMs = Date.now()) {
+export function validateVisitDates(
+  start,
+  end,
+  { originalStart = null, originalEnd = null, nowMs = Date.now() } = {}
+) {
   const pattern = /^\d{4}-\d{2}-\d{2}$/;
   if (!start && !end) return null;
   if ((start && !pattern.test(start)) || (end && !pattern.test(end))) return "Use valid dates.";
+  const today = philippineDate(nowMs);
+  if (start && start < today && start !== originalStart) {
+    return "Arrival can't be in the past.";
+  }
+  if (end && end < today && end !== originalEnd) {
+    return "Your leave date can't be in the past.";
+  }
   if (start && end && end < start) return "The leave date must be on or after the arrival date.";
   const yearMs = 365 * 24 * 60 * 60 * 1000;
   if (end && end < philippineDate(nowMs - yearMs)) return "That visit ended over a year ago.";

@@ -35,7 +35,7 @@ export async function requireGuide(request) {
   if (profileError) {
     return { error: NextResponse.json({ error: "Unable to verify guide access." }, { status: 503 }) };
   }
-  if (profile?.user_type !== "guide" || profile.is_active !== true) {
+  if (profile?.user_type !== "guide" || profile.is_active === false) {
     return { error: NextResponse.json({ error: "Active guide access required" }, { status: 403 }) };
   }
 

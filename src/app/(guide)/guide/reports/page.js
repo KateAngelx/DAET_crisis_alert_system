@@ -80,7 +80,7 @@ export default function GuideReportsPage() {
           />
         }
       >
-        <GuidePanel title="All group reports" subtitle="Tap Report a problem to add one. View opens the full report." bodyClassName={portalLayout.panelBodyStack}>
+        <GuidePanel title="Your visible reports" subtitle="Reports you filed, reports assigned to you, and reports from tourists on your active tours." bodyClassName={portalLayout.panelBodyStack}>
           <StatusRecordList
             rows={guideIncidents.map((inc) => ({
               id: inc.id,

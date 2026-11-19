@@ -37,10 +37,35 @@ function isUrgentTouristNotification(notification) {
   return isCrisisAlertNotification(notification) || isDangerLocationNotification(notification);
 }
 
-function isAdminReportNotification(notification, role) {
+function isAdminActionNotification(notification, role) {
   if (role !== "admin") return false;
   const type = String(notification?.notification_type || "");
-  return type === "incident_submitted" || notification?.related_type === "incident";
+  const related = String(notification?.related_type || "");
+  if (type === "incident_submitted" || related === "incident") return true;
+  if (related === "tourist_guide_assistance" || type.startsWith("tourist_guide_assistance")) return true;
+  if (related === "guide_emergency" || type.startsWith("guide_emergency")) return true;
+  if (related === "missing_person" || type.startsWith("missing_person")) return true;
+  return false;
+}
+
+function adminArrivalEyebrow(notification) {
+  const type = String(notification?.notification_type || "");
+  const related = String(notification?.related_type || "");
+  if (type === "incident_submitted" || related === "incident") return "New incident report";
+  if (related === "tourist_guide_assistance" || type.startsWith("tourist_guide_assistance")) return "New help request";
+  if (related === "guide_emergency" || type.startsWith("guide_emergency")) return "Guide emergency report";
+  if (related === "missing_person" || type.startsWith("missing_person")) return "Missing person report";
+  return "Admin action needed";
+}
+
+function adminArrivalActionLabel(notification) {
+  const type = String(notification?.notification_type || "");
+  const related = String(notification?.related_type || "");
+  if (type === "incident_submitted" || related === "incident") return "Review report";
+  if (related === "tourist_guide_assistance" || type.startsWith("tourist_guide_assistance")) return "Open help requests";
+  if (related === "guide_emergency" || type.startsWith("guide_emergency")) return "Open command center";
+  if (related === "missing_person" || type.startsWith("missing_person")) return "Review case";
+  return "Open";
 }
 
 export function NotificationArrivalListener() {
@@ -85,7 +110,7 @@ export function NotificationArrivalListener() {
 
     const urgent =
       (userRole === "tourist" && isUrgentTouristNotification(latestArrival))
-      || isAdminReportNotification(latestArrival, userRole);
+      || isAdminActionNotification(latestArrival, userRole);
     const pushCanPlaySystemSound =
       urgent
       && pushEnabled
@@ -106,7 +131,7 @@ export function NotificationArrivalListener() {
 
   const isDanger = isDangerLocationNotification(latestArrival);
   const isAlert = isCrisisAlertNotification(latestArrival);
-  const isAdminReport = isAdminReportNotification(latestArrival, user.role);
+  const isAdminAction = isAdminActionNotification(latestArrival, user.role);
   const priority = latestArrival.priority === "CRITICAL" || latestArrival.priority === "HIGH"
     ? latestArrival.priority
     : "NORMAL";
@@ -121,15 +146,15 @@ export function NotificationArrivalListener() {
   const eyebrow =
     level === "Resolved"
       ? "Resolved"
-      : isAdminReport
-        ? "New incident report"
+      : isAdminAction
+        ? adminArrivalEyebrow(latestArrival)
         : isDanger
           ? "Unsafe Route Warning"
           : isAlert
             ? `New ${level || ""} Crisis Alert`.replace(/\s+/g, " ")
             : "New notification";
-  const detailLabel = isAdminReport
-    ? "Review report"
+  const detailLabel = isAdminAction
+    ? adminArrivalActionLabel(latestArrival)
     : isDanger
       ? "View safe route"
       : isAlert

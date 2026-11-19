@@ -111,12 +111,13 @@ export function GuideSidebar() {
 
 export function MobileGuideMenu({ open, onOpen, onClose }) {
   const pathname = usePathname();
+  const { user, logout } = useAuthStore();
 
   return (
     <>
       <button
         onClick={onOpen}
-        className="hidden p-2 hover:bg-zinc-100 rounded-lg transition-colors"
+        className="lg:hidden p-2 hover:bg-zinc-100 rounded-lg transition-colors"
         aria-label="Open menu"
       >
         <Menu size={iconSize.nav} className="text-zinc-600" />
@@ -145,6 +146,33 @@ export function MobileGuideMenu({ open, onOpen, onClose }) {
                   </div>
                 </div>
               ))}
+            </div>
+            <div className="border-t border-zinc-100 p-4 space-y-2">
+              <Link
+                href="/guide/profile"
+                onClick={onClose}
+                className={`flex items-center gap-3 rounded-2xl border px-4 py-3 transition-colors ${
+                  pathname === "/guide/profile" ? "border-purple-200 bg-purple-50" : "border-zinc-100 bg-zinc-50"
+                }`}
+              >
+                <span className="rounded-lg bg-purple-100 p-1.5">
+                  <UserRound size={16} className="text-purple-700" />
+                </span>
+                <span className="min-w-0 flex-1 leading-tight">
+                  <span className="block truncate text-sm font-black text-zinc-900">{user?.name || "My profile"}</span>
+                  <span className="block text-[10px] font-black uppercase tracking-widest text-purple-700">Profile & settings</span>
+                </span>
+              </Link>
+              <button
+                type="button"
+                onClick={() => {
+                  onClose();
+                  logout();
+                }}
+                className="flex w-full items-center justify-center gap-2 rounded-2xl border border-red-100 bg-red-50 px-4 py-3 text-sm font-black text-red-600"
+              >
+                <LogOut size={iconSize.nav} /> Sign out
+              </button>
             </div>
           </div>
         </>
@@ -203,7 +231,6 @@ export function GuideHeader() {
         </div>
       </div>
       <InstalledBottomNav
-        always
         items={GUIDE_BOTTOM_NAV}
         onMore={() => setMenuOpen(true)}
         menuOpen={menuOpen}

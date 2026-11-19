@@ -220,6 +220,7 @@ export function TouristTourMenu({ children }) {
                         fetchAlerts();
                         setDestinationOpen(true);
                       }}
+                      aria-haspopup="dialog"
                     >
                       <MapPin size={14} /> View destination
                     </button>

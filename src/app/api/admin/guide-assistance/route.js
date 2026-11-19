@@ -17,19 +17,32 @@ function getSearchTerm(value) {
 }
 
 async function getGuideAvailability(admin, guideIds) {
-  const [groupsResult, assignmentsResult] = guideIds.length
-    ? await Promise.all([
-        admin.from("tour_groups").select("guide_id").in("guide_id", guideIds).eq("status", "active"),
-        admin.from("guide_assignments").select("guide_id").in("guide_id", guideIds).eq("status", "active"),
-      ])
-    : [{ data: [], error: null }, { data: [], error: null }];
-  if (groupsResult.error) throw groupsResult.error;
-  if (assignmentsResult.error) throw assignmentsResult.error;
+  if (!guideIds.length) return { groups: new Map(), activeTourists: new Map() };
+
+  const { data: activeGroups, error: groupsError } = await admin
+    .from("tour_groups")
+    .select("id, guide_id")
+    .in("guide_id", guideIds)
+    .eq("status", "active");
+  if (groupsError) throw groupsError;
 
   const groups = new Map();
+  for (const row of activeGroups || []) {
+    groups.set(row.guide_id, (groups.get(row.guide_id) || 0) + 1);
+  }
+
+  const { data: assignments, error: assignmentsError } = await admin
+    .from("guide_assignments")
+    .select("guide_id, tour_group:tour_groups(status)")
+    .in("guide_id", guideIds)
+    .eq("status", "active");
+  if (assignmentsError) throw assignmentsError;
+
   const activeTourists = new Map();
-  for (const row of groupsResult.data || []) groups.set(row.guide_id, (groups.get(row.guide_id) || 0) + 1);
-  for (const row of assignmentsResult.data || []) activeTourists.set(row.guide_id, (activeTourists.get(row.guide_id) || 0) + 1);
+  for (const row of assignments || []) {
+    if (row.tour_group?.status !== "active") continue;
+    activeTourists.set(row.guide_id, (activeTourists.get(row.guide_id) || 0) + 1);
+  }
   return { groups, activeTourists };
 }
 
@@ -38,17 +51,24 @@ async function loadGuides(admin) {
     .from("profiles")
     .select("id, full_name, email, phone, is_active")
     .eq("user_type", "guide")
-    .eq("is_active", true)
+    .or("is_active.eq.true,is_active.is.null")
     .order("full_name", { ascending: true });
   if (error) throw error;
 
   const guideIds = (guides || []).map((guide) => guide.id);
   const availability = await getGuideAvailability(admin, guideIds);
-  return (guides || []).map((guide) => ({
+  const enriched = (guides || []).map((guide) => ({
     ...guide,
     activeTourGroups: availability.groups.get(guide.id) || 0,
     activeTourists: availability.activeTourists.get(guide.id) || 0,
+    onDuty: (availability.groups.get(guide.id) || 0) > 0,
   }));
+  enriched.sort((a, b) => {
+    if (a.onDuty !== b.onDuty) return a.onDuty ? -1 : 1;
+    if (a.activeTourists !== b.activeTourists) return b.activeTourists - a.activeTourists;
+    return String(a.full_name || "").localeCompare(String(b.full_name || ""));
+  });
+  return enriched;
 }
 
 export async function GET(request) {
@@ -198,7 +218,7 @@ export async function POST(request) {
       .select("id, full_name, email, phone")
       .eq("id", body.guideId)
       .eq("user_type", "guide")
-      .eq("is_active", true)
+      .or("is_active.eq.true,is_active.is.null")
       .single();
     if (guideError) throw guideError;
 

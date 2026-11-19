@@ -259,7 +259,13 @@ export default function GuideTourGroupsPage() {
               </div>
               <div className="space-y-1">
                 <label className="text-[10px] font-black uppercase text-zinc-400">End Date (optional)</label>
-                <input type="date" min={form.start_date || todayInPhilippines()} value={form.end_date} onChange={(e) => setForm({ ...form, end_date: e.target.value, end_time: e.target.value ? form.end_time : "" })} className="w-full p-3 bg-white border border-zinc-200 rounded-xl text-sm font-bold" />
+                <input
+                  type="date"
+                  min={form.start_date && form.start_date > todayInPhilippines() ? form.start_date : todayInPhilippines()}
+                  value={form.end_date}
+                  onChange={(e) => setForm({ ...form, end_date: e.target.value, end_time: e.target.value ? form.end_time : "" })}
+                  className="w-full p-3 bg-white border border-zinc-200 rounded-xl text-sm font-bold"
+                />
               </div>
               <div className="space-y-1">
                 <label className="text-[10px] font-black uppercase text-zinc-400">End Time (optional)</label>

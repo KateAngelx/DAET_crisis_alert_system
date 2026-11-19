@@ -150,7 +150,7 @@ export default function AdminGuideAssistancePage() {
       {error ? <p role="alert" className="rounded-xl border border-red-200 bg-red-50 p-3 text-sm font-bold text-red-800">{error}</p> : null}
       {feedback ? <p role="status" className="rounded-xl border border-green-200 bg-green-50 p-3 text-sm font-bold text-green-800">{feedback}</p> : null}
       <p className="rounded-xl border border-blue-100 bg-blue-50 p-3 text-xs font-medium leading-relaxed text-blue-900">
-        Guide choices are active profiles with the administrator-managed Guide role. Workload counts show active tour groups and tourist assignments; guide schedules are not tracked here.
+        Guide choices use Guide-role accounts that are not deactivated. &quot;On tour&quot; means they have an active tour group right now. Workload counts are active groups and tourists on those tours.
       </p>
 
       <AdminPanel title="Requests" subtitle={`${totalCount.toLocaleString()} total · page ${page} of ${pageCount}`}>
@@ -280,7 +280,8 @@ export default function AdminGuideAssistancePage() {
                               <option value="">Select an active guide</option>
                               {guides.map((guide) => (
                                 <option key={guide.id} value={guide.id}>
-                                  {guide.full_name || guide.email || "Guide"} · {guide.activeTourGroups} active groups · {guide.activeTourists} active tourists
+                                  {guide.onDuty ? "On tour · " : ""}
+                                  {guide.full_name || guide.email || "Guide"} · {guide.activeTourGroups} active group{guide.activeTourGroups === 1 ? "" : "s"} · {guide.activeTourists} tourist{guide.activeTourists === 1 ? "" : "s"}
                                 </option>
                               ))}
                             </select>

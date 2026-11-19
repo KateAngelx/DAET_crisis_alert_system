@@ -28,6 +28,7 @@ import { AdminFilterBar } from "@/app/components/admin/AdminFilterBar";
 import { AdminTablePanel } from "@/app/components/admin/AdminTablePanel";
 import { AdminActiveOpsCard, routeStatusToCardSeverity } from "@/app/components/admin/AdminActiveOpsCard";
 import { adminShell, iconSize, statGrid, portalLayout } from "@/lib/designSystem";
+import { minDateTimeLocalNoBackdate, nowLocalDateTimeInput } from "@/lib/dateTimeInput";
 import { RouteAdvisoryIcon } from "@/app/components/ui/cardTypeIcons";
 import { AreaHazardsAdminPanel } from "@/app/components/admin/AreaHazardsAdminPanel";
 import { RoadsHazardsSectionFilters } from "@/app/components/admin/RoadsHazardsSectionFilters";
@@ -744,11 +745,23 @@ function RouteAdvisoriesAdminPanel({
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div className="space-y-1">
                     <label className="text-[10px] font-black uppercase text-zinc-400">Active from</label>
-                    <input type="datetime-local" value={formData.warning_starts_at} onChange={(e) => setFormData({ ...formData, warning_starts_at: e.target.value })} className="w-full p-3 bg-zinc-50 border border-zinc-200 rounded-xl text-sm font-bold" />
+                    <input
+                      type="datetime-local"
+                      min={minDateTimeLocalNoBackdate(formData.warning_starts_at)}
+                      value={formData.warning_starts_at}
+                      onChange={(e) => setFormData({ ...formData, warning_starts_at: e.target.value })}
+                      className="w-full p-3 bg-zinc-50 border border-zinc-200 rounded-xl text-sm font-bold"
+                    />
                   </div>
                   <div className="space-y-1">
                     <label className="text-[10px] font-black uppercase text-zinc-400">Expected clear by</label>
-                    <input type="datetime-local" value={formData.warning_ends_at} onChange={(e) => setFormData({ ...formData, warning_ends_at: e.target.value })} className="w-full p-3 bg-zinc-50 border border-zinc-200 rounded-xl text-sm font-bold" />
+                    <input
+                      type="datetime-local"
+                      min={formData.warning_starts_at || nowLocalDateTimeInput()}
+                      value={formData.warning_ends_at}
+                      onChange={(e) => setFormData({ ...formData, warning_ends_at: e.target.value })}
+                      className="w-full p-3 bg-zinc-50 border border-zinc-200 rounded-xl text-sm font-bold"
+                    />
                   </div>
                 </div>
               </FormSection>

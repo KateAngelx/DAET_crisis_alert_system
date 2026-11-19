@@ -8,8 +8,7 @@ import { GuidePageHeader } from "@/app/components/guide/GuidePageHeader";
 import { ReportDetailSkeleton } from "@/app/components/ui/Skeletons";
 import { ErrorState, EmptyState } from "@/app/components/ui/AsyncState";
 import { useAuthStore } from "@/app/store/crisisStore";
-import { useGuideStore } from "@/app/store/guideStore";
-import { useIncidentStore } from "@/app/store/incidentStore";
+import { fetchWithFreshSession } from "@/lib/authSession";
 import { getStatusColor, getSeverityColor } from "@/lib/constants";
 import { ReportGeoLink } from "@/app/components/incidents/ReportGeoLink";
 import { IncidentChat } from "@/app/components/IncidentChat";
@@ -19,34 +18,52 @@ import { scrollToHashOnMount } from "@/lib/scrollToHash";
 export default function GuideReportDetailPage({ params }) {
   const { id } = React.use(params);
   const { user } = useAuthStore();
-  const { getGuideTouristIds } = useGuideStore();
-  const { currentIncident, history, fetchIncidentById, loading, error } = useIncidentStore();
+  const [currentIncident, setCurrentIncident] = useState(null);
+  const [history, setHistory] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
   const [accessDenied, setAccessDenied] = useState(false);
-  const [checkingAccess, setCheckingAccess] = useState(true);
 
   useEffect(() => {
     if (!id || !user?.id) return;
 
+    let cancelled = false;
     const load = async () => {
-      setCheckingAccess(true);
-      const incident = await fetchIncidentById(id);
-      const touristIds = await getGuideTouristIds(user.id);
-      const allowed =
-        incident &&
-        (incident.assigned_to === user.id || touristIds.includes(incident.reporter_id));
-      setAccessDenied(!allowed);
-      setCheckingAccess(false);
+      setLoading(true);
+      setError("");
+      setAccessDenied(false);
+      try {
+        const response = await fetchWithFreshSession(`/api/guide/incidents/${id}`, { cache: "no-store" });
+        const result = await response.json().catch(() => ({}));
+        if (cancelled) return;
+        if (response.status === 403) {
+          setAccessDenied(true);
+          setCurrentIncident(null);
+          setHistory([]);
+          return;
+        }
+        if (!response.ok) throw new Error(result.error || "Could not load report.");
+        setCurrentIncident(result.incident);
+        setHistory(result.history || []);
+      } catch (loadError) {
+        if (!cancelled) setError(loadError.message || "Could not load report.");
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
     };
 
     load();
-  }, [id, user?.id, fetchIncidentById, getGuideTouristIds]);
+    return () => {
+      cancelled = true;
+    };
+  }, [id, user?.id]);
 
   useEffect(() => {
-    if (loading || checkingAccess || accessDenied || !currentIncident) return;
+    if (loading || accessDenied || !currentIncident) return;
     scrollToHashOnMount(typeof window !== "undefined" ? window.location.hash : "");
-  }, [loading, checkingAccess, accessDenied, currentIncident]);
+  }, [loading, accessDenied, currentIncident]);
 
-  if (loading || checkingAccess) {
+  if (loading) {
     return (
       <div className="space-y-6">
         <div className="h-8 w-48 bg-zinc-100 rounded animate-pulse" />
@@ -57,7 +74,23 @@ export default function GuideReportDetailPage({ params }) {
 
   if (error) {
     return (
-      <ErrorState message={error} onRetry={() => fetchIncidentById(id)} title="Could not load report" />
+      <ErrorState
+        message={error}
+        onRetry={() => {
+          setLoading(true);
+          fetchWithFreshSession(`/api/guide/incidents/${id}`, { cache: "no-store" })
+            .then((response) => response.json().then((result) => ({ response, result })))
+            .then(({ response, result }) => {
+              if (!response.ok) throw new Error(result.error || "Could not load report.");
+              setCurrentIncident(result.incident);
+              setHistory(result.history || []);
+              setError("");
+            })
+            .catch((loadError) => setError(loadError.message || "Could not load report."))
+            .finally(() => setLoading(false));
+        }}
+        title="Could not load report"
+      />
     );
   }
 
@@ -150,7 +183,9 @@ export default function GuideReportDetailPage({ params }) {
             {history.map((entry) => (
               <div key={entry.id} className="flex items-start gap-3 pb-3 border-b border-zinc-50 last:border-0">
                 <div className="flex-1">
-                  <p className="text-sm font-bold text-zinc-900">{entry.status}</p>
+                  <p className="text-sm font-bold text-zinc-900">
+                    {entry.old_status ? `${entry.old_status} → ${entry.new_status}` : entry.new_status || entry.action}
+                  </p>
                   {entry.notes && <p className="text-xs text-zinc-500 mt-1">{entry.notes}</p>}
                 </div>
                 <p className="text-[10px] text-zinc-400 shrink-0">

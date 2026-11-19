@@ -3,6 +3,7 @@
 import React, { useEffect, useState } from "react";
 import { Loader2, Search, UserCheck, UserSearch, X } from "lucide-react";
 import { fetchWithFreshSession } from "@/lib/authSession";
+import { nowLocalDateTimeInput } from "@/lib/dateTimeInput";
 
 export const EMPTY_MISSING_PERSON = {
   taggedUserId: null,
@@ -11,13 +12,6 @@ export const EMPTY_MISSING_PERSON = {
   personDescription: "",
   lastSeenAt: "",
 };
-
-/** datetime-local value for "now" in the browser's time zone (max for the last-seen field). */
-function nowLocalInput() {
-  const d = new Date();
-  d.setMinutes(d.getMinutes() - d.getTimezoneOffset());
-  return d.toISOString().slice(0, 16);
-}
 
 const label = "text-[10px] font-black uppercase tracking-widest text-gray-400";
 const input = "w-full mt-1 p-3 bg-gray-50 border border-gray-100 rounded-xl font-bold text-sm";
@@ -136,7 +130,7 @@ export function MissingPersonFields({ value, onChange }) {
         <span className={label}>When were they last seen?</span>
         <input
           type="datetime-local"
-          max={nowLocalInput()}
+          max={nowLocalDateTimeInput()}
           value={value.lastSeenAt}
           onChange={(e) => set({ lastSeenAt: e.target.value })}
           className={input}

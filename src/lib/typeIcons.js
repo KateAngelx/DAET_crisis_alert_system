@@ -85,5 +85,7 @@ export function notificationIconName(notification) {
   if (type === "incident_message") return "MessageSquare";
   if (type.startsWith("tour_group") || related === "tour_group") return "Users";
   if (type.startsWith("incident") || related === "incident" || related === "incident_report") return "ClipboardList";
+  if (type.startsWith("tourist_guide_assistance") || related === "tourist_guide_assistance") return "LifeBuoy";
+  if (type.startsWith("guide_emergency") || related === "guide_emergency") return "ShieldAlert";
   return "Bell";
 }

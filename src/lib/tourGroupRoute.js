@@ -190,6 +190,9 @@ export function tourScheduleError({ start_date, end_date, end_time }, { original
   if (start_date && end_date && end_date < start_date) {
     return "The end date must be on or after the tour date.";
   }
+  if (end_date && end_date < today) {
+    return "The end date can't be in the past.";
+  }
   if (end_time && !end_date) return "Choose an end date before setting an end time.";
   if (!originalStartDate && end_date) {
     const endAt = getTourGroupEndAt({ end_date, end_time });

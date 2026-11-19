@@ -14,11 +14,28 @@ export async function PATCH(request) {
   }
   const start = body.visit_start_date || null;
   const end = body.visit_end_date || null;
-  const problem = validateVisitDates(start, end);
-  if (problem) return NextResponse.json({ error: problem }, { status: 400 });
 
   const admin = getSupabaseAdmin();
   if (!admin) return NextResponse.json({ error: "Profile updates are temporarily unavailable." }, { status: 503 });
+
+  const { data: existing, error: loadError } = await admin
+    .from("profiles")
+    .select("visit_start_date, visit_end_date")
+    .eq("id", auth.user.id)
+    .maybeSingle();
+  if (loadError) {
+    const notMigrated = loadError.code === "42703" || loadError.code === "PGRST204";
+    return NextResponse.json(
+      { error: notMigrated ? "Visit dates are not set up yet." : "Could not load your profile." },
+      { status: notMigrated ? 503 : 500 }
+    );
+  }
+
+  const problem = validateVisitDates(start, end, {
+    originalStart: existing?.visit_start_date || null,
+    originalEnd: existing?.visit_end_date || null,
+  });
+  if (problem) return NextResponse.json({ error: problem }, { status: 400 });
 
   const { data, error } = await admin
     .from("profiles")
