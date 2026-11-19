@@ -1,13 +1,14 @@
 "use client";
 
-import L from "leaflet";
+import { getLeafletIfLoaded } from "@/lib/leafletClient";
 import { getPinColor } from "@/lib/mapPinUtils";
 
 /**
  * Leaflet div icons (browser only). Keep in a client module so SSR never loads leaflet.
  */
 export function createCategoryPinIcon(categoryId, glyphSvg = "") {
-  if (typeof window === "undefined") return undefined;
+  const L = getLeafletIfLoaded();
+  if (!L) return undefined;
 
   const color = getPinColor(categoryId);
   const glyph = glyphSvg

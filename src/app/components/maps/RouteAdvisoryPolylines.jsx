@@ -2,6 +2,7 @@
 
 import React, { useMemo } from "react";
 import dynamic from "next/dynamic";
+import { getLeafletIfLoaded } from "@/lib/leafletClient";
 import { MapViewController } from "@/app/components/maps/MapViewController";
 import { parseRoutePath, getRoutePolylineStyle } from "@/lib/routeGeometryUtils";
 import { ROUTE_POLYLINE_COLORS } from "@/lib/mapPinUtils";
@@ -15,8 +16,8 @@ const START_COLOR = ROUTE_POLYLINE_COLORS.default;
 const END_COLOR = ROUTE_POLYLINE_COLORS.safe;
 
 function createEndpointIcon(label, color) {
-  if (typeof window === "undefined") return undefined;
-  const L = require("leaflet");
+  const L = getLeafletIfLoaded();
+  if (!L) return undefined;
   return L.divIcon({
     className: "route-endpoint-marker",
     html: `<div aria-hidden="true" style="display:flex;flex-direction:column;align-items:center;pointer-events:none">
