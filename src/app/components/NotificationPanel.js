@@ -90,7 +90,7 @@ export function NotificationPanel() {
       {open && (
         <>
           <div className="fixed inset-0 z-40" onClick={() => setOpen(false)} />
-          <div className="absolute right-0 top-full mt-1.5 w-[min(calc(100vw-1.5rem),16.5rem)] bg-white rounded-lg shadow-lg border border-zinc-200 z-50 overflow-hidden">
+          <div className="z-50 overflow-hidden rounded-lg border border-zinc-200 bg-white shadow-lg max-lg:fixed max-lg:inset-x-3 max-lg:top-[calc(4rem+env(safe-area-inset-top,0px))] max-lg:w-auto lg:absolute lg:inset-x-auto lg:right-0 lg:top-full lg:mt-1.5 lg:w-[min(calc(100vw-1.5rem),20rem)]">
             <div className="flex items-center justify-between gap-2 px-2.5 py-1.5 border-b border-zinc-100">
               <h3 className="font-black text-[10px] uppercase tracking-widest text-zinc-800">Notifications</h3>
               <div className="flex items-center gap-1">

@@ -37,6 +37,12 @@ function isUrgentTouristNotification(notification) {
   return isCrisisAlertNotification(notification) || isDangerLocationNotification(notification);
 }
 
+function isAdminReportNotification(notification, role) {
+  if (role !== "admin") return false;
+  const type = String(notification?.notification_type || "");
+  return type === "incident_submitted" || notification?.related_type === "incident";
+}
+
 export function NotificationArrivalListener() {
   const { isAuthenticated, user } = useAuthStore();
   const { latestArrival, dismissLatestArrival, markAsRead } = useNotificationStore();
@@ -77,7 +83,9 @@ export function NotificationArrivalListener() {
     if (playedNotificationIds.has(latestArrival.id)) return;
     playedNotificationIds.add(latestArrival.id);
 
-    const urgent = userRole === "tourist" && isUrgentTouristNotification(latestArrival);
+    const urgent =
+      (userRole === "tourist" && isUrgentTouristNotification(latestArrival))
+      || isAdminReportNotification(latestArrival, userRole);
     const pushCanPlaySystemSound =
       urgent
       && pushEnabled
@@ -98,6 +106,7 @@ export function NotificationArrivalListener() {
 
   const isDanger = isDangerLocationNotification(latestArrival);
   const isAlert = isCrisisAlertNotification(latestArrival);
+  const isAdminReport = isAdminReportNotification(latestArrival, user.role);
   const priority = latestArrival.priority === "CRITICAL" || latestArrival.priority === "HIGH"
     ? latestArrival.priority
     : "NORMAL";
@@ -112,12 +121,20 @@ export function NotificationArrivalListener() {
   const eyebrow =
     level === "Resolved"
       ? "Resolved"
-      : isDanger
-        ? "Unsafe Route Warning"
-        : isAlert
-          ? `New ${level || ""} Crisis Alert`.replace(/\s+/g, " ")
-          : "New notification";
-  const detailLabel = isDanger ? "View safe route" : isAlert ? "View alert details" : "Open notification";
+      : isAdminReport
+        ? "New incident report"
+        : isDanger
+          ? "Unsafe Route Warning"
+          : isAlert
+            ? `New ${level || ""} Crisis Alert`.replace(/\s+/g, " ")
+            : "New notification";
+  const detailLabel = isAdminReport
+    ? "Review report"
+    : isDanger
+      ? "View safe route"
+      : isAlert
+        ? "View alert details"
+        : "Open notification";
 
   if (isCriticalArrival(latestArrival, user.role)) {
     const close = () => {
@@ -193,7 +210,7 @@ export function NotificationArrivalListener() {
       padding={outlinedCard.notificationPadding}
       role="status"
       aria-live="polite"
-      className="fixed top-20 right-4 z-[80] w-[min(100vw-2rem,22rem)] animate-in slide-in-from-top-2"
+      className="fixed z-[80] animate-in slide-in-from-top-2 max-lg:inset-x-3 max-lg:top-[calc(4rem+env(safe-area-inset-top,0px))] max-lg:w-auto lg:left-auto lg:right-4 lg:top-20 lg:w-[min(100vw-2rem,22rem)]"
     >
       <div className="flex items-start gap-3">
         <div className={`p-2.5 rounded-2xl shrink-0 ${tone.icon}`}>

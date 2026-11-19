@@ -47,6 +47,12 @@ export function getNotificationSeverity(notification) {
     return "Low";
   }
 
+  if (type.startsWith("incident") || related === "incident") {
+    const fromTitle = title.match(/^(Critical|High|Medium|Low)\b/);
+    if (fromTitle) return fromTitle[1];
+    return PRIORITY_TO_SEVERITY[notification.priority] || "Medium";
+  }
+
   return null;
 }
 

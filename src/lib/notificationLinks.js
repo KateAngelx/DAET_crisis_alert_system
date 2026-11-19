@@ -61,5 +61,7 @@ export function getNotificationHref(notification, role = "tourist") {
 }
 
 export function getNotificationInboxHref(role) {
-  return role === "guide" ? "/guide/notifications" : "/notifications";
+  if (role === "guide") return "/guide/notifications";
+  if (role === "admin") return "/notifications";
+  return "/notifications";
 }

@@ -62,8 +62,10 @@ export function AuthSessionSync() {
           isAuthenticated: true,
         });
 
-        if (profile?.user_type === "tourist") {
+        if (profile?.user_type) {
           useNotificationStore.getState().fetchNotifications(session.user.id);
+        }
+        if (profile?.user_type === "tourist") {
           // Opt-in only: saves a rounded position if the tourist turned sharing on.
           void reportLocationIfSharing(useAuthStore.getState().user);
         }
