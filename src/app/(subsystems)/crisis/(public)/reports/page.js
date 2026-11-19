@@ -28,6 +28,7 @@ import { PublicListModal } from "@/app/components/shell/PublicListModal";
 import { supabase } from "@/lib/supabaseClient";
 import { formatReportCoordinates, ReportGeoLink } from "@/app/components/incidents/ReportGeoLink";
 import Image from "next/image";
+import { IncidentChat } from "@/app/components/IncidentChat";
 
 const REPORTS_PER_PAGE = 10;
 
@@ -366,6 +367,7 @@ function MyReportsContent() {
         categories={INCIDENT_CATEGORIES.filter((category) => category !== "Tourist Assistance")}
       />
       <PublicListModal
+        size="lg"
         open={Boolean(selectedIncident)}
         onClose={() => setSelectedIncidentId(null)}
         title={selectedIncident?.category || "Report details"}
@@ -466,6 +468,24 @@ function MyReportsContent() {
                 <p className="text-xs font-medium text-zinc-500">No status history available.</p>
               )}
             </section>
+
+            {selectedIncident.id ? (
+              <section>
+                <h3 className="text-[10px] font-black uppercase tracking-widest text-zinc-400 mb-2">Messages</h3>
+                <p className="mb-3 text-xs font-medium text-zinc-500">
+                  Chat with the Tourism Office and your guide here. Updates from status changes appear above; back-and-forth replies live here.
+                </p>
+                <IncidentChat incidentId={selectedIncident.id} />
+                <p className="mt-3 text-center">
+                  <Link
+                    href={`/crisis/reports/${selectedIncident.id}#messages`}
+                    className="text-[10px] font-black uppercase tracking-widest text-blue-600 hover:underline"
+                  >
+                    Open full report page
+                  </Link>
+                </p>
+              </section>
+            ) : null}
           </div>
         ) : null}
       </PublicListModal>

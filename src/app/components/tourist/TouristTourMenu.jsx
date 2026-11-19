@@ -10,6 +10,7 @@ import { GuideAssistanceRequestForm } from "@/app/components/tourist/GuideAssist
 import { formatTourDate, formatTourEndDateTime, formatTourRoute } from "@/lib/tourGroupRoute";
 import { getActiveSession } from "@/lib/authSession";
 import { portalShell } from "@/lib/designSystem";
+import { toast } from "sonner";
 
 const OPEN_REQUEST = new Set(["Pending", "Assigned", "Accepted"]);
 
@@ -284,6 +285,7 @@ export function TouristTourMenu({ children }) {
           onSubmitted={() => {
             setRequestOpen(false);
             loadAssistance();
+            toast.success("Help request sent. The Tourism Office will review and assign a guide when available.");
           }}
         />
       ) : null}

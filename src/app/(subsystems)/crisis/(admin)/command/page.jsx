@@ -8,6 +8,7 @@ import { notifyTouristsOfCrisisAlert } from "@/lib/notificationService";
 import { formatBroadcastNotifyToast } from "@/lib/broadcastNotifyToast";
 import { broadcastConfirmationText, resolvedBroadcastConfirmationText } from "@/lib/broadcastConfirmation";
 import { DEFAULT_NOTIFICATION_AUDIENCE } from "@/lib/notificationAudience";
+import { applyAlertSeverityToForm, broadcastChannelsForAlert, channelsForSave } from "@/lib/crisisBroadcastForm";
 import { getActiveSession } from "@/lib/authSession";
 import { Skeleton } from "@/app/components/ui/Skeleton";
 import { Card } from "@/app/components/ui/Card";
@@ -33,7 +34,8 @@ import {
 import { adminShell, iconSize, statGrid, typography, getSeverityOutline, outlinedCard, portalLayout } from "@/lib/designSystem";
 import { ROLE_INTERFACE } from "@/lib/roleInterfaceCopy";
 import { geocodeLocation } from "@/lib/geocodeLocation";
-import { createCategoryPinIcon, getAlertPinCategory } from "@/lib/mapPinUtils";
+import { getAlertPinCategory } from "@/lib/mapPinUtils";
+import { createCategoryPinIcon } from "@/lib/mapPinIcons";
 import { CrisisHubMap } from "@/app/components/maps/CrisisHubMap";
 import { CharCounterTextarea } from "@/app/components/ui/CharCounterTextarea";
 import { formatCrisisAlertSms } from "@/lib/smsMessageFormat";
@@ -48,11 +50,13 @@ import { AlertCheckinSummary } from "@/app/components/admin/AlertCheckinSummary"
 import { AlertDeliveryReport } from "@/app/components/admin/AlertDeliveryReport";
 import { MissingPersonsPanel } from "@/app/components/admin/MissingPersonsPanel";
 import { AlertTypeIcon } from "@/app/components/ui/cardTypeIcons";
+import { formatRecordTimestamps } from "@/lib/formatEditedAt";
 import {
   ALL_CLEAR_MAX_LENGTH,
   suggestAllClearMessage,
   validateAllClearMessage,
 } from "@/lib/crisisAlertHistory";
+import { isAlertEligibleForReadingPoints } from "@/lib/rewardsEligibility";
 import { useConfirm } from "@/app/components/ui/ConfirmDialogProvider";
 import dynamic from 'next/dynamic';
 import "leaflet/dist/leaflet.css";
@@ -61,12 +65,6 @@ const MapContainer = dynamic(() => import('react-leaflet').then(mod => mod.MapCo
 const TileLayer = dynamic(() => import('react-leaflet').then(mod => mod.TileLayer), { ssr: false });
 const Marker = dynamic(() => import('react-leaflet').then(mod => mod.Marker), { ssr: false });
 const Popup = dynamic(() => import('react-leaflet').then(mod => mod.Popup), { ssr: false });
-
-const isAlertEligibleForReadingPoints = ({ severity, type, title, message }) =>
-  ["low", "medium"].includes(String(severity || "").trim().toLowerCase()) &&
-  ["general", "weather", "health"].includes(String(type || "").trim().toLowerCase()) &&
-  !/(emergency|evacuat|warning|911|117|assistance|assist|urgent|immediate danger|rescue|shelter|call police|call the police|call fire|call ambulance)/i
-    .test(`${title || ""} ${message || ""} ${type || ""}`);
 
 const ChangeMapView = dynamic(() => Promise.resolve(({ center }) => {
   const { useMap: useLeafletMap } = require('react-leaflet');
@@ -247,7 +245,10 @@ export default function CrisisAdminPage() {
     setIsPublishing(true);
 
     try {
-      const result = await addAlert(formData);
+      const result = await addAlert({
+        ...formData,
+        channels: channelsForSave(formData.severity, formData.channels),
+      });
 
       if (result.success) {
         setToastMessage("Alert published. Tourist notifications are processing in the background.");
@@ -303,7 +304,7 @@ export default function CrisisAdminPage() {
       latitude: alert.latitude ?? null,
       longitude: alert.longitude ?? null,
       rewards_eligible: alert.rewards_eligible === true,
-      channels: alert.channels || { email: true, sms: true, app: true },
+      channels: broadcastChannelsForAlert(alert),
       target_scope: alert.target_scope || "all",
       target_radius_km: Number(alert.target_radius_km) || 3,
       checkin_requested: alert.checkin_requested === true
@@ -324,7 +325,7 @@ export default function CrisisAdminPage() {
       rewards_eligible: formData.rewards_eligible,
       latitude: formData.latitude,
       longitude: formData.longitude,
-      channels: formData.channels,
+      channels: channelsForSave(formData.severity, formData.channels),
       target_scope: formData.target_scope,
       target_radius_km: formData.target_radius_km,
       checkin_requested: formData.checkin_requested === true
@@ -438,7 +439,18 @@ export default function CrisisAdminPage() {
         <div className="fixed inset-0 z-[2000] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
           <div className="relative z-[2001] flex max-h-[90vh] w-full max-w-lg flex-col overflow-hidden rounded-3xl border border-gray-200 bg-background shadow-2xl animate-in zoom-in-95 duration-200 dark:border-white/10">
             <div className="flex shrink-0 items-start justify-between gap-4 border-b border-zinc-100 px-8 py-6">
-              <h2 className="text-2xl font-black uppercase tracking-tighter text-zinc-900 dark:text-white leading-none">Alert Summary</h2>
+              <div className="min-w-0">
+                <h2 className="text-2xl font-black uppercase tracking-tighter text-zinc-900 dark:text-white leading-none">Alert Summary</h2>
+                {(() => {
+                  const times = formatRecordTimestamps(selectedAlert);
+                  return (
+                    <p className="mt-2 text-[11px] font-bold text-zinc-500">
+                      {times.published ? <span>{times.published}</span> : null}
+                      {times.edited ? <span className="text-amber-800">{times.published ? " · " : ""}{times.edited}</span> : null}
+                    </p>
+                  );
+                })()}
+              </div>
               <button onClick={() => setIsViewModalOpen(false)} className="p-2 hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded-full transition-colors"><X size={20}/></button>
             </div>
             <div className="min-h-0 flex-1 space-y-5 overflow-y-auto px-8 py-6">
@@ -508,18 +520,28 @@ export default function CrisisAdminPage() {
                 <select aria-label="Alert type" className="w-full p-4 bg-zinc-50 dark:bg-zinc-900 border border-zinc-100 dark:border-white/5 rounded-2xl font-bold text-xs" value={formData.type} onChange={e => setFormData({...formData, type: e.target.value, rewards_eligible: formData.rewards_eligible && isAlertEligibleForReadingPoints({ ...formData, type: e.target.value })})}>
                   <option>Weather</option><option>Health</option><option>Security</option><option>General</option>
                 </select>
-                <select aria-label="Alert severity" className="w-full p-4 bg-zinc-50 dark:bg-zinc-900 border border-zinc-100 dark:border-white/5 rounded-2xl font-bold text-xs" value={formData.severity} onChange={e => setFormData({...formData, severity: e.target.value, rewards_eligible: formData.rewards_eligible && isAlertEligibleForReadingPoints({ ...formData, severity: e.target.value })})}>
+                <select aria-label="Alert severity" className="w-full p-4 bg-zinc-50 dark:bg-zinc-900 border border-zinc-100 dark:border-white/5 rounded-2xl font-bold text-xs" value={formData.severity} onChange={e => setFormData((prev) => applyAlertSeverityToForm(prev, e.target.value, isAlertEligibleForReadingPoints))}>
                   <option>Low</option><option>Medium</option><option>High</option><option>Critical</option>
                 </select>
               </div>
               <input required className="w-full p-4 bg-zinc-50 dark:bg-zinc-900 border border-zinc-100 dark:border-white/5 rounded-2xl font-bold text-sm" value={formData.location} onChange={e => setFormData({...formData, location: e.target.value})} placeholder="Location" />
               <div className="flex gap-2">
                 {['email', 'sms', 'app'].map(ch => (
-                  <button key={ch} type="button" onClick={() => setFormData({...formData, channels: {...formData.channels, [ch]: !formData.channels[ch]}})} className={`flex-1 p-3 rounded-xl border flex items-center justify-center gap-2 transition-all ${formData.channels[ch] ? 'bg-blue-600 text-white' : 'bg-zinc-50 dark:bg-zinc-800 text-zinc-400'}`}>
+                  <button key={ch} type="button" disabled={formData.severity === "Critical"} onClick={() => setFormData({...formData, channels: {...formData.channels, [ch]: !formData.channels[ch]}})} className={`flex-1 p-3 rounded-xl border flex items-center justify-center gap-2 transition-all disabled:cursor-not-allowed disabled:opacity-90 ${formData.channels[ch] ? 'bg-blue-600 text-white' : 'bg-zinc-50 dark:bg-zinc-800 text-zinc-400'}`}>
                     {ch === 'email' ? <Mail size={16}/> : ch === 'sms' ? <MessageSquare size={16}/> : <Smartphone size={16}/>}
+                    {ch === "app" ? <span className="sr-only">App and web push</span> : null}
                   </button>
                 ))}
               </div>
+              {formData.severity === "Critical" ? (
+                <p className="text-[10px] font-bold leading-relaxed text-red-700">
+                  Critical alerts use email, SMS, and in-app (web push for subscribed devices). These office switches stay on.
+                </p>
+              ) : (
+                <p className="text-[10px] font-medium leading-relaxed text-zinc-500">
+                  In-app notices include web push when a tourist or guide has push enabled on their device.
+                </p>
+              )}
               <AlertTargetSelect
                 value={formData.target_scope}
                 onChange={(target_scope) => setFormData({ ...formData, target_scope })}
@@ -626,12 +648,21 @@ export default function CrisisAdminPage() {
                   </div>
                   <div className="grid grid-cols-3 gap-2">
                     {['email', 'sms', 'app'].map(ch => (
-                      <button key={ch} type="button" onClick={() => setFormData({...formData, channels: {...formData.channels, [ch]: !formData.channels[ch]}})} className={`p-3 rounded-xl border flex flex-col items-center gap-1 transition-all ${formData.channels[ch] ? 'bg-blue-600 text-white' : 'bg-zinc-50 text-zinc-400 opacity-60'}`}>
+                      <button key={ch} type="button" disabled={formData.severity === "Critical"} onClick={() => setFormData({...formData, channels: {...formData.channels, [ch]: !formData.channels[ch]}})} className={`p-3 rounded-xl border flex flex-col items-center gap-1 transition-all disabled:cursor-not-allowed disabled:opacity-90 ${formData.channels[ch] ? 'bg-blue-600 text-white' : 'bg-zinc-50 text-zinc-400 opacity-60'}`}>
                         {ch === 'email' ? <Mail size={16}/> : ch === 'sms' ? <MessageSquare size={16}/> : <Smartphone size={16}/>}
-                        <span className="text-[9px] font-black uppercase leading-none">{ch}</span>
+                        <span className="text-[9px] font-black uppercase leading-none">{ch === "app" ? "App + push" : ch}</span>
                       </button>
                     ))}
                   </div>
+                  {formData.severity === "Critical" ? (
+                    <p className="text-[10px] font-bold leading-relaxed text-red-700">
+                      Critical alerts use email, SMS, and in-app (web push for subscribed devices). These office switches stay on.
+                    </p>
+                  ) : (
+                    <p className="text-[10px] font-medium leading-relaxed text-zinc-500">
+                      In-app notices include web push when a tourist or guide has push enabled on their device.
+                    </p>
+                  )}
                   <AlertTargetSelect
                     value={formData.target_scope}
                     onChange={(target_scope) => setFormData({ ...formData, target_scope })}
@@ -667,7 +698,7 @@ export default function CrisisAdminPage() {
                   </div>
                   <div className="grid grid-cols-2 gap-4">
                     <select className="w-full p-4 bg-zinc-50 border border-gray-100 rounded-xl font-bold text-xs outline-none focus:ring-2 focus:ring-blue-500" value={formData.type} onChange={e => setFormData({...formData, type: e.target.value, rewards_eligible: formData.rewards_eligible && isAlertEligibleForReadingPoints({ ...formData, type: e.target.value })})}><option>Weather</option><option>Health</option><option>Security</option><option>General</option></select>
-                    <select className="w-full p-4 bg-zinc-50 border border-gray-100 rounded-xl font-bold text-xs outline-none focus:ring-2 focus:ring-blue-500" value={formData.severity} onChange={e => setFormData({...formData, severity: e.target.value, rewards_eligible: formData.rewards_eligible && isAlertEligibleForReadingPoints({ ...formData, severity: e.target.value })})}><option>Low</option><option>Medium</option><option>High</option><option>Critical</option></select>
+                    <select className="w-full p-4 bg-zinc-50 border border-gray-100 rounded-xl font-bold text-xs outline-none focus:ring-2 focus:ring-blue-500" value={formData.severity} onChange={e => setFormData((prev) => applyAlertSeverityToForm(prev, e.target.value, isAlertEligibleForReadingPoints))}><option>Low</option><option>Medium</option><option>High</option><option>Critical</option></select>
                   </div>
                   <label className={`flex items-start gap-3 p-4 rounded-xl border ${
                     formData.rewards_eligible ? "bg-blue-50 border-blue-200" : "bg-zinc-50 border-zinc-200"
@@ -831,7 +862,10 @@ export default function CrisisAdminPage() {
                             : alert.title || alert.location || "—",
                           type: alert.type || "General",
                           typeIcon: <AlertTypeIcon type={alert.type} size={12} />,
-                          when: alert.created_at ? new Date(alert.created_at).toLocaleString() : "",
+                          when: (() => {
+                            const times = formatRecordTimestamps(alert);
+                            return times.edited || times.published || (alert.created_at ? new Date(alert.created_at).toLocaleString() : "");
+                          })(),
                           actions: [
                             { label: "View", onClick: () => handleViewClick(alert) },
                             { label: "Edit", onClick: () => handleEditClick(alert) },
@@ -916,9 +950,10 @@ export default function CrisisAdminPage() {
                           statusClass: alert.status === "Active" ? "bg-red-100 text-red-700" : "bg-green-100 text-green-700",
                           place: alert.location || alert.title,
                           type: [alert.severity, alert.type || "General", channels.join(", ")].filter(Boolean).join(" · "),
-                          when: alert.published_at || alert.created_at
-                            ? new Date(alert.published_at || alert.created_at).toLocaleString()
-                            : "",
+                          when: (() => {
+                            const times = formatRecordTimestamps(alert);
+                            return times.edited || times.published || times.resolved || (alert.created_at ? new Date(alert.created_at).toLocaleString() : "");
+                          })(),
                           actions: [
                             { label: "View", onClick: () => handleViewClick(alert) },
                             { label: "Edit", onClick: () => handleEditClick(alert) },

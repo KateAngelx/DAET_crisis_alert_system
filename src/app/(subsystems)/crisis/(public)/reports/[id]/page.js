@@ -18,6 +18,7 @@ import { ErrorState, EmptyState } from "@/app/components/ui/AsyncState";
 import { ReportGeoLink } from "@/app/components/incidents/ReportGeoLink";
 import { IncidentChat } from "@/app/components/IncidentChat";
 import Image from "next/image";
+import { scrollToHashOnMount } from "@/lib/scrollToHash";
 
 export default function ReportDetailPage({ params }) {
   const { id } = React.use(params);
@@ -27,6 +28,11 @@ export default function ReportDetailPage({ params }) {
   useEffect(() => {
     if (id) fetchIncidentById(id);
   }, [id, fetchIncidentById]);
+
+  useEffect(() => {
+    if (typeof window === "undefined" || loading) return;
+    scrollToHashOnMount(window.location.hash);
+  }, [id, loading, currentIncident?.id]);
 
   if (!isAuthenticated) {
     return (

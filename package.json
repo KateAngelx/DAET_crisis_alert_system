@@ -1,6 +1,7 @@
 {
   "name": "daet-crisis-alert-system",
   "version": "3.2.0",
+  "type": "module",
   "private": true,
   "scripts": {
     "dev": "next dev --webpack",
@@ -8,6 +9,7 @@
     "start": "next start",
     "lint": "eslint",
     "test": "node --import ./scripts/register-alias.mjs --test scripts/*.test.mjs"
+    
   },
   "dependencies": {
     "@ducanh2912/next-pwa": "^10.2.9",

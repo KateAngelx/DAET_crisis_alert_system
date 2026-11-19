@@ -47,6 +47,8 @@ import { useConfirm } from "@/app/components/ui/ConfirmDialogProvider";
 import dynamic from "next/dynamic";
 import "leaflet/dist/leaflet.css";
 import { AdminFormModal } from "@/app/components/admin/AdminFormModal";
+import { MapLegend } from "@/app/components/maps/MapLegend";
+import { ADMIN_ROADS_MAP_LEGEND } from "@/lib/mapPinUtils";
 
 const MapContainer = dynamic(() => import("react-leaflet").then((m) => m.MapContainer), { ssr: false });
 const TileLayer = dynamic(() => import("react-leaflet").then((m) => m.TileLayer), { ssr: false });
@@ -530,12 +532,15 @@ function RouteAdvisoriesAdminPanel({
           bodyClassName={portalLayout.mapColumnBody}
         >
           {mounted && !showModal ? (
-            <div className={portalLayout.mapColumnFill}>
+            <div className={`leaflet-map-shell relative ${portalLayout.mapColumnFill}`}>
               <MapContainer center={mapCenter} zoom={13} style={{ height: "100%", width: "100%" }}>
                 <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" attribution="&copy; OpenStreetMap" />
                 <MapResizeFix />
                 <RouteAdvisoryPolylines advisories={filtered.filter((advisory) => advisory.status === "Active")} fitBounds />
               </MapContainer>
+              <div className="absolute bottom-3 left-3 z-[3]">
+                <MapLegend compact items={ADMIN_ROADS_MAP_LEGEND} title="Route lines" />
+              </div>
             </div>
           ) : (
             <div className={`${portalLayout.mapColumnFill} bg-zinc-100 animate-pulse flex items-center justify-center`}>

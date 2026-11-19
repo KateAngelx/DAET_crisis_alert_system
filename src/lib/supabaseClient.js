@@ -42,6 +42,8 @@ function getClient() {
       autoRefreshToken: true,
       persistSession: true,
       detectSessionInUrl: true,
+      // React Strict Mode can start getSession twice; the default navigator lock may time out in dev.
+      lock: async (_name, _acquireTimeout, fn) => fn(),
     },
   });
   globalThis[CLIENT_KEY] = client;

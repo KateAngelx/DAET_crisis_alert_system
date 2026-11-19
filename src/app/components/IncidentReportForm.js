@@ -35,7 +35,9 @@ export function IncidentReportForm({
   }));
   const [files, setFiles] = useState([]);
   const [missing, setMissing] = useState(EMPTY_MISSING_PERSON);
+  const [assistanceContactName, setAssistanceContactName] = useState("");
   const isMissing = isMissingPersonCategory(form.category);
+  const isTouristAssistance = form.category === "Tourist Assistance";
   const [error, setError] = useState(null);
   const [locating, setLocating] = useState(false);
   const [locationMessage, setLocationMessage] = useState("");
@@ -65,9 +67,20 @@ export function IncidentReportForm({
         return;
       }
       missingDetails = check.value;
-    } else if (!form.description.trim() || !form.location.trim()) {
-      setError("Please provide a description and location.");
+    } else if (!form.location.trim()) {
+      setError("Please provide a location.");
       return;
+    } else if (!form.description.trim() && !(isTouristAssistance && assistanceContactName.trim())) {
+      setError(isTouristAssistance
+        ? "Add a short description or the tourist or contact name."
+        : "Please provide a description and location.");
+      return;
+    }
+
+    let description = form.description.trim();
+    if (isTouristAssistance && assistanceContactName.trim()) {
+      const lead = `Primary contact: ${assistanceContactName.trim()}`;
+      description = description ? `${lead}\n\n${description}` : lead;
     }
 
     const reportForm = missingDetails
@@ -76,7 +89,7 @@ export function IncidentReportForm({
           severity: "Critical",
           description: composeMissingDescription({ ...missingDetails, details: form.description.trim() }),
         }
-      : form;
+      : { ...form, description: description || form.description };
 
     const result = await submitReport(
       { ...reportForm, reporterId: user.id, reporterRole: user.role },
@@ -102,6 +115,7 @@ export function IncidentReportForm({
       setForm({ ...INITIAL_FORM, category: categoryOverride || INITIAL_FORM.category });
       setFiles([]);
       setMissing(EMPTY_MISSING_PERSON);
+      setAssistanceContactName("");
       setLocationMessage("");
       onSuccess?.(result.incident, warnings);
     } else {
@@ -192,6 +206,25 @@ export function IncidentReportForm({
         </div>
 
         {isMissing ? <MissingPersonFields value={missing} onChange={setMissing} /> : null}
+
+        {isTouristAssistance ? (
+          <p className="rounded-xl border border-purple-100 bg-purple-50 px-3 py-2 text-xs font-medium text-purple-950">
+            To coordinate a local guide, use <strong>Ask a guide for help</strong> on your Home page. Use this form when the Tourism Office should track it as a report.
+          </p>
+        ) : null}
+        {isTouristAssistance ? (
+          <label className="block text-sm font-bold text-zinc-800">
+            Tourist or contact name <span className="font-medium text-zinc-500">(recommended)</span>
+            <input
+              type="text"
+              maxLength={200}
+              value={assistanceContactName}
+              onChange={(e) => setAssistanceContactName(e.target.value)}
+              placeholder="Who needs assistance or who we should ask for"
+              className="mt-1.5 w-full rounded-xl border border-zinc-200 p-3 font-medium"
+            />
+          </label>
+        ) : null}
 
         <div className={isMissing ? "hidden" : ""}>
           <label className="text-[10px] font-black uppercase tracking-widest text-gray-400">Severity / Priority</label>

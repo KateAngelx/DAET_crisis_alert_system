@@ -3,7 +3,7 @@
 import React, { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { FileWarning, Phone, Radio, Siren, X } from "lucide-react";
+import { ChevronLeft, ChevronRight, FileWarning, Phone, Radio, Siren, X } from "lucide-react";
 import { useAuthStore } from "@/app/store/crisisStore";
 import { ReportIncidentModal } from "@/app/components/ReportIncidentModal";
 import { allEmergencyHotlines } from "@/lib/siteInfo";
@@ -11,11 +11,12 @@ import { FEATURE_NAMES } from "@/lib/featureNames";
 import { useHydrated } from "@/lib/useHydrated";
 
 const HIDDEN_ON = ["/login", "/register", "/forgot-password", "/reset-password"];
-
 /**
  * Rule 5 for every role: emergency help is one tap away on every screen.
  * Opens the hotlines plus the role's own next step:
  * guest → report form page, tourist/guide → report form here, admin → Send alert.
+ *
+ * Launcher defaults to icon-only; chevrons expand or collapse the label.
  */
 export function EmergencyButton() {
   const pathname = usePathname();
@@ -24,8 +25,8 @@ export function EmergencyButton() {
   const [open, setOpen] = useState(false);
   const [reportOpen, setReportOpen] = useState(false);
   const [sentRef, setSentRef] = useState(null);
+  const [launcherCompact, setLauncherCompact] = useState(true);
 
-  // Close after moving to another page.
   const [openedOn, setOpenedOn] = useState(pathname);
   if (openedOn !== pathname) {
     setOpenedOn(pathname);
@@ -94,14 +95,25 @@ export function EmergencyButton() {
               </p>
               <p className="text-xs font-medium text-zinc-500">If someone is in danger, call first.</p>
             </div>
-            <button
-              type="button"
-              onClick={() => setOpen(false)}
-              className="rounded-full p-1.5 text-zinc-500 hover:bg-zinc-100"
-              aria-label="Close emergency help"
-            >
-              <X size={18} />
-            </button>
+            <div className="flex shrink-0 items-center gap-0.5">
+              <button
+                type="button"
+                onClick={() => setOpen(false)}
+                className="rounded-full p-1.5 text-zinc-500 hover:bg-zinc-100"
+                aria-label="Collapse emergency help"
+                title="Collapse"
+              >
+                <ChevronRight size={18} aria-hidden />
+              </button>
+              <button
+                type="button"
+                onClick={() => setOpen(false)}
+                className="rounded-full p-1.5 text-zinc-500 hover:bg-zinc-100"
+                aria-label="Close emergency help"
+              >
+                <X size={18} />
+              </button>
+            </div>
           </div>
 
           <a
@@ -129,17 +141,55 @@ export function EmergencyButton() {
             <p className="mt-2 text-xs font-bold text-green-700">Report sent: {sentRef}</p>
           ) : null}
         </div>
-      ) : null}
-
-      <button
-        type="button"
-        onClick={() => setOpen((value) => !value)}
-        aria-expanded={open}
-        aria-label={open ? "Close emergency help" : "Emergency help: hotlines and report"}
-        className={`fixed right-3 ${open ? "hidden" : ""} ${bottom} z-[85] flex items-center gap-2 rounded-full bg-red-600 px-4 py-3 text-xs font-black uppercase tracking-widest text-white shadow-xl ring-4 ring-red-200 hover:bg-red-700`}
-      >
-        <Siren size={18} /> Emergency
-      </button>
+      ) : (
+        <div
+          className={`fixed right-3 ${bottom} z-[85] flex items-stretch overflow-hidden rounded-full shadow-lg ring-2 ring-red-200/80`}
+        >
+          {launcherCompact ? (
+            <>
+              <button
+                type="button"
+                onClick={() => setLauncherCompact(false)}
+                className="flex items-center bg-red-50 px-2 text-red-700 hover:bg-red-100 border-r border-red-200"
+                aria-label="Show Emergency label"
+                title="Expand"
+              >
+                <ChevronLeft size={18} strokeWidth={2.5} aria-hidden />
+              </button>
+              <button
+                type="button"
+                onClick={() => setOpen(true)}
+                aria-expanded={false}
+                className="flex h-11 w-11 items-center justify-center bg-red-600 text-white hover:bg-red-700"
+                aria-label="Emergency help: hotlines and report"
+              >
+                <Siren size={20} aria-hidden />
+              </button>
+            </>
+          ) : (
+            <>
+              <button
+                type="button"
+                onClick={() => setOpen(true)}
+                aria-expanded={false}
+                className="flex items-center gap-2 bg-red-600 py-2.5 pl-4 pr-3 text-[10px] font-black uppercase tracking-widest text-white hover:bg-red-700"
+                aria-label="Emergency help: hotlines and report"
+              >
+                <Siren size={17} aria-hidden /> Emergency
+              </button>
+              <button
+                type="button"
+                onClick={() => setLauncherCompact(true)}
+                className="flex items-center border-l border-red-500 bg-red-700 px-2 text-white hover:bg-red-800"
+                aria-label="Emergency icon only"
+                title="Minimize"
+              >
+                <ChevronRight size={18} strokeWidth={2.5} aria-hidden />
+              </button>
+            </>
+          )}
+        </div>
+      )}
 
       <ReportIncidentModal
         open={reportOpen}

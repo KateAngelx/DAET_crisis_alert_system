@@ -26,7 +26,7 @@ export function TouristHomeCards({ alerts = [], loading = false }) {
   return (
     <section className="border-b border-zinc-100 bg-white py-6 md:py-10">
       <div className="mx-auto grid max-w-7xl gap-6 px-3 sm:px-6 lg:grid-cols-2">
-        <div>
+        <div id="guide-assistance" className="scroll-mt-24">
           <h2 className={typography.pageTitle}>My tour today</h2>
           <TouristTourMenu>
             {({ visible, openTour }) => (

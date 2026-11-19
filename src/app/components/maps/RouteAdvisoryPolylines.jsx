@@ -4,15 +4,15 @@ import React, { useMemo } from "react";
 import dynamic from "next/dynamic";
 import { MapViewController } from "@/app/components/maps/MapViewController";
 import { parseRoutePath, getRoutePolylineStyle } from "@/lib/routeGeometryUtils";
+import { ROUTE_POLYLINE_COLORS } from "@/lib/mapPinUtils";
 import { useResolvedRouteAdvisories } from "@/lib/useResolvedRouteAdvisories";
 
 const Polyline = dynamic(() => import("react-leaflet").then((m) => m.Polyline), { ssr: false });
-const CircleMarker = dynamic(() => import("react-leaflet").then((m) => m.CircleMarker), { ssr: false });
 const Marker = dynamic(() => import("react-leaflet").then((m) => m.Marker), { ssr: false });
 const Popup = dynamic(() => import("react-leaflet").then((m) => m.Popup), { ssr: false });
 
-const START_COLOR = "#2563eb";
-const END_COLOR = "#16a34a";
+const START_COLOR = ROUTE_POLYLINE_COLORS.default;
+const END_COLOR = ROUTE_POLYLINE_COLORS.safe;
 
 function createEndpointIcon(label, color) {
   if (typeof window === "undefined") return undefined;
@@ -112,26 +112,6 @@ export function RouteAdvisoryPolylines({
                   </div>
                 </Popup>
               </Marker>
-              <CircleMarker
-                center={positions[0]}
-                radius={highlighted ? 6 : 4}
-                pathOptions={{
-                  color: START_COLOR,
-                  fillColor: START_COLOR,
-                  fillOpacity: 0.15,
-                  weight: 1,
-                }}
-              />
-              <CircleMarker
-                center={positions[positions.length - 1]}
-                radius={highlighted ? 6 : 4}
-                pathOptions={{
-                  color: END_COLOR,
-                  fillColor: END_COLOR,
-                  fillOpacity: 0.15,
-                  weight: 1,
-                }}
-              />
             </>
           )}
         </React.Fragment>

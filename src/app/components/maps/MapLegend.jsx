@@ -4,6 +4,26 @@ import React, { useState } from "react";
 import { ChevronDown, ChevronUp } from "lucide-react";
 import { MAP_PIN_LEGEND } from "@/lib/mapPinUtils";
 
+function LegendLine({ color, lineStyle = "solid", compact }) {
+  const weight = compact ? 3 : 4;
+  return (
+    <span
+      className="shrink-0 inline-block"
+      style={{
+        width: compact ? 28 : 36,
+        height: weight,
+        backgroundColor: lineStyle === "solid" ? color : "transparent",
+        backgroundImage:
+          lineStyle === "dashed"
+            ? `repeating-linear-gradient(90deg, ${color} 0 ${weight * 2}px, transparent ${weight * 2}px ${weight * 3}px)`
+            : undefined,
+        borderRadius: 1,
+      }}
+      aria-hidden="true"
+    />
+  );
+}
+
 export function MapLegend({ className = "", compact = false, items = MAP_PIN_LEGEND, title = "Map Legend" }) {
   const [expanded, setExpanded] = useState(true);
 
@@ -25,30 +45,23 @@ export function MapLegend({ className = "", compact = false, items = MAP_PIN_LEG
         <ul className={`${compact ? "mt-1 max-h-[35dvh] space-y-1.5 overflow-y-auto" : "mt-2 space-y-2"}`}>
           {items.map((item) => (
             <li key={item.id} className="flex min-w-0 items-center gap-2">
-            {item.kind === "line" ? (
-              <span
-                className="shrink-0 rounded-full"
-                style={{
-                  background: item.color,
-                  width: compact ? 14 : 16,
-                  height: compact ? 3 : 4,
-                }}
-              />
-            ) : (
-              <span
-                className="shrink-0 rounded-full border-2 border-white shadow-sm"
-                style={{
-                  background: item.color,
-                  width: compact ? 10 : 12,
-                  height: compact ? 10 : 12,
-                }}
-              />
-            )}
-            <span className={`${compact ? "text-[9px]" : "text-[10px]"} min-w-0 break-words font-bold text-zinc-700 dark:text-zinc-200 uppercase tracking-wide`}>
-              {item.label}
-            </span>
-          </li>
-        ))}
+              {item.kind === "line" ? (
+                <LegendLine color={item.color} lineStyle={item.lineStyle || "solid"} compact={compact} />
+              ) : (
+                <span
+                  className="shrink-0 rounded-full border-2 border-white shadow-sm"
+                  style={{
+                    background: item.color,
+                    width: compact ? 10 : 12,
+                    height: compact ? 10 : 12,
+                  }}
+                />
+              )}
+              <span className={`${compact ? "text-[9px]" : "text-[10px]"} min-w-0 break-words font-bold text-zinc-700 dark:text-zinc-200 uppercase tracking-wide`}>
+                {item.label}
+              </span>
+            </li>
+          ))}
         </ul>
       ) : null}
     </div>

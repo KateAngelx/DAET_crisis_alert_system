@@ -3,12 +3,14 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import dynamic from "next/dynamic";
 import { geocodeAlerts, geocodeLocation, parseMapCoordinates } from "@/lib/geocodeLocation";
-import { createCategoryPinIcon, createSafeRoutePinIcon, getDangerPinCategory } from "@/lib/mapPinUtils";
+import { getDangerPinCategory, ROUTE_POLYLINE_COLORS } from "@/lib/mapPinUtils";
+import { createCategoryPinIcon, createSafeRoutePinIcon } from "@/lib/mapPinIcons";
 import { hazardPinGlyph } from "./typePinGlyph";
 import { MapViewController } from "@/app/components/maps/MapViewController";
 
 const Marker = dynamic(() => import("react-leaflet").then((mod) => mod.Marker), { ssr: false });
 const Popup = dynamic(() => import("react-leaflet").then((mod) => mod.Popup), { ssr: false });
+const Polyline = dynamic(() => import("react-leaflet").then((mod) => mod.Polyline), { ssr: false });
 
 export function DangerousLocationMapMarkers({ warnings, renderPopup, showSafeRoutePins = true, fitBounds = false }) {
   const [geocoded, setGeocoded] = useState({ key: "", coords: {} });
@@ -70,8 +72,12 @@ export function DangerousLocationMapMarkers({ warnings, renderPopup, showSafeRou
   const safeCoordsById = safeGeocoded.key === warningKey ? safeGeocoded.coords : {};
   const pinPositions = fitBounds
     ? warnings
-        .map((warning) => parseMapCoordinates(warning.latitude, warning.longitude) ?? coordsById[warning.id])
-        .filter(Boolean)
+        .flatMap((warning) => {
+          const danger =
+            parseMapCoordinates(warning.latitude, warning.longitude) ?? coordsById[warning.id];
+          const safe = safeCoordsById[`${warning.id}-safe`];
+          return [danger, safe].filter(Boolean);
+        })
     : [];
 
   return (
@@ -103,9 +109,23 @@ export function DangerousLocationMapMarkers({ warnings, renderPopup, showSafeRou
 
       {showSafeRoutePins &&
         warnings.map((warning) => {
+          const danger =
+            parseMapCoordinates(warning.latitude, warning.longitude) ?? coordsById[warning.id];
           const position = safeCoordsById[`${warning.id}-safe`];
           if (!position) return null;
           return (
+            <React.Fragment key={`${warning.id}-safe-fragment`}>
+              {danger ? (
+                <Polyline
+                  positions={[danger, position]}
+                  pathOptions={{
+                    color: ROUTE_POLYLINE_COLORS.hazardAlt,
+                    weight: 4,
+                    dashArray: "8 6",
+                    opacity: 0.85,
+                  }}
+                />
+              ) : null}
             <Marker
               key={`${warning.id}-safe-route`}
               position={position}
@@ -119,6 +139,7 @@ export function DangerousLocationMapMarkers({ warnings, renderPopup, showSafeRou
                 </div>
               </Popup>
             </Marker>
+            </React.Fragment>
           );
         })}
     </>

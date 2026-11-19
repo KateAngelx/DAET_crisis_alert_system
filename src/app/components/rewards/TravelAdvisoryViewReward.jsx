@@ -5,6 +5,7 @@ import { CheckCircle2, Loader2, RefreshCw } from "lucide-react";
 import { useAuthStore } from "@/app/store/crisisStore";
 import { getActiveSession } from "@/lib/authSession";
 import { notifyRewardEarned } from "@/lib/rewardFeedback";
+import { travelRewardStatusMessage } from "@/lib/rewardStatusMessages";
 
 export function TravelAdvisoryViewReward({ advisoryId, activityType, viewed }) {
   const { user } = useAuthStore();
@@ -83,20 +84,11 @@ export function TravelAdvisoryViewReward({ advisoryId, activityType, viewed }) {
     );
   }
 
-  if (result?.status === "rewards_disabled" || result?.status === "activity_disabled") {
+  const statusMessage = result?.status ? travelRewardStatusMessage(result.status) : null;
+  if (statusMessage && result.status !== "awarded" && result.status !== "already_awarded") {
     return (
       <p className="text-center text-xs font-medium text-zinc-500" role="status">
-        {result.status === "rewards_disabled"
-          ? "The Rewards Program is currently turned off."
-          : "Points for viewing this information are currently turned off."}
-      </p>
-    );
-  }
-
-  if (result?.status === "advisory_not_found") {
-    return (
-      <p className="text-center text-xs font-medium text-zinc-500" role="status">
-        This information is not eligible for points.
+        {statusMessage}
       </p>
     );
   }

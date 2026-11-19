@@ -14,6 +14,7 @@ import { getStatusColor, getSeverityColor } from "@/lib/constants";
 import { ReportGeoLink } from "@/app/components/incidents/ReportGeoLink";
 import { IncidentChat } from "@/app/components/IncidentChat";
 import Image from "next/image";
+import { scrollToHashOnMount } from "@/lib/scrollToHash";
 
 export default function GuideReportDetailPage({ params }) {
   const { id } = React.use(params);
@@ -39,6 +40,11 @@ export default function GuideReportDetailPage({ params }) {
 
     load();
   }, [id, user?.id, fetchIncidentById, getGuideTouristIds]);
+
+  useEffect(() => {
+    if (loading || checkingAccess || accessDenied || !currentIncident) return;
+    scrollToHashOnMount(typeof window !== "undefined" ? window.location.hash : "");
+  }, [loading, checkingAccess, accessDenied, currentIncident]);
 
   if (loading || checkingAccess) {
     return (

@@ -1,9 +1,10 @@
 "use client";
 
 import React, { useCallback, useEffect, useState } from "react";
-import { ChevronDown, ChevronUp, Loader2, Send } from "lucide-react";
+import { Loader2, Send } from "lucide-react";
 import { fetchWithFreshSession } from "@/lib/authSession";
 import { CHECKIN_STATUS_TEXT } from "@/lib/alertCheckins";
+import { AlertNamesListModal } from "@/app/components/admin/AlertNamesListModal";
 
 const STATUS_TEXT = { sent: "Sent", delivered: "Delivered", pending: "Sending…", failed: "Failed" };
 const STATUS_CLASS = {
@@ -25,7 +26,7 @@ function Tile({ value, label, tone = "text-zinc-900" }) {
 /** Delivery report for one alert, with "Resend SMS to non-responders". */
 export function AlertDeliveryReport({ alertId }) {
   const [data, setData] = useState(null);
-  const [open, setOpen] = useState(false);
+  const [namesOpen, setNamesOpen] = useState(false);
   const [sending, setSending] = useState(false);
   const [message, setMessage] = useState(null);
 
@@ -72,13 +73,18 @@ export function AlertDeliveryReport({ alertId }) {
   if (data.error) return <p className="text-xs font-bold text-red-700">{data.error}</p>;
 
   const s = data.summary;
+  const tourists = (data.rows || []).filter((r) => r.role === "tourist");
+  const guides = (data.rows || []).filter((r) => r.role === "guide");
   const isActive = data.alert?.status === "Active";
   const waitMin = Math.ceil((data.resendAvailableInMs || 0) / 60000);
   const label = data.alert?.checkin_requested ? "haven't answered" : "haven't opened it";
 
   return (
     <section className="space-y-3 rounded-2xl border border-zinc-200 bg-zinc-50 p-4" aria-label="Delivery report">
-      <p className="text-[10px] font-black uppercase tracking-widest text-zinc-600">Delivery report · {s.recipients} people</p>
+      <p className="text-[10px] font-black uppercase tracking-widest text-zinc-600">
+        Delivery report · {tourists.length} tourist{tourists.length === 1 ? "" : "s"}
+        {guides.length ? ` · ${guides.length} guide${guides.length === 1 ? "" : "s"}` : ""}
+      </p>
       <div className="grid grid-cols-3 gap-2 sm:grid-cols-6">
         <Tile value={s.opened} label="Opened" tone="text-green-700" />
         <Tile value={s.smsSent} label="SMS sent" />
@@ -111,11 +117,23 @@ export function AlertDeliveryReport({ alertId }) {
         <p role={message.ok ? "status" : "alert"} className={`text-xs font-bold ${message.ok ? "text-green-700" : "text-red-700"}`}>{message.text}</p>
       ) : null}
 
-      <button type="button" onClick={() => setOpen((v) => !v)} className="flex items-center gap-1 text-[10px] font-black uppercase text-zinc-600">
-        {open ? <ChevronUp size={12} /> : <ChevronDown size={12} />} {open ? "Hide" : "Show"} each person
-      </button>
-      {open ? (
-        <ul className="max-h-64 divide-y divide-zinc-100 overflow-y-auto rounded-xl border border-zinc-200 bg-white text-xs">
+      {data.rows.length > 0 ? (
+        <button
+          type="button"
+          onClick={() => setNamesOpen(true)}
+          className="text-[10px] font-black uppercase text-blue-700 hover:underline"
+        >
+          View names ({data.rows.length})
+        </button>
+      ) : null}
+
+      <AlertNamesListModal
+        open={namesOpen}
+        onClose={() => setNamesOpen(false)}
+        title="Delivery report"
+        subtitle={`${data.rows.length} recipient${data.rows.length === 1 ? "" : "s"}`}
+      >
+        <ul className="divide-y divide-zinc-100 text-xs">
           {data.rows.map((r) => (
             <li key={r.userId} className="flex flex-wrap items-center justify-between gap-2 px-3 py-2">
               <span className="min-w-0">
@@ -133,7 +151,7 @@ export function AlertDeliveryReport({ alertId }) {
             </li>
           ))}
         </ul>
-      ) : null}
+      </AlertNamesListModal>
     </section>
   );
 }

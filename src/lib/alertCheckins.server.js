@@ -89,14 +89,45 @@ export async function notifyUrgentCheckin(admin, { alert, tourist, status, note,
 
 /** How many tourists were sent this alert (its in-app notices), for "no reply yet". */
 export async function countTouristsReached(admin, alertId) {
+  const audience = await countAlertAudienceByRole(admin, alertId);
+  return audience.tourist.reached;
+}
+
+/** Tourists and guides who received the in-app crisis notice (admins excluded). */
+export async function countAlertAudienceByRole(admin, alertId) {
   const { data } = await admin
     .from("notifications")
-    .select("user_id, user:profiles!inner(user_type)")
+    .select("user_id, is_read, dismissed_at, user:profiles!inner(user_type)")
     .eq("related_type", "alert")
     .eq("related_id", alertId)
     .eq("notification_type", "crisis_alert")
-    .eq("user.user_type", "tourist");
-  return new Set((data || []).map((r) => r.user_id)).size;
+    .in("user.user_type", ["tourist", "guide"]);
+
+  const tourist = { reached: 0, opened: 0 };
+  const guide = { reached: 0, opened: 0 };
+  const touristIds = new Set();
+  const guideIds = new Set();
+  const touristOpened = new Set();
+  const guideOpened = new Set();
+
+  for (const row of data || []) {
+    const role = row.user?.user_type;
+    const engaged = Boolean(row.is_read || row.dismissed_at);
+    if (role === "tourist") {
+      touristIds.add(row.user_id);
+      if (engaged) touristOpened.add(row.user_id);
+    } else if (role === "guide") {
+      guideIds.add(row.user_id);
+      if (engaged) guideOpened.add(row.user_id);
+    }
+  }
+
+  tourist.reached = touristIds.size;
+  tourist.opened = touristOpened.size;
+  guide.reached = guideIds.size;
+  guide.opened = guideOpened.size;
+
+  return { tourist, guide };
 }
 
 /** Summary and the people who need action, for the Command Center. */
@@ -107,19 +138,38 @@ export async function loadCheckinOverview(admin, alertId) {
     .eq("alert_id", alertId)
     .order("updated_at", { ascending: false });
   if (error) return { error };
-  const reached = await countTouristsReached(admin, alertId).catch(() => 0);
-  const urgent = (rows || [])
-    .filter((r) => URGENT_CHECKIN_STATUSES.includes(r.status))
-    .map((r) => ({
-      userId: r.user_id,
-      name: r.person?.full_name || "Tourist",
-      phone: r.person?.phone || null,
-      status: r.status,
-      note: r.note,
-      source: r.source,
-      reportedBy: r.source === "guide" ? r.reporter?.full_name || "Guide" : null,
-      updatedAt: r.updated_at,
-      handledAt: r.handled_at,
-    }));
-  return { summary: summarizeCheckins(rows || [], reached), urgent, reached, error: null };
+  const audience = await countAlertAudienceByRole(admin, alertId).catch(() => ({
+    tourist: { reached: 0, opened: 0 },
+    guide: { reached: 0, opened: 0 },
+  }));
+  const reached = audience.tourist.reached;
+  const mapPerson = (r) => ({
+    userId: r.user_id,
+    name: r.person?.full_name || "Tourist",
+    phone: r.person?.phone || null,
+    status: r.status,
+    note: r.note,
+    source: r.source,
+    reportedBy: r.source === "guide" ? r.reporter?.full_name || "Guide" : null,
+    updatedAt: r.updated_at,
+    handledAt: r.handled_at,
+  });
+
+  const byStatus = { safe: [], evacuated: [], need_help: [], missing: [] };
+  for (const row of rows || []) {
+    if (byStatus[row.status]) byStatus[row.status].push(mapPerson(row));
+  }
+
+  const urgent = [...byStatus.need_help, ...byStatus.missing].filter(
+    (p) => URGENT_CHECKIN_STATUSES.includes(p.status) && !p.handledAt
+  );
+
+  return {
+    summary: summarizeCheckins(rows || [], reached),
+    byStatus,
+    urgent,
+    reached,
+    audience,
+    error: null,
+  };
 }

@@ -9,13 +9,40 @@ export const MAP_PIN_LEGEND = [
   { id: "tourist", label: "Tourist Location", color: "#9333ea", kind: "pin" },
 ];
 
+/** Matches `getRoutePolylineStyle` and map polylines. */
+export const ROUTE_POLYLINE_COLORS = {
+  safe: "#16a34a",
+  caution: "#f97316",
+  closed: "#dc2626",
+  default: "#2563eb",
+  hazardAlt: "#16a34a",
+};
+
 export const ROUTE_LINE_LEGEND = [
-  { id: "route_safe_line", label: "Safe Route Path", color: "#16a34a", kind: "line" },
-  { id: "route_caution_line", label: "Caution Route Path", color: "#f97316", kind: "line" },
-  { id: "route_closed_line", label: "Closed Route Path", color: "#dc2626", kind: "line" },
-  { id: "route_start", label: "Route Start (S)", color: "#2563eb", kind: "pin" },
-  { id: "route_end", label: "Route End (E)", color: "#16a34a", kind: "pin" },
+  { id: "route_safe_line", label: "Safe route path", color: ROUTE_POLYLINE_COLORS.safe, kind: "line", lineStyle: "solid" },
+  { id: "route_caution_line", label: "Caution route path", color: ROUTE_POLYLINE_COLORS.caution, kind: "line", lineStyle: "dashed" },
+  { id: "route_closed_line", label: "Closed route path", color: ROUTE_POLYLINE_COLORS.closed, kind: "line", lineStyle: "solid" },
+  { id: "hazard_alt_line", label: "Safer path (area hazard)", color: ROUTE_POLYLINE_COLORS.hazardAlt, kind: "line", lineStyle: "dashed" },
+  { id: "route_start", label: "Route start (S)", color: ROUTE_POLYLINE_COLORS.default, kind: "pin" },
+  { id: "route_end", label: "Route end (E)", color: ROUTE_POLYLINE_COLORS.safe, kind: "pin" },
 ];
+
+/** Public travel map: hazard pins + route lines. */
+export const ROUTES_MAP_LEGEND = [
+  ...MAP_PIN_LEGEND.filter((item) => ["caution", "danger", "route_safe"].includes(item.id)),
+  ...ROUTE_LINE_LEGEND,
+];
+
+/** Admin / hazard maps: pins and suggested safer paths only (no crisis route status lines). */
+export const HAZARDS_MAP_LEGEND = [
+  { id: "danger", label: "Danger — avoid", color: "#b91c1c", kind: "pin" },
+  { id: "caution", label: "Caution area", color: "#f97316", kind: "pin" },
+  { id: "route_safe", label: "Safer destination", color: ROUTE_POLYLINE_COLORS.safe, kind: "pin" },
+  { id: "hazard_alt_line", label: "Suggested safer path", color: ROUTE_POLYLINE_COLORS.hazardAlt, kind: "line", lineStyle: "dashed" },
+];
+
+/** Admin route advisories map (route polylines only). */
+export const ADMIN_ROADS_MAP_LEGEND = ROUTE_LINE_LEGEND.filter((item) => item.id !== "hazard_alt_line");
 
 export const ALERT_STATUS_LEGEND = [
   { id: "Critical", label: "Critical", color: "#dc2626", kind: "pin" },
@@ -31,13 +58,6 @@ export function crisisAlertLegendItems({ showTouristSpots = false, showWarnings 
   const extras = MAP_PIN_LEGEND.filter((item) => extraIds.includes(item.id));
   return [...ALERT_STATUS_LEGEND, ...extras];
 }
-
-export const ROUTES_MAP_LEGEND = [
-  ...MAP_PIN_LEGEND.filter((item) =>
-    ["caution", "danger", "route_safe"].includes(item.id)
-  ),
-  ...ROUTE_LINE_LEGEND,
-];
 
 export const TOURIST_LANDMARKS = [
   { id: "municipal-hall", name: "Daet Municipal Hall", location: "Municipal Hall, Daet, Camarines Norte" },
@@ -68,32 +88,3 @@ export function getPinColor(categoryId) {
   return getLegendItem(categoryId).color;
 }
 
-/**
- * A map pin in the category color. `glyphSvg` (white icon markup from the shared type icons)
- * is drawn inside the pin head so the type is visible at a glance.
- */
-export function createCategoryPinIcon(categoryId, glyphSvg = "") {
-  if (typeof window === "undefined") return undefined;
-
-  const color = getPinColor(categoryId);
-  const L = require("leaflet");
-  const glyph = glyphSvg
-    ? `<div style="position:absolute;top:6px;left:6px;width:12px;height:12px;display:flex;align-items:center;justify-content:center;color:#fff;line-height:0">${glyphSvg}</div>`
-    : "";
-
-  return L.divIcon({
-    className: "map-category-pin",
-    html: `<div aria-hidden="true" style="width:24px;height:32px;position:relative">
-      <div style="background:${color};width:20px;height:20px;border-radius:50% 50% 50% 0;transform:rotate(-45deg);border:2.5px solid #fff;box-shadow:0 2px 8px rgba(0,0,0,.35);position:absolute;top:2px;left:2px"></div>
-      ${glyph}
-      <div style="background:${color};width:8px;height:8px;border-radius:50%;position:absolute;bottom:0;left:8px;opacity:.35"></div>
-    </div>`,
-    iconSize: [24, 32],
-    iconAnchor: [12, 32],
-    popupAnchor: [0, -30],
-  });
-}
-
-export function createSafeRoutePinIcon() {
-  return createCategoryPinIcon("route_safe");
-}

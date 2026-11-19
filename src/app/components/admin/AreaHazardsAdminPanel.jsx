@@ -16,8 +16,10 @@ import { StatCardSkeletonGrid, AlertCardSkeletonList } from "@/app/components/ui
 import { AlternativeRouteDisplay } from "@/app/components/danger/AlternativeRouteDisplay";
 import {
   DANGER_TYPES, DANGER_SEVERITIES, getDangerSeverityStyles, formatWarningTimeRange,
+  formatRouteUpdatedAt,
 } from "@/lib/dangerousLocationUtils";
-import { createCategoryPinIcon, getDangerPinCategory } from "@/lib/mapPinUtils";
+import { getDangerPinCategory, HAZARDS_MAP_LEGEND } from "@/lib/mapPinUtils";
+import { createCategoryPinIcon } from "@/lib/mapPinIcons";
 import { MapLegend } from "@/app/components/maps/MapLegend";
 import { adminShell, iconSize, statGrid, portalLayout } from "@/lib/designSystem";
 import { AdminFilterBar } from "@/app/components/admin/AdminFilterBar";
@@ -426,7 +428,7 @@ export function AreaHazardsAdminPanel({
                   place: warning.dangerous_location,
                   type: warning.danger_type || "Hazard",
                   typeIcon: <HazardTypeIcon type={warning.danger_type} size={12} />,
-                  when: formatWarningTimeRange(warning),
+                  when: [formatWarningTimeRange(warning), formatRouteUpdatedAt(warning)].filter(Boolean).join(" · "),
                   actions: [
                     { label: "Edit", onClick: () => openEdit(warning) },
                     { label: "Deactivate", onClick: () => handleDeactivate(warning) },
@@ -453,7 +455,7 @@ export function AreaHazardsAdminPanel({
               </MapContainer>
             )}
             <div className="absolute bottom-3 left-3 z-[3]">
-              <MapLegend compact />
+              <MapLegend compact items={HAZARDS_MAP_LEGEND} title="Hazards map" />
             </div>
           </div>
         </AdminPanel>

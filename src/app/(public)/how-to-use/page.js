@@ -136,6 +136,7 @@ const GUIDE_SECTIONS = [
     steps: [
       "On your home page, tap Ask a guide for help.",
       "Choose a request type, provide the destination, and add any useful details. Requests depend on guide availability and Tourism Office coordination; this is not an emergency service.",
+      "This is separate from Report a problem or the Tourist Assistance incident category—use Ask a guide for help when you want the office to coordinate a local guide, not when reporting a safety incident.",
     ],
     href: "/#guide-assistance",
     action: "Open Tourist Dashboard",

@@ -137,6 +137,7 @@ export const useRouteAdvisoryStore = create((set, get) => ({
         warning_ends_at: payload.warning_ends_at || null,
         is_public: payload.is_public !== false,
         channels: channelFlagsToDb(payload.channels),
+        updated_at: new Date().toISOString(),
       };
 
       if (payload.latitude != null && payload.longitude != null) {
@@ -162,7 +163,10 @@ export const useRouteAdvisoryStore = create((set, get) => ({
 
   setAdvisoryStatus: async (id, status) => {
     try {
-      const { error } = await supabase.from("route_advisories").update({ status }).eq("id", id);
+      const { error } = await supabase
+        .from("route_advisories")
+        .update({ status, updated_at: new Date().toISOString() })
+        .eq("id", id);
       if (error) throw error;
       return { success: true };
     } catch (error) {

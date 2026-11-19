@@ -2,6 +2,7 @@
 
 import React, { useRef, useState } from "react";
 import { getActiveSession } from "@/lib/authSession";
+import { toast } from "sonner";
 
 const ASSISTANCE_TYPES = [
   "Help finding a tourist guide",
@@ -34,7 +35,9 @@ export function GuideAssistanceRequestForm({ assistance, onClose, onSubmitted })
 
     const touristCount = Number(form.touristCount);
     if (!Number.isInteger(touristCount) || touristCount < 1 || touristCount > 100) {
-      setError("Enter a number of tourists between 1 and 100.");
+      const message = "Enter a number of tourists between 1 and 100.";
+      setError(message);
+      toast.error(message);
       return;
     }
 
@@ -68,7 +71,9 @@ export function GuideAssistanceRequestForm({ assistance, onClose, onSubmitted })
       onSubmitted?.(result.request);
       onClose?.();
     } catch (submitError) {
-      setError(submitError.message || "Unable to submit your request.");
+      const message = submitError.message || "Unable to submit your request.";
+      setError(message);
+      toast.error(message);
     } finally {
       setSubmitting(false);
     }

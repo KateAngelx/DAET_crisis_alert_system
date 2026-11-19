@@ -115,7 +115,11 @@ export const useDangerousLocationStore = create((set, get) => ({
 
   updateWarning: async (id, payload) => {
     try {
-      const updatePayload = warningPayloadToAreaAdvisory({ ...payload, status: payload.status || "Active" });
+      const updatePayload = warningPayloadToAreaAdvisory({
+        ...payload,
+        status: payload.status || "Active",
+        updated_at: new Date().toISOString(),
+      });
       let { data, error } = await supabase
         .from("route_advisories")
         .update(updatePayload)

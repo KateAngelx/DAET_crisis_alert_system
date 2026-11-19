@@ -56,6 +56,7 @@ export function warningPayloadToAreaAdvisory(payload) {
     longitude: payload.longitude != null ? Number(payload.longitude) : null,
     route_path: null,
     channels: channelFlagsToDb(payload.channels),
+    ...(payload.updated_at ? { updated_at: payload.updated_at } : {}),
   };
 }
 

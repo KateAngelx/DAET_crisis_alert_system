@@ -15,11 +15,68 @@ const EMERGENCY_TYPES = new Set([
   "Other emergency",
 ]);
 const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+const GUIDE_LIST_LIMIT = 15;
 
 const trimOrNull = (value) => {
   if (value == null || value === "") return null;
   return typeof value === "string" ? value.trim() : value;
 };
+
+export async function GET(request) {
+  try {
+    const auth = await requireGuide(request);
+    if (auth.error) return auth.error;
+
+    const limited = enforceRateLimitByKey(auth.user.id, {
+      name: "guide-emergency-report-list",
+      limit: 60,
+      windowMs: 60_000,
+    });
+    if (limited) return limited;
+
+    const { data: reports, error } = await auth.admin
+      .from("guide_emergency_reports")
+      .select("id, reference_number, emergency_type, location, status, submitted_at")
+      .eq("reporter_id", auth.user.id)
+      .order("submitted_at", { ascending: false })
+      .limit(GUIDE_LIST_LIMIT);
+    if (error) throw error;
+
+    const reportIds = (reports || []).map((row) => row.id);
+    const { data: history, error: historyError } = reportIds.length
+      ? await auth.admin
+          .from("guide_emergency_report_history")
+          .select("report_id, note, new_status, changed_at")
+          .in("report_id", reportIds)
+          .not("note", "is", null)
+          .order("changed_at", { ascending: false })
+      : { data: [], error: null };
+    if (historyError) throw historyError;
+
+    const latestNoteByReport = new Map();
+    for (const event of history || []) {
+      const note = String(event.note || "").trim();
+      if (!note || latestNoteByReport.has(event.report_id)) continue;
+      latestNoteByReport.set(event.report_id, { note, at: event.changed_at, status: event.new_status });
+    }
+
+    return NextResponse.json(
+      {
+        success: true,
+        reports: (reports || []).map((report) => ({
+          ...report,
+          latestOfficeNote: latestNoteByReport.get(report.id) || null,
+        })),
+      },
+      { headers: { "Cache-Control": "no-store" } }
+    );
+  } catch (error) {
+    return NextResponse.json(
+      { error: error.message || "Unable to load your emergency reports." },
+      { status: 500, headers: { "Cache-Control": "no-store" } }
+    );
+  }
+}
 
 export async function POST(request) {
   try {

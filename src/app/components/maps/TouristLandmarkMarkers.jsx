@@ -3,7 +3,8 @@
 import React, { useEffect, useState } from "react";
 import dynamic from "next/dynamic";
 import { geocodeLocation } from "@/lib/geocodeLocation";
-import { createCategoryPinIcon, TOURIST_LANDMARKS } from "@/lib/mapPinUtils";
+import { TOURIST_LANDMARKS } from "@/lib/mapPinUtils";
+import { createCategoryPinIcon } from "@/lib/mapPinIcons";
 
 const Marker = dynamic(() => import("react-leaflet").then((mod) => mod.Marker), { ssr: false });
 const Popup = dynamic(() => import("react-leaflet").then((mod) => mod.Popup), { ssr: false });

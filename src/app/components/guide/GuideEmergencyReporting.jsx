@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useRef, useState } from "react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 import { AlertTriangle, MapPin, X } from "lucide-react";
 import { getActiveSession } from "@/lib/authSession";
 import { useConfirm } from "@/app/components/ui/ConfirmDialogProvider";
@@ -32,7 +32,34 @@ export function GuideEmergencyReporting() {
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
   const [confirmation, setConfirmation] = useState(null);
+  const [recentReports, setRecentReports] = useState([]);
+  const [loadingReports, setLoadingReports] = useState(true);
   const idempotencyKey = useRef(null);
+
+  const loadReports = useCallback(async () => {
+    setLoadingReports(true);
+    try {
+      const session = await getActiveSession();
+      if (!session?.access_token) {
+        setRecentReports([]);
+        return;
+      }
+      const response = await fetch("/api/guide/emergency-reports", {
+        headers: { Authorization: `Bearer ${session.access_token}` },
+        cache: "no-store",
+      });
+      const result = await response.json().catch(() => ({}));
+      if (response.ok) setRecentReports(result.reports || []);
+    } catch {
+      setRecentReports([]);
+    } finally {
+      setLoadingReports(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    loadReports();
+  }, [loadReports]);
 
   const updateForm = (patch) => {
     idempotencyKey.current = null;
@@ -122,6 +149,7 @@ export function GuideEmergencyReporting() {
       setOpen(false);
       setForm(EMPTY_FORM);
       idempotencyKey.current = null;
+      loadReports();
     } catch (submitError) {
       setError(submitError.message || "Unable to submit the emergency report.");
     } finally {
@@ -150,8 +178,39 @@ export function GuideEmergencyReporting() {
         </button>
       </section>
 
+      {loadingReports ? (
+        <p className="mt-3 text-xs font-medium text-zinc-500">Loading your recent emergency reports…</p>
+      ) : recentReports.length > 0 ? (
+        <section className="mt-4 space-y-2" aria-labelledby="guide-emergency-recent-title">
+          <h3 id="guide-emergency-recent-title" className="text-[10px] font-black uppercase tracking-widest text-zinc-500">
+            Your recent emergency reports
+          </h3>
+          <ul className="space-y-2">
+            {recentReports.map((report) => (
+              <li key={report.id} className="rounded-xl border border-zinc-200 bg-white p-3">
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <p className="text-sm font-black text-zinc-900">{report.reference_number}</p>
+                  <span className="rounded-full bg-zinc-100 px-2 py-0.5 text-[9px] font-black uppercase text-zinc-700">{report.status}</span>
+                </div>
+                <p className="mt-1 text-xs font-medium text-zinc-600">
+                  {report.emergency_type} · {report.location}
+                </p>
+                {report.latestOfficeNote?.note ? (
+                  <p className="mt-2 rounded-lg border border-blue-100 bg-blue-50 p-2 text-xs leading-relaxed text-zinc-800">
+                    <span className="font-black text-blue-900">Office update: </span>
+                    {report.latestOfficeNote.note}
+                  </p>
+                ) : (
+                  <p className="mt-2 text-xs font-medium text-zinc-500">No office note yet. You will be notified when status changes.</p>
+                )}
+              </li>
+            ))}
+          </ul>
+        </section>
+      ) : null}
+
       {confirmation ? (
-        <div role="status" className="rounded-xl border border-green-200 bg-green-50 p-4 text-sm text-green-950">
+        <div role="status" className="mt-4 rounded-xl border border-green-200 bg-green-50 p-4 text-sm text-green-950">
           <p className="font-black">Emergency report submitted. Reference: {confirmation.referenceNumber}</p>
           <p className="mt-1">
             {confirmation.warnings.length

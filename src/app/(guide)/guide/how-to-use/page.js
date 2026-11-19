@@ -62,7 +62,8 @@ const SECTIONS = [
     title: "In an emergency",
     steps: [
       "Tap the red Emergency button at the bottom right. Call 911 first if anyone is in danger.",
-      "Then use Report a problem. You can follow it and chat with the office in Reports.",
+      "Use Emergency Report on Today for urgent office alerts. After you submit, open Today and scroll to Your recent emergency reports for status and Office update notes.",
+      "Report a problem in Reports is for non-emergency follow-up you can track with the office.",
     ],
     href: "/guide/reports",
     action: "Open Reports",

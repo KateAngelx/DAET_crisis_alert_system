@@ -1,5 +1,6 @@
 /** Route path geometry: waypoints, polylines, GPX export */
 
+import { ROUTE_POLYLINE_COLORS } from "@/lib/mapPinUtils";
 import { geocodeLocation } from "@/lib/geocodeLocation";
 import { getActiveSession } from "@/lib/authSession";
 
@@ -202,15 +203,15 @@ export function getRoutePolylineStyle(advisory) {
   const type = advisory?.route_type;
 
   if (type === "alternative" || status === "Safe") {
-    return { color: "#16a34a", weight: 5, dashArray: null, opacity: 0.85 };
+    return { color: ROUTE_POLYLINE_COLORS.safe, weight: 5, dashArray: null, opacity: 0.85 };
   }
   if (status === "Caution") {
-    return { color: "#f97316", weight: 5, dashArray: "10 8", opacity: 0.9 };
+    return { color: ROUTE_POLYLINE_COLORS.caution, weight: 5, dashArray: "10 8", opacity: 0.9 };
   }
   if (status === "Closed") {
-    return { color: "#dc2626", weight: 5, dashArray: null, opacity: 0.9 };
+    return { color: ROUTE_POLYLINE_COLORS.closed, weight: 5, dashArray: null, opacity: 0.9 };
   }
-  return { color: "#2563eb", weight: 4, dashArray: null, opacity: 0.8 };
+  return { color: ROUTE_POLYLINE_COLORS.default, weight: 4, dashArray: null, opacity: 0.8 };
 }
 
 function escapeXml(value) {

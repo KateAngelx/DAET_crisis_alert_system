@@ -26,6 +26,8 @@ export async function clearInvalidAuthSession() {
   useNotificationStore.getState().clearNotifications();
 }
 
+let activeSessionRead = null;
+
 /** Wait until zustand persist has restored auth state from localStorage. */
 export function waitForAuthHydration() {
   return new Promise((resolve) => {
@@ -44,9 +46,7 @@ export function waitForAuthHydration() {
  * Returns the active Supabase session, or null.
  * Clears stale local auth when Supabase refresh token is missing/invalid.
  */
-export async function getActiveSession() {
-  await waitForAuthHydration();
-
+async function readActiveSession() {
   try {
     const { data: { session }, error } = await supabase.auth.getSession();
 
@@ -64,6 +64,17 @@ export async function getActiveSession() {
     }
     return null;
   }
+}
+
+export async function getActiveSession() {
+  await waitForAuthHydration();
+
+  if (activeSessionRead) return activeSessionRead;
+
+  activeSessionRead = readActiveSession().finally(() => {
+    activeSessionRead = null;
+  });
+  return activeSessionRead;
 }
 
 /** Retry an authenticated request once with a refreshed token if the API rejects the current one. */

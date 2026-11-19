@@ -20,7 +20,7 @@ function time(value) {
  * Live message thread on an incident report, for the reporter, the guides involved and the
  * Tourism Office. New messages arrive instantly (Supabase Realtime), with a slow refresh as backup.
  */
-export function IncidentChat({ incidentId, compact = false }) {
+export function IncidentChat({ incidentId, compact = false, anchorId = "messages" }) {
   const [state, setState] = useState({ loading: true, available: true, messages: [], readOnly: false, me: null, error: "" });
   const [draft, setDraft] = useState("");
   const [sending, setSending] = useState(false);
@@ -99,7 +99,7 @@ export function IncidentChat({ incidentId, compact = false }) {
   const groups = groupChatMessages(state.messages);
 
   return (
-    <section aria-label="Messages" className="rounded-2xl border border-zinc-200 bg-white">
+    <section id={anchorId || undefined} aria-label="Messages" className="rounded-2xl border border-zinc-200 bg-white scroll-mt-24">
       <div className="flex items-center justify-between gap-2 border-b border-zinc-100 px-4 py-3">
         <p className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-zinc-500">
           <MessageSquare size={14} /> Messages

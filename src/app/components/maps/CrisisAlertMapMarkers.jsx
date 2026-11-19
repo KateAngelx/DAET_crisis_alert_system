@@ -4,7 +4,8 @@ import React, { useEffect, useMemo, useRef, useState } from "react";
 import dynamic from "next/dynamic";
 import { useMap } from "react-leaflet";
 import { geocodeAlerts, parseMapCoordinates } from "@/lib/geocodeLocation";
-import { createCategoryPinIcon, getAlertPinCategory } from "@/lib/mapPinUtils";
+import { getAlertPinCategory } from "@/lib/mapPinUtils";
+import { createCategoryPinIcon } from "@/lib/mapPinIcons";
 import { alertPinGlyph } from "./typePinGlyph";
 
 const Marker = dynamic(() => import("react-leaflet").then((mod) => mod.Marker), { ssr: false });

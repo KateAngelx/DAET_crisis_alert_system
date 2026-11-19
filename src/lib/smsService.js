@@ -8,9 +8,22 @@ const DEFAULT_SEMAPHORE_URL = "https://api.semaphore.co/api/v4/messages";
 const DEFAULT_IPROG_URL = "https://www.iprogsms.com/api/v1/sms_messages";
 const SMS_REQUEST_TIMEOUT_MS = 15000;
 const SMS_PROVIDERS = ["semaphore", "iprog"];
+/** Legacy env values that should route through Semaphore (Twilio was never wired in this app). */
+const DEPRECATED_SMS_PRIMARY = new Set(["twilio"]);
+
+function resolveSmsPrimaryProvider(raw) {
+  const configured = (raw || "semaphore").trim().toLowerCase();
+  if (DEPRECATED_SMS_PRIMARY.has(configured)) {
+    console.warn(
+      `[SmsService] SMS_PRIMARY_PROVIDER "${configured}" is not used. Primary provider is Semaphore; set SMS_PRIMARY_PROVIDER=semaphore in your environment.`
+    );
+    return "semaphore";
+  }
+  return configured;
+}
 
 function getSmsConfig() {
-  const configuredPrimary = (process.env.SMS_PRIMARY_PROVIDER || "semaphore").trim().toLowerCase();
+  const configuredPrimary = resolveSmsPrimaryProvider(process.env.SMS_PRIMARY_PROVIDER);
   return {
     primaryProvider: configuredPrimary,
     configurationError: SMS_PROVIDERS.includes(configuredPrimary)

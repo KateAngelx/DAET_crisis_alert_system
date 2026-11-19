@@ -9,6 +9,21 @@ import { parseApiJson } from '@/lib/parseApiJson';
 import { sortRecordsNewestFirst } from '@/lib/recordSorting';
 import { isConnectionError, loadOfflineSnapshot, saveOfflineSnapshot } from '@/lib/offlineSnapshot';
 
+function isMissingDbColumn(error, columnName) {
+  if (!error || (error.code !== 'PGRST204' && error.code !== '42703')) return false;
+  const message = String(error.message || '');
+  return message.includes(columnName) || message.includes(`'${columnName}'`);
+}
+
+async function updateCrisisAlertRow(id, payload) {
+  let { error } = await supabase.from('crisis_alerts').update(payload).eq('id', id);
+  if (error && 'updated_at' in payload && isMissingDbColumn(error, 'updated_at')) {
+    const { updated_at: _ts, ...withoutUpdatedAt } = payload;
+    ({ error } = await supabase.from('crisis_alerts').update(withoutUpdatedAt).eq('id', id));
+  }
+  return { error };
+}
+
 export const useCrisisStore = create((set, get) => ({
   alerts: [], 
   alertsLoaded: false, // true once alerts arrived (live or saved); "no alerts" means nothing until then
@@ -349,7 +364,8 @@ export const useCrisisStore = create((set, get) => ({
         location: updatedData.location,
         rewards_eligible: updatedData.rewards_eligible === true,
         channels: channelFlagsToDb(updatedData.channels),
-        is_public: true
+        is_public: true,
+        updated_at: new Date().toISOString(),
       };
       if (typeof updatedData.checkin_requested === 'boolean') updatePayload.checkin_requested = updatedData.checkin_requested;
       if (updatedData.target_scope) {
@@ -362,28 +378,19 @@ export const useCrisisStore = create((set, get) => ({
         updatePayload.longitude = Number(updatedData.longitude);
       }
 
-      let { error } = await supabase
-        .from('crisis_alerts')
-        .update(updatePayload)
-        .eq('id', id);
+      let { error } = await updateCrisisAlertRow(id, updatePayload);
 
       // Before migrations 048/049 the targeting columns or the "radius" option do not exist.
       if (error && (updatePayload.target_scope || 'checkin_requested' in updatePayload) && ['PGRST204', '42703', '23514'].includes(error.code)) {
         delete updatePayload.target_scope;
         delete updatePayload.target_radius_km;
         delete updatePayload.checkin_requested;
-        ({ error } = await supabase
-          .from('crisis_alerts')
-          .update(updatePayload)
-          .eq('id', id));
+        ({ error } = await updateCrisisAlertRow(id, updatePayload));
       }
 
       if (error && updatePayload.latitude != null) {
         const { latitude, longitude, ...fallbackPayload } = updatePayload;
-        ({ error } = await supabase
-          .from('crisis_alerts')
-          .update(fallbackPayload)
-          .eq('id', id));
+        ({ error } = await updateCrisisAlertRow(id, fallbackPayload));
       }
 
       if (error) throw error;
@@ -396,7 +403,7 @@ export const useCrisisStore = create((set, get) => ({
 
   updateAlertStatus: async (id, status, { allClearMessage } = {}) => {
     try {
-      const updatePayload = { status };
+      const updatePayload = { status, updated_at: new Date().toISOString() };
       if (status === 'Resolved') {
         updatePayload.resolved_at = new Date().toISOString();
         if (allClearMessage) updatePayload.all_clear_message = String(allClearMessage).trim();
@@ -404,11 +411,11 @@ export const useCrisisStore = create((set, get) => ({
         updatePayload.resolved_at = null;
       }
 
-      let { error } = await supabase.from('crisis_alerts').update(updatePayload).eq('id', id);
+      let { error } = await updateCrisisAlertRow(id, updatePayload);
       // Before migration 047 the all_clear_message column does not exist yet.
       if (error && updatePayload.all_clear_message && (error.code === 'PGRST204' || error.code === '42703')) {
         const { all_clear_message: _unused, ...withoutAllClear } = updatePayload;
-        ({ error } = await supabase.from('crisis_alerts').update(withoutAllClear).eq('id', id));
+        ({ error } = await updateCrisisAlertRow(id, withoutAllClear));
       }
       if (error) throw error;
       return { success: true };

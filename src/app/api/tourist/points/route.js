@@ -60,14 +60,31 @@ export async function GET(request) {
     if (transactionResult.error) throw transactionResult.error;
 
     const transactions = transactionResult.data || [];
+    const advisoryIds = transactions.map((item) => item.route_advisory_id).filter(Boolean);
     const [activities, redemptions, feedback, incidents, alerts, advisories] = await Promise.all([
       loadRows(auth.admin, "activity_completions", "id, user_id, status, activity_id", transactions.map((item) => item.activity_completion_id)),
       loadRows(auth.admin, "reward_redemptions", "id, status, reward_name_snapshot", transactions.map((item) => item.reward_redemption_id)),
       loadRows(auth.admin, "crisis_feedback_submissions", "id, user_id, submission_type, status, reward_status", transactions.map((item) => item.crisis_feedback_submission_id)),
       loadRows(auth.admin, "incident_reports", "id, reporter_id, reference_number, category, status", transactions.map((item) => item.incident_report_id)),
       loadRows(auth.admin, "crisis_alerts", "id, title", transactions.map((item) => item.crisis_alert_id)),
-      loadRows(auth.admin, "route_advisories", "id, title, hazard_type, advisory_kind", transactions.map((item) => item.route_advisory_id)),
+      loadRows(auth.admin, "route_advisories", "id, title, hazard_type, advisory_kind", advisoryIds),
     ]);
+    const advisoriesById = indexById(advisories);
+    const legacyHazardIds = advisoryIds.filter((id) => !advisoriesById.has(id));
+    const legacyHazards = await loadRows(
+      auth.admin,
+      "dangerous_location_warnings",
+      "id, dangerous_location, danger_type",
+      legacyHazardIds
+    );
+    for (const row of legacyHazards) {
+      advisoriesById.set(row.id, {
+        id: row.id,
+        title: row.dangerous_location,
+        hazard_type: row.danger_type,
+        advisory_kind: "area",
+      });
+    }
     const userActivities = activities.filter((activity) => activity.user_id === auth.user.id);
     const userFeedback = feedback.filter((submission) => submission.user_id === auth.user.id);
     const userIncidents = incidents.filter((incident) => incident.reporter_id === auth.user.id);
@@ -84,7 +101,6 @@ export async function GET(request) {
     const feedbackById = indexById(userFeedback);
     const incidentsById = indexById(userIncidents);
     const alertsById = indexById(alerts);
-    const advisoriesById = indexById(advisories);
 
     return NextResponse.json(
       {

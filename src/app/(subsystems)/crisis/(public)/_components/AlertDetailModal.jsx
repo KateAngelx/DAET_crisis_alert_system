@@ -14,6 +14,9 @@ import { supabase } from "@/lib/supabaseClient";
 import { notifyRewardEarned } from "@/lib/rewardFeedback";
 import { AlertUpdateTimeline } from "./AlertUpdateTimeline";
 import { AlertCheckinPanel } from "./AlertCheckinPanel";
+import { formatRecordTimestamps } from "@/lib/formatEditedAt";
+import { canTouristOfferAlertReadPoints } from "@/lib/rewardsEligibility";
+import { alertRewardStatusMessage } from "@/lib/rewardStatusMessages";
 
 const DAET_CENTER = [14.1122, 122.9553];
 
@@ -137,17 +140,9 @@ export function AlertDetailModal({ alert, onClose }) {
 
   if (!alert || !styles) return null;
 
-  const emergencyLanguage =
-    /(emergency|evacuat|warning|911|117|assistance|assist|urgent|immediate danger|rescue|shelter|call police|call the police|call fire|call ambulance)/i;
-  const canOfferReadPoints =
-    isAuthenticated &&
-    user?.role === "tourist" &&
-    alert.rewards_eligible === true &&
-    alert.is_public !== false &&
-    String(alert.status || "").toLowerCase() === "active" &&
-    ["low", "medium"].includes(String(alert.severity || "").toLowerCase()) &&
-    ["general", "weather", "health"].includes(String(alert.type || "").toLowerCase()) &&
-    !emergencyLanguage.test(`${alert.title || ""} ${alert.message || ""} ${alert.type || ""}`);
+  const timestamps = formatRecordTimestamps(alert);
+
+  const canOfferReadPoints = canTouristOfferAlertReadPoints(alert, { isAuthenticated, role: user?.role });
   const hasViewedContent = viewedAlertId === alert.id;
   const hasAlreadyRead = readStatus?.key === userAlertKey && readStatus.status === "read";
   const canShowReadState = canOfferReadPoints || hasAlreadyRead;
@@ -244,8 +239,13 @@ export function AlertDetailModal({ alert, onClose }) {
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">
             <div className="p-4 bg-zinc-50 rounded-2xl border border-zinc-100">
-              <p className="text-[10px] font-black uppercase text-zinc-400 mb-1">Reported</p>
-              <p className="font-bold text-zinc-900">{new Date(alert.created_at).toLocaleString()}</p>
+              <p className="text-[10px] font-black uppercase text-zinc-400 mb-1">Published</p>
+              <p className="font-bold text-zinc-900">
+                {timestamps.published || (alert.created_at ? new Date(alert.created_at).toLocaleString() : "—")}
+              </p>
+              {timestamps.edited ? (
+                <p className="mt-1 text-[11px] font-bold text-amber-800">{timestamps.edited}</p>
+              ) : null}
             </div>
             <div className="p-4 bg-zinc-50 rounded-2xl border border-zinc-100">
               <p className="text-[10px] font-black uppercase text-zinc-400 mb-1">Status</p>
@@ -320,13 +320,9 @@ export function AlertDetailModal({ alert, onClose }) {
                     </p>
                   )}
                 </>
-              ) : ["rewards_disabled", "activity_disabled", "not_eligible"].includes(resultForThisAlert?.status) ? (
+              ) : resultForThisAlert?.status && alertRewardStatusMessage(resultForThisAlert.status) ? (
                 <p className="text-center text-xs font-medium text-zinc-500" role="status">
-                  {resultForThisAlert.status === "rewards_disabled"
-                    ? "The Rewards Program is currently turned off."
-                    : resultForThisAlert.status === "activity_disabled"
-                      ? "Alert reading points are currently turned off."
-                      : "This advisory is not eligible for points."}
+                  {alertRewardStatusMessage(resultForThisAlert.status)}
                 </p>
               ) : (
                 <>

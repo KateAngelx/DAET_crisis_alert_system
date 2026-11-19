@@ -9,6 +9,7 @@ import { AssignmentRequestHandler } from "@/app/components/tour/AssignmentReques
 import { NotificationArrivalListener } from "@/app/components/NotificationArrivalListener";
 import { PushEnablePrompt } from "@/app/components/PushEnablePrompt";
 import { RewardEarnedToast } from "@/app/components/RewardEarnedToast";
+import { Toaster } from "sonner";
 import { TouristStartGuide } from "@/app/components/tourist/TouristStartGuide";
 import { InstalledTouristSetup } from "@/app/components/tourist/InstalledTouristSetup";
 import { ConfirmDialogProvider } from "@/app/components/ui/ConfirmDialogProvider";
@@ -68,6 +69,7 @@ export default function RootLayout({ children }) {
         <NotificationArrivalListener />
         <PushEnablePrompt />
         <RewardEarnedToast />
+        <Toaster position="top-center" richColors closeButton duration={5000} />
         <OfflineStatusBanner />
         <MissingSelfBanner />
         <LocationConsentPrompt />
