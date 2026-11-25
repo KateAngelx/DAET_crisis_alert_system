@@ -190,6 +190,19 @@ export function tourDateLimits(form = {}, { originalStartDate = null, nowMs = Da
 }
 
 /**
+ * Checks a date as soon as it is typed or picked into a tour date box. Phones (iPhone Safari)
+ * and typing ignore the box's `min`, so each change is checked: today onward and not before
+ * `min` (the tour date, for the end date), unless it is the tour's own saved date.
+ * @returns {string|null} why the date is refused, or null when it may be kept
+ */
+export function tourDatePickError(value, { min, savedDate = null, nowMs = Date.now() } = {}) {
+  if (!value || value === savedDate) return null;
+  if (value < todayInPhilippines(nowMs)) return "Past dates can't be selected. Choose today or a later date.";
+  if (min && value < min) return "The end date must be on or after the tour date.";
+  return null;
+}
+
+/**
  * Tour schedule check (Philippine time): the tour date can be today or later, never a past day.
  * An existing tour may keep the start date it already has.
  * @returns {string|null} an error message, or null when the schedule is fine

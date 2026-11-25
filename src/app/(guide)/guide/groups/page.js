@@ -15,7 +15,7 @@ import { StatCardSkeletonGrid } from "@/app/components/ui/Skeletons";
 import { DashboardStatCard } from "@/app/components/dashboard/DashboardStatCard";
 import { DashboardKpiSection } from "@/app/components/dashboard/DashboardKpiSection";
 import { EmptyState } from "@/app/components/ui/AsyncState";
-import { EMPTY_ROUTE_FORM, tourDateLimits, tourScheduleError } from "@/lib/tourGroupRoute";
+import { EMPTY_ROUTE_FORM, tourDatePickError, tourDateLimits, tourScheduleError } from "@/lib/tourGroupRoute";
 import { GuideDashboardQuickActions } from "@/app/components/guide/GuideDashboardQuickActions";
 import { ListPager } from "@/app/components/shell/ListPager";
 import { typography, iconSize, statGrid } from "@/lib/designSystem";
@@ -71,6 +71,20 @@ export default function GuideTourGroupsPage() {
   const visibleGroups = displayedGroups.slice((safePage - 1) * pageSize, safePage * pageSize);
 
   const dateLimits = tourDateLimits(form);
+  // Refuse a past date as soon as it is typed or picked (phones and typing ignore `min`).
+  const pickDate = (field, value, min) => {
+    const pickError = tourDatePickError(value, { min });
+    if (pickError) {
+      setError(pickError);
+      return;
+    }
+    setError(null);
+    setForm((current) => ({
+      ...current,
+      [field]: value,
+      ...(field === "end_date" && !value ? { end_time: "" } : {}),
+    }));
+  };
 
   const activeTourists = activeGroups.reduce((s, g) => s + (g.member_count || 0), 0);
 
@@ -260,7 +274,7 @@ export default function GuideTourGroupsPage() {
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div className="space-y-1">
                 <label className="text-[10px] font-black uppercase text-zinc-400">Tour Date</label>
-                <input type="date" min={dateLimits.startMin} value={form.start_date} onChange={(e) => setForm({ ...form, start_date: e.target.value })} className="w-full p-3 bg-white border border-zinc-200 rounded-xl text-sm font-bold" />
+                <input type="date" min={dateLimits.startMin} value={form.start_date} onChange={(e) => pickDate("start_date", e.target.value, dateLimits.startMin)} className="w-full p-3 bg-white border border-zinc-200 rounded-xl text-sm font-bold" />
               </div>
               <div className="space-y-1">
                 <label className="text-[10px] font-black uppercase text-zinc-400">End Date (optional)</label>
@@ -268,7 +282,7 @@ export default function GuideTourGroupsPage() {
                   type="date"
                   min={dateLimits.endMin}
                   value={form.end_date}
-                  onChange={(e) => setForm({ ...form, end_date: e.target.value, end_time: e.target.value ? form.end_time : "" })}
+                  onChange={(e) => pickDate("end_date", e.target.value, dateLimits.endMin)}
                   className="w-full p-3 bg-white border border-zinc-200 rounded-xl text-sm font-bold"
                 />
               </div>

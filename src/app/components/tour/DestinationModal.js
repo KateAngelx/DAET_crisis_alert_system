@@ -12,6 +12,7 @@ import {
   formatTourEndDateTime,
   getRelevantAlertsForGroup,
   getRelevantRouteAdvisoriesForGroup,
+  tourDatePickError,
   tourDateLimits,
   tourScheduleError,
 } from "@/lib/tourGroupRoute";
@@ -122,6 +123,21 @@ export function DestinationModal({
   };
 
   const dateLimits = tourDateLimits(form, { originalStartDate: group.start_date || null });
+  // Refuse a past date as soon as it is typed or picked (phones and typing ignore `min`);
+  // the tour's own saved date may stay.
+  const pickDate = (field, value, min) => {
+    const pickError = tourDatePickError(value, { min, savedDate: group[field] || null });
+    if (pickError) {
+      setError(pickError);
+      return;
+    }
+    setError(null);
+    setForm((current) => ({
+      ...current,
+      [field]: value,
+      ...(field === "end_date" && !value ? { end_time: "" } : {}),
+    }));
+  };
   const routeLabel = formatTourRoute(group);
   const tourDate = formatTourDate(group);
 
@@ -211,7 +227,7 @@ export function DestinationModal({
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div className="space-y-1">
                   <label className="text-[10px] font-black uppercase text-zinc-400">Tour Date</label>
-                  <input type="date" min={dateLimits.startMin} value={form.start_date} onChange={(e) => setForm({ ...form, start_date: e.target.value })} className="w-full p-3 bg-zinc-50 border border-zinc-200 rounded-xl text-sm font-bold" />
+                  <input type="date" min={dateLimits.startMin} value={form.start_date} onChange={(e) => pickDate("start_date", e.target.value, dateLimits.startMin)} className="w-full p-3 bg-zinc-50 border border-zinc-200 rounded-xl text-sm font-bold" />
                 </div>
                 <div className="space-y-1">
                   <label className="text-[10px] font-black uppercase text-zinc-400">End Date (optional)</label>
@@ -219,7 +235,7 @@ export function DestinationModal({
                     type="date"
                     min={dateLimits.endMin}
                     value={form.end_date}
-                    onChange={(e) => setForm({ ...form, end_date: e.target.value, end_time: e.target.value ? form.end_time : "" })}
+                    onChange={(e) => pickDate("end_date", e.target.value, dateLimits.endMin)}
                     className="w-full p-3 bg-zinc-50 border border-zinc-200 rounded-xl text-sm font-bold"
                   />
                 </div>

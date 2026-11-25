@@ -39,6 +39,8 @@ export default function TourGroupDetailPage({ params }) {
   const [message, setMessage] = useState(null);
   const [showDestination, setShowDestination] = useState(false);
   const [pendingMembers, setPendingMembers] = useState([]);
+  // The store keeps the last group opened; wait for this group's members before showing it.
+  const [readyFor, setReadyFor] = useState(null);
   const { confirm } = useConfirm();
 
   const loadData = async () => {
@@ -54,7 +56,9 @@ export default function TourGroupDetailPage({ params }) {
     let cancelled = false;
     if (id && userId) {
       fetchTourGroupById(id, userId);
-      fetchGroupMembers(id, userId);
+      Promise.resolve(fetchGroupMembers(id, userId)).finally(() => {
+        if (!cancelled) setReadyFor(id);
+      });
       fetchGroupPendingMembers(id, userId).then((pending) => {
         if (!cancelled) setPendingMembers(pending);
       });
@@ -86,7 +90,7 @@ export default function TourGroupDetailPage({ params }) {
     }
   };
 
-  if (loading && !activeGroup) {
+  if (readyFor !== id || (loading && !activeGroup)) {
     return (
       <div className="space-y-6">
         <div className="h-8 w-48 bg-zinc-100 rounded animate-pulse" />
