@@ -12,7 +12,7 @@ import {
   formatTourEndDateTime,
   getRelevantAlertsForGroup,
   getRelevantRouteAdvisoriesForGroup,
-  todayInPhilippines,
+  tourDateLimits,
   tourScheduleError,
 } from "@/lib/tourGroupRoute";
 import {
@@ -121,6 +121,7 @@ export function DestinationModal({
     }
   };
 
+  const dateLimits = tourDateLimits(form, { originalStartDate: group.start_date || null });
   const routeLabel = formatTourRoute(group);
   const tourDate = formatTourDate(group);
 
@@ -210,13 +211,13 @@ export function DestinationModal({
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div className="space-y-1">
                   <label className="text-[10px] font-black uppercase text-zinc-400">Tour Date</label>
-                  <input type="date" min={todayInPhilippines()} value={form.start_date} onChange={(e) => setForm({ ...form, start_date: e.target.value })} className="w-full p-3 bg-zinc-50 border border-zinc-200 rounded-xl text-sm font-bold" />
+                  <input type="date" min={dateLimits.startMin} value={form.start_date} onChange={(e) => setForm({ ...form, start_date: e.target.value })} className="w-full p-3 bg-zinc-50 border border-zinc-200 rounded-xl text-sm font-bold" />
                 </div>
                 <div className="space-y-1">
                   <label className="text-[10px] font-black uppercase text-zinc-400">End Date (optional)</label>
                   <input
                     type="date"
-                    min={form.start_date && form.start_date > todayInPhilippines() ? form.start_date : todayInPhilippines()}
+                    min={dateLimits.endMin}
                     value={form.end_date}
                     onChange={(e) => setForm({ ...form, end_date: e.target.value, end_time: e.target.value ? form.end_time : "" })}
                     className="w-full p-3 bg-zinc-50 border border-zinc-200 rounded-xl text-sm font-bold"

@@ -69,6 +69,9 @@ export function splitRewardNotifications(notifications = []) {
 /** Alert, hazard and road notices that a person may hide as "not affected" (never Critical ones). */
 export function canDismissNotification(notification) {
   if (!notification || notification.dismissed_at) return false;
+  // Report notices carry a level for their color only; they stay in the account's history.
+  const type = String(notification.notification_type || "");
+  if (type.startsWith("incident") || notification.related_type === "incident") return false;
   const severity = getNotificationSeverity(notification);
   if (!severity || severity === "Critical") return false;
   if (severity !== "Resolved" && notification.priority === "CRITICAL") return false;

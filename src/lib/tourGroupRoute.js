@@ -178,14 +178,26 @@ export function todayInPhilippines(nowMs = Date.now()) {
 }
 
 /**
- * Tour schedule check: no start date in the past (Philippine time), and a new tour's end
- * must still be ahead. An existing tour may keep the start date it already has.
+ * Earliest dates the tour date pickers allow: today onward, never a past day. An existing tour
+ * may keep the start date it already has (so its saved value stays valid).
+ * @returns {{ startMin: string, endMin: string }}
+ */
+export function tourDateLimits(form = {}, { originalStartDate = null, nowMs = Date.now() } = {}) {
+  const today = todayInPhilippines(nowMs);
+  const startMin = originalStartDate && originalStartDate < today ? originalStartDate : today;
+  const endMin = form.start_date && form.start_date > today ? form.start_date : today;
+  return { startMin, endMin };
+}
+
+/**
+ * Tour schedule check (Philippine time): the tour date can be today or later, never a past day.
+ * An existing tour may keep the start date it already has.
  * @returns {string|null} an error message, or null when the schedule is fine
  */
 export function tourScheduleError({ start_date, end_date, end_time }, { originalStartDate = null, nowMs = Date.now() } = {}) {
   const today = todayInPhilippines(nowMs);
   if (start_date && start_date < today && start_date !== originalStartDate) {
-    return "The start date can't be in the past.";
+    return "The tour date can't be in the past. Choose today or a later date.";
   }
   if (start_date && end_date && end_date < start_date) {
     return "The end date must be on or after the tour date.";
